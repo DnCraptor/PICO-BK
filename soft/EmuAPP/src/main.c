@@ -15,6 +15,8 @@
 #include "board.h"
 #include "CPU.h"
 #include "Key.h"
+#include "esp8266.h"
+#include "pin_mux_register.h"
 
 union
 {
@@ -136,12 +138,14 @@ static void TapeReadOp (void)
 Exit:
 
     Device_Data.CPU_State.r [7] = 0116232;
+    Wait_SPI_Idle (flashchip);
     return;
 
 BusFault:
 
     Device_Data.CPU_State.r [7] = MEM16 [04 >> 1];
     Device_Data.CPU_State.psw   = MEM16 [06 >> 1];
+    Wait_SPI_Idle (flashchip);
 }
 
 static void TapeWriteOp (void)
@@ -215,6 +219,7 @@ static void TapeWriteOp (void)
     MEM16 [0312 >> 1] = (uint16_t) CheckSum;
 
     Device_Data.CPU_State.r [7] = 0116232;
+    Wait_SPI_Idle (flashchip);
     return;
 
 BusFault:
@@ -223,6 +228,7 @@ BusFault:
 
     Device_Data.CPU_State.r [7] = MEM16 [04 >> 1];
     Device_Data.CPU_State.psw   = MEM16 [06 >> 1];
+    Wait_SPI_Idle (flashchip);
 }
 
 #undef CPU_CHECK_ARG_FAULT
@@ -235,6 +241,15 @@ void main_program(void)
     uint_fast16_t Key;
     uint_fast32_t LastKey      = 0xC00;
     uint_fast8_t  RunState     = 0;
+
+    Wait_SPI_Idle (flashchip);
+
+	ESP8266_SPI0->USER |= 0x20; // +1 такт перед CS = 0x80000064
+	SET_PERI_REG_MASK (PERIPHS_IO_MUX_CONF_U, SPI0_CLK_EQU_SYS_CLK); // QSPI = 80 MHz
+	ESP8266_SPI0->CTRL = (ESP8266_SPI0->CTRL & ~0x1FFF) | 0x1000;
+
+    Wait_SPI_Idle (flashchip);
+
     // Инитим файловую систему
     ffs_init();
     
@@ -247,9 +262,10 @@ void main_program(void)
     // Инитим процессор
     CPU_Init ();
 
+    Wait_SPI_Idle (flashchip);
+
     Time = getCycleCount ();
 
-    
     // Запускаем эмуляцию
     while (1)
     {
@@ -326,14 +342,14 @@ void main_program(void)
             case 4:
                 ps2_leds ((Key_Flags >> KEY_FLAGS_CAPSLOCK_POS) & 1, (Key_Flags >> KEY_FLAGS_NUMLOCK_POS) & 1, (Key_Flags >> KEY_FLAGS_TURBO_POS) & 1);
 
-                if (Key_Flags & KEY_FLAGS_NUMLOCK) MEM16 [0177714 >> 1] = (uint16_t) (Key_Flags >> KEY_FLAGS_UP_POS);
-                else                               MEM16 [0177714 >> 1] = 0;
+                if (Key_Flags & KEY_FLAGS_NUMLOCK) Device_Data.SysRegs.RdReg177714 = (uint16_t) (Key_Flags >> KEY_FLAGS_UP_POS);
+                else                               Device_Data.SysRegs.RdReg177714 = 0;
 
                 if (CodeAndFlags & 0x8000U)
                 {
                     if (((LastKey ^ CodeAndFlags) & 0x7FF) == 0)
                     {
-                        MEM16 [0177716 >> 1] |= 0100;
+                        Device_Data.SysRegs.RdReg177716 |= 0100;
 
                         LastKey = 0xC00;
                     }
@@ -345,6 +361,8 @@ void main_program(void)
                         ui_start();
                         menu ();
                         ui_stop();
+
+					    Wait_SPI_Idle (flashchip);
 
                         Time = getCycleCount ();
                         T    = Device_Data.CPU_State.Time;
@@ -360,20 +378,20 @@ void main_program(void)
 
             case 6:
 
-                MEM16 [0177716 >> 1] &= ~0100;
+                Device_Data.SysRegs.RdReg177716 &= ~0100;
 
             case 5:
 
                 if ((LastKey & 0x800) == 0)
                 {
-                    if ((MEM16 [0177660 >> 1] & 0200) == 0)
+                    if ((Device_Data.SysRegs.Reg177660 & 0200) == 0)
                     {
                         Key = (uint_fast16_t) (LastKey >> 16);
 
                         if      (Key == 14) Key_SetRusLat ();
                         else if (Key == 15) Key_ClrRusLat ();
 
-                        if ((MEM16 [0177660 >> 1] & 0100) == 0)
+                        if ((Device_Data.SysRegs.Reg177660 & 0100) == 0)
                         {
                             if (Key & KEY_AR2_PRESSED)
                             {
@@ -387,11 +405,11 @@ void main_program(void)
                             }
                         }
 
-                        MEM16 [0177660 >> 1] |= 0200;
+                        Device_Data.SysRegs.Reg177660 |= 0200;
                     }
 
                     LastKey |= 0x800;
-                    MEM16 [0177662 >> 1] = (uint16_t) (LastKey >> 16) & 0177;
+                    Device_Data.SysRegs.Reg177662 = (uint16_t) (LastKey >> 16) & 0177;
                 }
 
                 RunState = 0;

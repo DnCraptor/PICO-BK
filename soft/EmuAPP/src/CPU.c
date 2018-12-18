@@ -6,6 +6,7 @@
 #include "board.h"
 #include "gpio_lib.h"
 #include "ets.h"
+#include "esp8266.h"
 
 TDevice_Data Device_Data;
 
@@ -120,18 +121,18 @@ const uint8_t CPU_timing_TwoOps_BIS [64] =
 
 void CPU_TimerRun (void)
 {
-    uint_fast16_t Cfg = MEM16 [0177712 >> 1];
+    uint_fast16_t Cfg = Device_Data.SysRegs.Reg177712;
 
     //если счётчик остановлен
     if (Cfg & 1)
     {
-        MEM16 [0177710 >> 1] = MEM16 [0177706 >> 1]; //проинициализируем регистр счётчика
+        Device_Data.SysRegs.Reg177710 = Device_Data.SysRegs.Reg177706; //проинициализируем регистр счётчика
     }
     else if (Cfg & 020) //если счётчик запущен
     {
         uint_fast32_t CurT = Device_Data.CPU_State.Time >> 7;
         uint_fast32_t T    = Device_Data.Timer.T + (((CurT - Device_Data.Timer.PrevT) & 0xFFFFFF) << Device_Data.Timer.Div);
-        int_fast32_t  Cntr = MEM16 [0177710 >> 1];
+        int_fast32_t  Cntr = Device_Data.SysRegs.Reg177710;
 
         Device_Data.Timer.PrevT = CurT;
         Device_Data.Timer.T  = T & 0x3F;
@@ -148,7 +149,7 @@ void CPU_TimerRun (void)
 
             if (Cntr <= 0)
             {
-                uint_fast16_t InitVal = MEM16 [0177706 >> 1];
+                uint_fast16_t InitVal = Device_Data.SysRegs.Reg177706;
 
                 if (Cfg & 4) //разрешение установки сигнала "конец счёта" ?
                 {
@@ -170,54 +171,125 @@ void CPU_TimerRun (void)
                     } while (Cntr <= 0);
                 }
 
-                MEM16 [0177712 >> 1] = Cfg;
+                Device_Data.SysRegs.Reg177712 = Cfg;
             }
         }
 
-        MEM16 [0177710 >> 1] = (uint16_t) Cntr;
+        Device_Data.SysRegs.Reg177710 = (uint16_t) Cntr;
     }
+}
+
+struct
+{
+	uint16_t Adr;
+
+	union
+	{
+		uint32_t U32 [60 / 4];
+		uint16_t U16 [60 / 2];
+		uint8_t  U8  [60];
+
+	} Buf;
+
+} CPU_RomCache;
+
+TCPU_Arg CPU_ReadRomW (TCPU_Arg Adr)
+{
+	uint_fast16_t Offset = Adr - (uint_fast16_t) CPU_RomCache.Adr;
+
+	if (Offset < 60)
+	{
+		return CPU_RomCache.Buf.U16 [Offset >> 1];
+	}
+	else
+	{
+		Offset = Adr & ~3U;
+		CPU_RomCache.Adr = Offset;
+
+        ESP8266_SPI0->ADDR = (Offset + (0x50000 - 0100000)) | (60 << 24);
+        ESP8266_SPI0->CMD  = 1UL<<31;
+        while (ESP8266_SPI0->CMD);
+        CPU_RomCache.Buf.U32 [ 0] = ESP8266_SPI0->FIFO [ 0];
+        CPU_RomCache.Buf.U32 [ 1] = ESP8266_SPI0->FIFO [ 1];
+        CPU_RomCache.Buf.U32 [ 2] = ESP8266_SPI0->FIFO [ 2];
+        CPU_RomCache.Buf.U32 [ 3] = ESP8266_SPI0->FIFO [ 3];
+        CPU_RomCache.Buf.U32 [ 4] = ESP8266_SPI0->FIFO [ 4];
+        CPU_RomCache.Buf.U32 [ 5] = ESP8266_SPI0->FIFO [ 5];
+        CPU_RomCache.Buf.U32 [ 6] = ESP8266_SPI0->FIFO [ 6];
+        CPU_RomCache.Buf.U32 [ 7] = ESP8266_SPI0->FIFO [ 7];
+        CPU_RomCache.Buf.U32 [ 8] = ESP8266_SPI0->FIFO [ 8];
+        CPU_RomCache.Buf.U32 [ 9] = ESP8266_SPI0->FIFO [ 9];
+        CPU_RomCache.Buf.U32 [10] = ESP8266_SPI0->FIFO [10];
+        CPU_RomCache.Buf.U32 [11] = ESP8266_SPI0->FIFO [11];
+        CPU_RomCache.Buf.U32 [12] = ESP8266_SPI0->FIFO [12];
+        CPU_RomCache.Buf.U32 [13] = ESP8266_SPI0->FIFO [13];
+        CPU_RomCache.Buf.U32 [14] = ESP8266_SPI0->FIFO [14];
+
+        return CPU_RomCache.Buf.U16 [(Adr >> 1) & 1];
+	}
+}
+
+TCPU_Arg CPU_ReadRomB (TCPU_Arg Adr)
+{
+	uint_fast16_t U16 = CPU_ReadRomW (Adr);
+
+	if (Adr & 1) return U16 >> 8;
+
+	return U16 & 0xFF;
 }
 
 TCPU_Arg CPU_ReadMemW (TCPU_Arg Adr)
 {
-    if (Adr < 0177600) return MEM16 [Adr >> 1];
+	uint16_t *pReg;
+
+    if (Adr < 0100000) return MEM16 [Adr >> 1];
+    if (Adr < 0177600) return CPU_ReadRomW (Adr);
 
     switch (Adr >> 1)
     {
-        case (0177660 >> 1): break;
-        case (0177662 >> 1): MEM16 [0177660 >> 1] &= ~0200; break;
-        case (0177664 >> 1): break;
-        case (0177706 >> 1): break;
-        case (0177710 >> 1): CPU_TimerRun (); break;
-        case (0177712 >> 1): CPU_TimerRun (); break;
-        case (0177714 >> 1): break;
-        case (0177716 >> 1): break;
+        case (0177660 >> 1): pReg = &Device_Data.SysRegs.Reg177660;   break;
+        case (0177662 >> 1): Device_Data.SysRegs.Reg177660 &= ~0200;
+                             pReg = &Device_Data.SysRegs.Reg177662;   break;
+        case (0177664 >> 1): pReg = &Device_Data.SysRegs.Reg177664;   break;
+        case (0177706 >> 1): pReg = &Device_Data.SysRegs.Reg177706;   break;
+        case (0177710 >> 1): CPU_TimerRun ();
+                             pReg = &Device_Data.SysRegs.Reg177710;   break;
+        case (0177712 >> 1): CPU_TimerRun ();
+        					 pReg = &Device_Data.SysRegs.Reg177712;   break;
+        case (0177714 >> 1): pReg = &Device_Data.SysRegs.RdReg177714; break;
+        case (0177716 >> 1): pReg = &Device_Data.SysRegs.RdReg177716; break;
 
         default: return CPU_ARG_READ_ERR;
     }
 
-    return MEM16 [Adr >> 1];
+    return *pReg;
 }
 
 TCPU_Arg CPU_ReadMemB (TCPU_Arg Adr)
 {
-    if (Adr < 0177600) return MEM8 [Adr];
+	uint16_t *pReg;
+
+    if (Adr < 0100000) return MEM8 [Adr];
+    if (Adr < 0177600) return CPU_ReadRomB (Adr);
 
     switch (Adr >> 1)
     {
-        case (0177660 >> 1): break;
-        case (0177662 >> 1): MEM16 [0177660 >> 1] &= ~0200; break;
-        case (0177664 >> 1): break;
-        case (0177706 >> 1): break;
-        case (0177710 >> 1): CPU_TimerRun (); break;
-        case (0177712 >> 1): CPU_TimerRun (); break;
-        case (0177714 >> 1): break;
-        case (0177716 >> 1): break;
+        case (0177660 >> 1): pReg = &Device_Data.SysRegs.Reg177660;   break;
+        case (0177662 >> 1): Device_Data.SysRegs.Reg177660 &= ~0200;
+                             pReg = &Device_Data.SysRegs.Reg177662;   break;
+        case (0177664 >> 1): pReg = &Device_Data.SysRegs.Reg177664;   break;
+        case (0177706 >> 1): pReg = &Device_Data.SysRegs.Reg177706;   break;
+        case (0177710 >> 1): CPU_TimerRun ();
+        					 pReg = &Device_Data.SysRegs.Reg177710;   break;
+        case (0177712 >> 1): CPU_TimerRun ();
+                             pReg = &Device_Data.SysRegs.Reg177712;   break;
+        case (0177714 >> 1): pReg = &Device_Data.SysRegs.RdReg177714; break;
+        case (0177716 >> 1): pReg = &Device_Data.SysRegs.RdReg177716; break;
 
         default: return CPU_ARG_READ_ERR;
     }
 
-    return MEM8 [Adr];
+    return ((uint8_t *) pReg) [Adr & 1];
 }
 
 static TCPU_Arg CPU_ReadW (TCPU_Arg Adr)
@@ -256,9 +328,9 @@ TCPU_Arg CPU_WriteW (TCPU_Arg Adr, uint_fast16_t Word)
     {
         case (0177660 >> 1):
 
-            PrevWord = MEM16 [Adr >> 1];
+            PrevWord = Device_Data.SysRegs.Reg177660;
 
-            MEM16 [Adr >> 1] = (uint16_t) ((Word & 0100) | (PrevWord & ~0100));
+            Device_Data.SysRegs.Reg177660 = (uint16_t) ((Word & 0100) | (PrevWord & ~0100));
 
             break;
 
@@ -266,26 +338,26 @@ TCPU_Arg CPU_WriteW (TCPU_Arg Adr, uint_fast16_t Word)
             
         case (0177664 >> 1):
 
-            PrevWord = MEM16 [Adr >> 1];
+            PrevWord = Device_Data.SysRegs.Reg177664;
 
             Word = ((Word & 01377) | (PrevWord & ~01377));
 
-            MEM16 [Adr >> 1] = (uint16_t) Word;
+            Device_Data.SysRegs.Reg177664 = (uint16_t) Word;
 
             break;
 
         case (0177706 >> 1):
 
             CPU_TimerRun ();
-            MEM16 [Adr >> 1] = (uint16_t) Word;
+            Device_Data.SysRegs.Reg177706 = (uint16_t) Word;
             break;
 
 //      case (0177710 >> 1):
         case (0177712 >> 1):
 
             Word |= 0xFF00U;
-            MEM16 [Adr >> 1]        = (uint16_t) Word;
-            MEM16 [0177710 >> 1]    = MEM16 [0177706 >> 1];
+            Device_Data.SysRegs.Reg177712 = (uint16_t) Word;
+            Device_Data.SysRegs.Reg177710 = Device_Data.SysRegs.Reg177706;
             Device_Data.Timer.PrevT = Device_Data.CPU_State.Time >> 7;
             Device_Data.Timer.T     = 0;
             Device_Data.Timer.Div   = (~Word >> 4) & 6;
@@ -354,9 +426,9 @@ TCPU_Arg CPU_WriteB (TCPU_Arg Adr, uint_fast8_t Byte)
     {
         case (0177660 >> 1):
 
-            PrevWord = MEM16 [Adr >> 1];
+            PrevWord = Device_Data.SysRegs.Reg177660;
 
-            MEM16 [Adr >> 1] = (uint16_t) ((Word & 0100) | (PrevWord & ~0100));
+            Device_Data.SysRegs.Reg177660 = (uint16_t) ((Word & 0100) | (PrevWord & ~0100));
 
             break;
 
@@ -364,26 +436,26 @@ TCPU_Arg CPU_WriteB (TCPU_Arg Adr, uint_fast8_t Byte)
             
         case (0177664 >> 1):
 
-            PrevWord = MEM16 [Adr >> 1];
+            PrevWord = Device_Data.SysRegs.Reg177664;
 
             Word = ((Word & 01377) | (PrevWord & ~01377));
 
-            MEM16 [Adr >> 1] = (uint16_t) Word;
+            Device_Data.SysRegs.Reg177664 = (uint16_t) Word;
 
             break;
 
         case (0177706 >> 1):
 
             CPU_TimerRun ();
-            MEM16 [Adr >> 1] = (uint16_t) Word;
+            Device_Data.SysRegs.Reg177706 = (uint16_t) Word;
             break;
 
 //      case (0177710 >> 1):
         case (0177712 >> 1):
 
             Word |= 0xFF00U;
-            MEM16 [Adr >> 1]        = (uint16_t) Word;
-            MEM16 [0177710 >> 1]    = MEM16 [0177706 >> 1];
+            Device_Data.SysRegs.Reg177712 = (uint16_t) Word;
+            Device_Data.SysRegs.Reg177710 = Device_Data.SysRegs.Reg177706;
             Device_Data.Timer.PrevT = Device_Data.CPU_State.Time >> 7;
             Device_Data.Timer.T     = 0;
             Device_Data.Timer.Div   = (~Word >> 4) & 6;
@@ -1855,23 +1927,21 @@ void CPU_Reset (void)
 /*
     memset (&Device_Data, 0, sizeof (Device_Data));
     
-
-//  MEM16 [0177660 >> 1] = 0;
-//  MEM16 [0177662 >> 1] = 0;
-    MEM16 [0177664 >> 1] = 01330;
-//  MEM16 [0177706 >> 1] = 0;
-//  MEM16 [0177710 >> 1] = 0177777;
-//  MEM16 [0177712 >> 1] = 0177400;
-//  MEM16 [0177714 >> 1] = 0;
-    MEM16 [0177716 >> 1] = (0100000 & 0177400) | 0300;
-
-
 //  time += RESET_TIME;
 */
-
     ets_memset (&Device_Data, 0, sizeof (Device_Data));
+
+//  Device_Data.SysRegs.Reg177660   = 0;
+//  Device_Data.SysRegs.Reg177662   = 0;
+    Device_Data.SysRegs.Reg177664   = 01330;
+//  Device_Data.SysRegs.Reg177706   = 0;
+//  Device_Data.SysRegs.Reg177710   = 0177777;
+//  Device_Data.SysRegs.Reg177712   = 0177400;
+//  Device_Data.SysRegs.RdReg177714 = 0;
+    Device_Data.SysRegs.RdReg177716 = (0100000 & 0177400) | 0300;
+
     PSW = 0340;
-    PC = MEM16 [0177716 >> 1] & 0177400;
+    PC = Device_Data.SysRegs.RdReg177716 & 0177400;
 }
 
 void CPU_Init (void)

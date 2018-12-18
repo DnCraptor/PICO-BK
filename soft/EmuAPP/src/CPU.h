@@ -45,7 +45,15 @@ typedef struct
 
     struct
     {
+        uint16_t Reg177660;
+        uint16_t Reg177662;
+        uint16_t Reg177664;
+        uint16_t Reg177706;
+        uint16_t Reg177710;
+        uint16_t Reg177712;
+        uint16_t RdReg177714;
         uint16_t WrReg177714;
+        uint16_t RdReg177716;
         uint16_t WrReg177716;
 
     } SysRegs;

@@ -344,7 +344,7 @@ static const uint32_t* tv_i2s_cb(void)
         }
         else
         {
-            uint_fast16_t Reg = MEM16 [0177664 >> 1];
+            uint_fast16_t Reg = Device_Data.SysRegs.Reg177664;
 
             TV_Data.BkLine  =  Reg - 0330;
 
