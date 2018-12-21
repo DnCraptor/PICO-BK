@@ -9,12 +9,12 @@
 
 extern char __BUILD_NUMBER__;
 
-int_fast16_t OVL_SEC (menu_fileman) menu_fileman (uint_fast8_t Load)
+int_fast16_t OVL_SEC (menu_fileman) menu_fileman (uint_fast8_t Flags)
 {
     uint_fast8_t type;
     int_fast16_t n;
     
-    ui_start();
+    if (Flags & MENU_FLAG_START_UI) ui_start();
 
 again:
     ui_clear();
@@ -49,26 +49,26 @@ again:
         break;
     
     default:
-    	n = -1;
+        n = -1;
         goto Exit;
     }
     
     // Выбираем файл
-    n=fileman(type, Load);
+    n=fileman(type, Flags & MENU_FLAG_LOAD_FILE);
 
     if (n < 0) goto again;
 
 Exit:
-    ui_stop();
+    if (Flags & MENU_FLAG_START_UI) ui_stop();
 
     return n;
 }
 
-void OVL_SEC (menu) menu(void)
+void OVL_SEC (menu) menu(uint_fast8_t Flags)
 {
     char str[32];
     
-    ui_start();
+    if (Flags & MENU_FLAG_START_UI) ui_start();
 
 again:
     ui_clear();
@@ -122,5 +122,5 @@ again:
         break;
     }
 
-    ui_stop();
+    if (Flags & MENU_FLAG_START_UI) ui_stop();
 }

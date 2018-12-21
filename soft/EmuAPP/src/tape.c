@@ -33,7 +33,7 @@ void OVL_SEC (tape_ReadOp) tape_ReadOp (void)
 
     if (TapeBuf.U8 [16] == 0)
     {
-        iFile = OVL_CALL (OVL_NUM (tape_ReadOp), menu_fileman, 1);
+        iFile = OVL_CALL (OVL_NUM (tape_ReadOp), menu_fileman, MENU_FLAG_START_UI | MENU_FLAG_LOAD_FILE);
 
         if (iFile < 0) goto BusFault;
 

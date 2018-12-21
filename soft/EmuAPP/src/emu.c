@@ -122,9 +122,9 @@ void OVL_SEC (emu_start) emu_start (void)
                 {
                     if (Key == KEY_MENU_ESC)
                     {
-                        OVL_CALLV0 (OVL_NUM (emu_start), menu);
+                        OVL_CALLV (OVL_NUM (emu_start), menu, MENU_FLAG_START_UI);
 
-					    Wait_SPI_Idle (flashchip);
+                        Wait_SPI_Idle (flashchip);
 
                         Time = getCycleCount ();
                         T    = Device_Data.CPU_State.Time;
