@@ -199,7 +199,7 @@ void i2s_int(void)
 
 
 //Initialize I2S subsystem for DMA circular buffer use
-void i2s_init(i2s_cb_t cb, int size)
+void OVL_SEC (i2s_init) i2s_init(i2s_cb_t cb, int size)
 {
     i2s_cb=cb;
     
@@ -300,7 +300,7 @@ void i2s_init(i2s_cb_t cb, int size)
 }
 
 
-void i2s_start(void)
+void OVL_SEC (i2s_start) i2s_start(void)
 {
     //Start transmission
     SET_PERI_REG_MASK(I2SCONF,I2S_I2S_TX_START);

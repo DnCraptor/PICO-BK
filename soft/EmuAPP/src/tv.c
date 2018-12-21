@@ -391,7 +391,7 @@ static const uint32_t* tv_i2s_cb(void)
 }
 
 
-void tv_init (void)
+void OVL_SEC (tv_init) tv_init (void)
 {
     // Инициализируем неизменяемую часть буферов
     {
@@ -406,7 +406,7 @@ void tv_init (void)
 }
 
 
-void tv_start(void)
+void OVL_SEC (tv_start) tv_start(void)
 {
     // Настраиваем прерывание по таймеру
 

@@ -6,19 +6,21 @@ MEMORY
   bkram_seg :                           org = 0x3FFE8000, len = 0x8000
   bkrom_seg :                           org = 0x3FFF0000, len = 0x8000
   dram0_0_seg :                         org = 0x3FFF8000, len = 0x4000
-  iram1_0_seg :                         org = 0x40100000, len = 0xFC00	/* last 256b for loader */
-  irom0_0_seg :                         org = 0x40240000, len = 0x3C000
+  iram1_0_seg :                         org = 0x40100000, len = 0xF000
+  iram1_1_seg :                         org = 0x4010F000, len = 0x0C00  /* last 256b for loader */
+  irom0_0_seg :                         org = 0x40201010, len = 0xEFF0
 }
 
 PHDRS
 {
-  dport0_0_phdr 	PT_LOAD;
-  bkram_phdr 		PT_LOAD;
-  bkrom_phdr 		PT_LOAD;
-  dram0_0_phdr 		PT_LOAD;
-  dram0_0_bss_phdr 	PT_LOAD;
-  iram1_0_phdr 		PT_LOAD;
-  irom0_0_phdr 		PT_LOAD;
+  dport0_0_phdr     PT_LOAD;
+  bkram_phdr        PT_LOAD;
+  bkrom_phdr        PT_LOAD;
+  dram0_0_phdr      PT_LOAD;
+  dram0_0_bss_phdr  PT_LOAD;
+  iram1_0_phdr      PT_LOAD;
+  iram1_1_phdr      PT_LOAD;
+  irom0_0_phdr      PT_LOAD;
 }
 
 
@@ -136,7 +138,7 @@ SECTIONS
     *(.xt_except_desc_end)
     *(.dynamic)
     *(.gnu.version_d)
-    . = ALIGN(4);		/* this table MUST be 4-byte aligned */
+    . = ALIGN(4);       /* this table MUST be 4-byte aligned */
     _bss_table_start = ABSOLUTE(.);
     LONG(_bss_start)
     LONG(_bss_end)
@@ -195,12 +197,44 @@ SECTIONS
     _lit4_end = ABSOLUTE(.);
   } >iram1_0_seg :iram1_0_phdr
 
+  OVERLAY : NOCROSSREFS
+  {
+    .ovl0.text {*(.ovl0.literal .ovl0.text)}
+    .ovl1.text {*(.ovl1.literal .ovl1.text)}
+    .ovl2.text {*(.ovl2.literal .ovl2.text)}
+    .ovl3.text {*(.ovl3.literal .ovl3.text)}
+    .ovl4.text {*(.ovl4.literal .ovl4.text)}
+    .ovl5.text {*(.ovl5.literal .ovl5.text)}
+    .ovl6.text {*(.ovl6.literal .ovl6.text)}
+    .ovl7.text {*(.ovl7.literal .ovl7.text)}
+    .ovl8.text {*(.ovl8.literal .ovl8.text)}
+    .ovl9.text {*(.ovl9.literal .ovl9.text)}
+  } >iram1_0_seg AT>irom0_0_seg :irom0_0_phdr
+  _ovl_start = ADDR(.ovl0.text);
+  _ovl_end = ABSOLUTE(.);
+  __load_size_ovl0text = __load_stop_ovl0text - __load_start_ovl0text;
+  __load_size_ovl1text = __load_stop_ovl1text - __load_start_ovl1text;
+  __load_size_ovl2text = __load_stop_ovl2text - __load_start_ovl2text;
+  __load_size_ovl3text = __load_stop_ovl3text - __load_start_ovl3text;
+  __load_size_ovl4text = __load_stop_ovl4text - __load_start_ovl4text;
+  __load_size_ovl5text = __load_stop_ovl5text - __load_start_ovl5text;
+  __load_size_ovl6text = __load_stop_ovl6text - __load_start_ovl6text;
+  __load_size_ovl7text = __load_stop_ovl7text - __load_start_ovl7text;
+  __load_size_ovl8text = __load_stop_ovl8text - __load_start_ovl8text;
+  __load_size_ovl9text = __load_stop_ovl9text - __load_start_ovl9text;
+
   .irom0.text : ALIGN(4)
   {
     _irom0_text_start = ABSOLUTE(.);
     *(.irom0.literal .irom.literal .irom.text.literal .irom0.text .irom.text)
     _irom0_text_end = ABSOLUTE(.);
   } >irom0_0_seg :irom0_0_phdr
+
+  .startup.text : ALIGN(4)
+  {
+    *(.startup.literal .startup.text)
+
+  } >iram1_1_seg :iram1_1_phdr
 }
 
 /* get ROM code address */

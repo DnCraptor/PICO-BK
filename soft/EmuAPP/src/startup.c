@@ -1,10 +1,10 @@
 #include "ets.h"
 #include "board.h"
-
+#include "main.h"
+#include "emu.h"
+#include "ovl.h"
 
 extern uint32_t _bss_start[], _bss_end[];
-extern void main_program(void);
-
 
 static void my_putc1(char c)
 {
@@ -16,7 +16,7 @@ static void my_putc1(char c)
 
 void InitVecBase (void);
 
-void call_user_start(void)
+void __attribute__((section(".startup.text"))) call_user_start (void)
 {
     if(rom_i2c_readReg(103,4,1) != 136) // 8: 40MHz, 136: 26MHz
     {
@@ -46,7 +46,9 @@ void call_user_start(void)
 
     // Меняем менеджер прерываний на свой, реетерабельный с приоритетами. Прерывания в порядке убывания приоритета: Timer, I2S, GPIO.
     InitVecBase ();
-    
+
+    // Инициализация модулей
+    OVL_CALLV0 (0xFF, main_init);
     // Запускаем основную программу
-    main_program();
+    OVL_CALLV0 (0xFF, emu_start);
 }

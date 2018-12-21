@@ -2,6 +2,7 @@
 #define MAIN_H_INCLUDE
 
 #include <stdint.h>
+#include "ovl.h"
 
 #define Key_SetRusLat() Key_Flags |=  KEY_FLAGS_RUSLAT
 #define Key_ClrRusLat() Key_Flags &= ~KEY_FLAGS_RUSLAT
@@ -70,6 +71,8 @@ extern uint32_t Key_Flags;
 
 #define KEY_TRANSLATE_UI 0x4000
 
+#define Key_Translate_ovln OVL_NUM_EMU
+#define Key_Translate_ovls OVL_SEC_EMU
 uint_fast16_t Key_Translate (uint_fast16_t CodeAndFlags);
 
 #endif

@@ -27,19 +27,19 @@ void timer0_isr_handler(void* para)
 }
 
 
-void timer0_isr_init()
+void OVL_SEC (timer0_isr_init) timer0_isr_init()
 {
     ETS_CCOMPARE0_INTR_ATTACH(timer0_isr_handler, NULL);
 }
 
 
-void timer0_attachInterrupt(timercallback userFunc)
+void OVL_SEC (timer0_attachInterrupt) timer0_attachInterrupt(timercallback userFunc)
 {
     timer0_user_cb = userFunc;
     ETS_CCOMPARE0_ENABLE();
 }
 
-void timer0_detachInterrupt()
+void OVL_SEC (timer0_detachInterrupt) timer0_detachInterrupt()
 {
     timer0_user_cb = NULL;
     ETS_CCOMPARE0_DISABLE();

@@ -1,10 +1,6 @@
 #ifndef PS2_CODES_H
 #define PS2_CODES_H
 
-
-#include <inttypes.h>
-
-
 // http://www.computer-engineering.org/ps2keyboard/scancodes2.html
 
 // A-Z
@@ -137,9 +133,5 @@
 #define KEY_MENU_LEFT	8
 #define KEY_MENU_RIGHT	25
 #define KEY_MENU_SPACE	32
-
-
-char ps2_sym(void);
-
 
 #endif

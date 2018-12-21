@@ -3,6 +3,7 @@
 
 
 #include "ets.h"
+#include "ovl.h"
 
 
 #ifdef __cplusplus
@@ -50,6 +51,12 @@ typedef void(*timercallback)(void);
 #define timer0_read() ((__extension__({uint32_t count;__asm__ __volatile__("esync; rsr %0,ccompare0":"=a" (count));count;})))
 #define timer0_write(count) __asm__ __volatile__("wsr %0,ccompare0; esync"::"a" (count) : "memory")
 
+#define timer0_isr_init_ovln        OVL_NUM_INIT
+#define timer0_isr_init_ovls        OVL_SEC_INIT
+#define timer0_attachInterrupt_ovln OVL_NUM_INIT
+#define timer0_attachInterrupt_ovls OVL_SEC_INIT
+#define timer0_detachInterrupt_ovln OVL_NUM_INIT
+#define timer0_detachInterrupt_ovls OVL_SEC_INIT
 void timer0_isr_init(void);
 void timer0_attachInterrupt(timercallback userFunc);
 void timer0_detachInterrupt(void);

@@ -2,7 +2,7 @@
 #include <stddef.h>
 #include "spi_flash.h"
 
-uint32_t spi_flash_unlock (void)
+uint32_t OVL_SEC (spi_flash_unlock) spi_flash_unlock (void)
 {
     uint32_t Status;
 

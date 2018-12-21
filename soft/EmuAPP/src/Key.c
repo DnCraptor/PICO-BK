@@ -188,7 +188,7 @@ static const uint8_t Key_RusLatTab [0x84] [2] =
 
 uint32_t Key_Flags;
 
-static uint_fast16_t ReturnKeyCode (uint_fast8_t Key, uint_fast32_t KeyFlags)
+static uint_fast16_t OVL_SEC (Key_Translate) ReturnKeyCode (uint_fast8_t Key, uint_fast32_t KeyFlags)
 {
     if (Key >= 0100 && Key <= 0137 && (KeyFlags & (KEY_FLAGS_LCTRL | KEY_FLAGS_RCTRL))) Key &= ~0140;
     if (KeyFlags & (KEY_FLAGS_LALT | KEY_FLAGS_RALT)) Key |= KEY_AR2_PRESSED;
@@ -196,14 +196,14 @@ static uint_fast16_t ReturnKeyCode (uint_fast8_t Key, uint_fast32_t KeyFlags)
     return Key;
 }
 
-static uint_fast16_t ReturnShiftedKeyCode (uint_fast8_t Key, uint_fast32_t KeyFlags)
+static uint_fast16_t OVL_SEC (Key_Translate) ReturnShiftedKeyCode (uint_fast8_t Key, uint_fast32_t KeyFlags)
 {
     if ((((KeyFlags >> KEY_FLAGS_LSHIFT_POS) | (KeyFlags >> KEY_FLAGS_RSHIFT_POS)) ^ (KeyFlags >> KEY_FLAGS_CAPSLOCK_POS) ^ (KeyFlags >> KEY_FLAGS_RUSLAT_POS)) & 1) Key += 32;
 
     return ReturnKeyCode (Key, KeyFlags);
 }
 
-uint_fast16_t Key_Translate (uint_fast16_t CodeAndFlags)
+uint_fast16_t OVL_SEC (Key_Translate) Key_Translate (uint_fast16_t CodeAndFlags)
 {
     uint_fast16_t Key;
     uint_fast8_t  Code;

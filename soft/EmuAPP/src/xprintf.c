@@ -21,14 +21,14 @@ static char *lower_digits = "0123456789abcdefghijklmnopqrstuvwxyz";
 static char *upper_digits = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ";
 
 
-static int skip_atoi(const char **s)
+static int OVL_SEC (xvsprintf) skip_atoi(const char **s)
 {
 	int i = 0;
 	while (is_digit(**s)) i = i*10 + *((*s)++) - '0';
 	return i;
 }
 
-static char *number(char *str, long num, int base, int size, int precision, int type)
+static OVL_SEC (xvsprintf) char *number(char *str, long num, int base, int size, int precision, int type)
 {
 	char c, sign, tmp[66];
 	char *dig = lower_digits;
@@ -92,7 +92,7 @@ static char *number(char *str, long num, int base, int size, int precision, int 
 	return str;
 }
 
-static char *eaddr(char *str, unsigned char *addr, int size, int precision, int type)
+static OVL_SEC (xvsprintf) char *eaddr(char *str, unsigned char *addr, int size, int precision, int type)
 {
 	char tmp[24];
 	char *dig = lower_digits;
@@ -112,7 +112,7 @@ static char *eaddr(char *str, unsigned char *addr, int size, int precision, int 
 	return str;
 }
 
-static char *iaddr(char *str, unsigned char *addr, int size, int precision, int type)
+static OVL_SEC (xvsprintf) char *iaddr(char *str, unsigned char *addr, int size, int precision, int type)
 {
 	char tmp[24];
 	int i, n, len;
@@ -144,7 +144,7 @@ static char *iaddr(char *str, unsigned char *addr, int size, int precision, int 
 	return str;
 }
 
-int xvsprintf(char *buf, const char *fmt, va_list args)
+int OVL_SEC (xvsprintf) xvsprintf(char *buf, const char *fmt, va_list args)
 {
 	int len;
 	unsigned long num;
@@ -308,7 +308,7 @@ repeat:
   return str - buf;
 }
 
-int xsprintf(char *buf, const char *fmt, ...)
+int OVL_SEC (xsprintf) xsprintf(char *buf, const char *fmt, ...)
 {
 	va_list args;
 	int n;

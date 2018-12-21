@@ -12,7 +12,7 @@
 TUI_Data UI_Data;
 
 
-void ui_clear(void)
+void OVL_SEC (ui_clear) ui_clear(void)
 {
     ets_memset(UI_Data.scr, CPU_koi8_to_zkg(' '), sizeof(UI_Data.scr));
 }
@@ -20,17 +20,17 @@ void ui_clear(void)
 
 #define HEADER_X    0
 #define HEADER_Y    0
-void ui_header(const char *s)
+void OVL_SEC (ui_header) ui_header(const char *s)
 {
     ui_draw_text(HEADER_X, HEADER_Y, s);
 }
 
-void ui_header_default(void)
+void OVL_SEC (ui_header_default) ui_header_default(void)
 {
     ui_draw_text(HEADER_X, HEADER_Y, " ЭМУЛЯТОР БК-0010-01 НА ESP8266");
 }
 
-void ui_draw_list(uint8_t x, uint8_t y, const char *s)
+void OVL_SEC (ui_draw_list) ui_draw_list(uint8_t x, uint8_t y, const char *s)
 {
     x += 3;
 
@@ -45,7 +45,7 @@ void ui_draw_list(uint8_t x, uint8_t y, const char *s)
 }
 
 
-void ui_draw_text(uint8_t x, uint8_t y, const char *s)
+void OVL_SEC (ui_draw_text) ui_draw_text(uint8_t x, uint8_t y, const char *s)
 {
     while (*s)
     {
@@ -58,7 +58,7 @@ void ui_draw_text(uint8_t x, uint8_t y, const char *s)
 }
 
 
-int8_t ui_select(uint8_t x, uint8_t y, uint8_t count)
+int8_t OVL_SEC (ui_select) ui_select(uint8_t x, uint8_t y, uint8_t count)
 {
     uint8_t n=0, prev=0;
     
@@ -76,7 +76,7 @@ int8_t ui_select(uint8_t x, uint8_t y, uint8_t count)
     // Читаем клаву
     while (1)
     {
-        uint_fast16_t c=ui_GetKey();
+        uint_fast16_t c = OVL_CALL0 (OVL_NUM (ui_select), ui_GetKey);
         if (c==KEY_MENU_ESC)
         {
         // Отмена
@@ -125,7 +125,7 @@ int8_t ui_select(uint8_t x, uint8_t y, uint8_t count)
 }
 
 
-const char* ui_input_text(const char *comment, const char *_text, uint8_t max_len)
+const char* OVL_SEC (ui_input_text) ui_input_text(const char *comment, const char *_text, uint8_t max_len)
 {
     static char text[64];
     uint8_t pos;
@@ -153,7 +153,7 @@ const char* ui_input_text(const char *comment, const char *_text, uint8_t max_le
     ui_draw_text(EDIT_X, EDIT_Y, text);
     while (1)
     {
-    c=ui_GetKey();
+    c = OVL_CALL0 (OVL_NUM (ui_input_text), ui_GetKey);
     if (c==KEY_MENU_ESC)
     {
         // Отмена
@@ -186,7 +186,7 @@ const char* ui_input_text(const char *comment, const char *_text, uint8_t max_le
 }
 
 
-int8_t ui_yes_no(const char *comment)
+int8_t OVL_SEC (ui_yes_no) ui_yes_no(const char *comment)
 {
     ui_clear();
     ui_header_default();
@@ -196,7 +196,7 @@ int8_t ui_yes_no(const char *comment)
 }
 
 
-void ui_start(void)
+void OVL_SEC (ui_start) ui_start(void)
 {
     // Сохраняем состояние клавиатуры
     UI_Data.PrevRusLat = Key_Flags >> KEY_FLAGS_RUSLAT_POS;
@@ -211,7 +211,7 @@ void ui_start(void)
 }
 
 
-void ui_stop(void)
+void OVL_SEC (ui_stop) ui_stop(void)
 {
     // Восстанавливаем состояние клавиатуры
     Key_Flags = (Key_Flags & ~KEY_FLAGS_RUSLAT) | ((UI_Data.PrevRusLat & 1) << KEY_FLAGS_RUSLAT_POS);
@@ -221,37 +221,8 @@ void ui_stop(void)
 }
 
 
-void ui_sleep(uint16_t ms)
+void OVL_SEC (ui_sleep) ui_sleep(uint16_t ms)
 {
     uint32_t _sleep=getCycleCount()+(ms)*160000;
     while (((uint32_t)(getCycleCount() - _sleep)) & 0x80000000);
-}
-
-uint_fast16_t ui_GetKey (void)
-{
-    uint_fast16_t CodeAndFlags;
-    uint_fast16_t Key;
-
-    ps2_periodic ();
-
-    CodeAndFlags = ps2_read ();
-
-    if (CodeAndFlags == 0) return 0;
-
-    if (CodeAndFlags == PS2_DELETE) return KEY_MENU_DELETE;
-
-    Key = Key_Translate (CodeAndFlags | KEY_TRANSLATE_UI);
-
-    ps2_leds ((Key_Flags >> KEY_FLAGS_CAPSLOCK_POS) & 1, (Key_Flags >> KEY_FLAGS_NUMLOCK_POS) & 1, (Key_Flags >> KEY_FLAGS_TURBO_POS) & 1);
-
-    if ((CodeAndFlags & 0x8000U) || (Key == KEY_UNKNOWN)) return 0;
-
-    if      (Key == 14) Key_SetRusLat ();
-    else if (Key == 15) Key_ClrRusLat ();
-
-//  Key &= ~KEY_AR2_PRESSED;
-
-    if ((Key_Flags & KEY_FLAGS_RUSLAT) && (Key & 0x40)) Key ^= 0x80;
-
-    return Key;
 }

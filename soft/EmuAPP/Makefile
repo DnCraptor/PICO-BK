@@ -32,11 +32,14 @@ C_SOURCES+= \
 	src/align4.c	\
 	src/CPU.c		\
 	src/Key.c		\
-	src/UTF8_KOI8.c \
 	src/spi_flash.c \
 	src/ui.c		\
+	src/ui_key.c	\
 	src/menu.c		\
 	src/fileman.c	\
+	src/ovl.c		\
+	src/emu.c		\
+	src/tape.c		\
 
 
 ##############################################################################
@@ -72,7 +75,7 @@ LIBS=-lgcc
 LD_SCRIPT=ld/eagle.app.v6.ld
 LDFLAGS_BUILD_NUMBER=-Xlinker --defsym -Xlinker __BUILD_NUMBER__=$(BUILD_NUMBER)
 LDFLAGS=-nostdlib -Wl,--no-check-sections -u call_user_start -Wl,-static $(LIBS) $(LDFLAGS_BUILD_NUMBER)
-ESPTOOL2=$(PRJROOT)/Utils/esptool2/V2.0.0/esptool2.exe
+ESPTOOL2=../esptool2/esptool2.exe
 ##############################################################################
 
 
@@ -83,7 +86,7 @@ all: $(OUTDIR)/$(OUT)-0x00000.bin
 
 $(OUTDIR)/$(OUT)-0x00000.bin: $(OUTDIR)/$(OUT)
 	@echo "Making $(OUT).bin..."; \
-	$(ESPTOOL2) -quiet -bin -boot0 -4096 -qio -40 $^ $@ .text .data .rodata
+	$(ESPTOOL2) -quiet -bin -boot2 -4096 -qio -40 $^ $@
 
 # Target for linker
 $(OUTDIR)/$(OUT): $(subst $(SRCDIR)/,$(OBJDIR)/$(SRCDIR)/,$(C_SOURCES:.c=.o)) $(subst $(SRCDIR)/,$(OBJDIR)/$(SRCDIR)/,$(ASM_SOURCES:.s=.o)) 

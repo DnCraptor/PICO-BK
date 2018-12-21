@@ -123,7 +123,7 @@ void gpio_int(void *arg)
 }
 
 
-void ps2_init(void)
+void OVL_SEC (ps2_init) ps2_init(void)
 {
     // Переключаем PS2_DATA и PS2_CLK в GPIO
     gpio_init_input_pu(PS2_DATA);
@@ -141,7 +141,7 @@ void ps2_init(void)
 }
 
 
-uint16_t ps2_read(void)
+uint16_t OVL_SEC (ps2_read) ps2_read(void)
 {
 	static uint16_t PrevCode;
     if (rxq_head == rxq_tail) return 0;
@@ -155,13 +155,13 @@ uint16_t ps2_read(void)
 }
 
 
-void ps2_leds(bool caps, bool num, bool scroll)
+void OVL_SEC (ps2_leds) ps2_leds(bool caps, bool num, bool scroll)
 {
     led_status=(caps ? 0x04 : 0x00) | (num ? 0x02 : 0x00) | (scroll ? 0x01 : 0x00);
 }
 
 
-static void start_tx(uint8_t b)
+static void OVL_SEC (ps2_periodic) start_tx(uint8_t b)
 {
     uint8_t p=b;
     p^=p >> 4;
@@ -172,7 +172,7 @@ static void start_tx(uint8_t b)
 }
 
 
-static PT_THREAD(task(struct pt *pt))
+static PT_THREAD (OVL_SEC (ps2_periodic) task (struct pt *pt))
 {
     static uint32_t _sleep;
     static uint8_t last_led=0x00;
@@ -279,7 +279,7 @@ resend2:
 }
 
 
-void ps2_periodic(void)
+void OVL_SEC (ps2_periodic) ps2_periodic(void)
 {
     (void)PT_SCHEDULE(task(&pt_task));
 }

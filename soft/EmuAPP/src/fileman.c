@@ -6,26 +6,26 @@
 #include "xprintf.h"
 #include "ffs.h"
 
-static void del (uint16_t n)
+static void OVL_SEC (fileman) del (uint16_t n)
 {
     char str[64];
-    xsprintf(str, "Удалить файл %s?", ffs_name(n));
+    xsprintf(str, "Удалить файл %s?", (char *) OVL_CALL (OVL_NUM (fileman), ffs_name, n));
     if (ui_yes_no(str)==1)
     {
-        ffs_remove(n);
+        OVL_CALLV (OVL_NUM (fileman), ffs_remove, n);
     }
 }
 
-static void rename(uint16_t n)
+static void OVL_SEC (fileman) rename(uint16_t n)
 {
     const char *name;
     
 again:
-    name=ui_input_text("Введите новое имя файла:", ffs_name(n), 16);
+    name=ui_input_text("Введите новое имя файла:", (char *) OVL_CALL (OVL_NUM (fileman), ffs_name, n), 16);
     if ( (! name) || (! name[0]) ) return;
     
     // Ищем - вдруг такой файл уже есть
-    if (ffs_find(name) >= 0)
+    if (OVL_CALL (OVL_NUM (fileman), ffs_find, name) >= 0)
     {
         // Уже есть такой файл
         ui_draw_text(0, 8, "Файл с таким именем уже есть !");
@@ -34,7 +34,7 @@ again:
     }
     
     // Переименовываем
-    if (ffs_rename(n, name) < 0)
+    if (OVL_CALL (OVL_NUM (fileman), ffs_rename, n, name) < 0)
     {
         // Ошибка
         ui_draw_text(0, 8, "Ошибка переименования файла !");
@@ -42,7 +42,7 @@ again:
     }
 }
 
-static char CvtKoi8ForCmp (char Ch)
+static char OVL_SEC (fileman) CvtKoi8ForCmp (char Ch)
 {
     // E E E E E E E E E E E E E E E E F F F F F F F F F F F F F F F F
     // 0 1 2 3 4 5 6 7 8 9 A B C D E F 0 1 2 3 4 5 6 7 8 9 A B C D E F
@@ -66,7 +66,7 @@ static char CvtKoi8ForCmp (char Ch)
     return Ch;
 }
 
-static int_fast16_t CmpNames (const char *pName1, const char *pName2)
+static int_fast16_t OVL_SEC (fileman) CmpNames (const char *pName1, const char *pName2)
 {
     char Ch1;
     char Ch2;
@@ -84,20 +84,20 @@ static int_fast16_t CmpNames (const char *pName1, const char *pName2)
     return 0;
 }
 
-static int_fast16_t GetNextFile (uint_fast8_t Order, uint_fast8_t Type, int_fast16_t iCurFile)
+static int_fast16_t OVL_SEC (fileman) GetNextFile (uint_fast8_t Order, uint_fast8_t Type, int_fast16_t iCurFile)
 {
     int_fast16_t iFile;
     int_fast16_t iNextFile = -1;
     char         NextName [17];
     char         CurName  [17];
 
-    if (iCurFile >= 0) ets_memcpy (CurName, ffs_name ((uint16_t) iCurFile), 17);
+    if (iCurFile >= 0) ets_memcpy (CurName, (char *) OVL_CALL (OVL_NUM (fileman), ffs_name , (uint16_t) iCurFile), 17);
 
     for (iFile = 0; iFile < FAT_SIZE; iFile++)
     {
         if (fat[iFile].type == Type)
         {
-            const char *pName = ffs_name ((uint16_t) iFile);
+            const char *pName = (char *) OVL_CALL (OVL_NUM (fileman), ffs_name , (uint16_t) iFile);
 
             if ((iCurFile  < 0 || ((Order == 0 && CmpNames (pName, CurName ) > 0) || (Order != 0 && CmpNames (pName, CurName ) < 0))) &&
                 (iNextFile < 0 || ((Order == 0 && CmpNames (pName, NextName) < 0) || (Order != 0 && CmpNames (pName, NextName) > 0)))    )
@@ -111,7 +111,7 @@ static int_fast16_t GetNextFile (uint_fast8_t Order, uint_fast8_t Type, int_fast
     return iNextFile;
 }
 
-int_fast16_t fileman (uint8_t type, uint_fast8_t Mode)
+int_fast16_t OVL_SEC (fileman) fileman (uint8_t type, uint_fast8_t Mode)
 {
     #define MAX_FILES   16
 
@@ -209,7 +209,7 @@ reread_down:
             int  y = PY + Count;
         
             // Имя файла
-            ui_draw_text (PX + 3, y, ffs_name (filelist [Count]));
+            ui_draw_text (PX + 3, y, (char *) OVL_CALL (OVL_NUM (fileman), ffs_name, filelist [Count]));
             // Размер
             xsprintf (str, "%5d", fat [filelist [Count]].size);
             ui_draw_text (PX + 3 + 16 + 2, y, str);
@@ -229,7 +229,7 @@ reread_down:
         // Обрабатываем нажатия кнопок
         while (1)
         {
-            uint_fast16_t c = ui_GetKey ();
+            uint_fast16_t c = OVL_CALL0 (OVL_NUM (fileman), ui_GetKey);
 
             if (c == KEY_MENU_UP)
             {

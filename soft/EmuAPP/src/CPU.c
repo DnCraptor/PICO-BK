@@ -119,7 +119,7 @@ const uint8_t CPU_timing_TwoOps_BIS [64] =
 биты 8-15 не используются, "1".
 */
 
-void CPU_TimerRun (void)
+void OVL_SEC (CPU_TimerRun) CPU_TimerRun (void)
 {
     uint_fast16_t Cfg = Device_Data.SysRegs.Reg177712;
 
@@ -181,30 +181,30 @@ void CPU_TimerRun (void)
 
 struct
 {
-	uint16_t Adr;
+    uint16_t Adr;
 
-	union
-	{
-		uint32_t U32 [60 / 4];
-		uint16_t U16 [60 / 2];
-		uint8_t  U8  [60];
+    union
+    {
+        uint32_t U32 [60 / 4];
+        uint16_t U16 [60 / 2];
+        uint8_t  U8  [60];
 
-	} Buf;
+    } Buf;
 
 } CPU_RomCache;
 
-TCPU_Arg CPU_ReadRomW (TCPU_Arg Adr)
+TCPU_Arg OVL_SEC (CPU_RunInstruction) CPU_ReadRomW (TCPU_Arg Adr)
 {
-	uint_fast16_t Offset = Adr - (uint_fast16_t) CPU_RomCache.Adr;
+    uint_fast16_t Offset = Adr - (uint_fast16_t) CPU_RomCache.Adr;
 
-	if (Offset < 60)
-	{
-		return CPU_RomCache.Buf.U16 [Offset >> 1];
-	}
-	else
-	{
-		Offset = Adr & ~3U;
-		CPU_RomCache.Adr = Offset;
+    if (Offset < 60)
+    {
+        return CPU_RomCache.Buf.U16 [Offset >> 1];
+    }
+    else
+    {
+        Offset = Adr & ~3U;
+        CPU_RomCache.Adr = Offset;
 
         ESP8266_SPI0->ADDR = (Offset + (0x50000 - 0100000)) | (60 << 24);
         ESP8266_SPI0->CMD  = 1UL<<31;
@@ -226,21 +226,21 @@ TCPU_Arg CPU_ReadRomW (TCPU_Arg Adr)
         CPU_RomCache.Buf.U32 [14] = ESP8266_SPI0->FIFO [14];
 
         return CPU_RomCache.Buf.U16 [(Adr >> 1) & 1];
-	}
+    }
 }
 
-TCPU_Arg CPU_ReadRomB (TCPU_Arg Adr)
+TCPU_Arg OVL_SEC (CPU_RunInstruction) CPU_ReadRomB (TCPU_Arg Adr)
 {
-	uint_fast16_t U16 = CPU_ReadRomW (Adr);
+    uint_fast16_t U16 = CPU_ReadRomW (Adr);
 
-	if (Adr & 1) return U16 >> 8;
+    if (Adr & 1) return U16 >> 8;
 
-	return U16 & 0xFF;
+    return U16 & 0xFF;
 }
 
-TCPU_Arg CPU_ReadMemW (TCPU_Arg Adr)
+TCPU_Arg OVL_SEC (CPU_ReadMemW) CPU_ReadMemW (TCPU_Arg Adr)
 {
-	uint16_t *pReg;
+    uint16_t *pReg;
 
     if (Adr < 0100000) return MEM16 [Adr >> 1];
     if (Adr < 0177600) return CPU_ReadRomW (Adr);
@@ -255,7 +255,7 @@ TCPU_Arg CPU_ReadMemW (TCPU_Arg Adr)
         case (0177710 >> 1): CPU_TimerRun ();
                              pReg = &Device_Data.SysRegs.Reg177710;   break;
         case (0177712 >> 1): CPU_TimerRun ();
-        					 pReg = &Device_Data.SysRegs.Reg177712;   break;
+                             pReg = &Device_Data.SysRegs.Reg177712;   break;
         case (0177714 >> 1): pReg = &Device_Data.SysRegs.RdReg177714; break;
         case (0177716 >> 1): pReg = &Device_Data.SysRegs.RdReg177716; break;
 
@@ -265,9 +265,9 @@ TCPU_Arg CPU_ReadMemW (TCPU_Arg Adr)
     return *pReg;
 }
 
-TCPU_Arg CPU_ReadMemB (TCPU_Arg Adr)
+TCPU_Arg OVL_SEC (CPU_ReadMemB) CPU_ReadMemB (TCPU_Arg Adr)
 {
-	uint16_t *pReg;
+    uint16_t *pReg;
 
     if (Adr < 0100000) return MEM8 [Adr];
     if (Adr < 0177600) return CPU_ReadRomB (Adr);
@@ -280,7 +280,7 @@ TCPU_Arg CPU_ReadMemB (TCPU_Arg Adr)
         case (0177664 >> 1): pReg = &Device_Data.SysRegs.Reg177664;   break;
         case (0177706 >> 1): pReg = &Device_Data.SysRegs.Reg177706;   break;
         case (0177710 >> 1): CPU_TimerRun ();
-        					 pReg = &Device_Data.SysRegs.Reg177710;   break;
+                             pReg = &Device_Data.SysRegs.Reg177710;   break;
         case (0177712 >> 1): CPU_TimerRun ();
                              pReg = &Device_Data.SysRegs.Reg177712;   break;
         case (0177714 >> 1): pReg = &Device_Data.SysRegs.RdReg177714; break;
@@ -292,21 +292,21 @@ TCPU_Arg CPU_ReadMemB (TCPU_Arg Adr)
     return ((uint8_t *) pReg) [Adr & 1];
 }
 
-static TCPU_Arg CPU_ReadW (TCPU_Arg Adr)
+static TCPU_Arg OVL_SEC (CPU_RunInstruction) CPU_ReadW (TCPU_Arg Adr)
 {
     if (CPU_IS_ARG_REG (Adr)) return R [CPU_GET_ARG_REG_INDEX (Adr)];
 
     return CPU_ReadMemW (Adr);
 }
 
-static TCPU_Arg CPU_ReadB (TCPU_Arg Adr)
+static TCPU_Arg OVL_SEC (CPU_RunInstruction) CPU_ReadB (TCPU_Arg Adr)
 {
     if (CPU_IS_ARG_REG (Adr)) return (*(uint8_t *) &R [CPU_GET_ARG_REG_INDEX (Adr)]);
 
     return CPU_ReadMemB (Adr);
 }
 
-TCPU_Arg CPU_WriteW (TCPU_Arg Adr, uint_fast16_t Word)
+TCPU_Arg OVL_SEC (CPU_WriteW) CPU_WriteW (TCPU_Arg Adr, uint_fast16_t Word)
 {
     uint_fast16_t PrevWord;
 
@@ -399,7 +399,7 @@ TCPU_Arg CPU_WriteW (TCPU_Arg Adr, uint_fast16_t Word)
     return CPU_ARG_WRITE_OK;
 }
 
-TCPU_Arg CPU_WriteB (TCPU_Arg Adr, uint_fast8_t Byte)
+TCPU_Arg OVL_SEC (CPU_WriteB) CPU_WriteB (TCPU_Arg Adr, uint_fast8_t Byte)
 {
     uint_fast16_t Word;
     uint_fast16_t PrevWord;
@@ -500,7 +500,37 @@ TCPU_Arg CPU_WriteB (TCPU_Arg Adr, uint_fast8_t Byte)
 #define CPU_WriteMemW CPU_WriteW
 #define CPU_WriteMemB CPU_WriteB
 
-static TCPU_Arg CPU_GetArgAdrW (uint_fast8_t SrcCode)
+TCPU_Arg OVL_SEC (CPU_ReadMemBuf) CPU_ReadMemBuf (uint8_t *pBuf, uint_fast16_t Adr, uint_fast16_t Size)
+{
+    while (Size--)
+    {
+        TCPU_Arg Arg;
+
+        Arg = CPU_ReadMemB (Adr);
+
+        if (CPU_IS_ARG_FAULT (Arg)) return (CPU_ARG_READ_ERR | Adr);
+
+        *pBuf++ = (uint8_t) Arg;
+
+        Adr = (Adr + 1) & 0xFFFFU;
+    }
+
+    return Adr;
+}
+
+TCPU_Arg OVL_SEC (CPU_WriteMemBuf) CPU_WriteMemBuf (const uint8_t *pBuf, uint_fast16_t Adr, uint_fast16_t Size)
+{
+    while (Size--)
+    {
+        if (CPU_IS_ARG_FAULT (CPU_WriteMemB (Adr, *pBuf++))) return (CPU_ARG_WRITE_ERR | Adr);
+
+        Adr = (Adr + 1) & 0xFFFFU;
+    }
+
+    return Adr;
+}
+
+static TCPU_Arg OVL_SEC (CPU_RunInstruction) CPU_GetArgAdrW (uint_fast8_t SrcCode)
 {
     TCPU_Arg       Adr  = SrcCode & 07;
     uint16_t      *pReg = &R [Adr];
@@ -617,7 +647,7 @@ static TCPU_Arg CPU_GetArgAdrW (uint_fast8_t SrcCode)
     return 0;
 }
 
-static TCPU_Arg CPU_GetArgAdrB (uint_fast8_t SrcCode)
+static TCPU_Arg OVL_SEC (CPU_RunInstruction) CPU_GetArgAdrB (uint_fast8_t SrcCode)
 {
     TCPU_Arg    Adr = SrcCode & 07;
     uint16_t      *pReg = &R [Adr];
@@ -1126,7 +1156,7 @@ static TCPU_Arg CPU_GetArgAdrB (uint_fast8_t SrcCode)
     DEBUG_PRINT (("  (%o)=%o=>PC  (%o)=%o=>PSW", (int) (Vec), (int) PC, (int) (Vec) + 2, (int) ArgS)); \
 }
 
-void CPU_Stop (void)
+void OVL_SEC (CPU_Stop) CPU_Stop (void)
 {
     TCPU_Arg ArgS;
     TCPU_Psw Psw = PSW;
@@ -1142,7 +1172,7 @@ void CPU_Stop (void)
     return;
 }
 
-void CPU_RunInstruction (void)
+void OVL_SEC (CPU_RunInstruction) CPU_RunInstruction (void)
 {
     TCPU_Arg OpCode;
     TCPU_Arg AdrS;
@@ -1922,13 +1952,13 @@ void CPU_RunInstruction (void)
     return;
 }
 
-void CPU_Reset (void)
+void OVL_SEC (CPU_Init) CPU_Init (void)
 {
-/*
-    memset (&Device_Data, 0, sizeof (Device_Data));
-    
+    // Читаем ПЗУ БК
+    SPIRead (0x50000, &(MEM8 [0x8000]), sizeof (uint8_t) * 0x8000);
+
 //  time += RESET_TIME;
-*/
+
     ets_memset (&Device_Data, 0, sizeof (Device_Data));
 
 //  Device_Data.SysRegs.Reg177660   = 0;
@@ -1942,14 +1972,6 @@ void CPU_Reset (void)
 
     PSW = 0340;
     PC = Device_Data.SysRegs.RdReg177716 & 0177400;
-}
-
-void CPU_Init (void)
-{
-    // Читаем ПЗУ БК
-    SPIRead (0x50000, &(MEM8 [0x8000]), sizeof (uint8_t) * 0x8000);
-
-    CPU_Reset ();
 
     //============================================================================
     //STEP 1: SIGMA-DELTA CONFIG;REG SETUP
@@ -1970,7 +1992,7 @@ void CPU_Init (void)
     WRITE_PERI_REG (PERIPHS_GPIO_BASEADDR + (10 + BEEPER) * 4, READ_PERI_REG (PERIPHS_GPIO_BASEADDR + (10 + BEEPER) * 4) | 1);
 }
 
-char CPU_koi8_to_zkg (char C)
+char OVL_SEC (CPU_koi8_to_zkg) CPU_koi8_to_zkg (char C)
 {
     if (C < 0x20) return 0;
     if (C < 0x80) return C - 0x20;

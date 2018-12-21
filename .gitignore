@@ -7,6 +7,7 @@ soft/WiFiAPP/httpfs/mkfs.exe
 soft/WiFiAPP/httpfs/httpfs.bin
 soft/help/mkhelp.exe
 soft/mkfw/mkfw.exe
+soft/esptool2/esptool2.exe
 soft/mkfw/*.bin
 out/project.1.*
 _old
