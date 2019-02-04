@@ -2,10 +2,29 @@
 #define CPU_H_INCLUDE
 
 #include <stdint.h>
-#include "ovl.h"
 
 // #define DEBUG_PRINT( X) printf X
 #define DEBUG_PRINT( X)
+
+#define CPU_PAGE0_MEM_ADR 0x3FFEC000
+#define CPU_PAGE1_MEM_ADR 0x3FFF0000
+#define CPU_PAGE2_MEM_ADR 0x40104000
+#define CPU_PAGE3_MEM_ADR 0x40108000
+#define CPU_PAGE4_MEM_ADR 0x4010С000
+#define CPU_PAGE5_MEM_ADR 0x3FFFC000
+#define CPU_PAGE6_MEM_ADR 0x3FFF4000
+#define CPU_PAGE7_MEM_ADR 0x3FFF8000
+
+#define CPU_PAGE0_MEM8  ((uint8_t  *) CPU_PAGE0_MEM_ADR)
+#define CPU_PAGE0_MEM16 ((uint16_t *) CPU_PAGE0_MEM_ADR)
+#define CPU_PAGE0_MEM32 ((uint32_t *) CPU_PAGE0_MEM_ADR)
+#define CPU_PAGE5_MEM32 ((uint32_t *) CPU_PAGE5_MEM_ADR)
+#define CPU_PAGE6_MEM32 ((uint32_t *) CPU_PAGE6_MEM_ADR)
+
+#define R     Device_Data.CPU_State.r
+#define PSW   Device_Data.CPU_State.psw
+#define SP    Device_Data.CPU_State.r [6]
+#define PC    Device_Data.CPU_State.r [7]
 
 #define  CPU_ARG_REG        0x40000000UL
 #define  CPU_ARG_FAULT      0x80000000UL
@@ -17,6 +36,50 @@
 #define  CPU_IS_ARG_FAULT(        Arg) (Arg &  CPU_ARG_FAULT)
 #define  CPU_IS_ARG_REG(          Arg) (Arg &  CPU_ARG_REG)
 #define  CPU_IS_ARG_FAULT_OR_REG( Arg) (Arg & (CPU_ARG_FAULT | CPU_ARG_REG))
+#define  CPU_CHECK_ARG_FAULT(     Arg) {if (CPU_IS_ARG_FAULT (Arg)) goto BusFault;}
+
+#define  CPU_GET_ARG_REG_INDEX(   Arg) (Arg & 7)
+
+#define CPU_CALC_TIMING( T) {Device_Data.CPU_State.Time += T;}
+
+#define CPU_GET_PSW( Arg)                     \
+{                                             \
+    Arg = (TCPU_Arg) Psw;                     \
+    DEBUG_PRINT (("  PSW=%o", (int) (Arg)));  \
+}
+
+#define CPU_SET_PSW( Arg)                     \
+{                                             \
+    Psw = (TCPU_Psw) (Arg);                   \
+    DEBUG_PRINT (("  %o=>PSW", (int) (Arg))); \
+}
+
+#define CPU_INST_PUSH( Arg)                                          \
+{                                                                    \
+    TCPU_Arg sp = SP - 2; SP = sp;                                   \
+    CPU_CHECK_ARG_FAULT (CPU_WriteMemW (sp, (uint_fast16_t) (Arg))); \
+    DEBUG_PRINT (("  (-SP=%o)<=%o", (int) sp, (int) (Arg)));         \
+}
+
+#define CPU_INST_POP( Arg)                                         \
+{                                                                  \
+    TCPU_Arg sp = SP; SP = sp + 2;                                 \
+    Arg = CPU_ReadMemW (sp);                                       \
+    CPU_CHECK_ARG_FAULT (Arg);                                     \
+    DEBUG_PRINT (("  (SP+=%o)=%o", (int) sp, (int) (Arg)));        \
+}
+
+#define CPU_INST_INTERRUPT( Vec)                                                                       \
+{                                                                                                      \
+    CPU_GET_PSW   (ArgS);                                                                              \
+    CPU_INST_PUSH (ArgS);                                                                              \
+    CPU_INST_PUSH (PC);                                                                                \
+    PC   = CPU_PAGE0_MEM16 [ (Vec) >> 1     ];                                                         \
+    ArgS = CPU_PAGE0_MEM16 [((Vec) >> 1) + 1] & 0377;                                                  \
+    CPU_SET_PSW (ArgS);                                                                                \
+                                                                                                       \
+    DEBUG_PRINT (("  (%o)=%o=>PC  (%o)=%o=>PSW", (int) (Vec), (int) PC, (int) (Vec) + 2, (int) ArgS)); \
+}
 
 typedef uint_fast32_t TCPU_Arg;
 typedef uint_fast32_t TCPU_Psw;
@@ -36,6 +99,8 @@ typedef struct
 typedef struct
 {
     TCPU_State CPU_State;
+
+    uint32_t MemPages [4];
 
     struct
     {
@@ -64,63 +129,39 @@ typedef struct
 
 extern TDevice_Data Device_Data;
 
-#define CPU_Init_ovln OVL_NUM_INIT
-#define CPU_Init_ovls OVL_SEC_INIT
-void CPU_Init (void);
+// CPU timing в тактах
+#define CPU_TIMING_BASE        12
+#define CPU_TIMING_HALT        68
+#define CPU_TIMING_WAIT        12
+#define CPU_TIMING_RTI         40
+#define CPU_TIMING_RESET     1140
+#define CPU_TIMING_BR_BASE     16
+#define CPU_TIMING_RTS         32
+#define CPU_TIMING_MARK        56
+#define CPU_TIMING_EMT         64
+#define CPU_TIMING_IOT        104
+#define CPU_TIMING_SOB         20
+#define CPU_TIMING_INT         40
+#define CPU_TIMING_BUS_ERROR   64
+#define CPU_TIMING_STOP        64
 
-#define CPU_RunInstruction_ovln OVL_NUM_EMU
-#define CPU_RunInstruction_ovls OVL_SEC_EMU
-void CPU_RunInstruction (void);
+//однооперандные расчётные
+extern const uint8_t CPU_timing_OneOps_TST  [8];
+extern const uint8_t CPU_timing_OneOps_CLR  [8];
+extern const uint8_t CPU_timing_OneOps_MTPS [8];
+extern const uint8_t CPU_timing_OneOps_XOR  [8];
+extern const uint8_t CPU_timing_OneOps_JMP  [8];
+extern const uint8_t CPU_timing_OneOps_JSR  [8];
+//двухоперандные расчётные
+extern const uint8_t CPU_timing_TwoOps_MOV [64];
+extern const uint8_t CPU_timing_TwoOps_CMP [64];
+extern const uint8_t CPU_timing_TwoOps_BIS [64];
 
-#define CPU_Stop_ovln OVL_NUM_EMU
-#define CPU_Stop_ovls OVL_SEC_EMU
-void CPU_Stop (void);
+#define CPU_GET_PAGE_ADR_MEM16( Adr) ((uint16_t *) (Device_Data.MemPages [(Adr) >> 14] + ((Adr) & 0x3FFE)))
+#define CPU_GET_PAGE_ADR_MEM8(  Adr) ((uint8_t  *) (Device_Data.MemPages [(Adr) >> 14] + ((Adr) & 0x3FFF)))
 
-#define CPU_TimerRun_ovln OVL_NUM_EMU
-#define CPU_TimerRun_ovls OVL_SEC_EMU
-void CPU_TimerRun (void);
-
-#define CPU_koi8_to_zkg_ovln OVL_NUM_UI
-#define CPU_koi8_to_zkg_ovls OVL_SEC_UI
-char CPU_koi8_to_zkg (char);
-
-#define CPU_ReadMemW_ovln OVL_NUM_EMU
-#define CPU_ReadMemW_ovls OVL_SEC_EMU
-TCPU_Arg CPU_ReadMemW (TCPU_Arg Adr);
-
-#define CPU_ReadMemB_ovln OVL_NUM_EMU
-#define CPU_ReadMemB_ovls OVL_SEC_EMU
-TCPU_Arg CPU_ReadMemB (TCPU_Arg Adr);
-
-#define CPU_WriteW_ovln OVL_NUM_EMU
-#define CPU_WriteW_ovls OVL_SEC_EMU
-TCPU_Arg CPU_WriteW (TCPU_Arg Adr, uint_fast16_t Word);
-
-#define CPU_WriteB_ovln OVL_NUM_EMU
-#define CPU_WriteB_ovls OVL_SEC_EMU
-TCPU_Arg CPU_WriteB (TCPU_Arg Adr, uint_fast8_t  Byte);
-
-#define CPU_WriteMemW_ovln  CPU_WriteW_ovln
-#define CPU_WriteMemW_ovls  CPU_WriteW_ovls
-#define CPU_WriteMemW_ovlid CPU_WriteW_ovlid
-#define CPU_WriteMemW CPU_WriteW
-
-#define CPU_WriteMemB_ovln  CPU_WriteB_ovln
-#define CPU_WriteMemB_ovls  CPU_WriteB_ovls
-#define CPU_WriteMemB_ovlid CPU_WriteB_ovlid
-#define CPU_WriteMemB CPU_WriteB
-
-#define CPU_ReadMemBuf_ovln OVL_NUM_EMU
-#define CPU_ReadMemBuf_ovls OVL_SEC_EMU
-TCPU_Arg CPU_ReadMemBuf (uint8_t *pBuf, uint_fast16_t Adr, uint_fast16_t Size);
-#define CPU_WriteMemBuf_ovln OVL_NUM_EMU
-#define CPU_WriteMemBuf_ovls OVL_SEC_EMU
-TCPU_Arg CPU_WriteMemBuf (const uint8_t *pBuf, uint_fast16_t Adr, uint_fast16_t Size);
-
-#define MEM8  ((uint8_t  *) 0x3FFE8000)
-#define MEM16 ((uint16_t *) 0x3FFE8000)
-#define MEM32 ((uint32_t *) 0x3FFE8000)
-
-#define CPU_ZKG_OFFSET 0x94BE // (соответствует пробелу)
+//#define MEM8  ((uint8_t  *) 0x3FFE8000)
+//#define MEM16 ((uint16_t *) 0x3FFE8000)
+//#define MEM32 ((uint32_t *) 0x3FFE8000)
 
 #endif

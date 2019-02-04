@@ -1,86 +1,135 @@
 #include <stdarg.h>
-#include "ovl.h"
+#include "AnyMem.h"
 #include "ets.h"
+#include "spi_flash.h"
+#include "ovl.h"
 
-#include "ffs.h"
-#include "ui.h"
-#include "tape.h"
-#include "menu.h"
-#include "CPU.h"
-#include "main.h"
-#include "emu.h"
+extern char _ovl0_start, _ovl0_end;
+extern char _ovl1_start, _ovl1_end;
+extern char _ovl2_start, _ovl2_end;
+extern char _ovl3_start, _ovl3_end;
 
-extern char _ovl_start, _ovl_end;
-extern char __load_start_ovl0text, __load_stop_ovl0text, __load_size_ovl0text;
-extern char __load_start_ovl1text, __load_stop_ovl1text, __load_size_ovl1text;
-extern char __load_start_ovl2text, __load_stop_ovl2text, __load_size_ovl2text;
-extern char __load_start_ovl3text, __load_stop_ovl3text, __load_size_ovl3text;
-extern char __load_start_ovl4text, __load_stop_ovl4text, __load_size_ovl4text;
-extern char __load_start_ovl5text, __load_stop_ovl5text, __load_size_ovl5text;
-extern char __load_start_ovl6text, __load_stop_ovl6text, __load_size_ovl6text;
-extern char __load_start_ovl7text, __load_stop_ovl7text, __load_size_ovl7text;
-extern char __load_start_ovl8text, __load_stop_ovl8text, __load_size_ovl8text;
-extern char __load_start_ovl9text, __load_stop_ovl9text, __load_size_ovl9text;
+extern char __load_start_ovl0_eftext, __load_stop_ovl0_eftext, __load_size_ovl0_eftext;
+extern char __load_start_ovl0_utext,  __load_stop_ovl0_utext,  __load_size_ovl0_utext;
+extern char __load_start_ovl0_itext,  __load_stop_ovl0_itext,  __load_size_ovl0_itext;
 
-#define OVL_SECTION_SET( N) {(uint32_t) &__load_start_ovl##N##text - 0x40200000UL, (uint32_t) &__load_size_ovl##N##text}
-#define OVL_NUM_MAX 10
+extern char __load_start_ovl1_eutext, __load_stop_ovl1_eutext, __load_size_ovl1_eutext;
+extern char __load_start_ovl1_ftext,  __load_stop_ovl1_ftext,  __load_size_ovl1_ftext;
+extern char __load_start_ovl1_itext,  __load_stop_ovl1_itext,  __load_size_ovl1_itext;
 
-const Tovl_section ovl_sections [OVL_NUM_MAX] =
+extern char __load_start_ovl2_futext, __load_stop_ovl2_futext, __load_size_ovl2_futext;
+extern char __load_start_ovl2_etext,  __load_stop_ovl2_etext,  __load_size_ovl2_etext;
+extern char __load_start_ovl2_itext,  __load_stop_ovl2_itext,  __load_size_ovl2_itext;
+
+extern char __load_start_ovl3_etext,  __load_stop_ovl3_etext,  __load_size_ovl3_etext;
+extern char __load_start_ovl3_ftext,  __load_stop_ovl3_ftext,  __load_size_ovl3_ftext;
+extern char __load_start_ovl3_utext,  __load_stop_ovl3_utext,  __load_size_ovl3_utext;
+extern char __load_start_ovl3_itext,  __load_stop_ovl3_itext,  __load_size_ovl3_itext;
+
+enum
 {
-    OVL_SECTION_SET (0),
-    OVL_SECTION_SET (1),
-    OVL_SECTION_SET (2),
-    OVL_SECTION_SET (3),
-    OVL_SECTION_SET (4),
-    OVL_SECTION_SET (5),
-    OVL_SECTION_SET (6),
-    OVL_SECTION_SET (7),
-    OVL_SECTION_SET (8),
-    OVL_SECTION_SET (9)
+    ovl_sec_id_e = 1,
+    ovl_sec_id_f,
+    ovl_sec_id_u,
+    ovl_sec_id_i,
+    ovl_sec_id_ef,
+    ovl_sec_id_eu,
+    ovl_sec_id_fu
 };
+
+#define OVL_SECTION_SET( Ovl, Sec) {(uint32_t) &__load_size_##Ovl##_##Sec##text, (uint32_t) ovl_sec_id_##Sec, (uint32_t) &__load_start_##Ovl##_##Sec##text - 0x40200000UL, (uint32_t) &_##Ovl##_start}
+
+AT_IROM const struct
+{
+    uint32_t Size;
+    uint8_t  Id;
+    uint32_t SrcAddr;
+    uint32_t DstAddr;
+
+} ovl_mode_sections [] =
+{
+    OVL_SECTION_SET (ovl0, ef),
+    OVL_SECTION_SET (ovl1, eu),
+    OVL_SECTION_SET (ovl2, e),
+    OVL_SECTION_SET (ovl3, e),
+
+    OVL_SECTION_SET (ovl0, ef),
+    OVL_SECTION_SET (ovl1, f),
+    OVL_SECTION_SET (ovl2, fu),
+    OVL_SECTION_SET (ovl3, f),
+
+    OVL_SECTION_SET (ovl0, u),
+    OVL_SECTION_SET (ovl1, eu),
+    OVL_SECTION_SET (ovl2, fu),
+    OVL_SECTION_SET (ovl3, u),
+
+    OVL_SECTION_SET (ovl0, i),
+    OVL_SECTION_SET (ovl1, i),
+    OVL_SECTION_SET (ovl2, i),
+    OVL_SECTION_SET (ovl3, i)
+};
+
+static uint8_t ovl_CurMode;
+static uint8_t ovl_CurSecId [4];
+
+void ovl_SwitchToMode (uint_fast8_t Mode)
+{
+    uint_fast8_t Count;
+
+    ovl_CurMode = (uint8_t) Mode;
+
+    Mode &= 3;
+    Mode *= 4;
+
+    for (Count = 0; Count < 4; Count++)
+    {
+        uint32_t     Size;
+        uint_fast8_t Id;
+
+        Size = AnyMem_r_u32 (&ovl_mode_sections [Mode + Count].Size);
+        Id   = AnyMem_r_u8  (&ovl_mode_sections [Mode + Count].Id);
+
+        if (Size && (ovl_CurSecId [Count] != Id))
+        {
+            ovl_CurSecId [Count] = (uint8_t) Id;
+            spi_flash_Read (AnyMem_r_u32 (&ovl_mode_sections [Mode + Count].SrcAddr), (uint32_t *) AnyMem_r_u32 (&ovl_mode_sections [Mode + Count].DstAddr), Size);
+        }
+    }
+}
 
 typedef int (*Tovl_pFunc) (int V1, int V2, int V3, int V4, int V5);
 
-#define OVL_FUNC_DESC( FuncName) (Tovl_pFunc) FuncName,
-const Tovl_pFunc ovl_FuncTab [OVL_FUNC_TAB_SIZE] =
+#include "Overlays\Ffs\ffs_f.h"
+#include "Overlays\Ffs\tape_f.h"
+#include "Overlays\Ui\fileman_u.h"
+#include "Overlays\Ui\menu_u.h"
+
+#define OVL_FUNC_DESC( FuncName, Mode) {Mode, (Tovl_pFunc) FuncName},
+AT_IROM const struct
+{
+    uint32_t    Mode;
+    Tovl_pFunc  pFunc;
+
+} ovl_FuncTab [OVL_FUNC_TAB_SIZE] =
 {
     #include "ovl_FuncDesc.h"
 };
 #undef OVL_FUNC_DESC
 
-#define OVL_FUNC_DESC( FuncName) FuncName##_ovln,
-const uint8_t ovl_FuncSecTab [OVL_FUNC_TAB_SIZE] =
+int ovl_Call (int FuncN, ...)
 {
-    #include "ovl_FuncDesc.h"
-};
-#undef OVL_FUNC_DESC
-
-uint8_t ovl_iCurN = 0xFF;
-
-void ovl_LoadSec (int OvlN)
-{
-    SPIRead (ovl_sections [OvlN].Addr, &_ovl_start, ovl_sections [OvlN].Size);
-    ovl_iCurN = OvlN;
-    asm volatile ("isync" : : : "memory");
-}
-
-int ovl_call (int FuncN, ...)
-{
-    uint_fast8_t iPrevN = ovl_iCurN;
+    uint_fast8_t PrevMode = ovl_CurMode;
     va_list      args;
     int          Ret;
+    Tovl_pFunc   pFunc = (Tovl_pFunc) AnyMem_r_u32 ((uint32_t *) &ovl_FuncTab [FuncN].pFunc);
 
-    {
-        int iNewN  = ovl_FuncSecTab [FuncN];
-        if (iPrevN != iNewN) ovl_LoadSec (iNewN);
-        else                 iPrevN = 0xFF;
-    }
+    ovl_SwitchToMode ((uint_fast8_t) AnyMem_r_u32 (&ovl_FuncTab [FuncN].Mode));
 
     va_start (args, FuncN);
 
-    Ret = ovl_FuncTab [FuncN] (va_arg (args, int), va_arg (args, int), va_arg (args, int), va_arg (args, int), va_arg (args, int));
+    Ret = pFunc (va_arg (args, int), va_arg (args, int), va_arg (args, int), va_arg (args, int), va_arg (args, int));
 
-    if (iPrevN < OVL_NUM_MAX) ovl_LoadSec (iPrevN);
+    ovl_SwitchToMode (PrevMode);
 
     return Ret;
 }

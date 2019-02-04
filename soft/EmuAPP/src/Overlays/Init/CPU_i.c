@@ -1,0 +1,49 @@
+#include <string.h>
+#include "board.h"
+#include "gpio_lib.h"
+#include "ets.h"
+
+#include "CPU.h"
+#include "CPU_i.h"
+
+#define AT_OVL __attribute__((section(".ovl3_i.text")))
+
+void AT_OVL CPU_Init (void)
+{
+    memset (&Device_Data, 0, sizeof (Device_Data));
+
+    Device_Data.MemPages [0] = CPU_PAGE0_MEM_ADR;
+    Device_Data.MemPages [1] = CPU_PAGE1_MEM_ADR;
+    Device_Data.MemPages [2] = 0x40200000UL + 0x50000UL;
+    Device_Data.MemPages [3] = 0x40200000UL + 0x54000UL;
+
+//  Device_Data.SysRegs.Reg177660   = 0;
+//  Device_Data.SysRegs.Reg177662   = 0;
+    Device_Data.SysRegs.Reg177664   = 01330;
+//  Device_Data.SysRegs.Reg177706   = 0;
+//  Device_Data.SysRegs.Reg177710   = 0177777;
+//  Device_Data.SysRegs.Reg177712   = 0177400;
+//  Device_Data.SysRegs.RdReg177714 = 0;
+    Device_Data.SysRegs.RdReg177716 = (0100000 & 0177400) | 0300;
+
+    Device_Data.CPU_State.psw   = 0340;
+    Device_Data.CPU_State.r [7] = Device_Data.SysRegs.RdReg177716 & 0177400;
+
+    //============================================================================
+    //STEP 1: SIGMA-DELTA CONFIG;REG SETUP
+
+    WRITE_PERI_REG (GPIO_SIGMA_DELTA_ADDRESS,   SIGMA_DELTA_ENABLE
+                                              | (0x80 << SIGMA_DELTA_TARGET_S)
+                                              | (1 << SIGMA_DELTA_PRESCALAR_S));
+
+    //============================================================================
+    //STEP 2: PIN FUNC CONFIG :SET PIN TO GPIO MODE AND ENABLE OUTPUT
+
+    // Инитим порт пищалки
+    gpio_init_output(BEEPER);
+//  gpio_on         (BEEPER);
+
+    //============================================================================
+    //STEP 3: CONNECT SIGNAL TO GPIO PAD
+    WRITE_PERI_REG (PERIPHS_GPIO_BASEADDR + (10 + BEEPER) * 4, READ_PERI_REG (PERIPHS_GPIO_BASEADDR + (10 + BEEPER) * 4) | 1);
+}

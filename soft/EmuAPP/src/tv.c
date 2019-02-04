@@ -1,14 +1,8 @@
 #include "tv.h"
-
 #include "timer0.h"
 #include "gpio_lib.h"
 #include "i2s.h"
 #include "board.h"
-#include "CPU.h"
-#include "ui.h"
-
-#define N_BUFS      8   // должно быть больше 4
-#define T_DELAY_N   6
 
 #define SYNC_PROGRAM_2_30   0UL
 #define SYNC_PROGRAM_4_28   2UL
@@ -126,27 +120,9 @@
 
 */
 
-static struct
-{
-    uint8_t  iTdelay;
-    uint8_t  iBuf;
-    uint8_t  SyncFieldLine;
-    uint8_t  BkLine;
-    uint8_t  MenuY;
-    uint8_t  ShowMenu;
-    uint16_t MinLine;
-    uint16_t Line;
-    int32_t  SyncProgram;
+TTV_Data TV_Data;
 
-    volatile uint8_t  TimerState;
-    volatile uint32_t TimerToff;
-
-    uint32_t Tdelay [T_DELAY_N]; // линия задержки синхронизации (т.к. I2S имеет задержку при выводе)
-    uint32_t Buf    [N_BUFS] [23];
-
-} TV_Data;
-
-static void t0_int(void)
+void timer0_isr_handler (void)
 {
     if (TV_Data.TimerState)
     {
@@ -167,7 +143,7 @@ static void t0_int(void)
 
 }
 
-static const uint32_t* tv_i2s_cb(void)
+const uint32_t* tv_i2s_cb(void)
 {
     uint32_t   *pBuf;
     uint32_t   *T;
@@ -193,13 +169,14 @@ static const uint32_t* tv_i2s_cb(void)
 
     // Берем следующий буфер
 
-    pBuf = TV_Data.Buf [(TV_Data.iBuf++) & (N_BUFS - 1)];
+    pBuf = TV_Data.Buf [(TV_Data.iBuf++) & (TV_N_BUFS - 1)];
 
     {
         uint_fast16_t Line = TV_Data.Line;
 
-        if (Line)
+        if (Line < 304)
         {
+            Ttv_SetOutFunc pOutFunc = TV_Data.pOutFunc;
             // Идет графика
 
             pBuf [ 0] = 0xFFFFFFFFUL;
@@ -209,11 +186,11 @@ static const uint32_t* tv_i2s_cb(void)
             pBuf [ 4] = 0x00000000UL;
             pBuf [21] = 0x00000000UL;
 
-            TV_Data.Line = (uint16_t) (Line - 1);
+            TV_Data.Line = (uint16_t) (Line + 1);
 
             (*T) = 8 * 160; // 2+4+2 мкс - строчная синхра
 
-            if ((Line < TV_Data.MinLine) || (Line >= 275))
+            if ((pOutFunc == NULL) || (pOutFunc (pBuf, Line) == 0))
             {
                 uint_fast8_t Count;
 
@@ -221,72 +198,6 @@ static const uint32_t* tv_i2s_cb(void)
 
                 for (Count = 5; Count <= 20; Count++) pBuf [Count] = 0;
 
-            }
-            else
-            {
-                // Рисуем строку
-                uint32_t     *pTempBuf = &pBuf [5];
-                uint_fast8_t BkLine    = TV_Data.BkLine;
-                uint_fast8_t Count;
-
-				if (TV_Data.ShowMenu)
-            	{
-            		uint_fast8_t y       =  TV_Data.MenuY;
-	                char         *pText  =  UI_Data.scr [y];
-	                uint8_t      *pZkg   = &MEM8 [CPU_ZKG_OFFSET + BkLine];
-	                int_fast8_t  CursorX = -1;
-
-	                if (y == UI_Data.CursorY) CursorX = UI_Data.CursorX;
-
-            		if (++BkLine >= 10)
-            		{
-            			BkLine        = 0;
-            			TV_Data.MenuY = (uint8_t) (y + 1);
-            		}
-
-	                TV_Data.BkLine = (uint8_t) BkLine;
-
-            		for (Count = 0; Count < 16; Count++)
-            		{
-            			uint_fast32_t U32;
-
-            			U32  = pZkg [(*pText++) * 10] << 16;
-            			U32 |= pZkg [(*pText++) * 10];
-
-            			if ((CursorX >> 1) == Count)
-            			{
-	            			if (CursorX & 1) U32 ^= 0x000000FFUL;
-	            			else             U32 ^= 0x00FF0000UL;
-            			}
-
-            			U32 = (U32 & 0x000F000FUL) << 8 | ((U32 >> 4) & 0x000F000FUL);
-            			U32 = (U32 & 0x03030303UL) << 4 | ((U32 >> 2) & 0x03030303UL);
-            			U32 = (U32 & 0x11111111UL) << 2 | ((U32 >> 1) & 0x11111111UL);
-						U32 |= U32 << 1;
-
-                        *pTempBuf++ = (uint32_t) U32;
-            		}
-            	}
-            	else
-            	{
-	                uint32_t *pVRam = &MEM32 [0x1000 + BkLine * 16];
-
-	                TV_Data.BkLine = (uint8_t) (BkLine + 1);
-
-                    for (Count = 0; Count < 16; Count++)
-                    {
-                        uint_fast32_t U32;
-
-                        U32 = *pVRam++;
-
-                        U32 = (U32 & 0x55555555UL) << 1 | ((U32 >> 1) & 0x55555555UL);
-                        U32 = (U32 & 0x33333333UL) << 2 | ((U32 >> 2) & 0x33333333UL);
-                        U32 = (U32 & 0x0F0F0F0FUL) << 4 | ((U32 >> 4) & 0x0F0F0F0FUL);
-                        U32 = (U32 << 24) | ((U32 & 0xFF00U) << 8) | ((U32 >> 8) & 0xFF00U) | (U32 >> 24);
-
-                        *pTempBuf++ = (uint32_t) U32;
-                    }
-            	}
             }
 
             return pBuf;
@@ -333,26 +244,7 @@ static const uint32_t* tv_i2s_cb(void)
 
         (*T)=8*160; // 2+4+2 мкс - строчная синхра
 
-        TV_Data.Line = 304;
-
-        if (UI_Data.Show)
-        {
-        	TV_Data.ShowMenu = 1;
-        	TV_Data.MinLine  = 25;
-            TV_Data.BkLine   = 0;
-            TV_Data.MenuY    = 0;
-        }
-        else
-        {
-            uint_fast16_t Reg = Device_Data.SysRegs.Reg177664;
-
-            TV_Data.BkLine  =  Reg - 0330;
-
-            if (Reg & 01000) TV_Data.MinLine = 19;
-            else             TV_Data.MinLine = 19 + 192;
-
-        	TV_Data.ShowMenu = 0;
-        }
+        TV_Data.Line = 0;
 
         // Меняем поле
 
@@ -388,33 +280,4 @@ static const uint32_t* tv_i2s_cb(void)
     }
 
     return pBuf;
-}
-
-
-void OVL_SEC (tv_init) tv_init (void)
-{
-    // Инициализируем неизменяемую часть буферов
-    {
-        uint_fast8_t Count;
-
-        for (Count = 0; Count < N_BUFS; Count++) TV_Data.Buf [Count] [22] = 0;
-    }
-
-    // Инитим порт SYNC
-
-    gpio_init_output (TV_SYNC);
-}
-
-
-void OVL_SEC (tv_start) tv_start(void)
-{
-    // Настраиваем прерывание по таймеру
-
-    timer0_isr_init();
-    timer0_attachInterrupt(t0_int);
-    
-    // Запускаем I2S
-
-    i2s_init(tv_i2s_cb, 92);
-    i2s_start();
 }

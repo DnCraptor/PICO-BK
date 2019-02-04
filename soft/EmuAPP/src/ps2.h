@@ -1,34 +1,44 @@
 #ifndef PS2_DRV_H
 #define PS2_DRV_H
 
+#include <stdint.h>
 
-#include "ovl.h"
-#include "ets.h"
-#include "ps2_codes.h"
+#define PS2_RX_BUF_SIZE    16
 
+typedef struct
+{
+    uint32_t  IntPrevT;
+    uint32_t  PrevT;
+    uint16_t  RxBuf [PS2_RX_BUF_SIZE];
+    uint16_t  PrevCode;
 
-#ifdef __cplusplus
-extern "C" {
-#endif
+    uint16_t  TxData;
+    uint16_t  RxData;
+    uint16_t  IntState;
 
-#define ps2_init_ovln       OVL_NUM_INIT
-#define ps2_init_ovls       OVL_SEC_INIT
-#define ps2_periodic_ovln 	OVL_NUM_EMU
-#define ps2_periodic_ovls 	OVL_SEC_EMU
-#define ps2_read_ovln 		OVL_NUM_EMU
-#define ps2_read_ovls 		OVL_SEC_EMU
-#define ps2_leds_ovln 		OVL_NUM_EMU
-#define ps2_leds_ovls 		OVL_SEC_EMU
+    uint8_t   iRxBufRd;
+    uint8_t   iRxBufWr;
 
-void ps2_init(void);
-void ps2_periodic(void);
+    uint8_t   State;
+    uint8_t   TxByte;
+    uint8_t   LedsNew;
+    uint8_t   LedsLast;
 
-uint16_t ps2_read(void);
-void ps2_leds(bool caps, bool num, bool scroll);
+} Tps2_Data;
 
-#ifdef __cplusplus
-};
-#endif
+extern Tps2_Data ps2_Data;
 
+#define PS2_INT_STATE_FLAG_E0      0x0001
+#define PS2_INT_STATE_FLAG_E1      0x0002
+#define PS2_INT_STATE_FLAG_TX      0x0004
+#define PS2_INT_STATE_FLAG_BAT     0x0008
+#define PS2_INT_STATE_FLAG_ACK     0x0010
+#define PS2_INT_STATE_FLAG_TXACK   0x0020
+#define PS2_INT_STATE_FLAG_RESEND  0x0040
+#define PS2_INT_STATE_FLAG_F0      0x0080
+#define PS2_INT_STATE_BITN_POS     9
+#define PS2_INT_STATE_BITN_MASK    0xFE00
+
+void gpio_int (void);
 
 #endif

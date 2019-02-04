@@ -1,3 +1,8 @@
+#ifndef ESP8266_H
+#define ESP8266_H
+
+#include <stdint.h>
+
 typedef struct
 {
     volatile uint32_t CMD;
@@ -28,3 +33,5 @@ typedef struct
 } TESP8266_SPI;
 
 #define ESP8266_SPI0 ((TESP8266_SPI *) 0x60000200UL)
+
+#endif
