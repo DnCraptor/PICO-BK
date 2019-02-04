@@ -28,8 +28,10 @@ typedef struct FILE
 
 } FILE;
 
-#define FFS_AT      0x80000
-#define FAT_SIZE    (4096/sizeof(FILE))
+#define FFS_AT              0x80000
+#define FAT_SIZE            (4096 / sizeof (FILE))
+#define FFS_DATA_FIRST_PAGE ((sizeof (FILE) * FAT_SIZE + 0xFFFUL) / 0x1000UL)
+#define FFS_DATA_FIRST_ADR  (FFS_DATA_FIRST_PAGE * 0x1000UL)
 
 extern uint8_t  free_sect [128];  // максимум 4мб
 extern uint32_t f_size;

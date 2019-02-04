@@ -17,45 +17,7 @@
 
 //FILE fat[FAT_SIZE];
 
-uint32_t ffs_PageBuf [0x1000 / 4];
-
-#define DATA_FIRST_PAGE ((sizeof (FILE) * FAT_SIZE + 0xFFFUL) / 0x1000UL)
-#define DATA_FIRST_ADR  (DATA_FIRST_PAGE * 0x1000UL)
-
-static void AT_OVL f_init (void)
-{
-    struct rom_header
-    {
-        uint8_t magic;
-        uint8_t count;
-        uint8_t flags1;
-        uint8_t flags2;
-    } hdr;
-    
-    // Читаем заголовок
-    spi_flash_Read (0, (uint32_t *) &hdr, sizeof (hdr));
-
-    // Определяем размер флэша
-    switch (hdr.flags2 >> 4)
-    {
-    case 3:
-        // 16 Мбит
-        f_size=2048*1024 - FFS_AT;
-        break;
-    
-    case 4:
-        // 32 Мбит
-        f_size=4096*1024 - FFS_AT;
-        break;
-    
-    case 2:
-    default:
-        // 8 Мбит
-        f_size=1024*1024 - FFS_AT;
-        break;
-    }
-}
-
+//uint32_t ffs_PageBuf [0x1000 / 4];
 
 static void AT_OVL f_read (uint32_t pos, uint8_t *data, int size)
 {
@@ -105,82 +67,20 @@ void AT_OVL ffs_cvt_name(const char *name, char *tmp)
     while (i<16) tmp[i++]=0;
 }
 
-
-void AT_OVL ffs_init(void)
-{
-    uint_fast16_t n;
-    uint_fast16_t n_free    = 0;
-    uint_fast16_t n_removed = 0;
-    
-    // Инитим флэш
-    f_init();
-    f_size-=DATA_FIRST_ADR; // убираем из размера размер FAT
-    f_size/=4096;       // сразу в секторы 4к
-    f_size&=~0x07;      // чтобы размер был кратным 8
-    
-    memset (free_sect, 0xff, f_size / 8);
-    
-    // Проверяем таблицу FAT
-    for (n=0; n<FAT_SIZE; n++)
-    {
-        ffs_GetFile (n);
-
-        AnyMem_memcpy (&((FILE *) &ffs_PageBuf [0]) [n], &ffs_File, sizeof (FILE));
-
-        if      (ffs_File.type == TYPE_FREE)    n_free++;
-        else if (ffs_File.type == TYPE_REMOVED) n_removed++;
-        else
-        {
-            uint16_t page = ffs_File.page;
-            int      size = ffs_File.size;
-
-            // Создаем таблицу свободных секторов
-
-            while (size > 0)
-            {
-                free_sect [page >> 3] &= ~(1 << (page & 0x07));
-                page++;
-                size -= 4096;
-            }
-        }
-    }
-
-    // Если таблица слишком грязная - чистим ее и записываем на место
-    if ((n_free < 32) && (n_removed > 0))
-    {
-        // Чистим таблицу
-        for (n = 0; n < FAT_SIZE; n++)
-        {
-            if (AnyMem_r_u8 (&((FILE *) &ffs_PageBuf [0]) [n].type) == TYPE_REMOVED)
-            {
-                AnyMem_memset (&((FILE *) &ffs_PageBuf [0]) [n], 0xff, sizeof (FILE));
-            }
-        }
-        
-        // Записываем
-        f_erase (0);
-        f_write (0, (uint8_t*) &ffs_PageBuf [0], sizeof (FILE) * FAT_SIZE);
-    }
-}
-
-
 uint32_t AT_OVL ffs_image_at(void)
 {
     return FFS_AT;
 }
 
-
 uint32_t AT_OVL ffs_image_size(void)
 {
-    return f_size*4096 + DATA_FIRST_ADR;
+    return f_size*4096 + FFS_DATA_FIRST_ADR;
 }
-
 
 uint32_t AT_OVL ffs_size(void)
 {
     return f_size*4096;
 }
-
 
 uint32_t AT_OVL ffs_free(void)
 {
@@ -198,13 +98,11 @@ uint32_t AT_OVL ffs_free(void)
     return size * 4096;
 }
 
-
 void AT_OVL ffs_read (uint16_t n, uint16_t offs, uint8_t *data, uint16_t size)
 {
     ffs_GetFile (n);
-    f_read (DATA_FIRST_ADR + ffs_File.page*4096 + offs, data, size);
+    f_read (FFS_DATA_FIRST_ADR + ffs_File.page*4096 + offs, data, size);
 }
-
 
 int16_t AT_OVL ffs_create (const char *fname, uint8_t type, uint16_t size)
 {
@@ -260,7 +158,6 @@ int16_t AT_OVL ffs_create (const char *fname, uint8_t type, uint16_t size)
     return n;
 }
 
-
 void AT_OVL ffs_writeData (uint16_t n, uint16_t offs, const uint8_t *data, uint16_t size)
 {
     // Записываем с предварительным стиранием
@@ -272,7 +169,7 @@ void AT_OVL ffs_writeData (uint16_t n, uint16_t offs, const uint8_t *data, uint1
 
         // Получаем адрес
         ffs_GetFile (n);
-        addr = DATA_FIRST_ADR + ffs_File.page * 4096 + offs;
+        addr = FFS_DATA_FIRST_ADR + ffs_File.page * 4096 + offs;
         
         // Стираем страницу, если надо
         if ((addr & 4095) == 0) f_erase (addr);
@@ -289,7 +186,6 @@ void AT_OVL ffs_writeData (uint16_t n, uint16_t offs, const uint8_t *data, uint1
     }
 }
 
-
 uint_fast8_t AT_OVL ffs_write(const char *fname, uint8_t type, const uint8_t *data, uint16_t size)
 {
     // Создаем файл
@@ -301,7 +197,6 @@ uint_fast8_t AT_OVL ffs_write(const char *fname, uint8_t type, const uint8_t *da
     
     return 1;
 }
-
 
 int16_t AT_OVL ffs_find (const char *fname)
 {
@@ -329,14 +224,12 @@ int16_t AT_OVL ffs_find (const char *fname)
     return -1;
 }
 
-
 uint32_t AT_OVL ffs_flash_addr(uint16_t n)
 {
     ffs_GetFile (n);
 
-    return FFS_AT + DATA_FIRST_ADR + ffs_File.page * 4096;
+    return FFS_AT + FFS_DATA_FIRST_ADR + ffs_File.page * 4096;
 }
-
 
 void AT_OVL ffs_remove(uint16_t n)
 {
@@ -357,7 +250,6 @@ void AT_OVL ffs_remove(uint16_t n)
         s++;
     }
 }
-
 
 int16_t AT_OVL ffs_rename (uint16_t old_n, const char *fname)
 {

@@ -3,8 +3,6 @@
 
 #include <stdint.h>
 
-void            ffs_init       (void);
-
 uint32_t        ffs_image_at   (void);
 uint32_t        ffs_image_size (void);
 

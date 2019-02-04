@@ -15,7 +15,7 @@ char     ffs_TempFileName [16+1];
 
 void AT_OVL ffs_GetFile (uint_fast16_t iFile)
 {
-    uint8_t Count;
+    uint_fast8_t Count;
 
     if (ffs_iFile == iFile) return;
 

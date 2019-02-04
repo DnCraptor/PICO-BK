@@ -1,12 +1,14 @@
 #include <stdint.h>
 
+#include "pin_mux_register.h"
+
 #include "CPU_i.h"
 #include "i2s_i.h"
 #include "main_i.h"
 #include "spi_flash_i.h"
 #include "tv_i.h"
 #include "ps2_i.h"
-#include "pin_mux_register.h"
+#include "ffs_i.h"
 
 #define AT_OVL __attribute__((section(".ovl3_i.text")))
 
@@ -43,7 +45,7 @@ void AT_OVL main_init (void)
     spi_flash_Init ();
 
     // Инитим файловую систему
-//  OVL_CALL0 (ffs_init);
+    ffs_init ();
 
     // Инитим экран
     tv_init  ();

@@ -29,6 +29,8 @@ C_SOURCES += \
 	src/Overlays/FfsUi/ffs_fu.c		\
 	src/Overlays/FfsUi/str_fu.c		\
 	src/Overlays/Init/CPU_i.c		\
+	src/Overlays/Init/crc8_i.c		\
+	src/Overlays/Init/ffs_i.c		\
 	src/Overlays/Init/i2s_i.c		\
 	src/Overlays/Init/main_i.c		\
 	src/Overlays/Init/ps2_i.c		\

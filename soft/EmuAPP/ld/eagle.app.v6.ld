@@ -164,9 +164,9 @@ SECTIONS
 
     OVERLAY : NOCROSSREFS
     {
-        .ovl0_ef.text {*(.ovl0_ef.literal .ovl0_ef.text .ovl0_ef.rodata)}
-        .ovl0_u.text  {*(.ovl0_u.literal  .ovl0_u.text  .ovl0_u.rodata )}
-        .ovl0_i.text  {*(.ovl0_i.literal  .ovl0_i.text  .ovl0_i.rodata )}
+        .ovl0_ef.text {*(.ovl0_ef.literal .ovl0_ef.text .ovl0_ef.rodata .ovl0_ef.data)}
+        .ovl0_u.text  {*(.ovl0_u.literal  .ovl0_u.text  .ovl0_u.rodata  .ovl0_u.data )}
+        .ovl0_i.text  {*(.ovl0_i.literal  .ovl0_i.text  .ovl0_i.rodata  .ovl0_i.data )}
 
     } >iram_seg AT>irom_seg :irom_phdr
 
@@ -184,9 +184,9 @@ SECTIONS
 
     OVERLAY : NOCROSSREFS
     {
-        .ovl1_eu.text {*(.ovl1_eu.literal .ovl1_eu.text .ovl1_eu.rodata)}
-        .ovl1_f.text  {*(.ovl1_f.literal  .ovl1_f.text  .ovl1_f.rodata )}
-        .ovl1_i.text  {*(.ovl1_i.literal  .ovl1_i.text  .ovl1_i.rodata )}
+        .ovl1_eu.text {*(.ovl1_eu.literal .ovl1_eu.text .ovl1_eu.rodata .ovl1_eu.data)}
+        .ovl1_f.text  {*(.ovl1_f.literal  .ovl1_f.text  .ovl1_f.rodata  .ovl1_f.data )}
+        .ovl1_i.text  {*(.ovl1_i.literal  .ovl1_i.text  .ovl1_i.rodata  .ovl1_i.data )}
 
     } >iram_seg AT>irom_seg :irom_phdr
 
@@ -205,9 +205,9 @@ SECTIONS
 
     OVERLAY : NOCROSSREFS
     {
-        .ovl2_fu.text {*(.ovl2_fu.literal .ovl2_fu.text .ovl2_fu.rodata)}
-        .ovl2_e.text  {*(.ovl2_e.literal  .ovl2_e.text  .ovl2_e.rodata )}
-        .ovl2_i.text  {*(.ovl2_i.literal  .ovl2_i.text  .ovl2_i.rodata )}
+        .ovl2_fu.text {*(.ovl2_fu.literal .ovl2_fu.text .ovl2_fu.rodata .ovl2_fu.data)}
+        .ovl2_e.text  {*(.ovl2_e.literal  .ovl2_e.text  .ovl2_e.rodata  .ovl2_e.data )}
+        .ovl2_i.text  {*(.ovl2_i.literal  .ovl2_i.text  .ovl2_i.rodata  .ovl2_i.data )}
 
     } >iram_seg AT>irom_seg :irom_phdr
 
@@ -225,18 +225,21 @@ SECTIONS
 
     OVERLAY : NOCROSSREFS
     {
-        .ovl3_e.text  {*(.ovl3_e.literal  .ovl3_e.text  .ovl3_e.rodata)}
-        .ovl3_f.text  {*(.ovl3_f.literal  .ovl3_f.text  .ovl3_f.rodata)}
-        .ovl3_u.text  {*(.ovl3_u.literal  .ovl3_u.text  .ovl3_u.rodata)}
-        .ovl3_i.text  {*(.ovl3_i.literal  .ovl3_i.text  .ovl3_i.rodata)}
+        .ovl3_e.text  {*(.ovl3_e.literal  .ovl3_e.text  .ovl3_e.rodata  .ovl3_e.data)}
+        .ovl3_f.text  {*(.ovl3_f.literal  .ovl3_f.text  .ovl3_f.rodata  .ovl3_f.data)}
+        .ovl3_u.text  {*(.ovl3_u.literal  .ovl3_u.text  .ovl3_u.rodata  .ovl3_u.data)}
+        .ovl3_i.text  {*(.ovl3_i.literal  .ovl3_i.text  .ovl3_i.rodata  .ovl3_i.data)}
 
     } >iram_seg AT>irom_seg :irom_phdr
 
-    .ovl3_end :
-    {
-        _ovl3_start = ADDR(.ovl3_e.text);
-        _ovl3_end   = ABSOLUTE(.);
-    }
+    .ovl3_e.bss ALIGN (ADDR (.ovl3_e.text) + SIZEOF (.ovl3_e.text), 8) (NOLOAD) : ALIGN (4) { *(.ovl3_e.bss) _ovl3_e_bss_end = ABSOLUTE(.);} >iram_seg
+    .ovl3_f.bss ALIGN (ADDR (.ovl3_f.text) + SIZEOF (.ovl3_f.text), 8) (NOLOAD) : ALIGN (4) { *(.ovl3_f.bss) _ovl3_f_bss_end = ABSOLUTE(.);} >iram_seg
+    .ovl3_u.bss ALIGN (ADDR (.ovl3_u.text) + SIZEOF (.ovl3_u.text), 8) (NOLOAD) : ALIGN (4) { *(.ovl3_u.bss) _ovl3_u_bss_end = ABSOLUTE(.);} >iram_seg
+    .ovl3_i.bss ALIGN (ADDR (.ovl3_i.text) + SIZEOF (.ovl3_i.text), 8) (NOLOAD) : ALIGN (4) { *(.ovl3_i.bss) _ovl3_i_bss_end = ABSOLUTE(.);} >iram_seg
+
+    _ovl3_start = ADDR(.ovl3_e.text);
+    _ovl3_end   = MAX (MAX (_ovl3_e_bss_end, _ovl3_f_bss_end), MAX (_ovl3_u_bss_end, _ovl3_i_bss_end));
+    . = _ovl3_end;
 
     __load_size_ovl3_etext  = __load_stop_ovl3_etext  - __load_start_ovl3_etext;
     __load_size_ovl3_ftext  = __load_stop_ovl3_ftext  - __load_start_ovl3_ftext;
