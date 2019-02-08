@@ -12,6 +12,8 @@
 #include "CPU_e.h"
 #include "../EmuFfs/CPU_ef.h"
 
+#include "Debug.h"
+
 #define AT_OVL __attribute__((section(".ovl3_e.text")))
 
 

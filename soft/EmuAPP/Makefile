@@ -5,23 +5,28 @@
 ##############################################################################
 ##  Source files with paths
 ##############################################################################
-C_SOURCES += \
+
+FAST_C_SOURCES += \
 	src/AnyMem.c					\
 	src/CPU.c						\
-	src/ffs.c						\
-	src/i2s.c						\
 	src/Key.c						\
 	src/ovl.c						\
 	src/ps2.c						\
-	src/reboot.c					\
 	src/spi_flash.c					\
 	src/tv.c						\
+	src/i2s.c						\
 	src/Overlays/Emu/CPU_e.c		\
 	src/Overlays/Emu/emu_e.c		\
 	src/Overlays/EmuFfs/CPU_ef.c	\
 	src/Overlays/EmuFfs/emu_ef.c	\
 	src/Overlays/EmuUi/Key_eu.c		\
 	src/Overlays/EmuUi/ps2_eu.c		\
+
+C_SOURCES += \
+	src/Debug.c						\
+	src/ffs.c						\
+	src/reboot.c					\
+	src/Startup.c					\
 	src/Overlays/Ffs/ffs_f.c		\
 	src/Overlays/Ffs/spi_flash_f.c	\
 	src/Overlays/Ffs/tape_f.c		\
@@ -59,29 +64,35 @@ ASM8_SOURCES += \
 ##  Directories and file names
 ##############################################################################
 # Output file name
-OUT               =emu
+OUT                =emu
 # Path for binary files
-OUTDIR            =out
+OUTDIR             =out
 # Path for object files
-OBJDIR            =.obj
+OBJDIR             =.obj
 # Path for dependencies information
-DEPDIR            =.dep
+DEPDIR             =.dep
 
 #LIBS=
 
-BUILD_NUMBER      = $(shell git rev-list --count HEAD)
+BUILD_NUMBER       = $(shell git rev-list --count HEAD)
 
 # Linker script file
-LDFLAGS          += -Tld/eagle.app.v6.ld
+LDFLAGS           += -Tld/eagle.app.v6.ld
 
-#COMMAN_GCC_FLAGS += -fmerge-all-constants -ffunction-sections -Wshadow -fomit-frame-pointer -fno-strict-aliasing -fno-common -fno-builtin -fno-exceptions
-COMMAN_GCC_FLAGS += -O3 -Os -nostdlib -fno-inline-functions -Wall $(addprefix -I,$(INCLUDES)) -g
+#FAST_GCC_FLAGS   += -fmerge-all-constants -ffunction-sections -Wshadow -fomit-frame-pointer -fno-strict-aliasing -fno-common -fno-builtin -fno-exceptions
+FAST_GCC_FLAGS    += -O3     -nostdlib -fno-inline-functions -Wall $(addprefix -I,$(INCLUDES)) -g
 # Xtensa options
-COMMAN_GCC_FLAGS += -mlongcalls -mtext-section-literals
+FAST_GCC_FLAGS    += -mlongcalls -mtext-section-literals
 # defines
-COMMAN_GCC_FLAGS += -D__ets__
+FAST_GCC_FLAGS    += -D__ets__
 
-LDFLAGS          += -Wl,-EL -Wl,--no-check-sections -u call_user_start -Wl,-static $(LIBS) -Xlinker --defsym -Xlinker __BUILD_NUMBER__=$(BUILD_NUMBER) -Wl,-Map,$(OUTDIR)/$(OUT).map
+COMMAN_GCC_FLAGS  += -O3 -Os -nostdlib -fno-inline-functions -Wall $(addprefix -I,$(INCLUDES)) -g
+# Xtensa options
+COMMAN_GCC_FLAGS  += -mlongcalls -mtext-section-literals
+# defines
+COMMAN_GCC_FLAGS  += -D__ets__
+
+LDFLAGS           += -Wl,-EL -Wl,--no-check-sections -u call_user_start -Wl,-static $(LIBS) -Xlinker --defsym -Xlinker __BUILD_NUMBER__=$(BUILD_NUMBER) -Wl,-Map,$(OUTDIR)/$(OUT).map
 #LDFLAGS          += -Wl,--gc-sections
 
 CFLAGS            += -x c
@@ -103,6 +114,7 @@ ESPTOOL2    =../esptool2/esptool2.exe
 LINKSRC += \
  $(addprefix $(OBJDIR)/, \
  $(addsuffix .c.o,        $(C_SOURCES)) \
+ $(addsuffix .fc.o,       $(FAST_C_SOURCES)) \
  $(addsuffix .cpp.o,      $(CPP_SOURCES)) \
  $(addsuffix .s.o,        $(ASM_SOURCES)) \
  $(addsuffix .as8.o,      $(ASM8_SOURCES)))
@@ -141,6 +153,7 @@ $(OUTDIR)/$(OUT).elf: $(LINKSRC)
 
 disassemble: $(addprefix $(OBJDIR)/, \
 	$(addsuffix .c.lst,        $(C_SOURCES)) \
+	$(addsuffix .fc.lst,       $(FAST_C_SOURCES)) \
 	$(addsuffix .cpp.lst,      $(CPP_SOURCES)) \
 	$(addsuffix .s.lst,        $(ASM_SOURCES)) \
 	$(addsuffix .as8.lst,      $(ASM8_SOURCES)))
@@ -171,6 +184,27 @@ $(OBJDIR)/%.c.o: %
 $(OBJDIR)/%.c.s: %
 	@echo "Compiling $<"; \
 	$(CC) $(COMMAN_GCC_FLAGS) $(CFLAGS) -S -o $@ $<
+
+# Rule for generation of dependency information
+$(DEPDIR)/%.fc.d: %
+	@set -e; \
+	echo "Making dependencies for $<"; \
+	mkdir -p $(dir $@); \
+	mkdir -p $(dir $(OBJDIR)/$*.fc.o); \
+	ONAME=`echo "$(OBJDIR)/$*.fc.o" | sed -e 's/\\//\\\\\\//g' | sed -e 's/\\./\\\\\\./g'`; \
+	DNAME=`echo "$@" | sed -e 's/\\//\\\\\\//g' | sed -e 's/\\./\\\\\\./g'`; \
+	$(CC) -MM $(FAST_GCC_FLAGS) $(CFLAGS) $< | sed "1s/.*:/$$ONAME $$DNAME : /" > $@; \
+	[ -s $@ ] || rm -f $@
+
+# Rule for compiling C files
+$(OBJDIR)/%.fc.o: %
+	@echo "Compiling $<"; \
+	$(CC) $(FAST_GCC_FLAGS) $(CFLAGS) -c -o $@ $<
+
+# Rule for compiling C files
+$(OBJDIR)/%.fc.s: %
+	@echo "Compiling $<"; \
+	$(CC) $(FAST_GCC_FLAGS) $(CFLAGS) -S -o $@ $<
 
 $(DEPDIR)/%.cpp.d: %
 	@set -e; \
@@ -205,6 +239,7 @@ $(OBJDIR)/%.as8.o: %
 # Including dependencies infomation
 -include $(addprefix $(DEPDIR)/, \
 	$(addsuffix .c.d,        $(C_SOURCES)) \
+	$(addsuffix .fc.d,       $(FAST_C_SOURCES)) \
 	$(addsuffix .cpp.d,      $(CPP_SOURCES)) \
 	$(addsuffix .s.d,        $(ASM_SOURCES)) \
 	$(addsuffix .as8.d,      $(ASM8_SOURCES)))

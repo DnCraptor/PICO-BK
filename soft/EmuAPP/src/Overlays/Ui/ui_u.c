@@ -18,8 +18,9 @@
 
 #define AT_OVL        __attribute__((section(".ovl3_u.text")))
 #define RODATA_AT_OVL __attribute__((section(".ovl3_u.rodata")))
+#define BSS_AT_OVL    __attribute__((section(".ovl3_u.bss")))
 
-TUI_OvlData UI_OvlData;
+TUI_OvlData BSS_AT_OVL UI_OvlData;
 
 const static uint8_t RODATA_AT_OVL Font8x10 [] =
 {
@@ -200,7 +201,7 @@ static int AT_OVL ui_tv (uint32_t *pBuf, uint_fast16_t Line);
 
 void AT_OVL ui_clear (void)
 {
-    memset (UI_OvlData.Scr, ' ', sizeof (UI_OvlData.Scr));
+    AnyMem_memset (UI_OvlData.Scr, ' ', sizeof (UI_OvlData.Scr));
 }
 
 #define HEADER_X    0
@@ -221,7 +222,6 @@ void AT_OVL ui_draw_list(uint8_t x, uint8_t y, const char *s)
     ui_draw_text (x + 3,y, s);
 }
 
-
 void AT_OVL ui_draw_text(uint8_t x, uint8_t y, const char *s)
 {
     char Ch;
@@ -238,7 +238,6 @@ void AT_OVL ui_draw_text(uint8_t x, uint8_t y, const char *s)
         y++;
     }
 }
-
 
 int8_t AT_OVL ui_select(uint8_t x, uint8_t y, uint8_t count)
 {
@@ -306,7 +305,6 @@ int8_t AT_OVL ui_select(uint8_t x, uint8_t y, uint8_t count)
     }
 }
 
-
 const char* AT_OVL ui_input_text (const char *comment, const char *_text, uint8_t max_len)
 {
 //  char text [64];
@@ -368,7 +366,6 @@ const char* AT_OVL ui_input_text (const char *comment, const char *_text, uint8_
     }
 }
 
-
 int8_t AT_OVL ui_yes_no(const char *comment)
 {
     AT_IROM static const char str_NoYes [] = "НЕТ\nДА\n";
@@ -382,8 +379,8 @@ int8_t AT_OVL ui_yes_no(const char *comment)
 void AT_OVL ui_Resume (void)
 {
     // Очищаем экран
-    ui_clear();
-    UI_OvlData.CursorXY=0xFFFFU;
+    ui_clear ();
+    UI_OvlData.CursorXY = 0xFFFFU;
 
     // Переключаем экран в режим меню
     tv_SetOutFunc (ui_tv);
@@ -395,14 +392,13 @@ void AT_OVL ui_Suspend (void)
     tv_SetOutFunc (NULL);
 }
 
-void AT_OVL ui_start(void)
+void AT_OVL ui_start (void)
 {
     // Сохраняем состояние клавиатуры
     Key_SaveRusLat ();
 
     ui_Resume ();
 }
-
 
 void AT_OVL ui_stop(void)
 {
@@ -412,7 +408,6 @@ void AT_OVL ui_stop(void)
     // Погасить экран
     tv_SetOutFunc (NULL);
 }
-
 
 void AT_OVL ui_sleep(uint16_t ms)
 {
@@ -429,6 +424,7 @@ static int AT_OVL ui_tv (uint32_t *pBuf, uint_fast16_t Line)
     const uint32_t *pText;
     const uint8_t  *pZkg;
     uint_fast32_t   TextBuf = 0;
+    uint32_t        AnyMemCtx;
 
     if (Line <=  30) return 0;
     Line -= 30;
@@ -451,6 +447,8 @@ static int AT_OVL ui_tv (uint32_t *pBuf, uint_fast16_t Line)
     CursorXY = (int_fast16_t) UI_OvlData.CursorXY;
     if (MenuY != (UI_OvlData.CursorXY & 0xFF)) CursorXY = -1;
     CursorXY >>= 8;
+
+    AnyMemCtx = AnyMem_Data.Buf;
 
     for (Count = 0; Count < 16; Count++)
     {
@@ -476,6 +474,8 @@ static int AT_OVL ui_tv (uint32_t *pBuf, uint_fast16_t Line)
 
         *pBuf++ = (uint32_t) U32;
     }
+
+    AnyMem_Data.Buf = AnyMemCtx;
 
     return 1;
 }

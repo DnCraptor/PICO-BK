@@ -35,25 +35,27 @@ void gpio_int (void)
 
             IntState &= ~(PS2_INT_STATE_FLAG_TX | PS2_INT_STATE_BITN_MASK);
         }
-        else if (IntState >= (9U << PS2_INT_STATE_BITN_POS))
+        else
         {
-            // Передали 8 бит данных и 1 бит четности
+            if (IntState >= (9U << PS2_INT_STATE_BITN_POS))
+            {
+                // Передали 8 бит данных и 1 бит четности
 
-            gpio_init_input_pu (PS2_DATA);
+                gpio_init_input_pu (PS2_DATA);
 
-        } else
-        {
-            uint_fast16_t TxData = ps2_Data.TxData;
+            } else
+            {
+                uint_fast16_t TxData = ps2_Data.TxData;
 
-            // Мы в режиме передачи
-            if (TxData & 1) gpio_on  (PS2_DATA);
-            else            gpio_off (PS2_DATA);
+                // Мы в режиме передачи
+                if (TxData & 1) gpio_on  (PS2_DATA);
+                else            gpio_off (PS2_DATA);
+
+                ps2_Data.TxData = TxData >> 1;
+            }
 
             IntState += 1U << PS2_INT_STATE_BITN_POS;
-
-            ps2_Data.TxData = TxData >> 1;
         }
-
     }
     else
     {
@@ -100,12 +102,11 @@ void gpio_int (void)
                     else if (Code == 0xFA) IntState |= PS2_INT_STATE_FLAG_ACK;
                     else if (Code == 0xFE) IntState |= PS2_INT_STATE_FLAG_RESEND;
                     else if (Code == 0xAA) IntState |= PS2_INT_STATE_FLAG_BAT;
-					else
+                    else
                     {
                         uint_fast8_t iRxBufWr = ps2_Data.iRxBufWr & (PS2_RX_BUF_SIZE - 1);
                         // Расширенные наборы и отжатие
                         Code |= (IntState & (PS2_INT_STATE_FLAG_E0 | PS2_INT_STATE_FLAG_E1 | PS2_INT_STATE_FLAG_F0)) << 8;
-                        
                         // Кладем в буфер
                         ps2_Data.RxBuf [iRxBufWr++] = (uint16_t) Code;
 

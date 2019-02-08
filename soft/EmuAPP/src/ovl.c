@@ -4,6 +4,8 @@
 #include "spi_flash.h"
 #include "ovl.h"
 
+#include "Debug.h"
+
 extern char _ovl0_start, _ovl0_end;
 extern char _ovl1_start, _ovl1_end;
 extern char _ovl2_start, _ovl2_end;

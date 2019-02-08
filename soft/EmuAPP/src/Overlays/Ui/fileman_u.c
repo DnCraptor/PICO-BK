@@ -12,6 +12,8 @@
 #include "../FfsUi/ffs_fu.h"
 #include "../FfsUi/str_fu.h"
 
+#include "Debug.h"
+
 #define AT_OVL __attribute__((section(".ovl3_u.text")))
 
 static void AT_OVL del (uint16_t n)
@@ -34,30 +36,38 @@ static void AT_OVL del (uint16_t n)
 static void AT_OVL rename (uint16_t n)
 {
     AT_IROM static const char str_EnterNewFileName [] = "Введите новое имя файла:";
-    const char *name;
+    const char *pInputText;
+    char Name [16 + 1];
     int_fast16_t Res;
 
 again:
-    name = ui_input_text (str_EnterNewFileName, ffs_name (n), 16);
-    if ( (! name) || (! name[0]) ) return;
+
+    pInputText = ui_input_text (str_EnterNewFileName, ffs_name (n), 16);
+
+    if (pInputText == NULL) return;
+
+    AnyMem_strcpy (Name, pInputText);
+
+    if (Name [0] == 0) return;
 
     ui_Suspend ();
 
     // Ищем - вдруг такой файл уже есть
-    if (OVL_CALL (ffs_find, name) >= 0)
+    if (OVL_CALL (ffs_find, &Name [0]) >= 0)
     {
         AT_IROM static const char str_FileExist [] = "Файл с таким именем уже есть !";
         // Уже есть такой файл
 
         ui_Resume ();
 
-        ui_draw_text(0, 8, str_FileExist);
-        ui_sleep(2000);
+        ui_draw_text (0, 8, str_FileExist);
+        ui_sleep     (2000);
+
         goto again;
     }
     
     // Переименовываем
-    Res = OVL_CALL (ffs_rename, n, name);
+    Res = OVL_CALL (ffs_rename, n, &Name [0]);
 
     ui_Resume ();
 
@@ -65,8 +75,8 @@ again:
     {
         AT_IROM static const char str_RenameFileError [] = "Ошибка переименования файла !";
         // Ошибка
-        ui_draw_text(0, 8, str_RenameFileError);
-        ui_sleep(2000);
+        ui_draw_text (0, 8, str_RenameFileError);
+        ui_sleep     (2000);
     }
 }
 
@@ -216,6 +226,7 @@ reread_down:
     if (n_files==0)
     {
         AT_IROM static const char str_NoFiles [] = "Нет файлов !";
+
         ui_draw_text(0, 4, str_NoFiles);
         ui_sleep(2000);
         return -1;

@@ -3,6 +3,16 @@
 
 #include <stdint.h>
 
+typedef struct
+{
+    uintptr_t Adr;
+    uint32_t  Buf;
+    uint32_t  FlashBuf [32 / 4];
+
+} TAnyMem_Data;
+
+extern TAnyMem_Data AnyMem_Data;
+
 void    *AnyMem_r_Buf  (const void     *Adr);
 void     AnyMem_w_Buf  (void           *Adr);
 uint8_t  AnyMem_r_u8   (const uint8_t  *Adr);

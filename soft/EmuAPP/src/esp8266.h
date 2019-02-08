@@ -32,6 +32,31 @@ typedef struct
 
 } TESP8266_SPI;
 
-#define ESP8266_SPI0 ((TESP8266_SPI *) 0x60000200UL)
+typedef struct
+{
+    volatile uint32_t FIFO;
+    volatile uint32_t INT_RAW;
+    volatile uint32_t INT_ST;
+    volatile uint32_t INT_ENA;
+    volatile uint32_t INT_CLR;
+    volatile uint32_t CLKDIV;
+    volatile uint32_t AUTOBAUD;
+    volatile uint32_t STATUS;
+    volatile uint32_t CONF0;
+    volatile uint32_t CONF1;
+    volatile uint32_t LOWPULSE;
+    volatile uint32_t HIGHPULSE;
+    volatile uint32_t PULSE_NUM;
+
+    uint32_t Empty [17];
+
+    volatile uint32_t DATE;
+    volatile uint32_t ID;
+
+} TESP8266_UART;
+
+#define ESP8266_UART0 ((TESP8266_UART *) 0x60000000UL)
+#define ESP8266_UART1 ((TESP8266_UART *) 0x60000F00UL)
+#define ESP8266_SPI0  ((TESP8266_SPI  *) 0x60000200UL)
 
 #endif

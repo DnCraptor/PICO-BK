@@ -7,6 +7,8 @@
 #include "ps2_eu.h"
 #include "board.h"
 
+#include "Debug.h"
+
 #define AT_OVL __attribute__((section(".ovl1_eu.text")))
 
 uint_fast16_t AT_OVL ps2_read (void)
@@ -43,8 +45,9 @@ void AT_OVL ps2_periodic (void)
             State = 0;
 
         case 0:
+
             ps2_Data.LedsLast = 0xFF;
-            ps2_Data.TxData   = 0xFF; // Отправляем команду "Reset"
+            ps2_Data.TxByte   = 0xFF; // Отправляем команду "Reset"
             State++;
             break;
 
@@ -122,20 +125,20 @@ void AT_OVL ps2_periodic (void)
 
             if (((ps2_Data.LedsNew & 7) == ps2_Data.LedsLast) && ((ps2_Data.IntState & PS2_INT_STATE_FLAG_BAT) == 0)) break;
 
-            ps2_Data.TxData = 0xED; // Отправляем команду "Set/Reset LEDs"
+            ps2_Data.TxByte = 0xED; // Отправляем команду "Set/Reset LEDs"
             State++;
             break;
 
         case 11:
 
-            ps2_Data.TxData = ps2_Data.LedsNew & 7; // Отправляем состояние светодиодов
+            ps2_Data.TxByte = ps2_Data.LedsNew & 7; // Отправляем состояние светодиодов
             if (ps2_Data.IntState & PS2_INT_STATE_FLAG_ACK) State++;
             else                                            State = 6; // Если нужно начинаем с начала
             break;
 
         case 16:
 
-            if (ps2_Data.IntState & PS2_INT_STATE_FLAG_ACK) ps2_Data.LedsLast = ps2_Data.TxData;
+            if (ps2_Data.IntState & PS2_INT_STATE_FLAG_ACK) ps2_Data.LedsLast = ps2_Data.TxByte;
             State = 6;
             break;
     }

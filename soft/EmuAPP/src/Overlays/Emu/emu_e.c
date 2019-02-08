@@ -20,6 +20,8 @@
 #include "../EmuUi/Key_eu.h"
 #include "../EmuUi/ps2_eu.h"
 
+#include "Debug.h"
+
 #define AT_OVL __attribute__((section(".ovl3_e.text")))
 
 void AT_OVL emu_start (void)
@@ -135,7 +137,9 @@ void AT_OVL emu_start (void)
                 {
                     if (Key == KEY_MENU_ESC)
                     {
+                    	emu_OffTv ();
                         OVL_CALL (menu, MENU_FLAG_START_UI);
+                    	emu_OnTv  ();
 
                         Time = getCycleCount ();
                         T    = Device_Data.CPU_State.Time;

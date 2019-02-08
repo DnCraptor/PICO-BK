@@ -48,7 +48,7 @@ static int AT_OVL emu_tv (uint32_t *pBuf, uint_fast16_t Line)
 
     // Рисуем строку
 
-    pVRam = &CPU_PAGE5_MEM32 [((Line + StartMaxLine) & 0xFF) * 16];
+    pVRam = &CPU_PAGE1_MEM32 [((Line + StartMaxLine) & 0xFF) * 16];
 
     for (Count = 0; Count < 16; Count++)
     {

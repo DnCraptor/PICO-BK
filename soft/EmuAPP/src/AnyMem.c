@@ -1,14 +1,7 @@
 #include "AnyMem.h"
 #include "spi_flash.h"
 
-static struct
-{
-    uintptr_t Adr;
-    uint32_t  Buf;
-    uint32_t  FlashBuf [32 / 4];
-
-} AnyMem_Data;
-
+TAnyMem_Data AnyMem_Data;
 
 void *AnyMem_r_Buf (const void *Adr)
 {

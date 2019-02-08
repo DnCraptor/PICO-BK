@@ -8,6 +8,7 @@
 #include "ffs_f.h"
 
 #include "../EmuFfs/CPU_ef.h"
+#include "../EmuFfs/emu_ef.h"
 #include "../FfsUi/ffs_fu.h"
 
 #define AT_OVL __attribute__((section(".ovl3_f.text")))
@@ -43,7 +44,9 @@ void AT_OVL tape_ReadOp (void)
 
     if (TapeBuf.U8 [16] == 0)
     {
+	    emu_OffTv ();
         iFile = OVL_CALL (menu_fileman, MENU_FLAG_START_UI | MENU_FLAG_LOAD_FILE);
+	    emu_OnTv  ();
 
         if (iFile < 0) goto BusFault;
 

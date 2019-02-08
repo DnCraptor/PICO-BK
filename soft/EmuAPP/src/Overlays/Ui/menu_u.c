@@ -69,6 +69,9 @@ Exit:
     return n;
 }
 
+extern uint32_t     _stack_limit;
+extern uint32_t     _stack_init;
+
 void AT_OVL menu (uint_fast8_t Flags)
 {
     AT_IROM static const char str_Menu [] =

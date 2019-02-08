@@ -7,9 +7,11 @@
 #include "ffs_fu.h"
 #include "crc8_fu.h"
 
+#include "Debug.h"
+
 #define AT_OVL __attribute__((section(".ovl2_fu.text")))
 
-FILE     ffs_File;
+FILE __attribute__ ((aligned (4))) ffs_File;
 uint16_t ffs_iFile = 0xFFFF;
 char     ffs_TempFileName [16+1];
 

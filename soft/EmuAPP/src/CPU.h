@@ -18,6 +18,7 @@
 #define CPU_PAGE0_MEM8  ((uint8_t  *) CPU_PAGE0_MEM_ADR)
 #define CPU_PAGE0_MEM16 ((uint16_t *) CPU_PAGE0_MEM_ADR)
 #define CPU_PAGE0_MEM32 ((uint32_t *) CPU_PAGE0_MEM_ADR)
+#define CPU_PAGE1_MEM32 ((uint32_t *) CPU_PAGE1_MEM_ADR)
 #define CPU_PAGE5_MEM32 ((uint32_t *) CPU_PAGE5_MEM_ADR)
 #define CPU_PAGE6_MEM32 ((uint32_t *) CPU_PAGE6_MEM_ADR)
 
@@ -100,7 +101,7 @@ typedef struct
 {
     TCPU_State CPU_State;
 
-    uint32_t MemPages [4];
+    uintptr_t MemPages [4];
 
     struct
     {

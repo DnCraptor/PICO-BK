@@ -2,7 +2,7 @@
 
  .global call_user_start
  .extern ovl_SwitchToMode
- .extern spi_flash_Startup
+ .extern Startup_LoInit
  .extern main_init
  .extern emu_start
   .extern _stack_init
@@ -16,8 +16,8 @@
 
 call_user_start!:
 {
+    call0 Startup_LoInit
     movi  a1,_stack_init
-    call0 spi_flash_Startup
     movi  a2,OVL_MODE_INIT
     call0 ovl_SwitchToMode
     call0 main_init
