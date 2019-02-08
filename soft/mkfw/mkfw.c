@@ -72,7 +72,7 @@ int main()
     if (! read(data+0x10000, "../WiFiAPP/out/wifi.1.bin", 0x60000)) return -1;
     
     // Читаем справку
-    if (! read(data+0x50000, "../EmuAPP/ROM/rom.bin", 0x8000)) return -1;
+    if (! read(data+0x50000, "../EmuAPP/ROM/rom.bin", 0x20000)) return -1;
     
     // Читаем файловую систему HTTP
     if (! read(data+0x70000, "../WiFiAPP/httpfs/httpfs.bin", 0xC000)) return -1;

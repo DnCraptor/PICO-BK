@@ -213,7 +213,7 @@ void AT_OVL ui_header (const char *s)
 
 void AT_OVL ui_header_default(void)
 {
-    AT_IROM static const char str_MenuHeader [] = " όνυμρτος βλ-0010-01 ξα ESP8266";
+    AT_IROM static const char str_MenuHeader [] = " όνυμρτος βλ-0011ν ξα ESP8266";
     ui_draw_text(HEADER_X, HEADER_Y, str_MenuHeader);
 }
 

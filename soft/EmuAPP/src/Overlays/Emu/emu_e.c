@@ -47,7 +47,7 @@ void AT_OVL emu_start (void)
             for (Count = 0; Count < 16; Count++)
             {
                 CPU_RunInstruction ();
-
+/*
                 if (Device_Data.CPU_State.r [7] == 0116142) // 0116076
                 {
                     uint_fast16_t Cmd = Device_Data.CPU_State.r [0];
@@ -55,6 +55,7 @@ void AT_OVL emu_start (void)
                     if      (Cmd == 3) OVL_CALL0 (tape_ReadOp);
                     else if (Cmd == 2) OVL_CALL0 (tape_WriteOp);
                 }
+*/
             }
 
             Time = getCycleCount ();
@@ -71,9 +72,9 @@ void AT_OVL emu_start (void)
                 CPU_RunInstruction ();
 
                 NewT  = Device_Data.CPU_State.Time;
-                Time += (uint32_t) (NewT - T) * 53;
+                Time += (uint32_t) (NewT - T) * 40;
                 T     = NewT;
-
+/*
                 if (Device_Data.CPU_State.r [7] == 0116142) // 0116076
                 {
                     uint_fast16_t Cmd = Device_Data.CPU_State.r [0];
@@ -81,6 +82,7 @@ void AT_OVL emu_start (void)
                     if      (Cmd == 3) {OVL_CALL0 (tape_ReadOp);  Time = getCycleCount (); T = Device_Data.CPU_State.Time;}
                     else if (Cmd == 2) {OVL_CALL0 (tape_WriteOp); Time = getCycleCount (); T = Device_Data.CPU_State.Time;}
                 }
+*/
             }
 
             NewT = getCycleCount ();
@@ -137,9 +139,9 @@ void AT_OVL emu_start (void)
                 {
                     if (Key == KEY_MENU_ESC)
                     {
-                    	emu_OffTv ();
+                        emu_OffTv ();
                         OVL_CALL (menu, MENU_FLAG_START_UI);
-                    	emu_OnTv  ();
+                        emu_OnTv  ();
 
                         Time = getCycleCount ();
                         T    = Device_Data.CPU_State.Time;
@@ -186,7 +188,7 @@ void AT_OVL emu_start (void)
                     }
 
                     LastKey |= 0x800;
-                    Device_Data.SysRegs.Reg177662 = (uint16_t) (LastKey >> 16) & 0177;
+                    Device_Data.SysRegs.RdReg177662 = (uint16_t) (LastKey >> 16) & 0177;
                 }
 
                 RunState = 0;

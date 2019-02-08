@@ -12,19 +12,21 @@ void AT_OVL CPU_Init (void)
 {
     memset (&Device_Data, 0, sizeof (Device_Data));
 
-    Device_Data.MemPages [0] = CPU_PAGE0_MEM_ADR;
-    Device_Data.MemPages [1] = CPU_PAGE1_MEM_ADR;
-    Device_Data.MemPages [2] = 0x40200000UL + 0x50000UL;
-    Device_Data.MemPages [3] = 0x40200000UL + 0x54000UL;
-
 //  Device_Data.SysRegs.Reg177660   = 0;
-//  Device_Data.SysRegs.Reg177662   = 0;
+//  Device_Data.SysRegs.RdReg177662 = 0;
     Device_Data.SysRegs.Reg177664   = 01330;
 //  Device_Data.SysRegs.Reg177706   = 0;
 //  Device_Data.SysRegs.Reg177710   = 0177777;
 //  Device_Data.SysRegs.Reg177712   = 0177400;
 //  Device_Data.SysRegs.RdReg177714 = 0;
-    Device_Data.SysRegs.RdReg177716 = (0100000 & 0177400) | 0300;
+    Device_Data.SysRegs.RdReg177716 = (0140000 & 0177400) | 0300;
+    Device_Data.SysRegs.WrReg177662  = 047400;
+    Device_Data.SysRegs.Wr1Reg177716 = (1 << 12) | 1;
+
+    Device_Data.MemPages [0] = CPU_PAGE0_MEM_ADR;
+    Device_Data.MemPages [1] = CPU_PAGE5_MEM_ADR;
+    Device_Data.MemPages [2] = CPU_PAGE8_MEM_ADR;
+    Device_Data.MemPages [3] = CPU_PAGE12_MEM_ADR;
 
     Device_Data.CPU_State.psw   = 0340;
     Device_Data.CPU_State.r [7] = Device_Data.SysRegs.RdReg177716 & 0177400;

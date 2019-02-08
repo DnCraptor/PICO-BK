@@ -6,14 +6,21 @@
 // #define DEBUG_PRINT( X) printf X
 #define DEBUG_PRINT( X)
 
-#define CPU_PAGE0_MEM_ADR 0x3FFEC000
-#define CPU_PAGE1_MEM_ADR 0x3FFF0000
-#define CPU_PAGE2_MEM_ADR 0x40104000
-#define CPU_PAGE3_MEM_ADR 0x40108000
-#define CPU_PAGE4_MEM_ADR 0x4010С000
-#define CPU_PAGE5_MEM_ADR 0x3FFFC000
-#define CPU_PAGE6_MEM_ADR 0x3FFF4000
-#define CPU_PAGE7_MEM_ADR 0x3FFF8000
+#define CPU_PAGE0_MEM_ADR  0x3FFEC000
+#define CPU_PAGE1_MEM_ADR  0x3FFF0000
+#define CPU_PAGE2_MEM_ADR  0x40104000
+#define CPU_PAGE3_MEM_ADR  0x40108000
+#define CPU_PAGE4_MEM_ADR  0x4010C000
+#define CPU_PAGE5_MEM_ADR  0x3FFFC000
+#define CPU_PAGE6_MEM_ADR  0x3FFF4000
+#define CPU_PAGE7_MEM_ADR  0x3FFF8000
+#define CPU_PAGE8_MEM_ADR  0x40250000
+#define CPU_PAGE9_MEM_ADR  0x40254000
+#define CPU_PAGE10_MEM_ADR 0
+#define CPU_PAGE11_MEM_ADR 0
+#define CPU_PAGE12_MEM_ADR 0x40258000
+
+#define CPU_START_IO_ADR 0177600
 
 #define CPU_PAGE0_MEM8  ((uint8_t  *) CPU_PAGE0_MEM_ADR)
 #define CPU_PAGE0_MEM16 ((uint16_t *) CPU_PAGE0_MEM_ADR)
@@ -114,7 +121,8 @@ typedef struct
     struct
     {
         uint16_t Reg177660;
-        uint16_t Reg177662;
+        uint16_t RdReg177662;
+        uint16_t WrReg177662;
         uint16_t Reg177664;
         uint16_t Reg177706;
         uint16_t Reg177710;
@@ -123,6 +131,7 @@ typedef struct
         uint16_t WrReg177714;
         uint16_t RdReg177716;
         uint16_t WrReg177716;
+        uint16_t Wr1Reg177716;
 
     } SysRegs;
 
@@ -131,20 +140,20 @@ typedef struct
 extern TDevice_Data Device_Data;
 
 // CPU timing в тактах
-#define CPU_TIMING_BASE        12
-#define CPU_TIMING_HALT        68
-#define CPU_TIMING_WAIT        12
-#define CPU_TIMING_RTI         40
-#define CPU_TIMING_RESET     1140
-#define CPU_TIMING_BR_BASE     16
-#define CPU_TIMING_RTS         32
-#define CPU_TIMING_MARK        56
-#define CPU_TIMING_EMT         64
-#define CPU_TIMING_IOT        104
-#define CPU_TIMING_SOB         20
-#define CPU_TIMING_INT         40
-#define CPU_TIMING_BUS_ERROR   64
-#define CPU_TIMING_STOP        64
+#define CPU_TIMING_BASE         16
+#define CPU_TIMING_HALT         96
+#define CPU_TIMING_WAIT         16
+#define CPU_TIMING_RTI          48
+#define CPU_TIMING_RESET      1140
+#define CPU_TIMING_BR_BASE      16
+#define CPU_TIMING_RTS          32
+#define CPU_TIMING_MARK         56
+#define CPU_TIMING_EMT          80
+#define CPU_TIMING_IOT         128 
+#define CPU_TIMING_SOB          21
+#define CPU_TIMING_INT          48
+#define CPU_TIMING_BUS_ERROR    64
+#define CPU_TIMING_STOP         64
 
 //однооперандные расчётные
 extern const uint8_t CPU_timing_OneOps_TST  [8];

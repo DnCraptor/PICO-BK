@@ -108,13 +108,18 @@ TCPU_Arg AT_OVL CPU_ReadMemW (TCPU_Arg Adr)
 {
     uint16_t *pReg;
 
-    if (Adr < 0177600) return AnyMem_r_u16 (CPU_GET_PAGE_ADR_MEM16 (Adr));
+    if (Adr < CPU_START_IO_ADR)
+    {
+        uintptr_t Page = Device_Data.MemPages [(Adr) >> 14];
+        if (Page) return AnyMem_r_u16 ((uint16_t *) (Page + ((Adr) & 0x3FFE)));
+        return CPU_ARG_READ_ERR;
+    }
 
     switch (Adr >> 1)
     {
         case (0177660 >> 1): pReg = &Device_Data.SysRegs.Reg177660;   break;
         case (0177662 >> 1): Device_Data.SysRegs.Reg177660 &= ~0200;
-                             pReg = &Device_Data.SysRegs.Reg177662;   break;
+                             pReg = &Device_Data.SysRegs.RdReg177662; break;
         case (0177664 >> 1): pReg = &Device_Data.SysRegs.Reg177664;   break;
         case (0177706 >> 1): pReg = &Device_Data.SysRegs.Reg177706;   break;
         case (0177710 >> 1): CPU_TimerRun ();
@@ -134,13 +139,18 @@ TCPU_Arg AT_OVL CPU_ReadMemB (TCPU_Arg Adr)
 {
     uint16_t *pReg;
 
-    if (Adr < 0177600) return AnyMem_r_u8 (CPU_GET_PAGE_ADR_MEM8 (Adr));
+    if (Adr < CPU_START_IO_ADR)
+    {
+        uintptr_t Page = Device_Data.MemPages [(Adr) >> 14];
+        if (Page) return AnyMem_r_u8 ((uint8_t *) (Page + ((Adr) & 0x3FFF)));
+        return CPU_ARG_READ_ERR;
+    }
 
     switch (Adr >> 1)
     {
         case (0177660 >> 1): pReg = &Device_Data.SysRegs.Reg177660;   break;
         case (0177662 >> 1): Device_Data.SysRegs.Reg177660 &= ~0200;
-                             pReg = &Device_Data.SysRegs.Reg177662;   break;
+                             pReg = &Device_Data.SysRegs.RdReg177662; break;
         case (0177664 >> 1): pReg = &Device_Data.SysRegs.Reg177664;   break;
         case (0177706 >> 1): pReg = &Device_Data.SysRegs.Reg177706;   break;
         case (0177710 >> 1): CPU_TimerRun ();
@@ -167,15 +177,18 @@ TCPU_Arg AT_OVL CPU_WriteW (TCPU_Arg Adr, uint_fast16_t Word)
         return CPU_ARG_WRITE_OK;
     }
 
-    if (Adr < 0177600)
+    if (Adr < 0140000)
     {
-        uint16_t *pMem = CPU_GET_PAGE_ADR_MEM16 (Adr);
+        uintptr_t Page = Device_Data.MemPages [(Adr) >> 14];
 
-        if ((uintptr_t) pMem >= 0x40200000UL) return CPU_ARG_WRITE_ERR;
+        if (Page && Page < CPU_PAGE8_MEM_ADR)
+        {
+            AnyMem_w_u16 ((uint16_t *) (Page + ((Adr) & 0x3FFE)), Word);
 
-        AnyMem_w_u16 (pMem, Word);
+            return CPU_ARG_WRITE_OK;
+        }
 
-        return CPU_ARG_WRITE_OK;
+        return CPU_ARG_WRITE_ERR;
     }
 
     switch (Adr >> 1)
@@ -188,8 +201,11 @@ TCPU_Arg AT_OVL CPU_WriteW (TCPU_Arg Adr, uint_fast16_t Word)
 
             break;
 
-//      case (0177662 >> 1):
-            
+        case (0177662 >> 1):
+
+            Device_Data.SysRegs.WrReg177662 = (uint16_t) Word;
+            break;
+
         case (0177664 >> 1):
 
             PrevWord = Device_Data.SysRegs.Reg177664;
@@ -233,14 +249,42 @@ TCPU_Arg AT_OVL CPU_WriteW (TCPU_Arg Adr, uint_fast16_t Word)
 
         case (0177716 >> 1):
 
-            Device_Data.SysRegs.WrReg177716 = (uint16_t) Word;
-
+            if (Word & (1U << 11))
             {
-                uint_fast32_t Reg = *(uint8_t *) &Device_Data.SysRegs.WrReg177714 >> 1;
-                if (Word & 0100) Reg += 0x80;
-                WRITE_PERI_REG (GPIO_SIGMA_DELTA_ADDRESS,   SIGMA_DELTA_ENABLE
-                                                          | (Reg << SIGMA_DELTA_TARGET_S)
-                                                          | (1 << SIGMA_DELTA_PRESCALAR_S));
+                static const uintptr_t PageTab [8] =
+                {
+                    CPU_PAGE1_MEM_ADR,
+                    CPU_PAGE5_MEM_ADR,
+                    CPU_PAGE2_MEM_ADR,
+                    CPU_PAGE3_MEM_ADR,
+                    CPU_PAGE4_MEM_ADR,
+                    CPU_PAGE7_MEM_ADR,
+                    CPU_PAGE0_MEM_ADR,
+                    CPU_PAGE6_MEM_ADR
+
+                }; // {1, 5, 2, 3, 4, 7, 0, 6};
+
+                Device_Data.SysRegs.Wr1Reg177716 = (uint16_t) Word;
+
+                Device_Data.MemPages [1] = PageTab [(Word >> 12) & 7];
+   
+                if      (Word &  01) Device_Data.MemPages [2] = CPU_PAGE8_MEM_ADR;
+                else if (Word &  02) Device_Data.MemPages [2] = CPU_PAGE9_MEM_ADR;
+                else if (Word & 010) Device_Data.MemPages [2] = CPU_PAGE10_MEM_ADR;
+                else if (Word & 020) Device_Data.MemPages [2] = CPU_PAGE11_MEM_ADR;
+                else                 Device_Data.MemPages [2] = PageTab [(Word >> 8) & 7];
+            }
+            else
+            {
+                Device_Data.SysRegs.WrReg177716 = (uint16_t) Word;
+
+                {
+                    uint_fast32_t Reg = *(uint8_t *) &Device_Data.SysRegs.WrReg177714 >> 1;
+                    if (Word & 0100) Reg += 0x80;
+                    WRITE_PERI_REG (GPIO_SIGMA_DELTA_ADDRESS,   SIGMA_DELTA_ENABLE
+                                                              | (Reg << SIGMA_DELTA_TARGET_S)
+                                                              | (1 << SIGMA_DELTA_PRESCALAR_S));
+                }
             }
 
             break;
@@ -265,15 +309,18 @@ TCPU_Arg AT_OVL CPU_WriteB (TCPU_Arg Adr, uint_fast8_t Byte)
         return CPU_ARG_WRITE_OK;
     }
 
-    if (Adr < 0177600)
+    if (Adr < 0140000)
     {
-        uint8_t *pMem = CPU_GET_PAGE_ADR_MEM8 (Adr);
+        uintptr_t Page = Device_Data.MemPages [(Adr) >> 14];
 
-        if ((uintptr_t) pMem >= 0x40200000UL) return CPU_ARG_WRITE_ERR;
+        if (Page && Page < CPU_PAGE8_MEM_ADR)
+        {
+            AnyMem_w_u8 ((uint8_t *) (Page + ((Adr) & 0x3FFF)), Byte);
 
-        AnyMem_w_u8 (pMem, Byte);
+            return CPU_ARG_WRITE_OK;
+        }
 
-        return CPU_ARG_WRITE_OK;
+        return CPU_ARG_WRITE_ERR;
     }
 
     Word = Byte;
@@ -290,8 +337,11 @@ TCPU_Arg AT_OVL CPU_WriteB (TCPU_Arg Adr, uint_fast8_t Byte)
 
             break;
 
-//      case (0177662 >> 1):
-            
+        case (0177662 >> 1):
+
+            Device_Data.SysRegs.WrReg177662 = (uint16_t) Word;
+            break;
+
         case (0177664 >> 1):
 
             PrevWord = Device_Data.SysRegs.Reg177664;
@@ -335,14 +385,42 @@ TCPU_Arg AT_OVL CPU_WriteB (TCPU_Arg Adr, uint_fast8_t Byte)
 
         case (0177716 >> 1):
 
-            Device_Data.SysRegs.WrReg177716 = (uint16_t) Word;
-
+            if (Word & (1U << 11))
             {
-                uint_fast32_t Reg = *(uint8_t *) &Device_Data.SysRegs.WrReg177714 >> 1;
-                if (Word & 0100) Reg += 0x80;
-                WRITE_PERI_REG (GPIO_SIGMA_DELTA_ADDRESS,   SIGMA_DELTA_ENABLE
-                                                          | (Reg << SIGMA_DELTA_TARGET_S)
-                                                          | (1 << SIGMA_DELTA_PRESCALAR_S));
+                const uintptr_t PageTab [8] =
+                {
+                    CPU_PAGE1_MEM_ADR,
+                    CPU_PAGE5_MEM_ADR,
+                    CPU_PAGE2_MEM_ADR,
+                    CPU_PAGE3_MEM_ADR,
+                    CPU_PAGE4_MEM_ADR,
+                    CPU_PAGE7_MEM_ADR,
+                    CPU_PAGE0_MEM_ADR,
+                    CPU_PAGE6_MEM_ADR
+
+                }; // {1, 5, 2, 3, 4, 7, 0, 6};
+
+                Device_Data.SysRegs.Wr1Reg177716 = (uint16_t) Word;
+
+                Device_Data.MemPages [1] = PageTab [(Word >> 12) & 7];
+   
+                if      (Word &  01) Device_Data.MemPages [2] = CPU_PAGE8_MEM_ADR;
+                else if (Word &  02) Device_Data.MemPages [2] = CPU_PAGE9_MEM_ADR;
+                else if (Word & 010) Device_Data.MemPages [2] = CPU_PAGE10_MEM_ADR;
+                else if (Word & 020) Device_Data.MemPages [2] = CPU_PAGE11_MEM_ADR;
+                else                 Device_Data.MemPages [2] = PageTab [(Word >> 8) & 7];
+            }
+            else
+            {
+                Device_Data.SysRegs.WrReg177716 = (uint16_t) Word;
+
+                {
+                    uint_fast32_t Reg = *(uint8_t *) &Device_Data.SysRegs.WrReg177714 >> 1;
+                    if (Word & 0100) Reg += 0x80;
+                    WRITE_PERI_REG (GPIO_SIGMA_DELTA_ADDRESS,   SIGMA_DELTA_ENABLE
+                                                              | (Reg << SIGMA_DELTA_TARGET_S)
+                                                              | (1 << SIGMA_DELTA_PRESCALAR_S));
+                }
             }
 
             break;
