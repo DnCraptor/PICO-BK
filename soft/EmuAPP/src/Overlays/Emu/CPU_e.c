@@ -779,7 +779,7 @@ void AT_OVL CPU_RunInstruction (void)
                     DEBUG_PRINT  (("SWAB  "));
                     CPU_READ_DW  ();
                     Res = (uint16_t) (ArgD << 8) | (ArgD >> 8);
-                    CPU_SET_PSW_FLAGS_W_NZ_CLR_VC ();
+                    CPU_SET_PSW_FLAGS_B_NZ_CLR_VC ();
                     CPU_WRITE_DW ();
                     CPU_CALC_TIMING_D (CPU_timing_OneOps_CLR);
                     break;
