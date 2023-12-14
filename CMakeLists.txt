@@ -1,7 +1,7 @@
 cmake_minimum_required(VERSION 3.22)
 include(pico_sdk_import.cmake)
 
-project(pico-xt C CXX ASM)
+project(pico-bk C CXX ASM)
 option(OVERCLOCKING "Target Pico MHz" 416)
 if(NOT OVERCLOCKING)
     SET(OVERCLOCKING 416)

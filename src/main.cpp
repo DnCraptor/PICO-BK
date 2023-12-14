@@ -38,6 +38,8 @@ bool SD_CARD_AVAILABLE = false;
 uint32_t DIRECT_RAM_BORDER = PSRAM_AVAILABLE ? RAM_SIZE : (SD_CARD_AVAILABLE ? RAM_PAGE_SIZE : RAM_SIZE);
 bool runing = true;
 
+uint8_t VIDEORAM[VIDEORAM_SIZE];
+
 #if PICO_ON_DEVICE
 pwm_config config = pwm_get_default_config();
 #define PWM_PIN0 (26)
@@ -51,6 +53,8 @@ void PWM_init_pin(uint8_t pinN) {
     pwm_init(pwm_gpio_to_slice_num(pinN), &config, true);
 }
 
+int timer_period = 54925;
+
 struct semaphore vga_start_semaphore;
 /* Renderer loop on Pico's second core */
 void __time_critical_func(render_core)() {
@@ -61,29 +65,29 @@ void __time_critical_func(render_core)() {
     graphics_set_offset(0, 0);
     graphics_set_flashmode(true, true);
 
-    for (int i = 0; i < 16; ++i) {
-        graphics_set_palette(i, cga_palette[i]);
-    }
+  //  for (int i = 0; i < 16; ++i) {
+  //      graphics_set_palette(i, cga_palette[i]);
+   // }
 
     sem_acquire_blocking(&vga_start_semaphore);
 
     uint8_t tick50ms_counter = 0;
     while (true) {
-        doirq(0);
+       // doirq(0);
         busy_wait_us(timer_period);
         if (tick50ms_counter % 2 == 0 && nespad_available) {
             nespad_read();
             if (nespad_state) {
                 //logMsg("TEST");
                 // TODO: Speedup in time
-                sermouseevent(nespad_state & DPAD_B ? 1 : nespad_state & DPAD_A ? 2 : 0,
-                              nespad_state & DPAD_LEFT ? -3 : nespad_state & DPAD_RIGHT ? 3 : 0,
-                              nespad_state & DPAD_UP ? -3 : nespad_state & DPAD_DOWN ? 3 : 0);
+        //        sermouseevent(nespad_state & DPAD_B ? 1 : nespad_state & DPAD_A ? 2 : 0,
+        //                      nespad_state & DPAD_LEFT ? -3 : nespad_state & DPAD_RIGHT ? 3 : 0,
+        //                      nespad_state & DPAD_UP ? -3 : nespad_state & DPAD_DOWN ? 3 : 0);
             }
         }
-        if (tick50ms_counter == 0 || tick50ms_counter == 10) {
-            cursor_blink_state ^= 1;
-        }
+    //    if (tick50ms_counter == 0 || tick50ms_counter == 10) {
+    //        cursor_blink_state ^= 1;
+    //    }
         if (tick50ms_counter < 20) {
             tick50ms_counter++;
         }
@@ -243,7 +247,7 @@ int main() {
         return -1;
     }
 #endif
-
+/*
     vga_palette[0] = rgb(0, 0, 0);
     vga_palette[1] = rgb(0, 0, 169);
     vga_palette[2] = rgb(0, 169, 0);
@@ -500,8 +504,8 @@ int main() {
     vga_palette[253] = rgb(0, 0, 0);
     vga_palette[254] = rgb(0, 0, 0);
     vga_palette[255] = rgb(0, 0, 0);
-
-    reset86();
+*/
+   // reset86();
     while (runing) {
 #if !PICO_ON_DEVICE
         handleinput();
@@ -755,7 +759,7 @@ int main() {
         SDL_BlitScaled(drawsurface, NULL, screen, NULL);
         SDL_UpdateWindowSurface(window);
 #else
-        exec86(2000);
+     //   main_loop();
         if_manager();
 #endif
     }

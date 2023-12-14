@@ -13,7 +13,7 @@
 #include "stdlib.h"
 #include "fnt8x16.h"
 
-#include "../../src/cga.h"
+// #include "../../src/cga.h"
 
 uint16_t pio_program_VGA_instructions[] = {
     //     .wrap_target
@@ -235,8 +235,11 @@ inline static void dma_handler_VGA_impl() {
                 //считываем из быстрой палитры начало таблицы быстрого преобразования 2-битных комбинаций цветов пикселей
                 uint16_t* color = &txt_palette_fast[4 * (*text_buffer_line++)];
 
-                if (cursor_blink_state && !manager_started &&
-                    (screen_line / 16 == CURSOR_Y && x == CURSOR_X && glyph_line >= 11 && glyph_line <= 13)) {
+                if (//cursor_blink_state &&
+                    !manager_started && (
+                  //  screen_line / 16 == CURSOR_Y && x == CURSOR_X &&
+                     glyph_line >= 11 && glyph_line <= 13)
+                ) {
                     *output_buffer_16bit++ = color[3];
                     *output_buffer_16bit++ = color[3];
                     *output_buffer_16bit++ = color[3];
