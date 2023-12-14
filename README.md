@@ -1,7 +1,23 @@
-# БК-0011М
+# Raspberry Pi Pico PC XT (8086/8088) Emulator for MURMULATOR devboard
+Based on:
+
+# БК-0011М https://github.com/konst-st/BK8266/tree/BK0011M
 Эмулятор БК-0011М на ESP8266<br/>
 Сделан на основе эмулятора БК-0010-01 на ESP8266 https://github.com/konst-st/BK8266
 
+# Hardware needed
+To get it working you should have an Murmulator (development) board with VGA output. Schematics available here at https://github.com/AlexEkb4ever/MURMULATOR_classical_scheme
+![Murmulator Schematics](https://github.com/javavi/pico-infonesPlus/blob/main/assets/Murmulator-1_BSchem.JPG)
+
+Extra PSRAM support on pi pico pins:
+* PSRAM_PIN_CS=18
+* PSRAM_PIN_SCK=19
+* PSRAM_PIN_MOSI=20
+* PSRAM_PIN_MISO=21
+
+![RAM extention](/psram.jpg)
+
+Based on HW impl:
 # Железо
 <ul>
     <li>ESP8266 (с флэшкой), например ESP-01: эмулирует процессор и переферию БК, генерирует видеосигнал стандарта PAL, 
