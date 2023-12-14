@@ -1,4 +1,4 @@
-# Raspberry Pi Pico PC XT (8086/8088) Emulator for MURMULATOR devboard
+# Raspberry БК-0011M (К1801ВМ1 - PDP-11 based) Emulator for MURMULATOR devboard
 Based on:
 
 # БК-0011М https://github.com/konst-st/BK8266/tree/BK0011M
