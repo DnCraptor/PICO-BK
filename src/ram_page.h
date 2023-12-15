@@ -1,15 +1,8 @@
 #pragma once
 #include <stdbool.h>
 #include <inttypes.h>
-/* CGA
-#define VIDEORAM_START32 0xB8000ul
-#define VIDEORAM_END32 0xC8000ul
-*/
-#define VIDEORAM_START32 0xA0000ul
-#define VIDEORAM_END32 0xC0000ul
 
-//#define VIDEORAM_SIZE (VIDEORAM_END32 - VIDEORAM_START32)
-#define VIDEORAM_SIZE (32 << 10)
+#define VIDEORAM_SIZE (80 * 30 * 2)
 
 // --- select only one of 'em
 #ifdef SWAP_BLOCK_1k

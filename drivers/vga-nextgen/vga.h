@@ -8,20 +8,10 @@
 #define VGA_DMA_IRQ (DMA_IRQ_0)
 
 enum graphics_mode_t {
-    TEXTMODE_40x30,
     TEXTMODE_80x30,
-    TEXTMODE_160x100,
-
-    CGA_160x200x16,
-    CGA_320x200x4,
-    CGA_640x200x2,
-
-    TGA_320x200x16,
-    EGA_320x200x16x4, // planar EGA
-    VGA_320x200x256,
-    VGA_320x200x256x4, // planar VGA
+    BK_256x256x2,
+    BK_512x256x1,
 };
-
 
 void graphics_init();
 
@@ -34,8 +24,6 @@ void graphics_set_offset(int x, int y);
 enum graphics_mode_t graphics_set_mode(enum graphics_mode_t mode);
 
 void graphics_set_flashmode(bool flash_line, bool flash_frame);
-
-void graphics_set_palette(uint8_t i, uint32_t color888);
 
 void graphics_set_bgcolor(uint32_t color888);
 
