@@ -41,8 +41,8 @@ bool SD_CARD_AVAILABLE = false;
 uint32_t DIRECT_RAM_BORDER = PSRAM_AVAILABLE ? RAM_SIZE : (SD_CARD_AVAILABLE ? RAM_PAGE_SIZE : RAM_SIZE);
 bool runing = true;
 
-uint8_t TEXT_VIDEO_RAM[VIDEORAM_SIZE] = { 0 };
-uint8_t RAM[RAM_SIZE] = { 0 };
+uint8_t __aligned(4096) TEXT_VIDEO_RAM[VIDEORAM_SIZE] = { 0 };
+uint8_t __aligned(4096) RAM[RAM_SIZE] = { 0 };
 
 pwm_config config = pwm_get_default_config();
 #define PWM_PIN0 (26)

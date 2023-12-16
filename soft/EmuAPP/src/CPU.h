@@ -111,9 +111,7 @@ typedef struct
 typedef struct
 {
     TCPU_State CPU_State;
-
     uintptr_t MemPages [4];
-
     struct
     {
         uint32_t PrevT;
@@ -121,7 +119,6 @@ typedef struct
         uint8_t  Div;
 
     } Timer;
-
     struct
     {
         uint16_t Reg177660;
@@ -136,7 +133,6 @@ typedef struct
         uint16_t RdReg177716;
         uint16_t WrReg177716;
         uint16_t Wr1Reg177716;
-
     } SysRegs;
 
 } TDevice_Data;

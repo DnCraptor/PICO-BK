@@ -56,7 +56,7 @@ static bool is_flash_line = false;
 static bool is_flash_frame = false;
 
 //буфер 1к графической палитры
-static uint16_t palette[2][5];
+static uint16_t palette[2][6];
 
 static uint32_t bg_color[2];
 static uint16_t palette16_mask = 0;
@@ -455,7 +455,7 @@ enum graphics_mode_t graphics_set_mode(enum graphics_mode_t mode) {
     //корректировка  палитры по маске бит синхры
     bg_color[0] = (bg_color[0] & 0x3f3f3f3f) | palette16_mask | (palette16_mask << 16);
     bg_color[1] = (bg_color[1] & 0x3f3f3f3f) | palette16_mask | (palette16_mask << 16);
-    for (int i = 0; i < 5; i++) {
+    for (int i = 0; i < 6; i++) {
         palette[0][i] = (palette[0][i] & 0x3f3f) | palette16_mask;
         palette[1][i] = (palette[1][i] & 0x3f3f) | palette16_mask;
     }
@@ -600,39 +600,46 @@ void graphics_set_bgcolor(uint32_t color888) {
 
 void graphics_init() {
     //инициализация палитры по умолчанию
-    {
+    { // black for 256*256*4
         uint8_t c_hi = 0xc0;
         uint8_t c_lo = 0xc0;
         palette[0][0] = (c_hi << 8) | c_lo;
         palette[1][0] = (c_lo << 8) | c_hi;
     }
-    {
+    { // blue for 256*256*4
         uint8_t b = 0b11;
         uint8_t c_hi = 0xc0 | b;
         uint8_t c_lo = 0xc0 | b;
         palette[0][1] = (c_hi << 8) | c_lo;
         palette[1][1] = (c_lo << 8) | c_hi;
     }
-    {
+    { // green for 256*256*4
         uint8_t g = 0b11 << 2;
         uint8_t c_hi = 0xc0 | g;
         uint8_t c_lo = 0xc0 | g;
         palette[0][2] = (c_hi << 8) | c_lo;
         palette[1][2] = (c_lo << 8) | c_hi;
     }
-    {
+    { // red for 256*256*4
         uint8_t r = 0b11 << 4;
         uint8_t c_hi = 0xc0 | r;
         uint8_t c_lo = 0xc0 | r;
         palette[0][3] = (c_hi << 8) | c_lo;
         palette[1][3] = (c_lo << 8) | c_hi;
     }
-    {
+    // 512*256*2
+    { // black
+        uint8_t c_hi = 0xc0;
+        uint8_t c_lo = 0xc0;
+        palette[0][4] = (c_hi << 8) | c_lo;
+        palette[1][4] = (c_lo << 8) | c_hi;
+    }
+    { // white
         uint8_t rgb = 0b111111;
         uint8_t c_hi = 0xc0 | rgb;
         uint8_t c_lo = 0xc0 | rgb;
-        palette[0][4] = (c_hi << 8) | c_lo;
-        palette[1][4] = (c_lo << 8) | c_hi;
+        palette[0][5] = (c_hi << 8) | c_lo;
+        palette[1][5] = (c_lo << 8) | c_hi;
     }
     //текстовая палитра
     for (int i = 0; i < 16; i++) {
