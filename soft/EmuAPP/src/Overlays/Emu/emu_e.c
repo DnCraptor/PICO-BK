@@ -5,17 +5,13 @@
 #include "esp8266.h"
 #include "pin_mux_register.h"
 #include "ovl.h"
-#include "ps2.h"
+#include "ps2_bk.h"
 #include "ps2_codes.h"
 #include "CPU.h"
 #include "Key.h"
-#include "menu.h"
 
 #include "emu_e.h"
 #include "CPU_e.h"
-
-#include "../EmuFfs/CPU_ef.h"
-#include "../EmuFfs/emu_ef.h"
 
 #include "../EmuUi/Key_eu.h"
 #include "../EmuUi/ps2_eu.h"
@@ -35,9 +31,9 @@ void AT_OVL emu_start (void)
 
     Time = getCycleCount ();
 
-    emu_OnTv ();
+  //  emu_OnTv ();
 
-    // Запускаем эмуляцию
+    // О©╫О©╫О©╫О©╫О©╫О©╫О©╫О©╫О©╫ О©╫О©╫О©╫О©╫О©╫О©╫О©╫О©╫
     while (1)
     {
         uint_fast8_t  Count;
@@ -89,7 +85,7 @@ void AT_OVL emu_start (void)
             if ((int32_t) (NewT - Time) > 0x10000L) Time = NewT - 0x10000L;
         }
 
-        // Вся периодика
+        // О©╫О©╫О©╫ О©╫О©╫О©╫О©╫О©╫О©╫О©╫О©╫О©╫
 
         switch (RunState++)
         {
@@ -139,9 +135,9 @@ void AT_OVL emu_start (void)
                 {
                     if (Key == KEY_MENU_ESC)
                     {
-                        emu_OffTv ();
-                        OVL_CALL (menu, MENU_FLAG_START_UI);
-                        emu_OnTv  ();
+                //        emu_OffTv ();
+               //TODO:         menu(MENU_FLAG_START_UI);
+                //        emu_OnTv  ();
 
                         Time = getCycleCount ();
                         T    = Device_Data.CPU_State.Time;

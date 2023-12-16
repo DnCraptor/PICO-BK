@@ -56,7 +56,7 @@ static bool is_flash_line = false;
 static bool is_flash_frame = false;
 
 //буфер 1к графической палитры
-static uint16_t palette[2][4];
+static uint16_t palette[2][5];
 
 static uint32_t bg_color[2];
 static uint16_t palette16_mask = 0;
@@ -335,6 +335,7 @@ inline static void dma_handler_VGA_impl() {
     uint8_t* output_buffer_8bit = (uint8_t *)output_buffer_16bit;
     switch (graphics_mode) {
         case BK_512x256x1: {
+            current_palette += 4;
             //1bit buf
             for (int x = width / 4; x--;) {
                 register uint8_t i = *input_buffer_8bit++;
@@ -454,7 +455,7 @@ enum graphics_mode_t graphics_set_mode(enum graphics_mode_t mode) {
     //корректировка  палитры по маске бит синхры
     bg_color[0] = (bg_color[0] & 0x3f3f3f3f) | palette16_mask | (palette16_mask << 16);
     bg_color[1] = (bg_color[1] & 0x3f3f3f3f) | palette16_mask | (palette16_mask << 16);
-    for (int i = 0; i < 4; i++) {
+    for (int i = 0; i < 5; i++) {
         palette[0][i] = (palette[0][i] & 0x3f3f) | palette16_mask;
         palette[1][i] = (palette[1][i] & 0x3f3f) | palette16_mask;
     }
@@ -625,6 +626,13 @@ void graphics_init() {
         uint8_t c_lo = 0xc0 | r;
         palette[0][3] = (c_hi << 8) | c_lo;
         palette[1][3] = (c_lo << 8) | c_hi;
+    }
+    {
+        uint8_t rgb = 0b111111;
+        uint8_t c_hi = 0xc0 | rgb;
+        uint8_t c_lo = 0xc0 | rgb;
+        palette[0][4] = (c_hi << 8) | c_lo;
+        palette[1][4] = (c_lo << 8) | c_hi;
     }
     //текстовая палитра
     for (int i = 0; i < 16; i++) {

@@ -21,44 +21,25 @@ set(CMAKE_LIBRARY_OUTPUT_DIRECTORY "${OUTPUT_DIR}")
 set(CMAKE_C_FLAGS   "${CMAKE_C_FLAGS}   -ffunction-sections -fdata-sections -O2")
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -ffunction-sections -fdata-sections -O2")
 
-if (PICO_PLATFORM STREQUAL "host")
-    set(SDL2_LIB_DIR C:/SDL/lib)
-    set(SDL2_INCLUDE_DIR C:/SDL/include)
-    set(SDL2_LIBRARY C:/SDL/bin)
-
-    include_directories(
-            ${SDL2_INCLUDE_DIR}
-    )
-
-    link_directories(
-            ${SDL2_LIB_DIR}
-    )
-
-else ()
-    #add_compile_definitions(${PROJECT_NAME} NO_GRAPHICS)
-    set(FAMILY rp2040)
-    set(BOARD pico_sdk)
-
-    add_subdirectory(drivers/vga-nextgen)
-    add_subdirectory(drivers/ps2)
-    add_subdirectory(drivers/fatfs)
-    add_subdirectory(drivers/sdcard)
-    add_subdirectory(drivers/psram)
-    add_subdirectory(drivers/nespad)
-endif ()
-
+#add_compile_definitions(${PROJECT_NAME} NO_GRAPHICS)
+set(FAMILY rp2040)
+set(BOARD pico_sdk)
+add_subdirectory(drivers/vga-nextgen)
+add_subdirectory(drivers/ps2)
+add_subdirectory(drivers/fatfs)
+add_subdirectory(drivers/sdcard)
+add_subdirectory(drivers/psram)
+add_subdirectory(drivers/nespad)
 
 # INCLUDE FILES THAT SHOULD BE COMPILED:
 
-file(GLOB_RECURSE SRC "src/*.cpp" "src/*.c")
-
+file(GLOB_RECURSE SRC "src/*.cpp" "src/*.c" "soft/EmuAPP/src/*.c")
 
 message(STATUS "Add source files:")
 foreach (SRC_FILE IN LISTS SRC)
     message(STATUS "${SRC_FILE}")
 endforeach ()
 message(STATUS "")
-
 
 add_executable(${PROJECT_NAME} ${SRC})
 
@@ -67,17 +48,6 @@ pico_set_program_version(pico-bk "test")
 
 #set(PICO_DEOPTIMIZED_DEBUG 1)
 
-if (PICO_PLATFORM STREQUAL "host")
-    target_link_libraries(${PROJECT_NAME} SDL2)
-    message(STATUS "Copying all dependencies to destination folder...")
-    file(GLOB PROJECT_DEPENDENCIES ${SDL2_LIBRARY}/*.dll)
-
-    foreach (Dependency IN LISTS PROJECT_DEPENDENCIES)
-        file(COPY ${Dependency} DESTINATION ${OUTPUT_DIR})
-    endforeach ()
-    add_link_options(-Wl,--gc-sections)
-
-else ()
     if (OVERCLOCKING)
         set_target_properties(${PROJECT_NAME} PROPERTIES OUTPUT_NAME "${PROJECT_NAME}-${OVERCLOCKING}MHz")
 
@@ -128,6 +98,8 @@ else ()
     target_include_directories(${PROJECT_NAME} PRIVATE
             ${CMAKE_CURRENT_SOURCE_DIR}/src
             ${CMAKE_CURRENT_SOURCE_DIR}/drivers/usb
+            ${CMAKE_CURRENT_SOURCE_DIR}/soft/EmuAPP/src
+            ${CMAKE_CURRENT_SOURCE_DIR}/soft/EmuAPP/src/Overlays/Emu 
 #            ${CMAKE_CURRENT_SOURCE_DIR}/assets
     )
     if (CMAKE_C_COMPILER_ID STREQUAL "GNU")
@@ -146,16 +118,6 @@ else ()
                 -w
         )
     endif ()
-
-
-    #[[    add_custom_command(TARGET ${PROJECT_NAME} POST_BUILD
-                COMMAND picotool info ${OUTPUT_DIR}/$<TARGET_PROPERTY:OUTPUT_NAME>.uf2 &&
-                picotool reboot -f -u & mode COM8 baud=12 parity=n data=8 stop=1 & ping -n 3 127.1> nul &
-                picotool load ${OUTPUT_DIR}/$<TARGET_PROPERTY:OUTPUT_NAME>.uf2 &&
-                picotool reboot
-        )]]
-
-endif ()
 
 target_compile_definitions(${PROJECT_NAME} PRIVATE
         PICO_HEAP_SIZE=0

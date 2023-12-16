@@ -6,19 +6,19 @@
 
 #define ETS_CCOMPARE0_INUM  6
 
+#include "hardware/structs/systick.h"
+
 static inline uint32_t timer0_read (void)
 {
-    uint32_t Ret;
-    __asm__ __volatile__("esync; rsr %0,ccompare0":"=a" (Ret));
-    return Ret;
+    return systick_hw->csr;
 }
 
-#define timer0_write( count) __asm__ __volatile__("wsr %0,ccompare0; esync"::"a" (count) : "memory")
+// #define timer0_write( count) __asm__ __volatile__("wsr %0,ccompare0; esync"::"a" (count) : "memory")
 
 static inline uint32_t getCycleCount()
 {
-    uint32_t ccount;
-    __asm__ __volatile__("esync; rsr %0,ccount":"=a" (ccount));
+    uint32_t ccount = systick_hw->csr;
+   // __asm__ __volatile__("esync; rsr %0,ccount":"=a" (ccount));
     return ccount;
 }
 

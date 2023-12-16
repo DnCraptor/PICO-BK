@@ -34,12 +34,12 @@ typedef enum {
 extern void uart_div_modify(int no, unsigned int freq);
 //extern void gpio_init(void);
 
-extern void gpio_output_set(uint32_t set_mask,
+static void gpio_output_set(uint32_t set_mask,
                      uint32_t clear_mask,
                      uint32_t enable_mask,
-                     uint32_t disable_mask);
+                     uint32_t disable_mask) {}
 extern uint32_t gpio_input_get(void);
-extern void gpio_pin_intr_state_set(uint32_t i, GPIO_INT_TYPE intr_state);
+static void gpio_pin_intr_state_set(uint32_t i, GPIO_INT_TYPE intr_state) {}
 
 //extern void ets_printf(char*, ...);
 //extern void ets_install_putc1(void *routine);
@@ -48,7 +48,7 @@ extern void gpio_pin_intr_state_set(uint32_t i, GPIO_INT_TYPE intr_state);
 //int ets_sprintf(char *str, const char *format, ...)  __attribute__ ((format (printf, 2, 3)));
 
 /*
-//    Вместо этих функция можно использовать стандартные Си, которые тоже есть в ROM.
+//    пїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅ, пїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅ пїЅ ROM.
 extern void ets_memset(void*, uint8_t, uint32_t);
 extern void ets_memcpy(void*, const void*, uint32_t);
 extern int ets_memcmp(const void *s1, const void *s2, uint32_t n);

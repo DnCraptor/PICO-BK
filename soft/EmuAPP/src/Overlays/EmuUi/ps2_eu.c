@@ -3,7 +3,7 @@
 #include "ets.h"
 #include "gpio_lib.h"
 #include "timer0.h"
-#include "ps2.h"
+#include "ps2_bk.h"
 #include "ps2_eu.h"
 #include "board.h"
 

@@ -2,7 +2,7 @@
 
 #include "gpio_lib.h"
 #include "timer0.h"
-#include "ps2.h"
+#include "ps2_bk.h"
 #include "board.h"
 
 Tps2_Data ps2_Data;

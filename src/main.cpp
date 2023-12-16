@@ -19,6 +19,7 @@ extern "C" {
 #include "vga.h"
 #include "ps2.h"
 #include "usb.h"
+#include "emu_e.h"
 }
 
 #else
@@ -136,7 +137,7 @@ int main() {
 
     memset(RAM, 0b10101010, sizeof RAM);
     memset(TEXT_VIDEO_RAM, 0, sizeof TEXT_VIDEO_RAM);
-    graphics_set_mode(BK_256x256x2);
+    graphics_set_mode(BK_512x256x1);
 
     init_psram();
 
@@ -150,7 +151,7 @@ int main() {
     }
 
     DIRECT_RAM_BORDER = PSRAM_AVAILABLE ? RAM_SIZE : (SD_CARD_AVAILABLE ? RAM_PAGE_SIZE : RAM_SIZE);
-
+emu_start();
     while (runing) {
      //   main_loop();
         if_manager();

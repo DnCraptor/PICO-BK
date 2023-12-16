@@ -20,10 +20,10 @@ enum
 #undef OVL_FUNC_DESC
 
 
-void ovl_SwitchToMode (uint_fast8_t Mode);
-int  ovl_Call         (int          iFunc, ...);
+//void ovl_SwitchToMode (uint_fast8_t Mode);
+//int  ovl_Call         (int          iFunc, ...);
 
-#define OVL_CALL0( FuncName)          ovl_Call (ovl_FuncId_##FuncName)
-#define OVL_CALL(  FuncName, Args...) ovl_Call (ovl_FuncId_##FuncName, Args)
+//#define OVL_CALL0( FuncName)          ovl_Call (ovl_FuncId_##FuncName)
+//#define OVL_CALL(  FuncName, Args...) ovl_Call (ovl_FuncId_##FuncName, Args)
 
 #endif
