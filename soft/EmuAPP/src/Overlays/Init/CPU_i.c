@@ -6,9 +6,9 @@
 #include "CPU.h"
 #include "CPU_i.h"
 
-#define AT_OVL __attribute__((section(".ovl3_i.text")))
+//#define AT_OVL __attribute__((section(".ovl3_i.text")))
 
-void AT_OVL CPU_Init (void)
+void /*AT_OVL*/ CPU_Init (void)
 {
     memset (&Device_Data, 0, sizeof (Device_Data));
 
@@ -34,18 +34,18 @@ void AT_OVL CPU_Init (void)
     //============================================================================
     //STEP 1: SIGMA-DELTA CONFIG;REG SETUP
 
-    WRITE_PERI_REG (GPIO_SIGMA_DELTA_ADDRESS,   SIGMA_DELTA_ENABLE
-                                              | (0x80 << SIGMA_DELTA_TARGET_S)
-                                              | (1 << SIGMA_DELTA_PRESCALAR_S));
+  //  WRITE_PERI_REG (GPIO_SIGMA_DELTA_ADDRESS,   SIGMA_DELTA_ENABLE
+   //                                           | (0x80 << SIGMA_DELTA_TARGET_S)
+   //                                           | (1 << SIGMA_DELTA_PRESCALAR_S));
 
     //============================================================================
     //STEP 2: PIN FUNC CONFIG :SET PIN TO GPIO MODE AND ENABLE OUTPUT
 
-    // Инитим порт пищалки
-    gpio_init_output(BEEPER);
+    // пїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅ
+ //   gpio_init_output(BEEPER);
 //  gpio_on         (BEEPER);
 
     //============================================================================
     //STEP 3: CONNECT SIGNAL TO GPIO PAD
-    WRITE_PERI_REG (PERIPHS_GPIO_BASEADDR + (10 + BEEPER) * 4, READ_PERI_REG (PERIPHS_GPIO_BASEADDR + (10 + BEEPER) * 4) | 1);
+   // WRITE_PERI_REG (PERIPHS_GPIO_BASEADDR + (10 + BEEPER) * 4, READ_PERI_REG (PERIPHS_GPIO_BASEADDR + (10 + BEEPER) * 4) | 1);
 }

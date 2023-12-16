@@ -19,6 +19,8 @@ extern "C" {
 #include "vga.h"
 #include "ps2.h"
 #include "usb.h"
+#include "CPU.h"
+#include "CPU_i.h"
 #include "emu_e.h"
 }
 
@@ -60,7 +62,7 @@ struct semaphore vga_start_semaphore;
 /* Renderer loop on Pico's second core */
 void __time_critical_func(render_core)() {
     graphics_init();
-    graphics_set_buffer(RAM + 0x4000 /*40000o = 16384d*/, 512, 256);
+    graphics_set_buffer(CPU_PAGE5_MEM_ADR, 512, 256);
     graphics_set_textbuffer(TEXT_VIDEO_RAM);
     graphics_set_bgcolor(0);
     graphics_set_offset(0, 0);
@@ -151,7 +153,9 @@ int main() {
     }
 
     DIRECT_RAM_BORDER = PSRAM_AVAILABLE ? RAM_SIZE : (SD_CARD_AVAILABLE ? RAM_PAGE_SIZE : RAM_SIZE);
-emu_start();
+
+    CPU_Init();
+    emu_start();
     while (runing) {
      //   main_loop();
         if_manager();

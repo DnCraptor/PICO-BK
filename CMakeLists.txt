@@ -33,7 +33,7 @@ add_subdirectory(drivers/nespad)
 
 # INCLUDE FILES THAT SHOULD BE COMPILED:
 
-file(GLOB_RECURSE SRC "src/*.cpp" "src/*.c" "soft/EmuAPP/src/*.c")
+file(GLOB_RECURSE SRC "src/*.cpp" "src/*.c" "soft/EmuAPP/src/*.c" "soft/EmuAPP/src/Overlays/Init/*.c")
 
 message(STATUS "Add source files:")
 foreach (SRC_FILE IN LISTS SRC)
@@ -99,7 +99,9 @@ pico_set_program_version(pico-bk "test")
             ${CMAKE_CURRENT_SOURCE_DIR}/src
             ${CMAKE_CURRENT_SOURCE_DIR}/drivers/usb
             ${CMAKE_CURRENT_SOURCE_DIR}/soft/EmuAPP/src
-            ${CMAKE_CURRENT_SOURCE_DIR}/soft/EmuAPP/src/Overlays/Emu 
+            ${CMAKE_CURRENT_SOURCE_DIR}/soft/EmuAPP/src/Overlays/Emu
+            ${CMAKE_CURRENT_SOURCE_DIR}/soft/EmuAPP/src/Overlays/Init
+            ${CMAKE_CURRENT_SOURCE_DIR}/soft/EmuAPP/ROM
 #            ${CMAKE_CURRENT_SOURCE_DIR}/assets
     )
     if (CMAKE_C_COMPILER_ID STREQUAL "GNU")
