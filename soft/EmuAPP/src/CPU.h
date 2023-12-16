@@ -3,8 +3,10 @@
 
 #include <stdint.h>
 
-// #define DEBUG_PRINT( X) printf X
-#define DEBUG_PRINT( X)
+extern void logMsg(char* msg);
+#define printf(...) { char tmp[80]; snprintf(tmp, 80, __VA_ARGS__); logMsg(tmp); }
+#define DEBUG_PRINT( X) printf X
+//#define DEBUG_PRINT( X)
 
 #define CPU_PAGE0_MEM_ADR  0x3FFEC000
 #define CPU_PAGE1_MEM_ADR  0x3FFF0000
@@ -139,7 +141,7 @@ typedef struct
 
 extern TDevice_Data Device_Data;
 
-// CPU timing в тактах
+// CPU timing О©╫ О©╫О©╫О©╫О©╫О©╫О©╫
 #define CPU_TIMING_BASE         16
 #define CPU_TIMING_HALT         96
 #define CPU_TIMING_WAIT         16
@@ -155,14 +157,14 @@ extern TDevice_Data Device_Data;
 #define CPU_TIMING_BUS_ERROR    64
 #define CPU_TIMING_STOP         64
 
-//однооперандные расчётные
+//О©╫О©╫О©╫О©╫О©╫О©╫О©╫О©╫О©╫О©╫О©╫О©╫О©╫О©╫ О©╫О©╫О©╫чёО©╫О©╫О©╫О©╫
 extern const uint8_t CPU_timing_OneOps_TST  [8];
 extern const uint8_t CPU_timing_OneOps_CLR  [8];
 extern const uint8_t CPU_timing_OneOps_MTPS [8];
 extern const uint8_t CPU_timing_OneOps_XOR  [8];
 extern const uint8_t CPU_timing_OneOps_JMP  [8];
 extern const uint8_t CPU_timing_OneOps_JSR  [8];
-//двухоперандные расчётные
+//О©╫О©╫О©╫О©╫О©╫О©╫О©╫О©╫О©╫О©╫О©╫О©╫О©╫О©╫ О©╫О©╫О©╫чёО©╫О©╫О©╫О©╫
 extern const uint8_t CPU_timing_TwoOps_MOV [64];
 extern const uint8_t CPU_timing_TwoOps_CMP [64];
 extern const uint8_t CPU_timing_TwoOps_BIS [64];

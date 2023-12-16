@@ -257,7 +257,7 @@ bool img_disk_write_sec(int drv, BYTE * buffer, LBA_t lba) {
 
 #ifdef BOOT_DEBUG
 void logFile(char* msg) {
-    f_open(&fileD, "\\XT\\boot.log", FA_WRITE | FA_OPEN_APPEND);
+    f_open(&fileD, "\\BK\\boot.log", FA_WRITE | FA_OPEN_APPEND);
     UINT bw;
     f_write(&fileD, msg, strlen(msg), &bw);
     f_close(&fileD);
