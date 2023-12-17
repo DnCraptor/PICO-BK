@@ -155,6 +155,9 @@ TCPU_Arg AT_OVL CPU_ReadMemB (TCPU_Arg Adr) {
     return ((uint8_t *) pReg) [Adr & 1];
 }
 
+// TODO: organise
+void graphics_set_buffer(uint8_t *buffer, uint16_t width, uint16_t height);
+
 TCPU_Arg AT_OVL CPU_WriteW (TCPU_Arg Adr, uint_fast16_t Word)
 {
     uint_fast16_t PrevWord;
@@ -180,6 +183,7 @@ TCPU_Arg AT_OVL CPU_WriteW (TCPU_Arg Adr, uint_fast16_t Word)
             break;
         case (0177662 >> 1):
             Device_Data.SysRegs.WrReg177662 = (uint16_t) Word;
+            graphics_set_buffer(Word & 0100000 ? CPU_PAGE6_MEM_ADR : CPU_PAGE5_MEM_ADR, 512, 256);
             break;
         case (0177664 >> 1):
             PrevWord = Device_Data.SysRegs.Reg177664;
@@ -290,10 +294,9 @@ TCPU_Arg AT_OVL CPU_WriteB (TCPU_Arg Adr, uint_fast8_t Byte)
             break;
 
         case (0177662 >> 1):
-
             Device_Data.SysRegs.WrReg177662 = (uint16_t) Word;
+            graphics_set_buffer(Word & 0100000 ? CPU_PAGE6_MEM_ADR : CPU_PAGE5_MEM_ADR, 512, 256);
             break;
-
         case (0177664 >> 1):
 
             PrevWord = Device_Data.SysRegs.Reg177664;
