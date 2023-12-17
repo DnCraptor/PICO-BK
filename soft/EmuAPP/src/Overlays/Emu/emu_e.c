@@ -82,9 +82,8 @@ void AT_OVL emu_start (void) {
                 //ps2_periodic ();
                 break;
             case 2:
-                DEBUG_PRINT(("ps2_read - ignored"));
-                //CodeAndFlags = ps2_read ();
-                //if (CodeAndFlags == 0) RunState = 5;
+                CodeAndFlags = ps2getcode(); // ps2_read ();
+                if (CodeAndFlags == 0) RunState = 5;
                 break;
             case 3:
                 DEBUG_PRINT(("CodeAndFlags: %Xh; CodeAndFlags == PS2_PAUSE: %d", CodeAndFlags, CodeAndFlags == PS2_PAUSE));
