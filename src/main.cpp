@@ -54,38 +54,31 @@ void PWM_init_pin(uint8_t pinN) {
     pwm_config_set_wrap(&config, (1 << 12) - 1); // MAX PWM value
     pwm_init(pwm_gpio_to_slice_num(pinN), &config, true);
 }
-
+#if NESPAD_ENABLED
 int timer_period = 54925;
-
+#endif
 struct semaphore vga_start_semaphore;
 /* Renderer loop on Pico's second core */
 void __time_critical_func(render_core)() {
     graphics_init();
     graphics_set_buffer(CPU_PAGE5_MEM_ADR, 512, 256);
     graphics_set_textbuffer(TEXT_VIDEO_RAM);
-    graphics_set_bgcolor(0);
+    graphics_set_bgcolor(0x80808080);
     graphics_set_offset(32, 0);
     graphics_set_flashmode(true, true);
-
     sem_acquire_blocking(&vga_start_semaphore);
-
+#if NESPAD_ENABLED
     uint8_t tick50ms_counter = 0;
     while (true) {
-       // doirq(0);
         busy_wait_us(timer_period);
         if (tick50ms_counter % 2 == 0 && nespad_available) {
             nespad_read();
             if (nespad_state) {
-                //logMsg("TEST");
-                // TODO: Speedup in time
-        //        sermouseevent(nespad_state & DPAD_B ? 1 : nespad_state & DPAD_A ? 2 : 0,
-        //                      nespad_state & DPAD_LEFT ? -3 : nespad_state & DPAD_RIGHT ? 3 : 0,
-        //                      nespad_state & DPAD_UP ? -3 : nespad_state & DPAD_DOWN ? 3 : 0);
+                sermouseevent(nespad_state & DPAD_B ? 1 : nespad_state & DPAD_A ? 2 : 0,
+                              nespad_state & DPAD_LEFT ? -3 : nespad_state & DPAD_RIGHT ? 3 : 0,
+                              nespad_state & DPAD_UP ? -3 : nespad_state & DPAD_DOWN ? 3 : 0);
             }
         }
-    //    if (tick50ms_counter == 0 || tick50ms_counter == 10) {
-    //        cursor_blink_state ^= 1;
-    //    }
         if (tick50ms_counter < 20) {
             tick50ms_counter++;
         }
@@ -93,6 +86,7 @@ void __time_critical_func(render_core)() {
             tick50ms_counter = 0;
         }
     }
+#endif
 }
 
 int main() {

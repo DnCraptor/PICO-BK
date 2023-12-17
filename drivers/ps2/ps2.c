@@ -278,7 +278,7 @@ uint32_t ps2getcode() {
         if ((ps2buffer[0] == 0xE0) && (ps2buffer[1] == 0xF0)) retval = ps2_to_xt_2(ps2buffer[2]) | 0x80;
     }
     //end translate code
-
+// TODO: manager mode
  //   for (i = len; i < KBD_BUFFER_SIZE; i++) {
  //       ps2buffer[i - len] = ps2buffer[i];
  //   }
