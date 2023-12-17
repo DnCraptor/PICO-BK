@@ -11,6 +11,14 @@ static volatile bool plusPressed = false;
 static volatile bool minusPressed = false;
 static volatile bool ctrlPressed = false;
 static volatile bool altPressed = false;
+static volatile bool f1Pressed = false;
+static volatile bool f2Pressed = false;
+static volatile bool f3Pressed = false;
+static volatile bool f4Pressed = false;
+static volatile bool f5Pressed = false;
+static volatile bool f6Pressed = false;
+static volatile bool f7Pressed = false;
+static volatile bool f8Pressed = false;
 static volatile bool tabPressed = false;
 static volatile bool upPressed = false;
 static volatile bool downPressed = false;
@@ -214,6 +222,45 @@ static void swap_drives(uint8_t cmd) {
 inline static void if_swap_drives() {
     if (backspacePressed && tabPressed && ctrlPressed) {
         swap_drives(8);
+    }
+}
+
+#include "CPU.h"
+
+inline static void if_video_mode() {
+  if (ctrlPressed || altPressed)
+    if(f1Pressed) {
+        graphics_set_buffer(CPU_PAGE0_MEM_ADR, 512, 256);
+        if (altPressed) graphics_set_mode(BK_256x256x2);
+        else graphics_set_mode(BK_512x256x1);
+    } else if (f2Pressed) {
+        graphics_set_buffer(CPU_PAGE1_MEM_ADR, 512, 256);
+        if (altPressed) graphics_set_mode(BK_256x256x2);
+        else graphics_set_mode(BK_512x256x1);
+    } else if (f3Pressed) {
+        graphics_set_buffer(CPU_PAGE6_MEM_ADR, 512, 256);
+        if (altPressed) graphics_set_mode(BK_256x256x2);
+        else graphics_set_mode(BK_512x256x1);
+    } else if (f4Pressed) {
+        graphics_set_buffer(CPU_PAGE7_MEM_ADR, 512, 256);
+        if (altPressed) graphics_set_mode(BK_256x256x2);
+        else graphics_set_mode(BK_512x256x1);
+    } else if (f5Pressed) {
+        graphics_set_buffer(CPU_PAGE5_MEM_ADR, 512, 256);
+        if (altPressed) graphics_set_mode(BK_256x256x2);
+        else graphics_set_mode(BK_512x256x1);
+    } else if (f6Pressed) {
+        graphics_set_buffer(CPU_PAGE8_MEM_ADR, 512, 256);
+        if (altPressed) graphics_set_mode(BK_256x256x2);
+        else graphics_set_mode(BK_512x256x1);
+    } else if (f7Pressed) {
+        graphics_set_buffer(CPU_PAGE9_MEM_ADR, 512, 256);
+        if (altPressed) graphics_set_mode(BK_256x256x2);
+        else graphics_set_mode(BK_512x256x1);
+    } else if (f8Pressed) {
+        graphics_set_buffer(CPU_PAGE12_MEM_ADR, 512, 256);
+        if (altPressed) graphics_set_mode(BK_256x256x2);
+        else graphics_set_mode(BK_512x256x1);
     }
 }
 
@@ -825,6 +872,38 @@ bool handleScancode(uint32_t ps2scancode) { // core 1
       case 0xA3:
         hPressed = false;
         break;
+      case 0x3B: // F1..10 down
+        f1Pressed = true; break;
+      case 0x3C: // F2
+        f2Pressed = true; break;
+      case 0x3D: // F3
+        f3Pressed = true; break;
+      case 0x3E: // F4
+        f4Pressed = true; break;
+      case 0x3F: // F5
+        f5Pressed = true; break;
+      case 0x40: // F6
+        f6Pressed = true; break;
+      case 0x41: // F7
+        f7Pressed = true; break;
+      case 0x42: // F8
+        f8Pressed = true; break;
+      case 0xBB: // F1..10 up
+        f1Pressed = false; break;
+      case 0xBC: // F2
+        f2Pressed = false; break;
+      case 0xBD: // F3
+        f3Pressed = false; break;
+      case 0xBE: // F4
+        f4Pressed = false; break;
+      case 0xBF: // F5
+        f5Pressed = false; break;
+      case 0xC0: // F6
+        f6Pressed = false; break;
+      case 0xC1: // F7
+        f7Pressed = false; break;
+      case 0xC2: // F8
+        f8Pressed = false; break;
       case 0x0F:
         tabPressed = true;
         break;
@@ -884,6 +963,7 @@ inline void if_overclock() {
 }
 
 void if_manager() {
+    if_video_mode();
     if_swap_drives();
     if_overclock();
     if_sound_control();

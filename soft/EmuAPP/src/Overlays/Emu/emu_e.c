@@ -31,7 +31,8 @@ void AT_OVL emu_start (void) {
     DEBUG_PRINT(("Time: %d", Time));
     // emu_OnTv ();
     // Запускаем эмуляцию
-    while (1){
+    while (1) {
+        if_manager();
         uint_fast8_t  Count;
         DEBUG_PRINT(("Key_Flags: %08Xh; (Key_Flags & KEY_FLAGS_TURBO): %d", Key_Flags, (Key_Flags & KEY_FLAGS_TURBO)));
         if (Key_Flags & KEY_FLAGS_TURBO) {

@@ -39,7 +39,6 @@ volatile uint16_t true_covox = 0;
 bool PSRAM_AVAILABLE = false;
 bool SD_CARD_AVAILABLE = false;
 uint32_t DIRECT_RAM_BORDER = PSRAM_AVAILABLE ? RAM_SIZE : (SD_CARD_AVAILABLE ? RAM_PAGE_SIZE : RAM_SIZE);
-bool runing = true;
 
 uint8_t __aligned(4096) TEXT_VIDEO_RAM[VIDEORAM_SIZE] = { 0 };
 uint8_t __aligned(4096) RAM[RAM_SIZE] = { 0 };
@@ -62,7 +61,7 @@ struct semaphore vga_start_semaphore;
 /* Renderer loop on Pico's second core */
 void __time_critical_func(render_core)() {
     graphics_init();
-    graphics_set_buffer(CPU_PAGE0_MEM_ADR, 512, 256);
+    graphics_set_buffer(CPU_PAGE5_MEM_ADR, 512, 256);
     graphics_set_textbuffer(TEXT_VIDEO_RAM);
     graphics_set_bgcolor(0);
     graphics_set_offset(0, 0);
@@ -133,7 +132,7 @@ int main() {
 
     sleep_ms(50);
 
-    memset(RAM, 0b01010101, sizeof RAM);
+    memset(RAM, 0, sizeof RAM);
     memset(TEXT_VIDEO_RAM, 0, sizeof TEXT_VIDEO_RAM);
     graphics_set_mode(BK_512x256x1);
 
@@ -152,9 +151,5 @@ int main() {
 
     CPU_Init();
     emu_start();
-    while (runing) {
-     //   main_loop();
-        if_manager();
-    }
     return 0;
 }

@@ -23,10 +23,10 @@ void /*AT_OVL*/ CPU_Init (void)
     Device_Data.SysRegs.WrReg177662  = 047400;
     Device_Data.SysRegs.Wr1Reg177716 = (1 << 12) | 1;
 
-    Device_Data.MemPages [0] = CPU_PAGE0_MEM_ADR; /* RAM Page 0*/
+    Device_Data.MemPages [0] = CPU_PAGE0_MEM_ADR; /* RAM Page 0 */
     Device_Data.MemPages [1] = CPU_PAGE5_MEM_ADR; /* RAM Page 4 video 0 */
-    Device_Data.MemPages [3] = CPU_PAGE4_MEM_ADR; /* ROM Page 3 - bk11m_324_bos.rom + bk11m_330_mstd.rom */
-    Device_Data.MemPages [2] = CPU_PAGE0_MEM_ADR; /* ROM Page 0 - bk11m_328_basic2.rom + bk11m_329_basic3.rom */
+    Device_Data.MemPages [2] = CPU_PAGE8_MEM_ADR; /* ROM Page 0 - bk11m_328_basic2.rom + bk11m_329_basic3.rom */
+    Device_Data.MemPages [3] = CPU_PAGE12_MEM_ADR; /* ROM Page 1 - bk11m_324_bos.rom + bk11m_330_mstd.rom */
 
     Device_Data.CPU_State.psw   = 0340;
     Device_Data.CPU_State.r [7] = Device_Data.SysRegs.RdReg177716 & 0177400;
