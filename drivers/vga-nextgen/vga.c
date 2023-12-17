@@ -293,7 +293,7 @@ inline static void dma_handler_VGA_impl() {
     // uint8_t* vbuf8=vbuf+(line*g_buf_width/2); //4bit buf
     //uint8_t* vbuf8=vbuf+(line*g_buf_width/4); //2bit buf
     //uint8_t* vbuf8=vbuf+((line&1)*8192+(line>>1)*g_buf_width/4);
-    uint8_t* input_buffer_8bit = input_buffer + ((y / 2) * 80) + ((y & 1) * 8192);
+    uint8_t* input_buffer_8bit = input_buffer + 64 * y;
 
 
     //output_buffer = &lines_pattern[2 + ((line_number) & 1)];
@@ -337,7 +337,7 @@ inline static void dma_handler_VGA_impl() {
         case BK_512x256x1: {
             current_palette += 4;
             //1bit buf
-            for (int x = width / 4; x--;) {
+            for (int x = width / 8; x--;) {
                 register uint8_t i = *input_buffer_8bit++;
                 *output_buffer_8bit++ = current_palette[(i >> 7) & 1];
                 *output_buffer_8bit++ = current_palette[(i >> 6) & 1];
@@ -352,7 +352,7 @@ inline static void dma_handler_VGA_impl() {
         }
         case BK_256x256x2: {
             //2bit buf
-            for (int x = width / 4; x--;) {
+            for (int x = width / 8; x--;) {
                 register uint8_t i = *input_buffer_8bit++;
                 register uint8_t t = current_palette[(i >> 6) & 3];
                 *output_buffer_8bit++ = t;
