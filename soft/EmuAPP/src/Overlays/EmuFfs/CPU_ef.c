@@ -158,7 +158,7 @@ TCPU_Arg AT_OVL CPU_ReadMemB (TCPU_Arg Adr) {
 TCPU_Arg AT_OVL CPU_WriteW (TCPU_Arg Adr, uint_fast16_t Word)
 {
     uint_fast16_t PrevWord;
-    DEBUG_PRINT(("CPU_WriteW(%08Xh, %oo) Page: #%d", Adr, Word, (Adr) >> 14));
+    DEBUG_PRINT(("CPU_WriteW(%oo, %oo) Page: #%d", Adr, Word, (Adr) >> 14));
     if (CPU_IS_ARG_REG (Adr)) {
         DEBUG_PRINT(("R%d <= %oo", CPU_GET_ARG_REG_INDEX (Adr), Word));
         Device_Data.CPU_State.r [CPU_GET_ARG_REG_INDEX (Adr)] = (uint16_t) Word;
@@ -166,7 +166,8 @@ TCPU_Arg AT_OVL CPU_WriteW (TCPU_Arg Adr, uint_fast16_t Word)
     }
     if (Adr < 0140000) {
         uintptr_t Page = Device_Data.MemPages [(Adr) >> 14];
-        if (Page && Page < CPU_PAGE8_MEM_ADR) {
+        DEBUG_PRINT(("CPU_WriteW(%oo, %oo) Page: %08X (#%d)", Adr, Word, Page, (Adr) >> 14));
+        if (Page && Page < CPU_PAGE0_MEM_ADR + RAM_PAGES_SIZE) {
             AnyMem_w_u16 ((uint16_t *) (Page + ((Adr) & 0x3FFE)), Word);
             return CPU_ARG_WRITE_OK;
         }
@@ -210,7 +211,7 @@ TCPU_Arg AT_OVL CPU_WriteW (TCPU_Arg Adr, uint_fast16_t Word)
             }
             break;
         case (0177716 >> 1):
-            DEBUG_PRINT(("case (0177716 >> 1) on CPU_WriteW - switch pages"));
+            DEBUG_PRINT(("case (0177716 >> 1) on CPU_WriteW - switch pages: %d", (Word >> 12) & 7));
             if (Word & (1U << 11)) {
                 static const uintptr_t PageTab [8] = {
                     CPU_PAGE1_MEM_ADR,
@@ -264,7 +265,7 @@ TCPU_Arg AT_OVL CPU_WriteB (TCPU_Arg Adr, uint_fast8_t Byte)
     {
         uintptr_t Page = Device_Data.MemPages [(Adr) >> 14];
 
-        if (Page && Page < CPU_PAGE8_MEM_ADR)
+        if (Page && Page < CPU_PAGE0_MEM_ADR + RAM_PAGES_SIZE)
         {
             AnyMem_w_u8 ((uint8_t *) (Page + ((Adr) & 0x3FFF)), Byte);
 

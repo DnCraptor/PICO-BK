@@ -238,27 +238,27 @@ inline static void if_video_mode() {
         if (altPressed) graphics_set_mode(BK_256x256x2);
         else graphics_set_mode(BK_512x256x1);
     } else if (f3Pressed) {
-        graphics_set_buffer(CPU_PAGE6_MEM_ADR, 512, 256);
+        graphics_set_buffer(CPU_PAGE2_MEM_ADR, 512, 256);
         if (altPressed) graphics_set_mode(BK_256x256x2);
         else graphics_set_mode(BK_512x256x1);
     } else if (f4Pressed) {
-        graphics_set_buffer(CPU_PAGE7_MEM_ADR, 512, 256);
+        graphics_set_buffer(CPU_PAGE3_MEM_ADR, 512, 256);
         if (altPressed) graphics_set_mode(BK_256x256x2);
         else graphics_set_mode(BK_512x256x1);
     } else if (f5Pressed) {
-        graphics_set_buffer(CPU_PAGE5_MEM_ADR, 512, 256);
+        graphics_set_buffer(CPU_PAGE4_MEM_ADR, 512, 256);
         if (altPressed) graphics_set_mode(BK_256x256x2);
         else graphics_set_mode(BK_512x256x1);
     } else if (f6Pressed) {
-        graphics_set_buffer(CPU_PAGE8_MEM_ADR, 512, 256);
+        graphics_set_buffer(CPU_PAGE5_MEM_ADR, 512, 256);
         if (altPressed) graphics_set_mode(BK_256x256x2);
         else graphics_set_mode(BK_512x256x1);
     } else if (f7Pressed) {
-        graphics_set_buffer(CPU_PAGE9_MEM_ADR, 512, 256);
+        graphics_set_buffer(CPU_PAGE6_MEM_ADR, 512, 256);
         if (altPressed) graphics_set_mode(BK_256x256x2);
         else graphics_set_mode(BK_512x256x1);
     } else if (f8Pressed) {
-        graphics_set_buffer(CPU_PAGE12_MEM_ADR, 512, 256);
+        graphics_set_buffer(CPU_PAGE7_MEM_ADR, 512, 256);
         if (altPressed) graphics_set_mode(BK_256x256x2);
         else graphics_set_mode(BK_512x256x1);
     }
