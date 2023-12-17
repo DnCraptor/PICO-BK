@@ -209,6 +209,43 @@ uint8_t ps2_to_xt_2(uint32_t val) {
     return 0;
 }
 
+uint32_t ps2get_raw_code() {
+    uint32_t retval, i, len;
+    if (!ps2bufsize) return 0;
+    switch (ps2buffer[0]) {
+        case 0xF0:
+        case 0xE0:
+        case 0xE1:
+            len = 2;
+            break;
+        default:
+            len = 1;
+            break;
+    }
+    if (ps2bufsize < len) return 0;
+    if (ps2buffer[0] == 0xE0) {
+        if (ps2buffer[1] == 0xF0) len = 3;
+    }
+    if (ps2bufsize < len) return 0;
+    retval = 0;
+    //translate code
+    if (len == 1) {
+        retval = ps2buffer[0];
+    }
+    if (len == 2) {
+        if (ps2buffer[0] == 0xF0) retval = ps2buffer[1] | 0x80;
+        if (ps2buffer[0] == 0xE0) retval = ps2buffer[1];
+    }
+    if (len == 3) {
+        if ((ps2buffer[0] == 0xE0) && (ps2buffer[1] == 0xF0)) retval = ps2buffer[2] | 0x80;
+    }
+    for (i = len; i < KBD_BUFFER_SIZE; i++) {
+        ps2buffer[i - len] = ps2buffer[i];
+    }
+    ps2bufsize -= len;
+    return retval;
+}
+
 uint32_t ps2getcode() {
     uint32_t retval, i, len;
     if (!ps2bufsize) return 0;
@@ -242,11 +279,10 @@ uint32_t ps2getcode() {
     }
     //end translate code
 
-    for (i = len; i < KBD_BUFFER_SIZE; i++) {
-        ps2buffer[i - len] = ps2buffer[i];
-    }
-
-    ps2bufsize -= len;
+ //   for (i = len; i < KBD_BUFFER_SIZE; i++) {
+ //       ps2buffer[i - len] = ps2buffer[i];
+ //   }
+ //   ps2bufsize -= len;
 
     // NUMLOCK
 

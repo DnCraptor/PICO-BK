@@ -16,7 +16,7 @@ _FILE * getFileC() { return &fileC; }
 size_t getFileA_sz() { return fileA.obj.fs ? f_size(&fileA) : 0; }
 size_t getFileB_sz() { return fileB.obj.fs ? f_size(&fileB) : 0; }
 size_t getFileC_sz() { return fileC.obj.fs ? f_size(&fileC) : 0; }
-#ifdef BOOT_DEBUG
+#if BOOT_DEBUG || KBD_DEBUG
 _FILE fileD; // for debug output
 #endif
 #else
@@ -255,7 +255,7 @@ bool img_disk_write_sec(int drv, BYTE * buffer, LBA_t lba) {
 }
 #endif
 
-#ifdef BOOT_DEBUG
+#if BOOT_DEBUG || KBD_DEBUG
 void logFile(char* msg) {
     gpio_put(PICO_DEFAULT_LED_PIN, true);
     f_open(&fileD, "\\BK\\boot.log", FA_WRITE | FA_OPEN_APPEND);

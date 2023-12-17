@@ -20,6 +20,8 @@
 
 #define AT_OVL __attribute__((section(".ovl3_e.text")))
 
+uint32_t ps2get_raw_code(); // TODO:
+
 void AT_OVL emu_start (void) {
     int_fast32_t  Time;
     uint_fast32_t T            = 0;
@@ -82,27 +84,31 @@ void AT_OVL emu_start (void) {
                 //ps2_periodic ();
                 break;
             case 2:
-                CodeAndFlags = ps2getcode(); // ps2_read ();
+                CodeAndFlags = ps2get_raw_code(); // ps2_read ();
                 if (CodeAndFlags == 0) RunState = 5;
+                else { KBD_PRINT(("CodeAndFlags: %Xh", CodeAndFlags)); }
                 break;
             case 3:
-                DEBUG_PRINT(("CodeAndFlags: %Xh; CodeAndFlags == PS2_PAUSE: %d", CodeAndFlags, CodeAndFlags == PS2_PAUSE));
+                KBD_PRINT(("CodeAndFlags: %Xh; CodeAndFlags == PS2_PAUSE: %d", CodeAndFlags, CodeAndFlags == PS2_PAUSE));
                 if (CodeAndFlags == PS2_PAUSE) {
                     RunState = 5;
                     CPU_Stop ();
                 }
                 else {
                     Key = Key_Translate (CodeAndFlags);
+                    KBD_PRINT(("CodeAndFlags: %Xh Key_Translate: %Xh", CodeAndFlags, Key));
                 }
                 break;
             case 4:
                 // ps2_leds ((Key_Flags >> KEY_FLAGS_TURBO_POS) & 7);
-                DEBUG_PRINT(("ps2_leds - ignored"));
+                KBD_PRINT(("ps2_leds - ignored"));
                 if (Key_Flags & KEY_FLAGS_NUMLOCK) Device_Data.SysRegs.RdReg177714 = (uint16_t) (Key_Flags >> KEY_FLAGS_UP_POS);
                 else                               Device_Data.SysRegs.RdReg177714 = 0;
+                KBD_PRINT(("Device_Data.SysRegs.RdReg177714: %Xh", Device_Data.SysRegs.RdReg177714));
                 if (CodeAndFlags & 0x8000U) {
                     if (((LastKey ^ CodeAndFlags) & 0x7FF) == 0) {
                         Device_Data.SysRegs.RdReg177716 |= 0100;
+                        KBD_PRINT(("Device_Data.SysRegs.RdReg177716: %Xh", Device_Data.SysRegs.RdReg177716));
                         LastKey = 0xC00;
                     }
                 }
@@ -122,13 +128,14 @@ void AT_OVL emu_start (void) {
                 break;
             case 6:
                 Device_Data.SysRegs.RdReg177716 &= ~0100;
+                KBD_PRINT(("Device_Data.SysRegs.RdReg177716: %Xh (6)", Device_Data.SysRegs.RdReg177716));
             case 5:
                 if ((LastKey & 0x800) == 0) {
                     if ((Device_Data.SysRegs.Reg177660 & 0200) == 0) {
                         Key = (uint_fast16_t) (LastKey >> 16);
-DEBUG_PRINT(("Key_SetRusLat - ignored"));
-                      //  if      (Key == 14) Key_SetRusLat ();
-                     //   else if (Key == 15) Key_ClrRusLat ();
+KBD_PRINT(("Key: %d (5)", Key));
+                        if      (Key == 14) Key_SetRusLat ();
+                        else if (Key == 15) Key_ClrRusLat ();
                         if ((Device_Data.SysRegs.Reg177660 & 0100) == 0) {
                             if (Key & KEY_AR2_PRESSED) {
                                 Device_Data.CPU_State.Flags &= ~CPU_FLAG_KEY_VECTOR_60;
@@ -138,11 +145,14 @@ DEBUG_PRINT(("Key_SetRusLat - ignored"));
                                 Device_Data.CPU_State.Flags &= ~CPU_FLAG_KEY_VECTOR_274;
                                 Device_Data.CPU_State.Flags |=  CPU_FLAG_KEY_VECTOR_60;
                             }
+                            KBD_PRINT(("Device_Data.CPU_State.Flags: %Xh (5)", Device_Data.CPU_State.Flags));
                         }
                         Device_Data.SysRegs.Reg177660 |= 0200;
+                        KBD_PRINT(("Device_Data.SysRegs.Reg177660: %Xh (5)", Device_Data.SysRegs.Reg177660));
                     }
                     LastKey |= 0x800;
                     Device_Data.SysRegs.RdReg177662 = (uint16_t) (LastKey >> 16) & 0177;
+                    KBD_PRINT(("Device_Data.SysRegs.RdReg177662: %Xh (5)", Device_Data.SysRegs.RdReg177662));
                 }
                 RunState = 0;
                 break;

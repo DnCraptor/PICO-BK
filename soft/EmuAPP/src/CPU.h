@@ -12,6 +12,13 @@ extern void logMsg(char* msg);
 #else
 #define DEBUG_PRINT( X)
 #endif
+#ifdef KBD_DEBUG
+extern void logMsg(char* msg);
+#define printf(...) { char tmp[80]; snprintf(tmp, 80, __VA_ARGS__); logMsg(tmp); }
+#define KBD_PRINT( X) printf X
+#else
+#define KBD_PRINT( X)
+#endif
 #define RAM_PAGES_SIZE (sizeof RAM)
 #define CPU_PAGE0_MEM_ADR  &RAM[0x00000] /* RAM Page 0 0..40000 it was 0x3FFEC000 */
 #define CPU_PAGE1_MEM_ADR  &RAM[0x04000] /* RAM Page 1          it was 0x3FFF0000 */
