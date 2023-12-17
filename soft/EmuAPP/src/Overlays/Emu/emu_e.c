@@ -29,7 +29,7 @@ void AT_OVL emu_start (void) {
     uint_fast8_t  RunState     = 0;
     Time = getCycleCount ();
     DEBUG_PRINT(("Time: %d", Time));
-    // emu_OnTv ();
+    //emu_OnTv ();
     // Запускаем эмуляцию
     while (1) {
         if_manager();

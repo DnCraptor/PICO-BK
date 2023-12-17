@@ -11,6 +11,8 @@
 
 #include "CPU_ef.h"
 
+void notify_177662(uint16_t Word);
+
 #define AT_OVL __attribute__((section(".ovl0_ef.text")))
 
 /*
@@ -180,6 +182,7 @@ TCPU_Arg AT_OVL CPU_WriteW (TCPU_Arg Adr, uint_fast16_t Word)
             break;
         case (0177662 >> 1):
             Device_Data.SysRegs.WrReg177662 = (uint16_t) Word;
+            notify_177662((uint16_t) Word);
             break;
         case (0177664 >> 1):
             PrevWord = Device_Data.SysRegs.Reg177664;
@@ -290,10 +293,9 @@ TCPU_Arg AT_OVL CPU_WriteB (TCPU_Arg Adr, uint_fast8_t Byte)
             break;
 
         case (0177662 >> 1):
-
             Device_Data.SysRegs.WrReg177662 = (uint16_t) Word;
+            notify_177662((uint16_t) Word);
             break;
-
         case (0177664 >> 1):
 
             PrevWord = Device_Data.SysRegs.Reg177664;

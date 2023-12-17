@@ -46,7 +46,7 @@ static int AT_OVL emu_tv (uint32_t *pBuf, uint_fast16_t Line)
 
     pBuf += 5;
 
-    // Ú…”’≈Õ ”‘“œÀ’
+    // –†–∏—Å—É–µ–º —Å—Ç—Ä–æ–∫—É
     if (Device_Data.SysRegs.WrReg177662 & 0100000) pVRam = &CPU_PAGE6_MEM32 [((Line + StartMaxLine) & 0xFF) * 16];
     else                                           pVRam = &CPU_PAGE5_MEM32 [((Line + StartMaxLine) & 0xFF) * 16];
 

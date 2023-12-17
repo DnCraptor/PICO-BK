@@ -20,7 +20,7 @@ void /*AT_OVL*/ CPU_Init (void)
 //  Device_Data.SysRegs.Reg177712   = 0177400;
 //  Device_Data.SysRegs.RdReg177714 = 0;
     Device_Data.SysRegs.RdReg177716 = (0140000 & 0177400) | 0300;
-    Device_Data.SysRegs.WrReg177662  = 047400;
+    Device_Data.SysRegs.WrReg177662  = 047400; // номер буфера экрана 0 таймер влючен 1 н/и 00 код палитры 1111 н/и 0 код символа 0000000
     Device_Data.SysRegs.Wr1Reg177716 = (1 << 12) | 1;
 
     Device_Data.MemPages [0] = CPU_PAGE0_MEM_ADR; /* RAM Page 0 */
