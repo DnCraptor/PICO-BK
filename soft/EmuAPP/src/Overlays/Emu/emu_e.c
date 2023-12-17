@@ -51,8 +51,8 @@ void AT_OVL emu_start (void) {
                 int_fast32_t t = getCycleCount ();
                 DEBUG_PRINT(("Count: %d; t: %d; Time - t: %d", Count, t, (int32_t) (Time - t)));
                 if ((int32_t) (Time - t) > 0) {
-                    DEBUG_PRINT(("break"));
-                    break;
+       // TODO: adjust performance             DEBUG_PRINT(("break"));
+       //             break;
                 }
                 CPU_RunInstruction ();
                 NewT  = Device_Data.CPU_State.Time;
