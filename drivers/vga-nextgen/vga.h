@@ -16,6 +16,7 @@ enum graphics_mode_t {
 void graphics_init();
 
 void graphics_set_buffer(uint8_t *buffer, uint16_t width, uint16_t height);
+void graphics_set_buffer_l(uint8_t *buffer, bool lock_video_mode);
 
 void graphics_set_textbuffer(uint8_t *buffer);
 

@@ -47,6 +47,7 @@ static int dma_chan_ctrl;
 static int dma_chan;
 
 static uint8_t* graphics_buffer;
+static bool _lock_video_mode;
 static uint graphics_buffer_width = 0;
 static uint graphics_buffer_height = 0;
 static int graphics_buffer_shift_x = 0;
@@ -159,6 +160,18 @@ inline static void sound_callback() {
     pwm_set_gpio_level(PWM_PIN1, r_v);
 }
 #endif
+
+#include "CPU.h"
+// TODO: start line
+volatile uint16_t Word177662 = 047400; // номер буфера экрана 0 таймер влючен 1 н/и 00 код палитры 1111 н/и 0 код символа 0;
+volatile uint8_t current_palette_idx = 0b1111;
+void notify_177662(uint16_t Word) {
+    Word177662 = Word;
+    if (_lock_video_mode) return;
+  //  if (Word & 0100000) graphics_buffer = CPU_PAGE6_MEM_ADR; /* RAM Page 2 video page 1 */
+  //  else graphics_buffer = CPU_PAGE5_MEM_ADR /* RAM Page 4 video page 0 */;
+    current_palette_idx = (Word >> 8) & 15;
+}
 
 inline static void dma_handler_VGA_impl() {
     dma_hw->ints0 = 1u << dma_chan_ctrl;
@@ -337,7 +350,7 @@ inline static void dma_handler_VGA_impl() {
         case BK_512x256x1: {
             current_palette += 4;
             //1bit buf
-            for (int x = width / 4; x--;) {
+            for (int x = 512 / 8; x--;) {
                 register uint8_t i = *input_buffer_8bit++;
                 *output_buffer_8bit++ = current_palette[(i >> 7) & 1];
                 *output_buffer_8bit++ = current_palette[(i >> 6) & 1];
@@ -352,7 +365,7 @@ inline static void dma_handler_VGA_impl() {
         }
         case BK_256x256x2: {
             //2bit buf
-            for (int x = width / 4; x--;) {
+            for (int x = 256 / 4; x--;) {
                 register uint8_t i = *input_buffer_8bit++;
                 register uint8_t t = current_palette[(i >> 6) & 3];
                 *output_buffer_8bit++ = t;
@@ -504,6 +517,15 @@ void graphics_set_buffer(uint8_t* buffer, uint16_t width, uint16_t height) {
     graphics_buffer = buffer;
     graphics_buffer_width = width;
     graphics_buffer_height = height;
+    _lock_video_mode = false;
+};
+
+void graphics_set_buffer_l(uint8_t* buffer, bool lock_video_mode) {
+    graphics_buffer = buffer;
+    _lock_video_mode = lock_video_mode;
+    if (!lock_video_mode) {
+     //   notify_177662(Word177662);
+    }
 };
 
 void graphics_set_offset(int x, int y) {

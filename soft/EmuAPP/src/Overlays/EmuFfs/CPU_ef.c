@@ -155,6 +155,8 @@ TCPU_Arg AT_OVL CPU_ReadMemB (TCPU_Arg Adr) {
     return ((uint8_t *) pReg) [Adr & 1];
 }
 
+void notify_177662(uint16_t Word);
+
 TCPU_Arg AT_OVL CPU_WriteW (TCPU_Arg Adr, uint_fast16_t Word)
 {
     uint_fast16_t PrevWord;
@@ -180,6 +182,7 @@ TCPU_Arg AT_OVL CPU_WriteW (TCPU_Arg Adr, uint_fast16_t Word)
             break;
         case (0177662 >> 1):
             Device_Data.SysRegs.WrReg177662 = (uint16_t) Word;
+       //     notify_177662(Device_Data.SysRegs.WrReg177662);
             break;
         case (0177664 >> 1):
             PrevWord = Device_Data.SysRegs.Reg177664;
@@ -290,8 +293,8 @@ TCPU_Arg AT_OVL CPU_WriteB (TCPU_Arg Adr, uint_fast8_t Byte)
             break;
 
         case (0177662 >> 1):
-
             Device_Data.SysRegs.WrReg177662 = (uint16_t) Word;
+        //    notify_177662(Device_Data.SysRegs.WrReg177662);
             break;
 
         case (0177664 >> 1):
