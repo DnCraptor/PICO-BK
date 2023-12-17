@@ -157,6 +157,8 @@ TCPU_Arg AT_OVL CPU_ReadMemB (TCPU_Arg Adr) {
     return ((uint8_t *) pReg) [Adr & 1];
 }
 
+void notify_177662(uint16_t Word);
+
 TCPU_Arg AT_OVL CPU_WriteW (TCPU_Arg Adr, uint_fast16_t Word)
 {
     uint_fast16_t PrevWord;

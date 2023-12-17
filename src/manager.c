@@ -19,6 +19,7 @@ static volatile bool f5Pressed = false;
 static volatile bool f6Pressed = false;
 static volatile bool f7Pressed = false;
 static volatile bool f8Pressed = false;
+static volatile bool f9Pressed = false;
 static volatile bool tabPressed = false;
 static volatile bool upPressed = false;
 static volatile bool downPressed = false;
@@ -230,35 +231,39 @@ inline static void if_swap_drives() {
 inline static void if_video_mode() {
   if (ctrlPressed || altPressed)
     if(f1Pressed) {
-        graphics_set_buffer(CPU_PAGE0_MEM_ADR, 512, 256);
+        graphics_set_buffer_l(CPU_PAGE0_MEM_ADR, true);
         if (altPressed) graphics_set_mode(BK_256x256x2);
         else graphics_set_mode(BK_512x256x1);
     } else if (f2Pressed) {
-        graphics_set_buffer(CPU_PAGE1_MEM_ADR, 512, 256);
+        graphics_set_buffer_l(CPU_PAGE1_MEM_ADR, true);
         if (altPressed) graphics_set_mode(BK_256x256x2);
         else graphics_set_mode(BK_512x256x1);
     } else if (f3Pressed) {
-        graphics_set_buffer(CPU_PAGE2_MEM_ADR, 512, 256);
+        graphics_set_buffer_l(CPU_PAGE2_MEM_ADR, true);
         if (altPressed) graphics_set_mode(BK_256x256x2);
         else graphics_set_mode(BK_512x256x1);
     } else if (f4Pressed) {
-        graphics_set_buffer(CPU_PAGE3_MEM_ADR, 512, 256);
+        graphics_set_buffer_l(CPU_PAGE3_MEM_ADR, true);
         if (altPressed) graphics_set_mode(BK_256x256x2);
         else graphics_set_mode(BK_512x256x1);
     } else if (f5Pressed) {
-        graphics_set_buffer(CPU_PAGE4_MEM_ADR, 512, 256);
+        graphics_set_buffer_l(CPU_PAGE4_MEM_ADR, true);
         if (altPressed) graphics_set_mode(BK_256x256x2);
         else graphics_set_mode(BK_512x256x1);
     } else if (f6Pressed) {
-        graphics_set_buffer(CPU_PAGE5_MEM_ADR, 512, 256);
+        graphics_set_buffer_l(CPU_PAGE5_MEM_ADR, true);
         if (altPressed) graphics_set_mode(BK_256x256x2);
         else graphics_set_mode(BK_512x256x1);
     } else if (f7Pressed) {
-        graphics_set_buffer(CPU_PAGE6_MEM_ADR, 512, 256);
+        graphics_set_buffer_l(CPU_PAGE6_MEM_ADR, true);
         if (altPressed) graphics_set_mode(BK_256x256x2);
         else graphics_set_mode(BK_512x256x1);
     } else if (f8Pressed) {
-        graphics_set_buffer(CPU_PAGE7_MEM_ADR, 512, 256);
+        graphics_set_buffer_l(CPU_PAGE7_MEM_ADR, true);
+        if (altPressed) graphics_set_mode(BK_256x256x2);
+        else graphics_set_mode(BK_512x256x1);
+    } else if (f9Pressed) {
+        graphics_set_buffer_l(CPU_PAGE5_MEM_ADR, false);
         if (altPressed) graphics_set_mode(BK_256x256x2);
         else graphics_set_mode(BK_512x256x1);
     }
@@ -888,6 +893,8 @@ bool handleScancode(uint32_t ps2scancode) { // core 1
         f7Pressed = true; break;
       case 0x42: // F8
         f8Pressed = true; break;
+      case 0x43: // F9
+        f9Pressed = true; break;
       case 0xBB: // F1..10 up
         f1Pressed = false; break;
       case 0xBC: // F2
@@ -904,6 +911,8 @@ bool handleScancode(uint32_t ps2scancode) { // core 1
         f7Pressed = false; break;
       case 0xC2: // F8
         f8Pressed = false; break;
+      case 0xC3: // F9
+        f9Pressed = false; break;
       case 0x0F:
         tabPressed = true;
         break;
