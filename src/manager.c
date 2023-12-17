@@ -37,8 +37,8 @@ static volatile bool hPressed = false;
 volatile bool is_adlib_on = false;
 volatile bool is_covox_on = true;
 volatile bool is_game_balaster_on = false;
-volatile bool is_tandy3v_on = true;
-volatile bool is_dss_on = true;
+volatile bool is_tandy3v_on = false;
+volatile bool is_dss_on = false;
 volatile bool is_sound_on = true;
 volatile uint8_t snd_divider = 0;
 volatile uint8_t cms_divider = 6;
@@ -46,8 +46,8 @@ volatile uint8_t dss_divider = 0;
 volatile uint8_t adlib_divider = 0;
 volatile uint8_t tandy3v_divider = 8;
 volatile uint8_t covox_divider = 0;
-bool covox_lpt2 = true;
 
+// TODO: cleanup
 volatile bool is_xms_on = false;
 volatile bool is_ems_on = true;
 volatile bool is_umb_on = true;
@@ -158,33 +158,6 @@ inline static void swap_sound_state_message(volatile bool* p_state, char* sys_na
         draw_box(10, 7, 60, 10, "Info", &lines);
     }
     *p_state = !*p_state;
-    sleep_ms(2500);
-    graphics_set_mode(ret);
-    restore_video_ram();
-}
-
-inline static void swap_lpt_state_message() {
-    save_video_ram();
-    enum graphics_mode_t ret = graphics_set_mode(TEXTMODE_80x30);
-    if (ret != TEXTMODE_80x30) clrScr(1);
-    if (covox_lpt2) {
-        const line_t lns[3] = {
-            { -1, "Swap LPT1 and LPT2 for Covox and DSS" },
-            {  0, "" },
-            { -1, "COVOX is on LPT1 now!"}
-        };
-        const lines_t lines = { 3, 2, lns };
-        draw_box(10, 7, 60, 10, "Info", &lines);
-    } else {
-        const line_t lns[3] = {
-            { -1, "Swap LPT1 and LPT2 for DSS and Covox" },
-            {  0, "" },
-            { -1, "DSS is on LPT1 now!"}
-        };
-        const lines_t lines = { 3, 2, lns };
-        draw_box(10, 7, 60, 10, "Info", &lines);
-    }
-    covox_lpt2 = !covox_lpt2;
     sleep_ms(2500);
     graphics_set_mode(ret);
     restore_video_ram();
@@ -553,16 +526,14 @@ const static char* ss_name = "Whole Sound System";
 const static char* cms_name = "Game Blaster (Creative Music System)";
 
 static inline void if_sound_control() { // core #0
-    if (ctrlPressed && dPressed && cPressed) {
-        swap_lpt_state_message();
-    } else if (ctrlPressed && tabPressed) {
+    if (ctrlPressed && tabPressed) {
         if (aPressed) {
             swap_sound_state_message(&is_adlib_on, adlib_name, 'A');
         } else if (cPressed) {
-            char tmp[80]; snprintf(tmp, 80, covox_name_template, covox_lpt2 ? '2' : '1');
+            char tmp[80]; snprintf(tmp, 80, covox_name_template, '1');
             swap_sound_state_message(&is_covox_on, tmp, 'C');
         } else if (dPressed) {
-            char tmp[80]; snprintf(tmp, 80, dss_name_template, covox_lpt2 ? '1' : '2');
+            char tmp[80]; snprintf(tmp, 80, dss_name_template, '2');
             swap_sound_state_message(&is_dss_on, tmp, 'D');
         } else if (tPressed) {
             swap_sound_state_message(&is_tandy3v_on, tandy3v_name, 'T');
@@ -595,12 +566,12 @@ static inline void if_sound_control() { // core #0
         } else if (cPressed) {
             covox_divider -= covox_divider == 0 ? 0 : 1;
             plusPressed = false;
-            char tmp[80]; snprintf(tmp, 80, covox_name_template, covox_lpt2 ? '2' : '1');
+            char tmp[80]; snprintf(tmp, 80, covox_name_template, '1');
             level_state_message(covox_divider, tmp);
         } else if (dPressed) {
             dss_divider -= dss_divider == 0 ? 0 : 1;
             plusPressed = false;
-            char tmp[80]; snprintf(tmp, 80, dss_name_template, covox_lpt2 ? '1' : '2');
+            char tmp[80]; snprintf(tmp, 80, dss_name_template, '2');
             level_state_message(dss_divider, tmp);
         } else if (gPressed) {
             cms_divider -= cms_divider == 0 ? 0 : 1;
@@ -623,12 +594,12 @@ static inline void if_sound_control() { // core #0
         } else if (cPressed) {
             covox_divider += covox_divider >= 16 ? 0 : 1;
             minusPressed = false;
-            char tmp[80]; snprintf(tmp, 80, covox_name_template, covox_lpt2 ? '2' : '1');
+            char tmp[80]; snprintf(tmp, 80, covox_name_template, '1');
             level_state_message(covox_divider, tmp);
         } else if (dPressed) {
             dss_divider += dss_divider >= 16 ? 0 : 1;
             minusPressed = false;
-            char tmp[80]; snprintf(tmp, 80, dss_name_template, covox_lpt2 ? '1' : '2');
+            char tmp[80]; snprintf(tmp, 80, dss_name_template, '2');
             level_state_message(dss_divider, tmp);
         } else if (gPressed) {
             cms_divider += cms_divider >= 16 ? 0 : 1;

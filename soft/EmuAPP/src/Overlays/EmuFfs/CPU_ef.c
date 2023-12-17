@@ -158,6 +158,7 @@ TCPU_Arg AT_OVL CPU_ReadMemB (TCPU_Arg Adr) {
 // TODO: organise
 void graphics_set_page(uint8_t* buffer, uint8_t pallette_idx);
 void graphics_shift_screeen(uint16_t Word);
+extern volatile uint16_t true_covox;
 
 TCPU_Arg AT_OVL CPU_WriteW (TCPU_Arg Adr, uint_fast16_t Word)
 {
@@ -210,10 +211,7 @@ TCPU_Arg AT_OVL CPU_WriteW (TCPU_Arg Adr, uint_fast16_t Word)
             {
                 uint_fast32_t Reg = (Word & 0xFF) >> 1;
                 if (Device_Data.SysRegs.WrReg177716 & 0100) Reg += 0x80;
-                DEBUG_PRINT(("case (0177714 >> 1) on CPU_WriteW ignored"));
-               // WRITE_PERI_REG (GPIO_SIGMA_DELTA_ADDRESS,   SIGMA_DELTA_ENABLE
-               //                                           | (Reg << SIGMA_DELTA_TARGET_S)
-               //                                           | (1 << SIGMA_DELTA_PRESCALAR_S));
+                true_covox = Device_Data.SysRegs.WrReg177716;
             }
             break;
         case (0177716 >> 1):
@@ -243,9 +241,7 @@ TCPU_Arg AT_OVL CPU_WriteW (TCPU_Arg Adr, uint_fast16_t Word)
                 {
                     uint_fast32_t Reg = *(uint8_t *) &Device_Data.SysRegs.WrReg177714 >> 1;
                     if (Word & 0100) Reg += 0x80;
-                   // WRITE_PERI_REG (GPIO_SIGMA_DELTA_ADDRESS,   SIGMA_DELTA_ENABLE
-                   //                                           | (Reg << SIGMA_DELTA_TARGET_S)
-                   //                                           | (1 << SIGMA_DELTA_PRESCALAR_S));
+                    true_covox = Device_Data.SysRegs.WrReg177716;
                 }
             }
             break;
@@ -323,19 +319,13 @@ TCPU_Arg AT_OVL CPU_WriteB (TCPU_Arg Adr, uint_fast8_t Byte)
             break;
 
         case (0177714 >> 1):
-
             Device_Data.SysRegs.WrReg177714 = (uint16_t) Word;
-DEBUG_PRINT(("case (0177714 >> 1) on CPU_WriteB - no GPIO_SIGMA_DELTA_ADDRESS"));
             {
                 uint_fast32_t Reg = (Word & 0xFF) >> 1;
                 if (Device_Data.SysRegs.WrReg177716 & 0100) Reg += 0x80;
-                //WRITE_PERI_REG (GPIO_SIGMA_DELTA_ADDRESS,   SIGMA_DELTA_ENABLE
-                //                                          | (Reg << SIGMA_DELTA_TARGET_S)
-                //                                          | (1 << SIGMA_DELTA_PRESCALAR_S));
+                true_covox = Device_Data.SysRegs.WrReg177716;
             }
-
             break;
-
         case (0177716 >> 1):
 
             if (Word & (1U << 11))
@@ -366,23 +356,15 @@ DEBUG_PRINT(("case (0177714 >> 1) on CPU_WriteB - no GPIO_SIGMA_DELTA_ADDRESS"))
             else
             {
                 Device_Data.SysRegs.WrReg177716 = (uint16_t) Word;
-
                 {
                     uint_fast32_t Reg = *(uint8_t *) &Device_Data.SysRegs.WrReg177714 >> 1;
                     if (Word & 0100) Reg += 0x80;
-                    DEBUG_PRINT(("case (0177716 >> 1) on CPU_WriteB - no GPIO_SIGMA_DELTA_ADDRESS"));
-                    //WRITE_PERI_REG (GPIO_SIGMA_DELTA_ADDRESS,   SIGMA_DELTA_ENABLE
-                    //                                          | (Reg << SIGMA_DELTA_TARGET_S)
-                    //                                          | (1 << SIGMA_DELTA_PRESCALAR_S));
+                    true_covox = Device_Data.SysRegs.WrReg177716;
                 }
             }
-
             break;
-
         default:
-
             return CPU_ARG_WRITE_ERR;
     }
-
     return CPU_ARG_WRITE_OK;
 }
