@@ -205,9 +205,9 @@ inline static void dma_handler_VGA_impl() {
     switch (graphics_mode) {
         case BK_256x256x2:
         case BK_512x256x1:
-            line_number = screen_line / 2;
-            if (screen_line % 2) return;
-            y = screen_line / 2 - graphics_buffer_shift_y;
+            line_number = screen_line ;
+            //if (screen_line % 2) return;
+            y = screen_line - graphics_buffer_shift_y;
             break;
         case TEXTMODE_80x30: {
             uint16_t* output_buffer_16bit = (uint16_t *)*output_buffer;
@@ -295,7 +295,6 @@ inline static void dma_handler_VGA_impl() {
     //uint8_t* vbuf8=vbuf+((line&1)*8192+(line>>1)*g_buf_width/4);
     uint8_t* input_buffer_8bit = input_buffer + 64 * y;
 
-
     //output_buffer = &lines_pattern[2 + ((line_number) & 1)];
 
     uint16_t* output_buffer_16bit = (uint16_t *)(*output_buffer);
@@ -337,33 +336,33 @@ inline static void dma_handler_VGA_impl() {
         case BK_512x256x1: {
             current_palette += 4;
             //1bit buf
-            for (int x = width / 8; x--;) {
+            for (int x = 512/8; x--;) {
                 register uint8_t i = *input_buffer_8bit++;
-                *output_buffer_8bit++ = current_palette[(i >> 7) & 1];
-                *output_buffer_8bit++ = current_palette[(i >> 6) & 1];
-                *output_buffer_8bit++ = current_palette[(i >> 5) & 1];
-                *output_buffer_8bit++ = current_palette[(i >> 4) & 1];
-                *output_buffer_8bit++ = current_palette[(i >> 3) & 1];
-                *output_buffer_8bit++ = current_palette[(i >> 2) & 1];
+                *output_buffer_8bit++ = current_palette[(i >> 0) & 1];
                 *output_buffer_8bit++ = current_palette[(i >> 1) & 1];
-                *output_buffer_8bit++ = current_palette[i & 1];
+                *output_buffer_8bit++ = current_palette[(i >> 2) & 1];
+                *output_buffer_8bit++ = current_palette[(i >> 3) & 1];
+                *output_buffer_8bit++ = current_palette[(i >> 4) & 1];
+                *output_buffer_8bit++ = current_palette[(i >> 5) & 1];
+                *output_buffer_8bit++ = current_palette[(i >> 6) & 1];
+                *output_buffer_8bit++ = current_palette[(i >> 7) & 1];
             }
             break;
         }
         case BK_256x256x2: {
             //2bit buf
-            for (int x = width / 8; x--;) {
+            for (int x = 256 / 4; x--;) {
                 register uint8_t i = *input_buffer_8bit++;
-                register uint8_t t = current_palette[(i >> 6) & 3];
-                *output_buffer_8bit++ = t;
-                *output_buffer_8bit++ = t;
-                t = current_palette[(i >> 4) & 3];
+                register uint8_t t = current_palette[i & 3];
                 *output_buffer_8bit++ = t;
                 *output_buffer_8bit++ = t;
                 t = current_palette[(i >> 2) & 3];
                 *output_buffer_8bit++ = t;
                 *output_buffer_8bit++ = t;
-                t = current_palette[i & 3];
+                t = current_palette[(i >> 4) & 3];
+                *output_buffer_8bit++ = t;
+                *output_buffer_8bit++ = t;
+                t = current_palette[(i >> 6) & 3];
                 *output_buffer_8bit++ = t;
                 *output_buffer_8bit++ = t;
             }
