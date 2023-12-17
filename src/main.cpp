@@ -62,15 +62,11 @@ struct semaphore vga_start_semaphore;
 /* Renderer loop on Pico's second core */
 void __time_critical_func(render_core)() {
     graphics_init();
-    graphics_set_buffer(CPU_PAGE5_MEM_ADR, 512, 256);
+    graphics_set_buffer(CPU_PAGE0_MEM_ADR, 512, 256);
     graphics_set_textbuffer(TEXT_VIDEO_RAM);
     graphics_set_bgcolor(0);
     graphics_set_offset(0, 0);
     graphics_set_flashmode(true, true);
-
-  //  for (int i = 0; i < 16; ++i) {
-  //      graphics_set_palette(i, cga_palette[i]);
-   // }
 
     sem_acquire_blocking(&vga_start_semaphore);
 
@@ -137,7 +133,7 @@ int main() {
 
     sleep_ms(50);
 
-    memset(RAM, 0, sizeof RAM);
+    memset(RAM, 0b01010101, sizeof RAM);
     memset(TEXT_VIDEO_RAM, 0, sizeof TEXT_VIDEO_RAM);
     graphics_set_mode(BK_512x256x1);
 
