@@ -33,7 +33,7 @@ typedef struct FILE
 #define FFS_DATA_FIRST_PAGE ((sizeof (FILE) * FAT_SIZE + 0xFFFUL) / 0x1000UL)
 #define FFS_DATA_FIRST_ADR  (FFS_DATA_FIRST_PAGE * 0x1000UL)
 
-extern uint8_t  free_sect [128];  // Õ¡À”…Õ’Õ 4Õ¬
+extern uint8_t  free_sect [128];  // –º–∞–∫—Å–∏–º—É–º 4–º–±
 extern uint32_t f_size;
 
 //extern FILE fat[FAT_SIZE];

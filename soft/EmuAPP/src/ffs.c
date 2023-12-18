@@ -1,5 +1,5 @@
 #include <stdint.h>
 #include "ffs.h"
 
-uint8_t  free_sect [128];  // максимум 4мб
+uint8_t  free_sect [128];  // п╪п╟п╨я│п╦п╪я┐п╪ 4п╪п╠
 uint32_t f_size;
