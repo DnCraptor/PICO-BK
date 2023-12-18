@@ -476,8 +476,9 @@ static inline void enter_pressed() {
         const line_t lns[1] = {
             { -1, "It is not a folder!" }
         };
-        const lines_t lines = { 1, 4, lns };
+        const lines_t lines = { 1, 3, lns };
         draw_box(10, 7, 60, 10, "Warning", &lines);
+        // redraw
         sleep_ms(1500);
         return;
     }
@@ -503,15 +504,61 @@ static inline void enter_pressed() {
                         const line_t lns[1] = {
                             { -1, "It is not a folder!" }
                         };
-                        const lines_t lines = { 1, 4, lns };
+                        const lines_t lines = { 1, 3, lns };
                         draw_box(10, 7, 60, 10, "Warning", &lines);
                         sleep_ms(1500);
+                        // redraw
                     } else {
                         f_closedir(&dir);
                         strcpy(psp->path, line);
                         redraw_current_panel();
                     }
                     return;
+                } else {
+                    size_t slen = strlen(fileInfo.fname);
+                    if (slen > 4 &&
+                        (fileInfo.fname[slen - 1] == 'N' || fileInfo.fname[slen - 1] == 'n') &&
+                        (fileInfo.fname[slen - 2] == 'I' || fileInfo.fname[slen - 2] == 'i') &&
+                        (fileInfo.fname[slen - 3] == 'B' || fileInfo.fname[slen - 3] == 'b') &&
+                         fileInfo.fname[slen - 4] == '.'
+                    ) {
+                        f_closedir(&dir);
+                        char path[256];
+                        snprintf(path, 256, "%s\\%s", psp->path, fileInfo.fname);
+                        FIL file;
+                        FRESULT result = f_open(&file, path, FA_READ);
+                        if (result != FR_OK) {
+                            const line_t lns[2] = {
+                                { -1, "Selected file was not found!" },
+                                { -1, path }
+                            };
+                            const lines_t lines = { 2, 3, lns };
+                            draw_box(10, 7, 60, 10, "Error", &lines);
+                            sleep_ms(1500);
+                            // redraw
+                            return;
+                        }
+                        UINT bw;
+                        result = f_write(&file, CPU_PAGE0_MEM_ADR + 0100, sizeof(RAM) - 0100, &bw);
+                        if (result != FR_OK) {
+                            f_close(&file);
+                            snprintf(line, 80, "FRESULT: %d", result);
+                            const line_t lns[3] = {
+                                { -1, "Unable to read selected file!" },
+                                { -1, path },
+                                { -1, line }
+                            };
+                            const lines_t lines = { 3, 2, lns };
+                            draw_box(10, 7, 60, 10, "Error", &lines);
+                            sleep_ms(1500);
+                            // redraw
+                            return;
+                        }
+                        f_close(&file);
+                        PC = 0100; // TODO:
+                        SP = 0100;
+                        mark_to_exit_flag = true;
+                    }
                 }
             }
             y++;

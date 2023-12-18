@@ -22,17 +22,10 @@
 // --- select only one of 'em ^
 
 #define RAM_PAGE_SIZE (RAM_PAGE_SIZE_KB * 1024)
-
-#if PICO_ON_DEVICE
-// CGA
-#define RAM_SIZE (2 * 75ul << 10) // 75 pages (2Kb) = 150KB real pico RAM
-//#define RAM_SIZE (2 * 44ul << 10) // 44 pages (2Kb) = 88KB real pico RAM
-#else
-#define RAM_SIZE (640ul << 10)
-#endif
+#define RAM_SIZE (128ul << 10)
 
 extern uint8_t RAM[RAM_SIZE];
-
+// TODO: cleanup
 #define RAM_BLOCKS (RAM_SIZE / RAM_PAGE_SIZE)
 extern uint16_t RAM_PAGES[RAM_BLOCKS]; // lba (14-0); 15 - written
 
