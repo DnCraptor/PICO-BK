@@ -539,10 +539,10 @@ static inline void enter_pressed() {
                             return;
                         }
                         UINT bw;
-                        result = f_write(&file, CPU_PAGE0_MEM_ADR + 0100, sizeof(RAM) - 0100, &bw);
+                        result = f_read(&file, CPU_PAGE0_MEM_ADR, sizeof(RAM), &bw);
                         if (result != FR_OK) {
                             f_close(&file);
-                            snprintf(line, 80, "FRESULT: %d", result);
+                            snprintf(line, 80, "FRESULT: %d (bw: %d)", result, bw);
                             const line_t lns[3] = {
                                 { -1, "Unable to read selected file!" },
                                 { -1, path },
@@ -555,8 +555,8 @@ static inline void enter_pressed() {
                             return;
                         }
                         f_close(&file);
-                        PC = 0100; // TODO:
-                        SP = 0100;
+                        PC = 01000; // TODO:
+                        SP = 01000;
                         mark_to_exit_flag = true;
                     }
                 }
