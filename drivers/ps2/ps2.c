@@ -246,6 +246,8 @@ uint32_t ps2get_raw_code() {
     return retval;
 }
 
+extern volatile bool manager_started;
+
 uint32_t ps2getcode() {
     uint32_t retval, i, len;
     if (!ps2bufsize) return 0;
@@ -265,7 +267,6 @@ uint32_t ps2getcode() {
     }
     if (ps2bufsize < len) return 0;
     retval = 0;
-
     //translate code
     if (len == 1) {
         retval = ps2_to_xt_1(ps2buffer[0]);
@@ -278,14 +279,13 @@ uint32_t ps2getcode() {
         if ((ps2buffer[0] == 0xE0) && (ps2buffer[1] == 0xF0)) retval = ps2_to_xt_2(ps2buffer[2]) | 0x80;
     }
     //end translate code
-// TODO: manager mode
- //   for (i = len; i < KBD_BUFFER_SIZE; i++) {
- //       ps2buffer[i - len] = ps2buffer[i];
- //   }
- //   ps2bufsize -= len;
-
+    if (manager_started) {
+        for (i = len; i < KBD_BUFFER_SIZE; i++) {
+            ps2buffer[i - len] = ps2buffer[i];
+        }
+        ps2bufsize -= len;
+    }
     // NUMLOCK
-
     switch (retval) {
         case 0x45:
             keyboard_toggle_led(PS2_LED_NUM_LOCK);

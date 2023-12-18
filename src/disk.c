@@ -291,7 +291,7 @@ bios_readdisk(uint8_t drivenum,
     fileoffset = chs2ofs(drivenum, cyl, head, sect);
 #ifdef BOOT_DISK_RW
     char tmp[80]; UINT bw;
-    f_open(&fileD, "\\XT\\boot.log", FA_WRITE | FA_OPEN_APPEND);
+    f_open(&fileD, "\\BK\\boot.log", FA_WRITE | FA_OPEN_APPEND);
 #endif
     if (disk[drivenum].data == NULL && fileoffset >= 0) {
 #if PICO_ON_DEVICE

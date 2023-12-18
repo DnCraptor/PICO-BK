@@ -142,28 +142,28 @@ uint32_t get_ram_page_for(const uint32_t addr32) {
     return ram_page;
 }
 
-static const char* path = "\\XT\\pagefile.sys";
+static const char* path = "\\BK\\pagefile.sys";
 static FIL file;
 
 bool init_vram() {
-    logMsg((char *)"Create <SD-card>\\XT\\pagefile.sys");
+    logMsg((char *)"Create <SD-card>\\BK\\pagefile.sys");
     FRESULT fresult = f_stat(path , &file);
     f_unlink(path); // ensure it is new file
     FRESULT result = f_open(&file, path, FA_READ | FA_WRITE | FA_CREATE_ALWAYS);
     if (result == FR_OK) {
         result = f_lseek(&file, TOTAL_VIRTUAL_MEMORY_KBS * 1024);
         if (result != FR_OK) {
-            logMsg((char *)"Unable to init <SD-card>\\XT\\pagefile.sys");
+            logMsg((char *)"Unable to init <SD-card>\\BK\\pagefile.sys");
             return false;
         }
     } else {
-        logMsg((char *)"Unable to create <SD-card>\\XT\\pagefile.sys");
+        logMsg((char *)"Unable to create <SD-card>\\BK\\pagefile.sys");
         return false;
     }
     f_close(&file);
     result = f_open(&file, path, FA_READ | FA_WRITE);
     if (result != FR_OK) {
-        logMsg((char *)"Unable to open <SD-card>\\XT\\pagefile.sys");
+        logMsg((char *)"Unable to open <SD-card>\\BK\\pagefile.sys");
     }
     logMsg((char *)"pagefile.sys is initialized");
     return true;

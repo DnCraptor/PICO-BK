@@ -869,7 +869,7 @@ bool save_video_ram() {
         return false;
     }
     UINT bw;
-    result = f_write(&file, RAM, sizeof(RAM), &bw);
+    result = f_write(&file, TEXT_VIDEO_RAM, sizeof(TEXT_VIDEO_RAM), &bw);
     if (result != FR_OK) {
         return false;
     }
@@ -886,7 +886,7 @@ bool restore_video_ram() {
     FRESULT result = f_open(&file, path, FA_READ);
     if (result == FR_OK) {
       UINT bw;
-      result = f_read(&file, RAM, sizeof(RAM), &bw);
+      result = f_read(&file, TEXT_VIDEO_RAM, sizeof(TEXT_VIDEO_RAM), &bw);
       if (result != FR_OK) {
         return false;
       }

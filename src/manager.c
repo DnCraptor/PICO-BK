@@ -86,7 +86,7 @@ static file_panel_desc_t left_panel = {
 
 static file_panel_desc_t right_panel = {
     40, 40, 1, 0, 0,
-    { "\\XT" },
+    { "\\BK" },
 };
 
 static volatile bool left_panel_make_active = true;
@@ -179,6 +179,7 @@ void notify_image_insert_action(uint8_t drivenum, char *pathname) {
 }
 
 static void swap_drives(uint8_t cmd) {
+  /*
     sprintf(line, "F%d pressed - swap FDD images", cmd + 1);
     draw_cmd_line(0, CMD_Y_POS, line);
     if (already_swapped_fdds) {
@@ -190,6 +191,7 @@ static void swap_drives(uint8_t cmd) {
     }
     already_swapped_fdds = !already_swapped_fdds;
     swap_drive_message();
+  */
 }
 
 inline static void if_swap_drives() {
@@ -245,8 +247,8 @@ static void draw_window() {
 }
 
 void do_nothing(uint8_t cmd) {
-    sprintf(line, "F%d pressed - not yet implemnted", cmd + 1);
-    draw_cmd_line(0, CMD_Y_POS, line);
+  //  sprintf(line, "F%d pressed - not yet implemnted", cmd + 1);
+  //  draw_cmd_line(0, CMD_Y_POS, line);
 }
 
 static bool mark_to_exit_flag = false;
@@ -411,8 +413,8 @@ inline static void scan_code_processed() {
 }
 
 inline static fn_1_10_btn_pressed(uint8_t fn_idx) {
-    sprintf(line, "F%d pressed", fn_idx + 1);
-    draw_cmd_line(0, CMD_Y_POS, line);
+    //sprintf(line, "F%d pressed", fn_idx + 1);
+    //draw_cmd_line(0, CMD_Y_POS, line);
     (*actual_fn_1_10_tbl())[fn_idx].action(fn_idx);
 }
 
@@ -451,7 +453,7 @@ static inline void redraw_current_panel() {
     sprintf(line, "SD:%s", psp->path);
     draw_panel(psp->left, PANEL_TOP_Y, psp->width, PANEL_LAST_Y + 1, line, 0);
     fill_panel(psp);
-    draw_cmd_line(0, CMD_Y_POS, line);
+    draw_cmd_line(0, CMD_Y_POS, 0);
 }
 
 static inline void enter_pressed() {
@@ -487,9 +489,9 @@ static inline void enter_pressed() {
     while(f_readdir(&dir, &fileInfo) == FR_OK && fileInfo.fname[0] != '\0') {
         if (psp->start_file_offset <= psp->files_number && y <= LAST_FILE_LINE_ON_PANEL_Y) {
             if (psp->selected_file_idx == y) {
-                sprintf(line, "fn: %s afn: %s sz: %d attr: %03oo date: %04Xh time: %04Xh",
-                              fileInfo.fname, fileInfo.altname, fileInfo.fsize, fileInfo.fattrib, fileInfo.fdate, fileInfo.ftime);
-                draw_cmd_line(0, CMD_Y_POS, line);
+                //sprintf(line, "fn: %s afn: %s sz: %d attr: %03oo date: %04Xh time: %04Xh",
+                //              fileInfo.fname, fileInfo.altname, fileInfo.fsize, fileInfo.fattrib, fileInfo.fdate, fileInfo.ftime);
+                //draw_cmd_line(0, CMD_Y_POS, line);
                 if (fileInfo.fattrib & AM_DIR) {
                     f_closedir(&dir);
                     if (strlen(psp->path) > 1) {
