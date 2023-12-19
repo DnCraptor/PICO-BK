@@ -23,15 +23,14 @@
 uint32_t ps2get_raw_code(); // TODO:
 
 void AT_OVL emu_start (void) {
-    int_fast32_t  Time;
+    uint64_t      cycles_cnt1  = getCycleCount ();
+    int_fast32_t  Time         = (int32_t)cycles_cnt1;
     uint_fast32_t T            = 0;
     uint_fast16_t CodeAndFlags;
     uint_fast16_t Key;
     uint_fast32_t LastKey      = 0xC00;
     uint_fast8_t  RunState     = 0;
-    Time = getCycleCount ();
-    DEBUG_PRINT(("Time: %d", Time));
-    // emu_OnTv ();
+    DEBUG_PRINT(("Init Time: %d", Time));
     // Запускаем эмуляцию
     while (1) {
         if_manager(false);
@@ -43,30 +42,21 @@ void AT_OVL emu_start (void) {
                 CPU_RunInstruction ();
             }
             Time = getCycleCount ();
-            DEBUG_PRINT(("Time: %d", Time));
             T    = Device_Data.CPU_State.Time;
-            DEBUG_PRINT(("T: %d", T));
+            DEBUG_PRINT(("Time: %d; T: %d", Time, T));
         }
         else {
-            uint_fast32_t NewT;
             for (Count = 0; Count < 16; Count++) {
-                int_fast32_t t = getCycleCount ();
-                DEBUG_PRINT(("Count: %d; t: %d; Time - t: %d", Count, t, (int32_t) (Time - t)));
-                if ((int32_t) (Time - t) > 0) {
-       // TODO: adjust performance             DEBUG_PRINT(("break"));
-       //             break;
+                uint64_t cycles_cnt2 = getCycleCount ();
+                if (cycles_cnt2 - cycles_cnt1 < 10) {
+                    DEBUG_PRINT(("break"));
+                    break;
                 }
                 CPU_RunInstruction ();
-                NewT  = Device_Data.CPU_State.Time;
-                DEBUG_PRINT(("NewT: %d", NewT));
-                Time += (uint32_t) (NewT - T) * 40;
-                DEBUG_PRINT(("Time: %d", Time));
-                T     = NewT;
-            }
-            NewT = getCycleCount ();
-            DEBUG_PRINT(("NewT: %d; (NewT - Time): %Xh", NewT, (NewT - Time)));
-            if ((int32_t) (NewT - Time) > 0x10000L) {
-                Time = NewT - 0x10000L;
+                Time = getCycleCount ();
+                T    = Device_Data.CPU_State.Time;
+                DEBUG_PRINT(("Time: %d; T: %d", Time, T));
+                cycles_cnt1 = cycles_cnt2;
             }
         }
         // Вся периодика

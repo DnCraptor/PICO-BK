@@ -8,15 +8,11 @@
 
 #include "hardware/structs/systick.h"
 
-static inline uint32_t timer0_read (void) {
-    return time_us_64();//systick_hw->csr;
-}
-
 // #define timer0_write( count) __asm__ __volatile__("wsr %0,ccompare0; esync"::"a" (count) : "memory")
-static inline uint32_t getCycleCount() {
-    uint32_t ccount = time_us_64();//systick_hw->csr;
+static inline uint64_t getCycleCount() {
+    uint64_t ccount;//systick_hw->csr;
    // __asm__ __volatile__("esync; rsr %0,ccount":"=a" (ccount));
-    return ccount;
+    return time_us_64();
 }
 
 // timer0 is a special CPU timer that has very high resolution but with
