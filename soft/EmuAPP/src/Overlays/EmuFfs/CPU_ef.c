@@ -52,16 +52,14 @@ void AT_OVL CPU_TimerRun (void)
     if (Cfg & 1) {
         Device_Data.SysRegs.Reg177710 = Device_Data.SysRegs.Reg177706; //проинициализируем регистр счётчика
     }
-    else if (Cfg & 020)  //если счётчик запущен
-    {
+    else if (Cfg & 020) { //если счётчик запущен
         uint_fast32_t CurT = Device_Data.CPU_State.Time >> 7;
         uint_fast32_t T    = Device_Data.Timer.T + (((CurT - Device_Data.Timer.PrevT) & 0xFFFFFF) << Device_Data.Timer.Div);
         int_fast32_t  Cntr = Device_Data.SysRegs.Reg177710;
         Device_Data.Timer.PrevT = CurT;
         Device_Data.Timer.T  = T & 0x3F;
         T >>= 6;
-        if (Cntr == 0 || (Cfg & 2)) //если счетчик уже был равен 0 или режим WRAPAROUND
-        {
+        if (Cntr == 0 || (Cfg & 2)) { //если счетчик уже был равен 0 или режим WRAPAROUND
             Cntr -= T;
         }
         else
@@ -69,12 +67,10 @@ void AT_OVL CPU_TimerRun (void)
             Cntr -= T;
             if (Cntr <= 0) {
                 uint_fast16_t InitVal = Device_Data.SysRegs.Reg177706;
-                if (Cfg & 4) //разрешение установки сигнала "конец счёта" ?
-                {
+                if (Cfg & 4) { //разрешение установки сигнала "конец счёта" ?
                     Cfg |= 0200;    //да, установим сигнал
                 }
-                if (Cfg & 010) //установлен режим одновибратора?
-                {
+                if (Cfg & 010) { //установлен режим одновибратора?
                     Cfg &= ~020;    //тогда сбросим бит 4
                     Cntr = InitVal; //проинициализируем регистр счётчика
                 }
@@ -236,13 +232,10 @@ TCPU_Arg AT_OVL CPU_WriteW (TCPU_Arg Adr, uint_fast16_t Word)
                 else                 Device_Data.MemPages [2] = PageTab [(Word >> 8) & 7];
             }
             else {
-                DEBUG_PRINT(("case (0177716 >> 1) on CPU_WriteW - no GPIO_SIGMA_DELTA_ADDRESS"));
                 Device_Data.SysRegs.WrReg177716 = (uint16_t) Word;
-                {
-                    uint_fast32_t Reg = *(uint8_t *) &Device_Data.SysRegs.WrReg177714 >> 1;
-                    if (Word & 0100) Reg += 0x80;
-                    true_covox = Device_Data.SysRegs.WrReg177716;
-                }
+                uint_fast32_t Reg = *(uint8_t *) &Device_Data.SysRegs.WrReg177714 >> 1;
+                if (Word & 0100) Reg += 0x80;
+                true_covox = Device_Data.SysRegs.WrReg177716;
             }
             break;
         default:

@@ -540,8 +540,10 @@ static inline void enter_pressed() {
                         }
                         //memset(CPU_PAGE0_MEM_ADR, 0, sizeof(RAM));
                         //CPU_Init();
+                        uint16_t user_pc = AnyMem_r_u16((uint16_t *)CPU_PAGE0_MEM_ADR + 040);
+                        if (!user_pc) user_pc = 01000;
                         UINT bw;
-                        result = f_read(&file, CPU_PAGE0_MEM_ADR + 01000, sizeof(RAM) - 01000, &bw);
+                        result = f_read(&file, RAM + user_pc, sizeof(RAM) - user_pc, &bw);
                         if (result != FR_OK) {
                             f_close(&file);
                             snprintf(line, 80, "FRESULT: %d (bw: %d)", result, bw);
@@ -557,7 +559,7 @@ static inline void enter_pressed() {
                             return;
                         }
                         f_close(&file);
-                        PC = 01000; // TODO:
+                      //  PC = user_pc; // TODO:
                      //   SP = 01000;
                         mark_to_exit_flag = true;
                         return;

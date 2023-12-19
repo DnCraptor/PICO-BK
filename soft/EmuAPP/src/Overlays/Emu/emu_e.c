@@ -80,16 +80,14 @@ void AT_OVL emu_start (void) {
                 RunState = 1;
                 break;
             case 1:
-                DEBUG_PRINT(("ps2_periodic - ignored"));
                 //ps2_periodic ();
                 break;
             case 2:
                 CodeAndFlags = ps2get_raw_code(); // ps2_read ();
                 if (CodeAndFlags == 0) RunState = 5;
-                else { KBD_PRINT(("CodeAndFlags: %Xh", CodeAndFlags)); }
                 break;
             case 3:
-                KBD_PRINT(("CodeAndFlags: %Xh; CodeAndFlags == PS2_PAUSE: %d", CodeAndFlags, CodeAndFlags == PS2_PAUSE));
+              //  KBD_PRINT(("CodeAndFlags: %Xh; CodeAndFlags == PS2_PAUSE: %d", CodeAndFlags, CodeAndFlags == PS2_PAUSE));
                 if (CodeAndFlags == PS2_PAUSE) {
                     RunState = 5;
                     CPU_Stop ();
@@ -114,9 +112,7 @@ void AT_OVL emu_start (void) {
                 }
                 else if (Key != KEY_UNKNOWN) {
                     if (Key == KEY_MENU_ESC) {
-                //        emu_OffTv ();
-               //TODO:         menu(MENU_FLAG_START_UI);
-                //        emu_OnTv  ();
+                        // TODO: manager
                         Time = getCycleCount ();
                         T    = Device_Data.CPU_State.Time;
                     }
