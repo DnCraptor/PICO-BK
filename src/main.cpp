@@ -127,7 +127,7 @@ int main() {
 
     memset(RAM, 0, sizeof RAM);
     memset(TEXT_VIDEO_RAM, 0, sizeof TEXT_VIDEO_RAM);
-    graphics_set_mode(BK_512x256x1);
+    graphics_set_mode(BK_256x256x2);
 
     init_psram();
 

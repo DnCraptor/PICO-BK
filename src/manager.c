@@ -4,6 +4,7 @@
 #include "vga.h"
 #include "usb.h"
 #include "pico-vision.h"
+#include "CPU_i.h"
 
 static volatile bool backspacePressed = false;
 static volatile bool enterPressed = false;
@@ -540,9 +541,34 @@ static inline void enter_pressed() {
                         }
                         UINT bw;
                         result = f_read(&file, line, 4, &bw);
-                        // TODO: handle error
-                        uint16_t offset = *(uint16_t*)line[0];
-                        uint16_t len = *(uint16_t*)line[2];
+                        uint16_t offset = ((uint16_t)line[1] << 8) | line[0];
+                        uint16_t len = ((uint16_t)line[3] << 8) | line[2];
+                        if (result != FR_OK) {
+                            f_close(&file);
+                            snprintf(line, 80, "FRESULT: %d (bw: %d)", result, bw);
+                            const line_t lns[3] = {
+                                { -1, "Unable to read selected file!" },
+                                { -1, path },
+                                { -1, line }
+                            };
+                            const lines_t lines = { 3, 2, lns };
+                            draw_box(10, 7, 60, 10, "Error", &lines);
+                            sleep_ms(1500);
+                            return;
+                        } else {
+                            Device_Data.MemPages [0] = CPU_PAGE0_MEM_ADR; /* RAM Page 0 */
+                            Device_Data.MemPages [1] = CPU_PAGE5_MEM_ADR; /* RAM Page 4 video 0 */
+                            graphics_set_page(CPU_PAGE5_MEM_ADR, 0);
+                            snprintf(line, 80, "offset = %oo; len = %d", offset, len);
+                            const line_t lns[3] = {
+                                { -1, "Selected file header info:" },
+                                { -1, path },
+                                { -1, line }
+                            };
+                            const lines_t lines = { 3, 2, lns };
+                            draw_box(10, 7, 60, 10, "Info", &lines);
+                            sleep_ms(2500);
+                        }
                         if (len > sizeof(RAM) - offset) len = sizeof(RAM) - offset;
                         result = f_read(&file, RAM + offset, len, &bw);
                         if (result != FR_OK) {
@@ -556,7 +582,6 @@ static inline void enter_pressed() {
                             const lines_t lines = { 3, 2, lns };
                             draw_box(10, 7, 60, 10, "Error", &lines);
                             sleep_ms(1500);
-                            // redraw
                             return;
                         }
                         f_close(&file);

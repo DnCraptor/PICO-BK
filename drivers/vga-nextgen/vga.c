@@ -845,7 +845,7 @@ void graphics_init() {
     );
     //dma_channel_set_read_addr(dma_chan, &DMA_BUF_ADDR[0], false);
 
-    graphics_set_mode(BK_512x256x1);
+    graphics_set_mode(BK_256x256x2);
 
     irq_set_exclusive_handler(VGA_DMA_IRQ, dma_handler_VGA);
 
