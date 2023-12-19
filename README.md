@@ -18,7 +18,7 @@ Extra PSRAM support on pi pico pins:
 ![RAM extention](/psram.jpg)
 
 # Эмулятор К1801ВМ1
-Эмулятор собственный цельнотянутый с https://github.com/konst-st/BK8266/tree/BK0011M.<br/>
+Эмулятор цельнотянутый с https://github.com/konst-st/BK8266/tree/BK0011M.<br/>
 Кое чего подсмотрено из эмулятора Юрия Калмыкова http://gid.pdp-11.ru<br/>
 
 Эмулятор использует только ОЗУ RP2040 (Raspberry Pi Pico) (из которыз 128 кБ выделено под ОЗУ БК0011М).<br/>
