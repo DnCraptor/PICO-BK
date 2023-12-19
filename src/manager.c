@@ -559,7 +559,7 @@ static inline void enter_pressed() {
                             Device_Data.MemPages [0] = CPU_PAGE0_MEM_ADR; /* RAM Page 0 */
                             Device_Data.MemPages [1] = CPU_PAGE5_MEM_ADR; /* RAM Page 4 video 0 */
                             graphics_set_page(CPU_PAGE5_MEM_ADR, 0);
-                            graphics_shift_screen(0);
+                            graphics_shift_screen((uint16_t)0330 | 0b01000000000);
                             snprintf(line, 80, "offset = 0%o; len = %d", offset, len);
                             const line_t lns[3] = {
                                 { -1, "Selected file header info:" },

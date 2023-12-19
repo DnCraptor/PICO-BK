@@ -317,7 +317,7 @@ inline static void dma_handler_VGA_impl() {
     int width = MIN((visible_line_size - ((graphics_buffer_shift_x > 0) ? (graphics_buffer_shift_x) : 0)), max_width);
     if (width < 0) return; // TODO: detect a case
     // Индекс палитры в зависимости от настроек чередования строк и кадров
-    uint16_t* current_palette = palette[((y & is_flash_line) + (frame_number & is_flash_frame)) & 1];
+    uint16_t* current_palette = palette[0];//((y & is_flash_line) + (frame_number & is_flash_frame)) & 1];
     uint8_t* output_buffer_8bit = (uint8_t *)output_buffer_16bit;
     switch (graphics_mode) {
         case BK_512x256x1: {
@@ -429,10 +429,10 @@ enum graphics_mode_t graphics_set_mode(enum graphics_mode_t mode) {
             shift_picture = line_size - HS_SHIFT;
             palette16_mask = 0xc0c0;
             visible_line_size = 320;
-            N_lines_total = 525;
-            N_lines_visible = 480;
-            line_VS_begin = 490;
-            line_VS_end = 491;
+            N_lines_visible = 2 * 256; // 240; // 480
+            line_VS_begin = N_lines_visible + 10; // 490
+            line_VS_end = line_VS_begin + 1; // 491
+            N_lines_total = line_VS_end + 36; // 525;
             fdiv = clock_get_hz(clk_sys) / (25175000.0); //частота пиксельклока
             break;
         default:
@@ -444,7 +444,7 @@ enum graphics_mode_t graphics_set_mode(enum graphics_mode_t mode) {
     bg_color[1] = (bg_color[1] & 0x3f3f3f3f) | palette16_mask | (palette16_mask << 16);
     for (int i = 0; i < 16*4; i++) {
         palette[0][i] = (palette[0][i] & 0x3f3f) | palette16_mask;
-        palette[1][i] = (palette[1][i] & 0x3f3f) | palette16_mask;
+       // palette[1][i] = (palette[1][i] & 0x3f3f) | palette16_mask;
     }
 
     //инициализация шаблонов строк и синхросигнала
@@ -497,7 +497,7 @@ void graphics_shift_screen(uint16_t Word) {
     // Разряд 9 - при записи “1” в этот разряд на экране отображается весь буфер экрана (256 телевизионных строк).
     // При нулевом значении в верхней части растра отображается 1/4 часть (старшие адреса) экранного ОЗУ,
     // нижняя часть экрана не отображается. Данный режим не используется базовой операционной системой.
-    graphics_buffer_height = (Word &0b01000000000) ? 256 : 256 / 4; // TODO: support it
+    graphics_buffer_height = (Word & 0b01000000000) ? 256 : 256 / 4; // TODO: support it
 }
 
 void graphics_set_buffer(uint8_t* buffer, uint16_t width, uint16_t height) {
