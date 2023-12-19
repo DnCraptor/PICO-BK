@@ -34,7 +34,7 @@ void AT_OVL emu_start (void) {
     // emu_OnTv ();
     // Запускаем эмуляцию
     while (1) {
-        if_manager();
+        if_manager(false);
         uint_fast8_t  Count;
         DEBUG_PRINT(("Key_Flags: %08Xh; (Key_Flags & KEY_FLAGS_TURBO): %d", Key_Flags, (Key_Flags & KEY_FLAGS_TURBO)));
         if (Key_Flags & KEY_FLAGS_TURBO) {
@@ -112,7 +112,7 @@ void AT_OVL emu_start (void) {
                 }
                 else if (Key != KEY_UNKNOWN) {
                     if (Key == KEY_MENU_ESC) {
-                        // TODO: manager
+                        if_manager(true);
                         Time = getCycleCount ();
                         T    = Device_Data.CPU_State.Time;
                     }

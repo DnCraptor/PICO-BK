@@ -538,12 +538,9 @@ static inline void enter_pressed() {
                             // redraw
                             return;
                         }
-                        //memset(CPU_PAGE0_MEM_ADR, 0, sizeof(RAM));
-                        //CPU_Init();
-                        uint16_t user_pc = AnyMem_r_u16((uint16_t *)CPU_PAGE0_MEM_ADR + 040);
-                        if (!user_pc) user_pc = 01000;
+                        AnyMem_w_u16((uint16_t *)CPU_PAGE0_MEM_ADR + 040, 01000); // TODO:
                         UINT bw;
-                        result = f_read(&file, RAM + user_pc, sizeof(RAM) - user_pc, &bw);
+                        result = f_read(&file, RAM + 01000, sizeof(RAM) - 01000, &bw);
                         if (result != FR_OK) {
                             f_close(&file);
                             snprintf(line, 80, "FRESULT: %d (bw: %d)", result, bw);
@@ -559,8 +556,8 @@ static inline void enter_pressed() {
                             return;
                         }
                         f_close(&file);
-                      //  PC = user_pc; // TODO:
-                     //   SP = 01000;
+                        PC = 01000; // TODO:
+                        SP = 01000;
                         mark_to_exit_flag = true;
                         return;
                     }
@@ -987,7 +984,7 @@ inline void if_overclock() {
     }
 }
 
-void if_manager() {
+void if_manager(bool force) {
     if_video_mode();
     if_swap_drives();
     if_overclock();
@@ -995,7 +992,7 @@ void if_manager() {
     if (manager_started) {
         return;
     }
-    if (backspacePressed && enterPressed) {
+    if (force) {
         manager_started = true;
         start_manager();
         manager_started = false;
