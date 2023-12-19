@@ -108,7 +108,7 @@ void tud_resume_cb(void) {
 
 // Invoked to determine max LUN
 uint8_t tud_msc_get_maxlun_cb(void) {
-  return 4;
+  return 1; //4;
 }
 
 //--------------------------------------------------------------------+

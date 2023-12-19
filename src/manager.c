@@ -559,7 +559,8 @@ static inline void enter_pressed() {
                             Device_Data.MemPages [0] = CPU_PAGE0_MEM_ADR; /* RAM Page 0 */
                             Device_Data.MemPages [1] = CPU_PAGE5_MEM_ADR; /* RAM Page 4 video 0 */
                             graphics_set_page(CPU_PAGE5_MEM_ADR, 0);
-                            snprintf(line, 80, "offset = %oo; len = %d", offset, len);
+                            graphics_shift_screen(0);
+                            snprintf(line, 80, "offset = 0%o; len = %d", offset, len);
                             const line_t lns[3] = {
                                 { -1, "Selected file header info:" },
                                 { -1, path },
@@ -569,8 +570,8 @@ static inline void enter_pressed() {
                             draw_box(10, 7, 60, 10, "Info", &lines);
                             sleep_ms(2500);
                         }
-                        if (len > sizeof(RAM) - offset) len = sizeof(RAM) - offset;
-                        result = f_read(&file, RAM + offset, len, &bw);
+                        uint16_t len2 = (len > (16 << 10) - offset) ? (16 << 10) - offset : len;
+                        result = f_read(&file, RAM + offset, len2, &bw);
                         if (result != FR_OK) {
                             f_close(&file);
                             snprintf(line, 80, "FRESULT: %d (bw: %d)", result, bw);
@@ -584,8 +585,16 @@ static inline void enter_pressed() {
                             sleep_ms(1500);
                             return;
                         }
+                        if (len2 != len) {
+                            result = f_read(&file, CPU_PAGE5_MEM_ADR, len - len2, &bw);
+                            // TODO: more than 1 page, error handling
+                        }
                         f_close(&file);
-                        PC = offset; // TODO: ensure
+                        if (offset < 01000) { // assimed autostat
+                            PC = ((uint16_t)RAM[offset + 1] << 8) | RAM[offset];
+                        } else {
+                            PC = offset;
+                        }
                         SP = 01000;
                         mark_to_exit_flag = true;
                         return;

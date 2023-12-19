@@ -492,7 +492,7 @@ void graphics_set_page(uint8_t* buffer, uint8_t pallette_idx) {
     graphics_pallette_idx = pallette_idx;
 };
 
-void graphics_shift_screeen(uint16_t Word) {
+void graphics_shift_screen(uint16_t Word) {
     shift_y = Word & 0b11111111;
     // Разряд 9 - при записи “1” в этот разряд на экране отображается весь буфер экрана (256 телевизионных строк).
     // При нулевом значении в верхней части растра отображается 1/4 часть (старшие адреса) экранного ОЗУ,

@@ -153,7 +153,7 @@ TCPU_Arg AT_OVL CPU_ReadMemB (TCPU_Arg Adr) {
 
 // TODO: organise
 void graphics_set_page(uint8_t* buffer, uint8_t pallette_idx);
-void graphics_shift_screeen(uint16_t Word);
+void graphics_shift_screen(uint16_t Word);
 extern volatile uint16_t true_covox;
 
 TCPU_Arg AT_OVL CPU_WriteW (TCPU_Arg Adr, uint_fast16_t Word)
@@ -186,7 +186,7 @@ TCPU_Arg AT_OVL CPU_WriteW (TCPU_Arg Adr, uint_fast16_t Word)
         case (0177664 >> 1):
             PrevWord = Device_Data.SysRegs.Reg177664;
             Word = ((Word & 01377) | (PrevWord & ~01377));
-            graphics_shift_screeen(Word);
+            graphics_shift_screen(Word);
             Device_Data.SysRegs.Reg177664 = (uint16_t) Word;
             break;
         case (0177706 >> 1):
@@ -292,7 +292,7 @@ TCPU_Arg AT_OVL CPU_WriteB (TCPU_Arg Adr, uint_fast8_t Byte)
             PrevWord = Device_Data.SysRegs.Reg177664;
             Word = ((Word & 01377) | (PrevWord & ~01377));
             Device_Data.SysRegs.Reg177664 = (uint16_t) Word;
-            graphics_shift_screeen(Word);
+            graphics_shift_screen(Word);
             break;
         case (0177706 >> 1):
 
