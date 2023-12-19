@@ -538,9 +538,13 @@ static inline void enter_pressed() {
                             // redraw
                             return;
                         }
-                        AnyMem_w_u16((uint16_t *)CPU_PAGE0_MEM_ADR + 040, 01000); // TODO:
                         UINT bw;
-                        result = f_read(&file, RAM + 01000, sizeof(RAM) - 01000, &bw);
+                        result = f_read(&file, line, 4, &bw);
+                        // TODO: handle error
+                        uint16_t offset = *(uint16_t*)line[0];
+                        uint16_t len = *(uint16_t*)line[2];
+                        if (len > sizeof(RAM) - offset) len = sizeof(RAM) - offset;
+                        result = f_read(&file, RAM + offset, len, &bw);
                         if (result != FR_OK) {
                             f_close(&file);
                             snprintf(line, 80, "FRESULT: %d (bw: %d)", result, bw);
@@ -556,7 +560,7 @@ static inline void enter_pressed() {
                             return;
                         }
                         f_close(&file);
-                        PC = 01000; // TODO:
+                        PC = offset; // TODO: ensure
                         SP = 01000;
                         mark_to_exit_flag = true;
                         return;

@@ -204,6 +204,7 @@ static uint_fast16_t AT_OVL ReturnShiftedKeyCode (uint_fast8_t Key, uint_fast32_
 }
 
 uint_fast16_t AT_OVL Key_Translate (uint_fast16_t CodeAndFlags) {
+    // if (CodeAndFlags == 0xD9 /*SHIFT up*/) CodeAndFlags |= 0x8000U;
     uint_fast16_t Key;
     uint_fast8_t  Code;
     uint_fast32_t KeyFlags = Key_Flags;
