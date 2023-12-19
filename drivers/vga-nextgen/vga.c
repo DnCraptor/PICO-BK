@@ -423,17 +423,33 @@ enum graphics_mode_t graphics_set_mode(enum graphics_mode_t mode) {
         case BK_256x256x2:
         case BK_512x256x1:
             TMPL_LINE8 = 0b11000000;
-            HS_SHIFT = 328 * 2;
-            HS_SIZE = 48 * 2;
-            line_size = 400 * 2;
+            /* VESA Signal 1024 x 768 @ 43 Hz Interlaced timing
+            HS_SHIFT = 1024 + 8; //328 * 2; // 656 Front porch 16 + Visible area 640
+            HS_SIZE = 56 * 2; //? 48 * 2; Back porch 48
+            line_size = 1264; // 400 * 2;
             shift_picture = line_size - HS_SHIFT;
             palette16_mask = 0xc0c0;
-            visible_line_size = 320;
-            N_lines_visible = 2 * 256; // 240; // 480
-            line_VS_begin = N_lines_visible + 10; // 490
-            line_VS_end = line_VS_begin + 1; // 491
-            N_lines_total = line_VS_end + 36; // 525;
-            fdiv = clock_get_hz(clk_sys) / (25175000.0); //частота пиксельклока
+            visible_line_size = 1024 / 2; //320; 640/2?
+            N_lines_visible = 768; // 480;
+            line_VS_begin = 768; // 490; // Front porch 10
+            line_VS_end = 768 + 8; //491; // +Sync pulse 2?
+            N_lines_total = 817; // 525; // Whole frame 525
+            //fdiv = clock_get_hz(clk_sys) / (25175000.0); //частота пиксельклока 	25.175 MHz
+            fdiv = clock_get_hz(clk_sys) / (44900000.0); // 44.9 MHz
+            */
+            // XGA Signal 1024 x 768 @ 60 Hz timing
+            HS_SHIFT = 1024 + 24; //328 * 2; // 656 Front porch 16 + Visible area 640
+            HS_SIZE = 160 * 2; //? 48 * 2; Back porch 48
+            line_size = 1344; // 400 * 2;
+            shift_picture = line_size - HS_SHIFT;
+            palette16_mask = 0xc0c0;
+            visible_line_size = 1024 / 2; //320; 640/2?
+            N_lines_visible = 768; // 480;
+            line_VS_begin = 768 + 3; // 490; // Front porch 10
+            line_VS_end = 768 + 3 + 6; //491; // +Sync pulse 2?
+            N_lines_total = 806; // 525; // Whole frame 525
+            //fdiv = clock_get_hz(clk_sys) / (25175000.0); //частота пиксельклока 	25.175 MHz
+            fdiv = clock_get_hz(clk_sys) / (65000000.0); // 65.0 MHz
             break;
         default:
             return res;
