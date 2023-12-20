@@ -167,6 +167,7 @@ inline static void dma_handler_VGA_impl() {
     static uint32_t frame_number = 0;
     static uint32_t screen_line = 0;
     static uint8_t* input_buffer = NULL;
+    static uint32_t* * prev_output_buffer = 0;
     screen_line++;
 
     if (screen_line == N_lines_total) {
@@ -207,8 +208,13 @@ inline static void dma_handler_VGA_impl() {
     switch (graphics_mode) {
         case BK_256x256x2:
         case BK_512x256x1:
-            line_number = screen_line >> 1;
-            //if (screen_line % 2) return;
+            if (screen_line % 3 != 0) { // три подряд строки рисуем одно и тоже
+                if (prev_output_buffer) output_buffer = prev_output_buffer;
+                dma_channel_set_read_addr(dma_chan_ctrl, output_buffer, false);
+                return;
+            }
+            prev_output_buffer = output_buffer;
+            line_number = screen_line / 3;
             y = line_number - graphics_buffer_shift_y;
             break;
         case TEXTMODE_80x30: {
@@ -316,8 +322,8 @@ inline static void dma_handler_VGA_impl() {
     }
     int width = MIN((visible_line_size - ((graphics_buffer_shift_x > 0) ? (graphics_buffer_shift_x) : 0)), max_width);
     if (width < 0) return; // TODO: detect a case
-    // Индекс палитры в зависимости от настроек чередования строк и кадров
-    uint16_t* current_palette = palette[0];//((y & is_flash_line) + (frame_number & is_flash_frame)) & 1];
+    // TODO: Упростить
+    uint16_t* current_palette = palette[0];
     uint8_t* output_buffer_8bit = (uint8_t *)output_buffer_16bit;
     switch (graphics_mode) {
         case BK_512x256x1: {
@@ -325,14 +331,11 @@ inline static void dma_handler_VGA_impl() {
             //1bit buf
             for (int x = 512/8; x--;) {
                 register uint8_t i = *input_buffer_8bit++;
-                *output_buffer_8bit++ = current_palette[(i >> 0) & 1];
-                *output_buffer_8bit++ = current_palette[(i >> 1) & 1];
-                *output_buffer_8bit++ = current_palette[(i >> 2) & 1];
-                *output_buffer_8bit++ = current_palette[(i >> 3) & 1];
-                *output_buffer_8bit++ = current_palette[(i >> 4) & 1];
-                *output_buffer_8bit++ = current_palette[(i >> 5) & 1];
-                *output_buffer_8bit++ = current_palette[(i >> 6) & 1];
-                *output_buffer_8bit++ = current_palette[(i >> 7) & 1];
+                for (register uint8_t shift = 0; shift < 8; ++shift) {
+                    register uint8_t t = current_palette[(i >> shift) & 1];
+                    *output_buffer_8bit++ = t;
+                    *output_buffer_8bit++ = t;
+                }
             }
             break;
         }
@@ -341,18 +344,13 @@ inline static void dma_handler_VGA_impl() {
             //2bit buf
             for (int x = 256 / 4; x--;) {
                 register uint8_t i = *input_buffer_8bit++;
-                register uint8_t t = current_palette[i & 3];
-                *output_buffer_8bit++ = t;
-                *output_buffer_8bit++ = t;
-                t = current_palette[(i >> 2) & 3];
-                *output_buffer_8bit++ = t;
-                *output_buffer_8bit++ = t;
-                t = current_palette[(i >> 4) & 3];
-                *output_buffer_8bit++ = t;
-                *output_buffer_8bit++ = t;
-                t = current_palette[(i >> 6) & 3];
-                *output_buffer_8bit++ = t;
-                *output_buffer_8bit++ = t;
+                for (register uint8_t shift = 0; shift < 8; shift += 2) {
+                    register uint8_t t = current_palette[(i >> shift) & 3];
+                    *output_buffer_8bit++ = t;
+                    *output_buffer_8bit++ = t;
+                    *output_buffer_8bit++ = t;
+                    *output_buffer_8bit++ = t;
+                }
             }
             break;
         }
@@ -413,7 +411,6 @@ enum graphics_mode_t graphics_set_mode(enum graphics_mode_t mode) {
                 for (int i = 0; i < 256; i++) {
                     uint8_t c1 = txt_palette[i & 0xf];
                     uint8_t c0 = txt_palette[i >> 4];
-
                     txt_palette_fast[i * 4 + 0] = (c0) | (c0 << 8);
                     txt_palette_fast[i * 4 + 1] = (c1) | (c0 << 8);
                     txt_palette_fast[i * 4 + 2] = (c0) | (c1 << 8);
@@ -423,32 +420,17 @@ enum graphics_mode_t graphics_set_mode(enum graphics_mode_t mode) {
         case BK_256x256x2:
         case BK_512x256x1:
             TMPL_LINE8 = 0b11000000;
-            /* VESA Signal 1024 x 768 @ 43 Hz Interlaced timing
-            HS_SHIFT = 1024 + 8; //328 * 2; // 656 Front porch 16 + Visible area 640
-            HS_SIZE = 56 * 2; //? 48 * 2; Back porch 48
-            line_size = 1264; // 400 * 2;
-            shift_picture = line_size - HS_SHIFT;
-            palette16_mask = 0xc0c0;
-            visible_line_size = 1024 / 2; //320; 640/2?
-            N_lines_visible = 768; // 480;
-            line_VS_begin = 768; // 490; // Front porch 10
-            line_VS_end = 768 + 8; //491; // +Sync pulse 2?
-            N_lines_total = 817; // 525; // Whole frame 525
-            //fdiv = clock_get_hz(clk_sys) / (25175000.0); //частота пиксельклока 	25.175 MHz
-            fdiv = clock_get_hz(clk_sys) / (44900000.0); // 44.9 MHz
-            */
             // XGA Signal 1024 x 768 @ 60 Hz timing
-            HS_SHIFT = 1024 + 24; //328 * 2; // 656 Front porch 16 + Visible area 640
-            HS_SIZE = 160 * 2; //? 48 * 2; Back porch 48
-            line_size = 1344; // 400 * 2;
+            HS_SHIFT = 1024 + 24; // Front porch + Visible area
+            HS_SIZE = 160; // Back porch
+            line_size = 1344;
             shift_picture = line_size - HS_SHIFT;
             palette16_mask = 0xc0c0;
-            visible_line_size = 1024 / 2; //320; 640/2?
-            N_lines_visible = 768; // 480;
-            line_VS_begin = 768 + 3; // 490; // Front porch 10
-            line_VS_end = 768 + 3 + 6; //491; // +Sync pulse 2?
-            N_lines_total = 806; // 525; // Whole frame 525
-            //fdiv = clock_get_hz(clk_sys) / (25175000.0); //частота пиксельклока 	25.175 MHz
+            visible_line_size = 1024 / 2;
+            N_lines_visible = 768;
+            line_VS_begin = 768 + 3; // + Front porch
+            line_VS_end = 768 + 3 + 6; // ++ Sync pulse 2?
+            N_lines_total = 806; // Whole frame
             fdiv = clock_get_hz(clk_sys) / (65000000.0); // 65.0 MHz
             break;
         default:

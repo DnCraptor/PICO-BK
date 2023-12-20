@@ -63,7 +63,7 @@ void __time_critical_func(render_core)() {
     graphics_set_buffer(CPU_PAGE5_MEM_ADR, 512, 256);
     graphics_set_textbuffer(TEXT_VIDEO_RAM);
     graphics_set_bgcolor(0x80808080);
-    graphics_set_offset(32, 0);
+    graphics_set_offset(0, 0);
     graphics_set_flashmode(true, true);
     sem_acquire_blocking(&vga_start_semaphore);
 #if NESPAD_ENABLED
