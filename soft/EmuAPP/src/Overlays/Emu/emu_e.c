@@ -48,7 +48,7 @@ void AT_OVL emu_start (void) {
         else {
             for (Count = 0; Count < 16; Count++) {
                 uint64_t cycles_cnt2 = getCycleCount ();
-                if (cycles_cnt2 - cycles_cnt1 < 5) {
+                if (cycles_cnt2 - cycles_cnt1 < 6) { // чем выше константа, тем медленнее БК
                     DEBUG_PRINT(("break"));
                     break;
                 }

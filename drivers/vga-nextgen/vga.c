@@ -12,6 +12,7 @@
 #include "pico/stdlib.h"
 #include "stdlib.h"
 #include "fnt8x16.h"
+#include "pico-vision.h"
 
 // #include "../../src/cga.h"
 
@@ -231,35 +232,13 @@ inline static void dma_handler_VGA_impl() {
                 uint8_t glyph_pixels = font_8x16[(*text_buffer_line++) * font_height + glyph_line];
                 //считываем из быстрой палитры начало таблицы быстрого преобразования 2-битных комбинаций цветов пикселей
                 uint16_t* color = &txt_palette_fast[4 * (*text_buffer_line++)];
-                if (//cursor_blink_state &&
-                    !manager_started && (
-                  //  screen_line / 16 == CURSOR_Y && x == CURSOR_X &&
-                     glyph_line >= 11 && glyph_line <= 13)
-                ) {
-                    *output_buffer_16bit++ = color[3];
-                    *output_buffer_16bit++ = color[3];
-                    *output_buffer_16bit++ = color[3];
-                    *output_buffer_16bit++ = color[3];
-                    if (text_buffer_width == 40) {
-                        *output_buffer_16bit++ = color[3];
-                        *output_buffer_16bit++ = color[3];
-                        *output_buffer_16bit++ = color[3];
-                        *output_buffer_16bit++ = color[3];
-                    }
-                }
-                else {
-                    *output_buffer_16bit++ = color[glyph_pixels & 3];
-                    if (text_buffer_width == 40) *output_buffer_16bit++ = color[glyph_pixels & 3];
-                    glyph_pixels >>= 2;
-                    *output_buffer_16bit++ = color[glyph_pixels & 3];
-                    if (text_buffer_width == 40) *output_buffer_16bit++ = color[glyph_pixels & 3];
-                    glyph_pixels >>= 2;
-                    *output_buffer_16bit++ = color[glyph_pixels & 3];
-                    if (text_buffer_width == 40) *output_buffer_16bit++ = color[glyph_pixels & 3];
-                    glyph_pixels >>= 2;
-                    *output_buffer_16bit++ = color[glyph_pixels & 3];
-                    if (text_buffer_width == 40) *output_buffer_16bit++ = color[glyph_pixels & 3];
-                }
+                *output_buffer_16bit++ = color[glyph_pixels & 3];
+                glyph_pixels >>= 2;
+                *output_buffer_16bit++ = color[glyph_pixels & 3];
+                glyph_pixels >>= 2;
+                *output_buffer_16bit++ = color[glyph_pixels & 3];
+                glyph_pixels >>= 2;
+                *output_buffer_16bit++ = color[glyph_pixels & 3];
             }
             dma_channel_set_read_addr(dma_chan_ctrl, output_buffer, false);
             return;
@@ -278,35 +257,13 @@ inline static void dma_handler_VGA_impl() {
                 uint8_t glyph_pixels = font_8x16[(*text_buffer_line++) * font_height + glyph_line];
                 //считываем из быстрой палитры начало таблицы быстрого преобразования 2-битных комбинаций цветов пикселей
                 uint16_t* color = &txt_palette_fast[4 * (*text_buffer_line++)];
-                if (//cursor_blink_state &&
-                    !manager_started && (
-                  //  screen_line / 16 == CURSOR_Y && x == CURSOR_X &&
-                     glyph_line >= 11 && glyph_line <= 13)
-                ) {
-                    *output_buffer_16bit++ = color[3];
-                    *output_buffer_16bit++ = color[3];
-                    *output_buffer_16bit++ = color[3];
-                    *output_buffer_16bit++ = color[3];
-                    if (text_buffer_width == 40) {
-                        *output_buffer_16bit++ = color[3];
-                        *output_buffer_16bit++ = color[3];
-                        *output_buffer_16bit++ = color[3];
-                        *output_buffer_16bit++ = color[3];
-                    }
-                }
-                else {
-                    *output_buffer_16bit++ = color[glyph_pixels & 3];
-                    if (text_buffer_width == 40) *output_buffer_16bit++ = color[glyph_pixels & 3];
-                    glyph_pixels >>= 2;
-                    *output_buffer_16bit++ = color[glyph_pixels & 3];
-                    if (text_buffer_width == 40) *output_buffer_16bit++ = color[glyph_pixels & 3];
-                    glyph_pixels >>= 2;
-                    *output_buffer_16bit++ = color[glyph_pixels & 3];
-                    if (text_buffer_width == 40) *output_buffer_16bit++ = color[glyph_pixels & 3];
-                    glyph_pixels >>= 2;
-                    *output_buffer_16bit++ = color[glyph_pixels & 3];
-                    if (text_buffer_width == 40) *output_buffer_16bit++ = color[glyph_pixels & 3];
-                }
+                *output_buffer_16bit++ = color[glyph_pixels & 3];
+                glyph_pixels >>= 2;
+                *output_buffer_16bit++ = color[glyph_pixels & 3];
+                glyph_pixels >>= 2;
+                *output_buffer_16bit++ = color[glyph_pixels & 3];
+                glyph_pixels >>= 2;
+                *output_buffer_16bit++ = color[glyph_pixels & 3];
             }
             dma_channel_set_read_addr(dma_chan_ctrl, output_buffer, false);
             return;
@@ -422,8 +379,8 @@ enum graphics_mode_t graphics_set_mode(enum graphics_mode_t mode) {
             text_buffer_height = 30;
             break;
         default:
-            text_buffer_width = 100;
-            text_buffer_height = 30;
+            text_buffer_width = MAX_WIDTH;
+            text_buffer_height = MAX_HEIGHT;
     }
     if (_SM_VGA < 0) return graphics_mode; // если  VGA не инициализирована -
 

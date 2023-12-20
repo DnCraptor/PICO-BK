@@ -1,8 +1,9 @@
 #pragma once
 #include <stdbool.h>
 #include <inttypes.h>
+#include <pico-vision.h>
 
-#define VIDEORAM_SIZE (160 * 50 * 2)
+#define VIDEORAM_SIZE (MAX_WIDTH * MAX_HEIGHT * BYTES_PER_CHAR)
 
 // --- select only one of 'em
 #ifdef SWAP_BLOCK_1k

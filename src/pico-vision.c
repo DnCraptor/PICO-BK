@@ -28,7 +28,7 @@ void set_color_schems(color_schema_t* pschema) {
 }
 
 void draw_panel(int left, int top, int width, int height, char* title, char* bottom) {
-    char line[82];
+    char line[MAX_WIDTH + 2];
     // top line
     for(int i = 1; i < width - 1; ++i) {
         line[i] = 0xCD; // ═
@@ -85,7 +85,7 @@ void draw_box(int left, int top, int width, int height, const char* title, const
         const line_t * pl = plines->plns + i;
         uint8_t off;
         if (pl->off < 0) {
-            size_t len = strnlen(pl->txt, 80);
+            size_t len = strnlen(pl->txt, MAX_WIDTH);
             off = width - 2 > len ? (width - len) >> 1 : 0;
         } else {
             off = pl->off;
@@ -107,20 +107,20 @@ void draw_fn_btn(fn_1_10_tbl_rec_t* prec, int left, int top) {
 }
 
 void draw_cmd_line(int left, int top, char* cmd) {
-    char line[82];
+    char line[MAX_WIDTH + 2];
     if (cmd) {
         int sl = strlen(cmd);
-        snprintf(line, 80, ">%s", cmd);
-        memset(line + sl + 1, ' ', 80 - sl);
+        snprintf(line, MAX_WIDTH, ">%s", cmd);
+        memset(line + sl + 1, ' ', MAX_WIDTH - sl);
     } else {
-        memset(line, ' ', 80); line[0] = '>';
+        memset(line, ' ', MAX_WIDTH); line[0] = '>';
     }
-    line[80] = 0;
+    line[MAX_WIDTH] = 0;
     draw_text(line, left, top, pcs->FOREGROUND_CMD_COLOR, pcs->BACKGROUND_CMD_COLOR);
 }
 
 void draw_label(int left, int top, int width, char* txt, bool selected) {
-    char line[82];
+    char line[MAX_WIDTH + 2];
     bool fin = false;
     for (int i = 0; i < width; ++i) {
         if (!fin) {

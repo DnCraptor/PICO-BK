@@ -57,13 +57,13 @@ volatile bool is_hma_on = true;
 bool already_swapped_fdds = false;
 volatile bool manager_started = false;
 volatile bool usb_started = false;
-static char line[81];
+static char line[MAX_WIDTH + 2];
 
 static volatile uint32_t lastCleanableScanCode = 0;
 static uint32_t lastSavedScanCode = 0;
 
 static const uint8_t PANEL_TOP_Y = 0;
-static const uint8_t TOTAL_SCREEN_LINES = 30;
+static const uint8_t TOTAL_SCREEN_LINES = MAX_HEIGHT;
 static const uint8_t F_BTN_Y_POS = TOTAL_SCREEN_LINES - 1;
 static const uint8_t CMD_Y_POS = F_BTN_Y_POS - 1;
 static const uint8_t PANEL_LAST_Y = CMD_Y_POS - 1;
@@ -81,12 +81,12 @@ typedef struct file_panel_desc {
 } file_panel_desc_t;
 
 static file_panel_desc_t left_panel = {
-    0, 40, 1, 0, 0,
+    0, MAX_WIDTH / 2, 1, 0, 0,
     { "\\" },
 };
 
 static file_panel_desc_t right_panel = {
-    40, 40, 1, 0, 0,
+    MAX_WIDTH / 2, MAX_WIDTH / 2, 1, 0, 0,
     { "\\BK" },
 };
 
@@ -123,8 +123,8 @@ inline static void level_state_message(uint8_t divider, char* sys_name) {
     save_video_ram();
     enum graphics_mode_t ret = graphics_set_mode(TEXTMODE_);
     if (ret != TEXTMODE_) clrScr(1);
-    char ln[80];
-    snprintf(ln, 80, "%s volume: %d (div: 1 << %d = %d)", sys_name, 16 - divider, divider, (1 << divider));
+    char ln[MAX_WIDTH];
+    snprintf(ln, MAX_WIDTH, "%s volume: %d (div: 1 << %d = %d)", sys_name, 16 - divider, divider, (1 << divider));
     const line_t lns[1] = {
         { -1, ln }
     };
@@ -139,8 +139,8 @@ inline static void swap_sound_state_message(volatile bool* p_state, char* sys_na
     save_video_ram();
     enum graphics_mode_t ret = graphics_set_mode(TEXTMODE_);
     if (ret != TEXTMODE_) clrScr(1);
-    char ln[80];
-    snprintf(ln, 80, "Turn %s %s", sys_name, *p_state ? "OFF" : "ON");
+    char ln[MAX_WIDTH];
+    snprintf(ln, MAX_WIDTH, "Turn %s %s", sys_name, *p_state ? "OFF" : "ON");
     if (*p_state) {
         char ln3[42];
         snprintf(ln3, 42, "To turn it ON back, press Ctrl + Tab + %c", switch_char);
@@ -242,9 +242,9 @@ inline static void if_video_mode() {
 
 static void draw_window() {
     sprintf(line, "SD:%s", left_panel.path);
-    draw_panel( 0, PANEL_TOP_Y, 40, PANEL_LAST_Y + 1, line, 0);
+    draw_panel( 0, PANEL_TOP_Y, MAX_WIDTH / 2, PANEL_LAST_Y + 1, line, 0);
     sprintf(line, "SD:%s", right_panel.path);
-    draw_panel(40, PANEL_TOP_Y, 40, PANEL_LAST_Y + 1, line, 0);
+    draw_panel(MAX_WIDTH / 2, PANEL_TOP_Y, MAX_WIDTH / 2, PANEL_LAST_Y + 1, line, 0);
 }
 
 void do_nothing(uint8_t cmd) {
@@ -354,7 +354,7 @@ static inline void fill_panel(file_panel_desc_t* p) {
             { -1, "It is not a folder!" }
         };
         const lines_t lines = { 1, 4, lns };
-        draw_box(10, 7, 60, 10, "Warning", &lines);
+        draw_box((MAX_WIDTH - 60) / 2, 7, 60, 10, "Warning", &lines);
         sleep_ms(1500);
         return;
     }
@@ -371,7 +371,7 @@ static inline void fill_panel(file_panel_desc_t* p) {
     ) {
         if (p->start_file_offset <= p->files_number && y <= LAST_FILE_LINE_ON_PANEL_Y) {
             char* name = fileInfo.fname;
-            snprintf(line, 80, "%s\\%s", p->path, fileInfo.fname);
+            snprintf(line, MAX_WIDTH, "%s\\%s", p->path, fileInfo.fname);
             for (int i = 0; i < 3; ++i) {
                 if (drives_states[i].path && strcmp(drives_states[i].path, line) == 0) {
                     snprintf(line, p->width, "%s", name);
@@ -478,7 +478,7 @@ static inline void enter_pressed() {
             { -1, "It is not a folder!" }
         };
         const lines_t lines = { 1, 3, lns };
-        draw_box(10, 7, 60, 10, "Warning", &lines);
+        draw_box((MAX_WIDTH - 60) / 2, 7, 60, 10, "Warning", &lines);
         // redraw
         sleep_ms(1500);
         return;
@@ -506,7 +506,7 @@ static inline void enter_pressed() {
                             { -1, "It is not a folder!" }
                         };
                         const lines_t lines = { 1, 3, lns };
-                        draw_box(10, 7, 60, 10, "Warning", &lines);
+                        draw_box((MAX_WIDTH - 60) / 2, 7, 60, 10, "Warning", &lines);
                         sleep_ms(1500);
                         // redraw
                     } else {
@@ -534,7 +534,7 @@ static inline void enter_pressed() {
                                 { -1, path }
                             };
                             const lines_t lines = { 2, 3, lns };
-                            draw_box(10, 7, 60, 10, "Error", &lines);
+                            draw_box((MAX_WIDTH - 60) / 2, 7, 60, 10, "Error", &lines);
                             sleep_ms(1500);
                             // redraw
                             return;
@@ -545,14 +545,14 @@ static inline void enter_pressed() {
                         uint16_t len = ((uint16_t)line[3] << 8) | line[2];
                         if (result != FR_OK) {
                             f_close(&file);
-                            snprintf(line, 80, "FRESULT: %d (bw: %d)", result, bw);
+                            snprintf(line, MAX_WIDTH, "FRESULT: %d (bw: %d)", result, bw);
                             const line_t lns[3] = {
                                 { -1, "Unable to read selected file!" },
                                 { -1, path },
                                 { -1, line }
                             };
                             const lines_t lines = { 3, 2, lns };
-                            draw_box(10, 7, 60, 10, "Error", &lines);
+                            draw_box((MAX_WIDTH - 60) / 2, 7, 60, 10, "Error", &lines);
                             sleep_ms(1500);
                             return;
                         } else {
@@ -560,28 +560,28 @@ static inline void enter_pressed() {
                             Device_Data.MemPages [1] = CPU_PAGE5_MEM_ADR; /* RAM Page 4 video 0 */
                             graphics_set_page(CPU_PAGE5_MEM_ADR, 0);
                             graphics_shift_screen((uint16_t)0330 | 0b01000000000);
-                            snprintf(line, 80, "offset = 0%o; len = %d", offset, len);
+                            snprintf(line, MAX_WIDTH, "offset = 0%o; len = %d", offset, len);
                             const line_t lns[3] = {
                                 { -1, "Selected file header info:" },
                                 { -1, path },
                                 { -1, line }
                             };
                             const lines_t lines = { 3, 2, lns };
-                            draw_box(10, 7, 60, 10, "Info", &lines);
+                            draw_box((MAX_WIDTH - 60) / 2, 7, 60, 10, "Info", &lines);
                             sleep_ms(2500);
                         }
                         uint16_t len2 = (len > (16 << 10) - offset) ? (16 << 10) - offset : len;
                         result = f_read(&file, RAM + offset, len2, &bw);
                         if (result != FR_OK) {
                             f_close(&file);
-                            snprintf(line, 80, "FRESULT: %d (bw: %d)", result, bw);
+                            snprintf(line, MAX_WIDTH, "FRESULT: %d (bw: %d)", result, bw);
                             const line_t lns[3] = {
                                 { -1, "Unable to read selected file!" },
                                 { -1, path },
                                 { -1, line }
                             };
                             const lines_t lines = { 3, 2, lns };
-                            draw_box(10, 7, 60, 10, "Error", &lines);
+                            draw_box((MAX_WIDTH - 60) / 2, 7, 60, 10, "Error", &lines);
                             sleep_ms(1500);
                             return;
                         }
@@ -809,14 +809,14 @@ inline static void start_manager() {
     mark_to_exit_flag = false;
     save_video_ram();
     enum graphics_mode_t ret = graphics_set_mode(TEXTMODE_);
-    set_start_debug_line(30);
+    set_start_debug_line(MAX_HEIGHT);
     draw_window();
     select_left_panel();
     bottom_line();
 
     work_cycle();
     
-    set_start_debug_line(25);
+    set_start_debug_line(25); // ?? to be removed
     graphics_set_mode(ret);
     restore_video_ram();
 }
@@ -973,7 +973,7 @@ bool handleScancode(uint32_t ps2scancode) { // core 1
         tabPressed = false;
         break;
       default:
-        //snprintf(line, 80, "Scan-code: %02Xh", ps2scancode);
+        //snprintf(line, MAX_WIDTH, "Scan-code: %02Xh", ps2scancode);
         //draw_cmd_line(0, CMD_Y_POS, line);
         break;
     }
@@ -1006,7 +1006,7 @@ inline void if_overclock() {
                 { -1, line }
             };
             lines_t lines = { 1, 3, lns };
-            draw_box(10, 7, 60, 10, "Info", &lines);
+            draw_box((MAX_WIDTH - 60) / 2, 7, 60, 10, "Info", &lines);
         }
         else {
             sprintf(line, "System clock of %u kHz cannot be achieved", overcloking_khz);
@@ -1014,7 +1014,7 @@ inline void if_overclock() {
                 { -1, line }
             };
             lines_t lines = { 1, 3, lns };
-            draw_box(10, 7, 60, 10, "Warning", &lines);
+            draw_box((MAX_WIDTH - 60) / 2, 7, 60, 10, "Warning", &lines);
         }
         sleep_ms(2500);
         graphics_set_mode(ret);

@@ -2,6 +2,10 @@
 #include <stdbool.h>
 #include <inttypes.h>
 
+#define MAX_WIDTH 128
+#define MAX_HEIGHT 48
+#define BYTES_PER_CHAR 2
+
 typedef struct color_schema {
     uint8_t BACKGROUND_FIELD_COLOR;
     uint8_t FOREGROUND_FIELD_COLOR;
