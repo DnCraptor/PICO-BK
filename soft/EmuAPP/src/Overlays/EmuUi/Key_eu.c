@@ -228,14 +228,38 @@ uint_fast16_t AT_OVL Key_Translate (uint_fast16_t CodeAndFlags) {
         case 0x27: /*rWIN down*/
             Key_ClrRusLat(); // TODO: ensure
             return KEY_UNKNOWN;
-        case 0xA7: /*rWIN up*/
-            Key_SaveRusLat();
-            return KEY_UNKNOWN;
+       // case 0xA7: /*rWIN up*/
+       //     Key_SaveRusLat();
+       //     return KEY_UNKNOWN;
         case 0x1F: /*lWIN down*/
             Key_SetRusLat();
             return KEY_UNKNOWN;
-        case 0x9F: /*lWIN up*/
-            Key_SaveRusLat();
+       // case 0x9F: /*lWIN up*/
+       //     Key_SaveRusLat();
+       //     return KEY_UNKNOWN;
+        case 0x6B:
+            Key_Flags |= KEY_FLAGS_LEFT;
+            return KEY_UNKNOWN;
+        case 0xEB:
+            Key_Flags &= ~KEY_FLAGS_LEFT;
+            return KEY_UNKNOWN;
+        case 0x75:
+            Key_Flags |= KEY_FLAGS_UP;
+            return KEY_UNKNOWN;
+        case 0xF5:
+            Key_Flags &= ~KEY_FLAGS_UP;
+            return KEY_UNKNOWN;
+        case 0x74:
+            Key_Flags |= KEY_FLAGS_RIGHT;
+            return KEY_UNKNOWN;
+        case 0xF4:
+            Key_Flags &= ~KEY_FLAGS_RIGHT;
+            return KEY_UNKNOWN;
+        case 0x72:
+            Key_Flags |= KEY_FLAGS_DOWN;
+            return KEY_UNKNOWN;
+        case 0xF2:
+            Key_Flags &= ~KEY_FLAGS_DOWN;
             return KEY_UNKNOWN;
     }
     uint_fast16_t Key;
