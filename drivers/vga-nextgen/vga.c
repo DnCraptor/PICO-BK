@@ -58,7 +58,7 @@ static bool is_flash_line = false;
 static bool is_flash_frame = false;
 
 //буфер 1к графической палитры
-static uint16_t palette[2][16*4];
+static uint16_t palette[16*4];
 
 static uint32_t bg_color[2];
 static uint16_t palette16_mask = 0;
@@ -222,19 +222,15 @@ inline static void dma_handler_VGA_impl() {
             output_buffer_16bit += shift_picture / 2;
             const uint font_weight = 8;
             const uint font_height = 16;
-
             // "слой" символа
             uint32_t glyph_line = screen_line % font_height;
-
             //указатель откуда начать считывать символы
             uint8_t* text_buffer_line = &text_buffer[screen_line / font_height * text_buffer_width * 2];
-
             for (int x = 0; x < text_buffer_width; x++) {
                 //из таблицы символов получаем "срез" текущего символа
                 uint8_t glyph_pixels = font_8x16[(*text_buffer_line++) * font_height + glyph_line];
                 //считываем из быстрой палитры начало таблицы быстрого преобразования 2-битных комбинаций цветов пикселей
                 uint16_t* color = &txt_palette_fast[4 * (*text_buffer_line++)];
-
                 if (//cursor_blink_state &&
                     !manager_started && (
                   //  screen_line / 16 == CURSOR_Y && x == CURSOR_X &&
@@ -273,7 +269,6 @@ inline static void dma_handler_VGA_impl() {
             return;
         }
     }
-
     if (y < 0) {
         dma_channel_set_read_addr(dma_chan_ctrl, &lines_pattern[0], false); // TODO: ensue it is required
         return;
@@ -297,7 +292,6 @@ inline static void dma_handler_VGA_impl() {
     while (addr_in_buf < 0) addr_in_buf += 16 << 10;
     while (addr_in_buf >= 16 << 10) addr_in_buf -= 16 << 10;
     uint8_t* input_buffer_8bit = input_buffer + addr_in_buf;
-
     uint16_t* output_buffer_16bit = (uint16_t *)(*output_buffer);
     output_buffer_16bit += shift_picture / 2; //смещение началы вывода на размер синхросигнала
     if (graphics_mode == BK_512x256x1) {
@@ -323,7 +317,7 @@ inline static void dma_handler_VGA_impl() {
     int width = MIN((visible_line_size - ((graphics_buffer_shift_x > 0) ? (graphics_buffer_shift_x) : 0)), max_width);
     if (width < 0) return; // TODO: detect a case
     // TODO: Упростить
-    uint16_t* current_palette = palette[0];
+    uint16_t* current_palette = &palette[0];
     uint8_t* output_buffer_8bit = (uint8_t *)output_buffer_16bit;
     switch (graphics_mode) {
         case BK_512x256x1: {
@@ -441,8 +435,7 @@ enum graphics_mode_t graphics_set_mode(enum graphics_mode_t mode) {
     bg_color[0] = (bg_color[0] & 0x3f3f3f3f) | palette16_mask | (palette16_mask << 16);
     bg_color[1] = (bg_color[1] & 0x3f3f3f3f) | palette16_mask | (palette16_mask << 16);
     for (int i = 0; i < 16*4; i++) {
-        palette[0][i] = (palette[0][i] & 0x3f3f) | palette16_mask;
-       // palette[1][i] = (palette[1][i] & 0x3f3f) | palette16_mask;
+        palette[i] = (palette[i] & 0x3f3f) | palette16_mask;
     }
 
     //инициализация шаблонов строк и синхросигнала
@@ -600,171 +593,113 @@ void graphics_init() {
     //инициализация палитры по умолчанию
     for (int i = 0; i < 16; ++i)
     { // black for 256*256*4
-        uint8_t c_hi = 0xc0;
-        uint8_t c_lo = 0xc0;
-        palette[0][i*4] = (c_hi << 8) | c_lo;
-        palette[1][i*4] = (c_lo << 8) | c_hi;
+        palette[i*4] = 0xc0c0;
     }
-    for (int i = 0; i < 16; ++i)
-    for (int j = 1; j < 4; ++j)
-    { // white
-        uint8_t rgb = 0b111111;
-        uint8_t c_hi = 0xc0 | rgb;
-        uint8_t c_lo = 0xc0 | rgb;
-        palette[0][i*4+j] = (c_hi << 8) | c_lo;
-        palette[1][i*4+j] = (c_lo << 8) | c_hi;
+    for (int i = 0; i < 16; ++i) {
+        for (int j = 1; j < 4; ++j)
+        { // white
+            uint8_t rgb = 0b111111;
+            uint8_t c = 0xc0 | rgb;
+            palette[i*4+j] = (c << 8) | c;
+        }
     }
     { // dark blue for 256*256*4
         uint8_t b = 0b11;
-        uint8_t c_hi = 0xc0 | b;
-        uint8_t c_lo = 0xc0 | b;
-        palette[0][0*4+1] = (c_hi << 8) | c_lo;
-        palette[0][2*4+2] = (c_hi << 8) | c_lo;
-        palette[1][1*4+1] = (c_lo << 8) | c_hi;
-        palette[1][2*4+2] = (c_lo << 8) | c_hi;
+        uint8_t c = 0xc0 | b;
+        palette[0*4+1] = (c << 8) | c;
+        palette[2*4+2] = (c << 8) | c;
     }
     { // green for 256*256*4
         uint8_t g = 0b11 << 2;
-        uint8_t c_hi = 0xc0 | g;
-        uint8_t c_lo = 0xc0 | g;
-        palette[0][0*4+2] = (c_hi << 8) | c_lo;
-        palette[0][1*4+2] = (c_hi << 8) | c_lo;
-        palette[0][3*4+1] = (c_hi << 8) | c_lo;
-        palette[0][12*4+2] = (c_hi << 8) | c_lo;
-        palette[0][14*4+2] = (c_hi << 8) | c_lo;
-        palette[0][15*4+2] = (c_hi << 8) | c_lo;
-        palette[1][0*4+2] = (c_lo << 8) | c_hi;
-        palette[1][1*4+2] = (c_lo << 8) | c_hi;
-        palette[1][3*4+1] = (c_lo << 8) | c_hi;
-        palette[1][12*4+2] = (c_lo << 8) | c_hi;
-        palette[1][14*4+2] = (c_lo << 8) | c_hi;
-        palette[1][15*4+2] = (c_lo << 8) | c_hi;
+        uint8_t c = 0xc0 | g;
+        palette[0*4+2] = (c << 8) | c;
+        palette[1*4+2] = (c << 8) | c;
+        palette[3*4+1] = (c << 8) | c;
+        palette[12*4+2] = (c << 8) | c;
+        palette[14*4+2] = (c << 8) | c;
+        palette[15*4+2] = (c << 8) | c;
     }
     { // red for 256*256*4
         uint8_t r = 0b11 << 4;
-        uint8_t c_hi = 0xc0 | r;
-        uint8_t c_lo = 0xc0 | r;
-        palette[0][0*4+3] = (c_hi << 8) | c_lo;
-        palette[0][1*4+3] = (c_hi << 8) | c_lo;
-        palette[0][6*4+3] = (c_hi << 8) | c_lo;
-        palette[0][11*4+3] = (c_hi << 8) | c_lo;
-        palette[0][12*4+1] = (c_hi << 8) | c_lo;
-        palette[1][0*4+3] = (c_lo << 8) | c_hi;
-        palette[1][1*4+3] = (c_lo << 8) | c_hi;
-        palette[1][6*4+3] = (c_lo << 8) | c_hi;
-        palette[1][11*4+3] = (c_lo << 8) | c_hi;
-        palette[1][12*4+1] = (c_lo << 8) | c_hi;
+        uint8_t c = 0xc0 | r;
+        palette[0*4+3] = (c << 8) | c;
+        palette[1*4+3] = (c << 8) | c;
+        palette[6*4+3] = (c << 8) | c;
+        palette[11*4+3] = (c << 8) | c;
+        palette[12*4+1] = (c << 8) | c;
     }
     { // yellow for 256*256*4
         uint8_t r = 0b11 << 4;
         uint8_t g = 0b11 << 2;
-        uint8_t c_hi = 0xc0 | r | g;
-        uint8_t c_lo = 0xc0 | r | g;
-        palette[0][1*4+1] = (c_hi << 8) | c_lo;
-        palette[0][3*4+3] = (c_hi << 8) | c_lo;
-        palette[0][7*4+3] = (c_hi << 8) | c_lo;
-        palette[0][11*4+2] = (c_hi << 8) | c_lo;
-        palette[0][13*4+2] = (c_hi << 8) | c_lo;
-        palette[0][14*4+1] = (c_hi << 8) | c_lo;
-        palette[1][1*4+1] = (c_hi << 8) | c_lo;
-        palette[1][3*4+3] = (c_hi << 8) | c_lo;
-        palette[1][7*4+3] = (c_hi << 8) | c_lo;
-        palette[1][11*4+2] = (c_hi << 8) | c_lo;
-        palette[1][13*4+2] = (c_hi << 8) | c_lo;
-        palette[1][14*4+1] = (c_hi << 8) | c_lo;
+        uint8_t c = 0xc0 | r | g;
+        palette[1*4+1] = (c << 8) | c;
+        palette[3*4+3] = (c << 8) | c;
+        palette[7*4+3] = (c << 8) | c;
+        palette[11*4+2] = (c << 8) | c;
+        palette[13*4+2] = (c << 8) | c;
+        palette[14*4+1] = (c << 8) | c;
     }
     { // margenta for 256*256*4
         uint8_t r = 0b11 << 4;
         uint8_t b = 0b11;
         uint8_t c_hi = 0xc0 | r | b;
-        uint8_t c_lo = 0xc0 | r | b;
-        palette[0][1*4+2] = (c_hi << 8) | c_lo;
-        palette[0][2*4+3] = (c_hi << 8) | c_lo;
-        palette[0][4*4+1] = (c_hi << 8) | c_lo;
-        palette[0][8*4+3] = (c_hi << 8) | c_lo;
-        palette[1][1*4+2] = (c_hi << 8) | c_lo;
-        palette[1][2*4+3] = (c_hi << 8) | c_lo;
-        palette[1][4*4+1] = (c_hi << 8) | c_lo;
-        palette[1][8*4+3] = (c_hi << 8) | c_lo;
+        palette[1*4+2] = (c_hi << 8) | c_hi;
+        palette[2*4+3] = (c_hi << 8) | c_hi;
+        palette[4*4+1] = (c_hi << 8) | c_hi;
+        palette[8*4+3] = (c_hi << 8) | c_hi;
     }
     { // light blue for 256*256*4
         uint8_t r = 0b01 << 4;
         uint8_t g = 0b01 << 2;
         uint8_t b = 0b11;
         uint8_t c_hi = 0xc0 | r | g | b;
-        uint8_t c_lo = 0xc0 | r | g | b;
-        palette[0][2*4+1] = (c_hi << 8) | c_lo;
-        palette[0][3*4+2] = (c_hi << 8) | c_lo;
-        palette[0][4*4+2] = (c_hi << 8) | c_lo;
-        palette[0][11*4+1] = (c_hi << 8) | c_lo;
-        palette[0][12*4+3] = (c_hi << 8) | c_lo;
-        palette[0][13*4+1] = (c_hi << 8) | c_lo;
-        palette[0][15*4+1] = (c_hi << 8) | c_lo;
-        palette[1][2*4+1] = (c_hi << 8) | c_lo;
-        palette[1][3*4+2] = (c_hi << 8) | c_lo;
-        palette[1][4*4+2] = (c_hi << 8) | c_lo;
-        palette[1][11*4+1] = (c_hi << 8) | c_lo;
-        palette[1][12*4+3] = (c_hi << 8) | c_lo;
-        palette[1][13*4+1] = (c_hi << 8) | c_lo;
-        palette[1][15*4+1] = (c_hi << 8) | c_lo;
+        palette[2*4+1] = (c_hi << 8) | c_hi;
+        palette[3*4+2] = (c_hi << 8) | c_hi;
+        palette[4*4+2] = (c_hi << 8) | c_hi;
+        palette[11*4+1] = (c_hi << 8) | c_hi;
+        palette[12*4+3] = (c_hi << 8) | c_hi;
+        palette[13*4+1] = (c_hi << 8) | c_hi;
+        palette[15*4+1] = (c_hi << 8) | c_hi;
     }
     { // deep red for 256*256*4
         uint8_t r = 0b10 << 4;
         uint8_t c_hi = 0xc0 | r;
-        uint8_t c_lo = 0xc0 | r;
-        palette[0][6*4+1] = (c_hi << 8) | c_lo;
-        palette[0][10*4+3] = (c_hi << 8) | c_lo;
-        palette[1][6*4+1] = (c_hi << 8) | c_lo;
-        palette[1][10*4+3] = (c_hi << 8) | c_lo;
+        palette[6*4+1] = (c_hi << 8) | c_hi;
+        palette[10*4+3] = (c_hi << 8) | c_hi;
     }
     { // dark red for 256*256*4
         uint8_t r = 0b01 << 4;
         uint8_t c_hi = 0xc0 | r;
-        uint8_t c_lo = 0xc0 | r;
-        palette[0][6*4+2] = (c_hi << 8) | c_lo;
-        palette[0][9*4+3] = (c_hi << 8) | c_lo;
-        palette[1][6*4+2] = (c_hi << 8) | c_lo;
-        palette[1][9*4+3] = (c_hi << 8) | c_lo;
+        palette[6*4+2] = (c_hi << 8) | c_hi;
+        palette[9*4+3] = (c_hi << 8) | c_hi;
     }
     { // yellow2 for 256*256*4
         uint8_t r = 0b10 << 4;
         uint8_t g = 0b10 << 2;
         uint8_t c_hi = 0xc0 | r | g;
-        uint8_t c_lo = 0xc0 | r | g;
-        palette[0][7*4+1] = (c_hi << 8) | c_lo;
-        palette[0][10*4+1] = (c_hi << 8) | c_lo;
-        palette[1][7*4+1] = (c_hi << 8) | c_lo;
-        palette[1][10*4+1] = (c_hi << 8) | c_lo;
+        palette[7*4+1] = (c_hi << 8) | c_hi;
+        palette[10*4+1] = (c_hi << 8) | c_hi;
     }
     { // yellow3 for 256*256*4
         uint8_t r = 0b10 << 4;
         uint8_t g = 0b11 << 2;
         uint8_t c_hi = 0xc0 | r | g;
-        uint8_t c_lo = 0xc0 | r | g;
-        palette[0][7*4+2] = (c_hi << 8) | c_lo;
-        palette[0][9*4+1] = (c_hi << 8) | c_lo;
-        palette[1][7*4+2] = (c_hi << 8) | c_lo;
-        palette[1][9*4+1] = (c_hi << 8) | c_lo;
+        palette[7*4+2] = (c_hi << 8) | c_hi;
+        palette[9*4+1] = (c_hi << 8) | c_hi;
     }
     { // margenta2 for 256*256*4
         uint8_t r = 0b10 << 4;
         uint8_t b = 0b10;
         uint8_t c_hi = 0xc0 | r | b;
-        uint8_t c_lo = 0xc0 | r | b;
-        palette[0][8*4+1] = (c_hi << 8) | c_lo;
-        palette[0][10*4+2] = (c_hi << 8) | c_lo;
-        palette[1][8*4+1] = (c_hi << 8) | c_lo;
-        palette[1][10*4+2] = (c_hi << 8) | c_lo;
+        palette[8*4+1] = (c_hi << 8) | c_hi;
+        palette[10*4+2] = (c_hi << 8) | c_hi;
     }
     { // margenta3 for 256*256*4
         uint8_t r = 0b10 << 4;
         uint8_t b = 0b10;
         uint8_t c_hi = 0xc0 | r | b;
-        uint8_t c_lo = 0xc0 | r | b;
-        palette[0][8*4+2] = (c_hi << 8) | c_lo;
-        palette[0][9*4+2] = (c_hi << 8) | c_lo;
-        palette[1][8*4+2] = (c_hi << 8) | c_lo;
-        palette[1][9*4+2] = (c_hi << 8) | c_lo;
+        palette[8*4+2] = (c_hi << 8) | c_hi;
+        palette[9*4+2] = (c_hi << 8) | c_hi;
     }
     //текстовая палитра
     for (int i = 0; i < 16; i++) {
