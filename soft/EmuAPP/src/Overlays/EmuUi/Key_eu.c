@@ -187,14 +187,14 @@ static const uint8_t Key_RusLatTab [0x84] [2] = {
 };
 
 static uint_fast16_t AT_OVL ReturnKeyCode (uint_fast8_t Key, uint_fast32_t KeyFlags) {
-    if (Key >= 0100 && Key <= 0137 && (KeyFlags & (KEY_FLAGS_LCTRL | KEY_FLAGS_RCTRL))) Key &= ~0140;
-    if (KeyFlags & (KEY_FLAGS_LALT | KEY_FLAGS_RALT)) Key |= KEY_AR2_PRESSED;
+    if (Key >= 0100 && Key <= 0137 && (KeyFlags & KEY_FLAGS_CTRL)) Key &= ~0140;
+    if (KeyFlags & KEY_FLAGS_ALT) Key |= KEY_AR2_PRESSED;
     return Key;
 }
 
 static uint_fast16_t AT_OVL ReturnShiftedKeyCode (uint_fast8_t Key, uint_fast32_t KeyFlags) {
     if (
-        (((KeyFlags >> KEY_FLAGS_LSHIFT_POS) | (KeyFlags >> KEY_FLAGS_RSHIFT_POS)) ^
+        ((KeyFlags >> KEY_FLAGS_SHIFT_POS) ^
          (KeyFlags >> KEY_FLAGS_CAPSLOCK_POS) ^ (KeyFlags >> KEY_FLAGS_RUSLAT_POS)
         ) & 1
     ) {
@@ -204,7 +204,40 @@ static uint_fast16_t AT_OVL ReturnShiftedKeyCode (uint_fast8_t Key, uint_fast32_
 }
 
 uint_fast16_t AT_OVL Key_Translate (uint_fast16_t CodeAndFlags) {
-    // if (CodeAndFlags == 0xD9 /*SHIFT up*/) CodeAndFlags |= 0x8000U;
+    switch ((uint8_t)CodeAndFlags) {
+        case 0x11: /*ALT down*/
+            Key_Flags |= KEY_FLAGS_ALT;
+            return KEY_UNKNOWN;
+        case 0x91: /*ALT up*/
+            Key_Flags &= ~KEY_FLAGS_ALT;
+            return KEY_UNKNOWN;
+        case 0x12: /*SHIFT down*/
+        case 0x59: /*rSHIFT down*/
+            Key_Flags |= KEY_FLAGS_SHIFT;
+            return KEY_UNKNOWN;
+        case 0x92: /*SHIFT up*/
+        case 0xD9: /*rSHIFT up*/
+            Key_Flags &= ~KEY_FLAGS_SHIFT;
+            return KEY_UNKNOWN;
+        case 0x14: /*CTRL down*/
+            Key_Flags |= KEY_FLAGS_CTRL;
+            return KEY_UNKNOWN;
+        case 0x94: /*CTRL up*/
+            Key_Flags &= ~KEY_FLAGS_CTRL;
+            return KEY_UNKNOWN;
+        case 0x27: /*rWIN down*/
+            Key_ClrRusLat(); // TODO: ensure
+            return KEY_UNKNOWN;
+        case 0xA7: /*rWIN up*/
+            Key_SaveRusLat();
+            return KEY_UNKNOWN;
+        case 0x1F: /*lWIN down*/
+            Key_SetRusLat();
+            return KEY_UNKNOWN;
+        case 0x9F: /*lWIN up*/
+            Key_SaveRusLat();
+            return KEY_UNKNOWN;
+    }
     uint_fast16_t Key;
     uint_fast8_t  Code;
     uint_fast32_t KeyFlags = Key_Flags;
@@ -213,27 +246,27 @@ uint_fast16_t AT_OVL Key_Translate (uint_fast16_t CodeAndFlags) {
         Key = Key_RusLatTab [Code] [(KeyFlags >> KEY_FLAGS_RUSLAT_POS) & 1];
         if (Key <=   32) return ReturnKeyCode        ((uint_fast8_t) Key, KeyFlags);
         if (Key <  0x80) return ReturnShiftedKeyCode ((uint_fast8_t) Key, KeyFlags);
-        if (Key <= 0x9F) return ReturnKeyCode        (Key_ShiftTab [Key - 0x80] [((KeyFlags >> KEY_FLAGS_LSHIFT_POS) | (KeyFlags >> KEY_FLAGS_RSHIFT_POS)) & 1], KeyFlags);
+        if (Key <= 0x9F) return ReturnKeyCode        (Key_ShiftTab [Key - 0x80] [(KeyFlags >> KEY_FLAGS_SHIFT_POS) & 1], KeyFlags);
         if (Key <  0xC0) return ((Key - 0xA0) | KEY_AR2_PRESSED);
         switch (Key) {
-            case KEY_LALT:      if (CodeAndFlags & 0x8000U) KeyFlags &= ~KEY_FLAGS_LALT;
-                                else                        KeyFlags |=  KEY_FLAGS_LALT;
-                                Key_Flags = KeyFlags;
-                                return KEY_UNKNOWN;
-            case KEY_LSHIFT:    if (CodeAndFlags & 0x8000U) KeyFlags &= ~KEY_FLAGS_LSHIFT;
-                                else                        KeyFlags |=  KEY_FLAGS_LSHIFT;
-                                Key_Flags = KeyFlags;
-                                return KEY_UNKNOWN;
-            case KEY_LCTRL:     if (CodeAndFlags & 0x8000U) KeyFlags &= ~KEY_FLAGS_LCTRL;
-                                else                        KeyFlags |=  KEY_FLAGS_LCTRL;
-                                Key_Flags = KeyFlags;
-                                return KEY_UNKNOWN;
+        //    case KEY_LALT:      if (CodeAndFlags & 0x8000U) KeyFlags &= ~KEY_FLAGS_LALT;
+        //                        else                        KeyFlags |=  KEY_FLAGS_LALT;
+        //                        Key_Flags = KeyFlags;
+        //                        return KEY_UNKNOWN;
+        //    case KEY_LSHIFT:    if (CodeAndFlags & 0x8000U) KeyFlags &= ~KEY_FLAGS_LSHIFT;
+        //                        else                        KeyFlags |=  KEY_FLAGS_LSHIFT;
+        //                        Key_Flags = KeyFlags;
+        //                        return KEY_UNKNOWN;
+        //    case KEY_LCTRL:     if (CodeAndFlags & 0x8000U) KeyFlags &= ~KEY_FLAGS_LCTRL;
+        //                        else                        KeyFlags |=  KEY_FLAGS_LCTRL;
+        //                        Key_Flags = KeyFlags;
+        //                        return KEY_UNKNOWN;
             case KEY_CAPSLOCK:  if ((CodeAndFlags & 0x8000U) == 0) Key_Flags = KeyFlags ^ KEY_FLAGS_CAPSLOCK;
                                 return KEY_UNKNOWN;
-            case KEY_RSHIFT:    if (CodeAndFlags & 0x8000U) KeyFlags &= ~KEY_FLAGS_RSHIFT;
-                                else                        KeyFlags |=  KEY_FLAGS_RSHIFT;
-                                Key_Flags = KeyFlags;
-                                return KEY_UNKNOWN;
+        //    case KEY_RSHIFT:    if (CodeAndFlags & 0x8000U) KeyFlags &= ~KEY_FLAGS_RSHIFT;
+        //                        else                        KeyFlags |=  KEY_FLAGS_RSHIFT;
+        //                        Key_Flags = KeyFlags;
+        //                        return KEY_UNKNOWN;
             case KEY_SCROLL:    if ((CodeAndFlags & 0x8000U) == 0) Key_Flags = KeyFlags ^ KEY_FLAGS_TURBO;
                                 return KEY_UNKNOWN;
             case KEY_ESC:       return KEY_MENU_ESC;
@@ -256,16 +289,16 @@ uint_fast16_t AT_OVL Key_Translate (uint_fast16_t CodeAndFlags) {
         return KEY_UNKNOWN;
     }
     switch (Code) {
-        case PS2_R_ALT:     if (CodeAndFlags & 0x8000U) KeyFlags &= ~KEY_FLAGS_RALT;
-                            else                        KeyFlags |=  KEY_FLAGS_RALT;
-                            Key_Flags = KeyFlags;
-                            return KEY_UNKNOWN;
+        //case PS2_R_ALT:     if (CodeAndFlags & 0x8000U) KeyFlags &= ~KEY_FLAGS_RALT;
+        //                    else                        KeyFlags |=  KEY_FLAGS_RALT;
+        //                    Key_Flags = KeyFlags;
+        //                    return KEY_UNKNOWN;
         case PS2_PRINT:     reboot (0x55AA55AA);
                             return KEY_UNKNOWN;
-        case PS2_R_CTRL:    if (CodeAndFlags & 0x8000U) KeyFlags &= ~KEY_FLAGS_RCTRL;
-                            else                        KeyFlags |=  KEY_FLAGS_RCTRL;
-                            Key_Flags = KeyFlags;
-                            return KEY_UNKNOWN;
+        //case PS2_R_CTRL:    if (CodeAndFlags & 0x8000U) KeyFlags &= ~KEY_FLAGS_RCTRL;
+        //                    else                        KeyFlags |=  KEY_FLAGS_RCTRL;
+        //                    Key_Flags = KeyFlags;
+        //                    return KEY_UNKNOWN;
         case PS2_L_WIN:     return ReturnKeyCode (14, KeyFlags);
         case PS2_R_WIN:     return ReturnKeyCode (15, KeyFlags);
 //      case PS2_MENU:

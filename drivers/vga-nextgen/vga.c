@@ -59,7 +59,7 @@ static bool is_flash_line = false;
 static bool is_flash_frame = false;
 
 //буфер 1к графической палитры
-static uint16_t palette[16*4];
+static uint16_t __scratch_y("vga_driver") palette[16*4];
 
 static uint32_t bg_color[2];
 static uint16_t palette16_mask = 0;
@@ -70,7 +70,7 @@ static uint8_t* text_buf_color;
 static uint text_buffer_width = 0;
 static uint text_buffer_height = 0;
 
-static uint16_t txt_palette[16];
+static uint16_t __scratch_y("vga_driver") txt_palette[16];
 
 //буфер 2К текстовой палитры для быстрой работы
 static uint16_t* txt_palette_fast = NULL;

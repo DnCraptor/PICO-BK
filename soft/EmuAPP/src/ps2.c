@@ -15,14 +15,14 @@ void gpio_int (void)
     GPIO_REG_WRITE (GPIO_STATUS_W1TC_ADDRESS, GPIO_REG_READ (GPIO_STATUS_ADDRESS));
     
     {
-        // Получаем время от прошлого бита, если оно слишком большое - сбросим автомат приема
+        // п÷п╬п╩я┐я┤п╟п╣п╪ п╡я─п╣п╪я▐ п╬я┌ п©я─п╬я┬п╩п╬пЁп╬ п╠п╦я┌п╟, п╣я│п╩п╦ п╬п╫п╬ я│п╩п╦я┬п╨п╬п╪ п╠п╬п╩я▄я┬п╬п╣ - я│п╠я─п╬я│п╦п╪ п╟п╡я┌п╬п╪п╟я┌ п©я─п╦п╣п╪п╟
         uint32_t T = getCycleCount ();
 
         dT                = T - ps2_Data.IntPrevT;
         ps2_Data.IntPrevT = T;
     }
 
-    if (dT < (50 * 160)) return;  // если фронт короче 50мкс (по стандарту 60-100мкс), то это иголка (пропускаем ее)
+    if (dT < (50 * 160)) return;  // п╣я│п╩п╦ я└я─п╬п╫я┌ п╨п╬я─п╬я┤п╣ 50п╪п╨я│ (п©п╬ я│я┌п╟п╫п╢п╟я─я┌я┐ 60-100п╪п╨я│), я┌п╬ я█я┌п╬ п╦пЁп╬п╩п╨п╟ (п©я─п╬п©я┐я│п╨п╟п╣п╪ п╣п╣)
 
     IntState = ps2_Data.IntState;
 
@@ -30,7 +30,7 @@ void gpio_int (void)
     {
         if (IntState >= (10U << PS2_INT_STATE_BITN_POS))
         {
-            // принимаем ACK - переходим в прием
+            // п©я─п╦п╫п╦п╪п╟п╣п╪ ACK - п©п╣я─п╣я┘п╬п╢п╦п╪ п╡ п©я─п╦п╣п╪
             if (gpio_in (PS2_DATA)) IntState |= PS2_INT_STATE_FLAG_TXACK;
 
             IntState &= ~(PS2_INT_STATE_FLAG_TX | PS2_INT_STATE_BITN_MASK);
@@ -39,7 +39,7 @@ void gpio_int (void)
         {
             if (IntState >= (9U << PS2_INT_STATE_BITN_POS))
             {
-                // Передали 8 бит данных и 1 бит четности
+                // п÷п╣я─п╣п╢п╟п╩п╦ 8 п╠п╦я┌ п╢п╟п╫п╫я▀я┘ п╦ 1 п╠п╦я┌ я┤п╣я┌п╫п╬я│я┌п╦
 
                 gpio_init_input_pu (PS2_DATA);
 
@@ -47,7 +47,7 @@ void gpio_int (void)
             {
                 uint_fast16_t TxData = ps2_Data.TxData;
 
-                // Мы в режиме передачи
+                // п°я▀ п╡ я─п╣п╤п╦п╪п╣ п©п╣я─п╣п╢п╟я┤п╦
                 if (TxData & 1) gpio_on  (PS2_DATA);
                 else            gpio_off (PS2_DATA);
 
@@ -60,34 +60,34 @@ void gpio_int (void)
     else
     {
         uint_fast16_t RxData;
-        // Мы в режиме приема
+        // п°я▀ п╡ я─п╣п╤п╦п╪п╣ п©я─п╦п╣п╪п╟
 
-        if (dT > (120 * 160)) IntState &= ~PS2_INT_STATE_BITN_MASK; // 120мкс таймаут - сбрасываем приемник
+        if (dT > (120 * 160)) IntState &= ~PS2_INT_STATE_BITN_MASK; // 120п╪п╨я│ я┌п╟п╧п╪п╟я┐я┌ - я│п╠я─п╟я│я▀п╡п╟п╣п╪ п©я─п╦п╣п╪п╫п╦п╨
 
-        // Принимаем бит
+        // п÷я─п╦п╫п╦п╪п╟п╣п╪ п╠п╦я┌
         RxData = ps2_Data.RxData;
 
         if (gpio_in (PS2_DATA)) RxData |= 0x400;
 
         IntState += 1U << PS2_INT_STATE_BITN_POS;
        
-        if (IntState < (11U << PS2_INT_STATE_BITN_POS)) // Проверяем на конец байта
+        if (IntState < (11U << PS2_INT_STATE_BITN_POS)) // п÷я─п╬п╡п╣я─я▐п╣п╪ п╫п╟ п╨п╬п╫п╣я├ п╠п╟п╧я┌п╟
         {
             ps2_Data.RxData = RxData >> 1;
         }
         else
         {
-            // Принято 11 бит
-            if (((RxData & 0x001) == 0) && (RxData & 0x400))  // проверим наличие старт и стоп битов
+            // п÷я─п╦п╫я▐я┌п╬ 11 п╠п╦я┌
+            if (((RxData & 0x001) == 0) && (RxData & 0x400))  // п©я─п╬п╡п╣я─п╦п╪ п╫п╟п╩п╦я┤п╦п╣ я│я┌п╟я─я┌ п╦ я│я┌п╬п© п╠п╦я┌п╬п╡
             {
                 uint_fast16_t Code;
-                // Убираем стартовый бит
+                // пёп╠п╦я─п╟п╣п╪ я│я┌п╟я─я┌п╬п╡я▀п╧ п╠п╦я┌
                 RxData >>= 1;
                 
-                // Получаем код
+                // п÷п╬п╩я┐я┤п╟п╣п╪ п╨п╬п╢
                 Code = RxData & 0xff;
                 
-                // Считаем четность
+                // п║я┤п╦я┌п╟п╣п╪ я┤п╣я┌п╫п╬я│я┌я▄
                 RxData ^= RxData >> 4;
                 RxData ^= RxData >> 2;
                 RxData ^= RxData >> 1;
@@ -95,7 +95,7 @@ void gpio_int (void)
                 
                 if ((RxData & 1) == 0)
                 {
-                    // Все нормально !
+                    // п▓я│п╣ п╫п╬я─п╪п╟п╩я▄п╫п╬ !
                     if      (Code == 0xE0) IntState |= PS2_INT_STATE_FLAG_E0;
                     else if (Code == 0xE1) IntState |= PS2_INT_STATE_FLAG_E1;
                     else if (Code == 0xF0) IntState |= PS2_INT_STATE_FLAG_F0;
@@ -105,20 +105,20 @@ void gpio_int (void)
                     else
                     {
                         uint_fast8_t iRxBufWr = ps2_Data.iRxBufWr & (PS2_RX_BUF_SIZE - 1);
-                        // Расширенные наборы и отжатие
+                        // п═п╟я│я┬п╦я─п╣п╫п╫я▀п╣ п╫п╟п╠п╬я─я▀ п╦ п╬я┌п╤п╟я┌п╦п╣
                         Code |= (IntState & (PS2_INT_STATE_FLAG_E0 | PS2_INT_STATE_FLAG_E1 | PS2_INT_STATE_FLAG_F0)) << 8;
-                        // Кладем в буфер
+                        // п п╩п╟п╢п╣п╪ п╡ п╠я┐я└п╣я─
                         ps2_Data.RxBuf [iRxBufWr++] = (uint16_t) Code;
 
                         ps2_Data.iRxBufWr = (uint8_t) iRxBufWr;
                         
-                        // Сбрасываем флаги
+                        // п║п╠я─п╟я│я▀п╡п╟п╣п╪ я└п╩п╟пЁп╦
                         IntState &= ~(PS2_INT_STATE_FLAG_E0 | PS2_INT_STATE_FLAG_E1 | PS2_INT_STATE_FLAG_F0);
                     }
                 }
             }
             
-            // Сбрасываем приемник
+            // п║п╠я─п╟я│я▀п╡п╟п╣п╪ п©я─п╦п╣п╪п╫п╦п╨
             IntState &= ~PS2_INT_STATE_BITN_MASK;
         }
     }
