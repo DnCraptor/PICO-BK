@@ -226,41 +226,43 @@ uint_fast16_t AT_OVL Key_Translate (uint_fast16_t CodeAndFlags) {
             Key_Flags &= ~KEY_FLAGS_CTRL;
             return KEY_UNKNOWN;
         case 0x27: /*rWIN down*/
-            Key_ClrRusLat(); // TODO: ensure
-            return KEY_UNKNOWN;
-       // case 0xA7: /*rWIN up*/
-       //     Key_SaveRusLat();
-       //     return KEY_UNKNOWN;
+        case 0xA7: /*rWIN up ??*/
+            Key_Flags &= ~KEY_FLAGS_RUSLAT;
+            return ReturnKeyCode (15, Key_Flags);
         case 0x1F: /*lWIN down*/
-            Key_SetRusLat();
-            return KEY_UNKNOWN;
-       // case 0x9F: /*lWIN up*/
-       //     Key_SaveRusLat();
-       //     return KEY_UNKNOWN;
+        case 0x9F: /*lWIN up ??*/
+            Key_Flags |= KEY_FLAGS_RUSLAT;
+            return ReturnKeyCode (14, Key_Flags);
+        case 0x29: // Space down
+            Key_Flags |= KEY_FLAGS_BTN1;
+            return ReturnKeyCode (32, Key_Flags);
+        case 0xA9: // Space up
+            Key_Flags &= ~KEY_FLAGS_BTN1;
+            return ReturnKeyCode (32, Key_Flags);
         case 0x6B:
             Key_Flags |= KEY_FLAGS_LEFT;
-            return KEY_UNKNOWN;
+            return ReturnKeyCode (8, Key_Flags);
         case 0xEB:
             Key_Flags &= ~KEY_FLAGS_LEFT;
-            return KEY_UNKNOWN;
+            return ReturnKeyCode (8, Key_Flags);
         case 0x75:
             Key_Flags |= KEY_FLAGS_UP;
-            return KEY_UNKNOWN;
+            return ReturnKeyCode (26, Key_Flags);
         case 0xF5:
             Key_Flags &= ~KEY_FLAGS_UP;
-            return KEY_UNKNOWN;
+            return ReturnKeyCode (26, Key_Flags);
         case 0x74:
             Key_Flags |= KEY_FLAGS_RIGHT;
-            return KEY_UNKNOWN;
+            return ReturnKeyCode (25, Key_Flags);
         case 0xF4:
             Key_Flags &= ~KEY_FLAGS_RIGHT;
-            return KEY_UNKNOWN;
+            return ReturnKeyCode (25, Key_Flags);
         case 0x72:
             Key_Flags |= KEY_FLAGS_DOWN;
-            return KEY_UNKNOWN;
+            return ReturnKeyCode (27, Key_Flags);
         case 0xF2:
             Key_Flags &= ~KEY_FLAGS_DOWN;
-            return KEY_UNKNOWN;
+            return ReturnKeyCode (27, Key_Flags);
     }
     uint_fast16_t Key;
     uint_fast8_t  Code;
