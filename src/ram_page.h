@@ -2,7 +2,7 @@
 #include <stdbool.h>
 #include <inttypes.h>
 
-#define VIDEORAM_SIZE (80 * 30 * 2)
+#define VIDEORAM_SIZE (160 * 50 * 2)
 
 // --- select only one of 'em
 #ifdef SWAP_BLOCK_1k

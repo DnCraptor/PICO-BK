@@ -97,8 +97,8 @@ static inline void fill_panel(file_panel_desc_t* p);
 
 inline static void swap_drive_message() {
     save_video_ram();
-    enum graphics_mode_t ret = graphics_set_mode(TEXTMODE_80x30);
-    if (ret != TEXTMODE_80x30) clrScr(1);
+    enum graphics_mode_t ret = graphics_set_mode(TEXTMODE_);
+    if (ret != TEXTMODE_) clrScr(1);
     if (already_swapped_fdds) {
         const line_t lns[3] = {
             { -1, "Swap FDD0 and FDD1 drive images" },
@@ -121,8 +121,8 @@ inline static void swap_drive_message() {
 
 inline static void level_state_message(uint8_t divider, char* sys_name) {
     save_video_ram();
-    enum graphics_mode_t ret = graphics_set_mode(TEXTMODE_80x30);
-    if (ret != TEXTMODE_80x30) clrScr(1);
+    enum graphics_mode_t ret = graphics_set_mode(TEXTMODE_);
+    if (ret != TEXTMODE_) clrScr(1);
     char ln[80];
     snprintf(ln, 80, "%s volume: %d (div: 1 << %d = %d)", sys_name, 16 - divider, divider, (1 << divider));
     const line_t lns[1] = {
@@ -137,8 +137,8 @@ inline static void level_state_message(uint8_t divider, char* sys_name) {
 
 inline static void swap_sound_state_message(volatile bool* p_state, char* sys_name, char switch_char) {
     save_video_ram();
-    enum graphics_mode_t ret = graphics_set_mode(TEXTMODE_80x30);
-    if (ret != TEXTMODE_80x30) clrScr(1);
+    enum graphics_mode_t ret = graphics_set_mode(TEXTMODE_);
+    if (ret != TEXTMODE_) clrScr(1);
     char ln[80];
     snprintf(ln, 80, "Turn %s %s", sys_name, *p_state ? "OFF" : "ON");
     if (*p_state) {
@@ -808,7 +808,7 @@ static inline void work_cycle() {
 inline static void start_manager() {
     mark_to_exit_flag = false;
     save_video_ram();
-    enum graphics_mode_t ret = graphics_set_mode(TEXTMODE_80x30);
+    enum graphics_mode_t ret = graphics_set_mode(TEXTMODE_);
     set_start_debug_line(30);
     draw_window();
     select_left_panel();
@@ -996,8 +996,8 @@ inline void if_overclock() {
     if (oc < 0) overcloking_khz -= 1000;
     if (oc != 0) {
     save_video_ram();
-        enum graphics_mode_t ret = graphics_set_mode(TEXTMODE_80x30);
-        if (ret != TEXTMODE_80x30) clrScr(1);
+        enum graphics_mode_t ret = graphics_set_mode(TEXTMODE_);
+        if (ret != TEXTMODE_) clrScr(1);
         uint vco, postdiv1, postdiv2;
         if (check_sys_clock_khz(overcloking_khz, &vco, &postdiv1, &postdiv2)) {
             set_sys_clock_pll(vco, postdiv1, postdiv2);

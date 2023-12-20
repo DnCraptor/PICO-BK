@@ -9,6 +9,7 @@
 
 enum graphics_mode_t {
     TEXTMODE_80x30,
+    TEXTMODE_,
     BK_256x256x2,
     BK_512x256x1,
 };

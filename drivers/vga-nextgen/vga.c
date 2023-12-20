@@ -264,6 +264,53 @@ inline static void dma_handler_VGA_impl() {
             dma_channel_set_read_addr(dma_chan_ctrl, output_buffer, false);
             return;
         }
+        case TEXTMODE_: {
+            uint16_t* output_buffer_16bit = (uint16_t *)*output_buffer;
+            output_buffer_16bit += shift_picture / 2;
+            const uint font_weight = 8;
+            const uint font_height = 16;
+            // "слой" символа
+            uint32_t glyph_line = screen_line % font_height;
+            //указатель откуда начать считывать символы
+            uint8_t* text_buffer_line = &text_buffer[screen_line / font_height * text_buffer_width * 2];
+            for (int x = 0; x < text_buffer_width; x++) {
+                //из таблицы символов получаем "срез" текущего символа
+                uint8_t glyph_pixels = font_8x16[(*text_buffer_line++) * font_height + glyph_line];
+                //считываем из быстрой палитры начало таблицы быстрого преобразования 2-битных комбинаций цветов пикселей
+                uint16_t* color = &txt_palette_fast[4 * (*text_buffer_line++)];
+                if (//cursor_blink_state &&
+                    !manager_started && (
+                  //  screen_line / 16 == CURSOR_Y && x == CURSOR_X &&
+                     glyph_line >= 11 && glyph_line <= 13)
+                ) {
+                    *output_buffer_16bit++ = color[3];
+                    *output_buffer_16bit++ = color[3];
+                    *output_buffer_16bit++ = color[3];
+                    *output_buffer_16bit++ = color[3];
+                    if (text_buffer_width == 40) {
+                        *output_buffer_16bit++ = color[3];
+                        *output_buffer_16bit++ = color[3];
+                        *output_buffer_16bit++ = color[3];
+                        *output_buffer_16bit++ = color[3];
+                    }
+                }
+                else {
+                    *output_buffer_16bit++ = color[glyph_pixels & 3];
+                    if (text_buffer_width == 40) *output_buffer_16bit++ = color[glyph_pixels & 3];
+                    glyph_pixels >>= 2;
+                    *output_buffer_16bit++ = color[glyph_pixels & 3];
+                    if (text_buffer_width == 40) *output_buffer_16bit++ = color[glyph_pixels & 3];
+                    glyph_pixels >>= 2;
+                    *output_buffer_16bit++ = color[glyph_pixels & 3];
+                    if (text_buffer_width == 40) *output_buffer_16bit++ = color[glyph_pixels & 3];
+                    glyph_pixels >>= 2;
+                    *output_buffer_16bit++ = color[glyph_pixels & 3];
+                    if (text_buffer_width == 40) *output_buffer_16bit++ = color[glyph_pixels & 3];
+                }
+            }
+            dma_channel_set_read_addr(dma_chan_ctrl, output_buffer, false);
+            return;
+        }
         default: {
             dma_channel_set_read_addr(dma_chan_ctrl, &lines_pattern[0], false); // TODO: ensue it is required
             return;
@@ -371,8 +418,11 @@ enum graphics_mode_t graphics_set_mode(enum graphics_mode_t mode) {
         case BK_512x256x1:
             break;
         case TEXTMODE_80x30:
-        default:
             text_buffer_width = 80;
+            text_buffer_height = 30;
+            break;
+        default:
+            text_buffer_width = 100;
             text_buffer_height = 30;
     }
     if (_SM_VGA < 0) return graphics_mode; // если  VGA не инициализирована -
@@ -396,6 +446,7 @@ enum graphics_mode_t graphics_set_mode(enum graphics_mode_t mode) {
 
     switch (graphics_mode) {
         case TEXTMODE_80x30:
+        case TEXTMODE_:
             //текстовая палитра
             for (int i = 0; i < 16; i++) {
                 txt_palette[i] = (txt_palette[i] & 0x3f) | (palette16_mask >> 8);
@@ -551,12 +602,12 @@ void logMsg(char* msg) {
 #else
     printf("%s\n", msg);
 #endif
-    if (graphics_mode != TEXTMODE_80x30 || manager_started) {
+    if (graphics_mode != TEXTMODE_ || manager_started) {
         // log in text mode only
         return;
     }
-    if (current_line >= 30 - 1) {
-        current_line = 29;
+    if (current_line >= text_buffer_height - 1) {
+        current_line = text_buffer_height - 1;
         size_t sz = text_buffer_width * 2;
         for (int i = start_debug_line; i < current_line; ++i) {
             uint8_t* t_buf1 = text_buffer + sz * i;
