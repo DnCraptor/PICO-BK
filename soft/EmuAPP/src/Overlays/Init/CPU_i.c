@@ -6,9 +6,16 @@
 #include "CPU.h"
 #include "CPU_i.h"
 
-//#define AT_OVL __attribute__((section(".ovl3_i.text")))
+#define AT_OVL __attribute__((section(".ovl3_i.text")))
 
-void /*AT_OVL*/ CPU_Init (void)
+bool bk0010mode = false;
+
+void init_rom() {
+    Device_Data.MemPages [2] = bk0010mode ? CPU_PAGE14_MEM_ADR : CPU_PAGE8_MEM_ADR; /* ROM Page 0 - bk11m_328_basic2.rom + bk11m_329_basic3.rom */
+    Device_Data.MemPages [3] = bk0010mode ? CPU_PAGE15_MEM_ADR : CPU_PAGE12_MEM_ADR; /* ROM Page 2 - bk11m_324_bos.rom + bk11m_330_mstd.rom */
+}
+
+void AT_OVL CPU_Init (void)
 {
     memset (&Device_Data, 0, sizeof (Device_Data));
 
@@ -25,8 +32,7 @@ void /*AT_OVL*/ CPU_Init (void)
 
     Device_Data.MemPages [0] = CPU_PAGE0_MEM_ADR; /* RAM Page 0 */
     Device_Data.MemPages [1] = CPU_PAGE5_MEM_ADR; /* RAM Page 4 video 0 */
-    Device_Data.MemPages [2] = CPU_PAGE8_MEM_ADR; /* ROM Page 0 - bk11m_328_basic2.rom + bk11m_329_basic3.rom */
-    Device_Data.MemPages [3] = CPU_PAGE12_MEM_ADR; /* ROM Page 2 - bk11m_324_bos.rom + bk11m_330_mstd.rom */
+    init_rom();
 
     Device_Data.CPU_State.psw   = 0340;
     Device_Data.CPU_State.r [7] = Device_Data.SysRegs.RdReg177716 & 0177400;

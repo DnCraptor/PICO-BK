@@ -94,13 +94,13 @@ void draw_box(int left, int top, int width, int height, const char* title, const
     }
 }
 
-void draw_fn_btn(fn_1_10_tbl_rec_t* prec, int left, int top) {
+void draw_fn_btn(fn_1_12_tbl_rec_t* prec, int left, int top) {
     char line[10];
     sprintf(line, "       ");
     // 1, 2, 3... button mark
     line[0] = prec->pre_mark;
     line[1] = prec->mark;
-    draw_text(line, left, top, pcs->FOREGROUND_F1_10_COLOR, pcs->BACKGROUND_F1_10_COLOR);
+    draw_text(line, left, top, pcs->FOREGROUND_F1_12_COLOR, pcs->BACKGROUND_F1_12_COLOR);
     // button
     sprintf(line, prec->name);
     draw_text(line, left + 2, top, pcs->FOREGROUND_F_BTN_COLOR, pcs->BACKGROUND_F_BTN_COLOR);

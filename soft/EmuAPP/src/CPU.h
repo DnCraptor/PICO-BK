@@ -3,7 +3,8 @@
 
 #include <stdint.h>
 #include "ram_page.h"
-#include "ROM.h"
+#include "ROM10.h"
+#include "ROM11.h"
 
 #ifdef BOOT_DEBUG
 extern void logMsg(char* msg);
@@ -19,6 +20,10 @@ extern void logMsg(char* msg);
 #else
 #define KBD_PRINT( X)
 #endif
+
+extern bool bk0010mode;
+void init_rom();
+
 #define RAM_PAGES_SIZE (sizeof RAM)
 #define CPU_PAGE0_MEM_ADR  &RAM[0x00000] /* RAM Page 0 0..40000 it was 0x3FFEC000 */
 #define CPU_PAGE1_MEM_ADR  &RAM[0x04000] /* RAM Page 1          it was 0x3FFF0000 */
@@ -28,11 +33,14 @@ extern void logMsg(char* msg);
 #define CPU_PAGE5_MEM_ADR  &RAM[0x10000] /* RAM Page 4          it was 0x3FFFC000 - video page 0 */
 #define CPU_PAGE6_MEM_ADR  &RAM[0x08000] /* RAM Page 2          it was 0x3FFF4000 - video page 1 */
 #define CPU_PAGE7_MEM_ADR  &RAM[0x0C000] /* RAM Page 3          it was 0x3FFF8000 */
-#define CPU_PAGE8_MEM_ADR  &ROM[0x00000] /* ROM Page 0          it was 0x40250000 - bk11m_328_basic2.rom + bk11m_329_basic3.rom  */
-#define CPU_PAGE9_MEM_ADR  &ROM[0x04000] /* ROM Page 1          it was 0x40254000 - bk11m_327_basic1.rom + bk11m_325_ext.rom */
-#define CPU_PAGE10_MEM_ADR 0 /* ?? */
-#define CPU_PAGE11_MEM_ADR 0 /* ?? */
-#define CPU_PAGE12_MEM_ADR &ROM[0x08000] /* ROM Page 2          it was 0x40258000 - bk11m_324_bos.rom + bk11m_330_mstd.rom */
+#define CPU_PAGE8_MEM_ADR  &ROM11[0x00000] /* ROM11 Page 0          it was 0x40250000 - bk11m_328_basic2.rom + bk11m_329_basic3.rom  */
+#define CPU_PAGE9_MEM_ADR  &ROM11[0x04000] /* ROM11 Page 1          it was 0x40254000 - bk11m_327_basic1.rom + bk11m_325_ext.rom */
+#define CPU_PAGE10_MEM_ADR 0 /* ? */
+#define CPU_PAGE11_MEM_ADR 0 /* ? */
+#define CPU_PAGE12_MEM_ADR &ROM11[0x08000] /* ROM11 Page 2          it was 0x40258000 - bk11m_324_bos.rom + bk11m_330_mstd.rom */
+
+#define CPU_PAGE14_MEM_ADR &ROM10[0x00000] /* ROM10 Basic 0010-01 */
+#define CPU_PAGE15_MEM_ADR &ROM10[0x04000] /* ROM10 Basik + monitor 0010-01 */
 
 #define CPU_START_IO_ADR 0177600
 

@@ -259,7 +259,15 @@ void mark_to_exit(uint8_t cmd) {
 
 static void turn_usb_on(uint8_t cmd);
 
-static fn_1_10_tbl_t fn_1_10_tbl = {
+static void switch_rom(uint8_t cmd);
+
+static void reset(uint8_t cmd) {
+    memset(RAM, 0, sizeof RAM);
+    main_init();
+    mark_to_exit_flag = true;
+}
+
+static fn_1_12_tbl_t fn_1_12_tbl = {
     ' ', '1', " Help ", do_nothing,
     ' ', '2', " Menu ", do_nothing,
     ' ', '3', " View ", do_nothing,
@@ -269,10 +277,12 @@ static fn_1_10_tbl_t fn_1_10_tbl = {
     ' ', '7', "MkDir ", do_nothing,
     ' ', '8', " Del  ", do_nothing,
     ' ', '9', " Swap ", swap_drives,
-    ' ', '0', " USB  ", turn_usb_on
+    '1', '0', " USB  ", turn_usb_on,
+    '1', '1', " 0010 ", switch_rom,
+    '1', '2', "Reset ", reset
 };
 
-static fn_1_10_tbl_t fn_1_10_tbl_alt = {
+static fn_1_12_tbl_t fn_1_12_tbl_alt = {
     ' ', '1', "Right ", do_nothing,
     ' ', '2', " Left ", do_nothing,
     ' ', '3', " View ", do_nothing,
@@ -282,10 +292,12 @@ static fn_1_10_tbl_t fn_1_10_tbl_alt = {
     ' ', '7', " Find ", do_nothing,
     ' ', '8', " Del  ", do_nothing,
     ' ', '9', " UpMn ", do_nothing,
-    ' ', '0', " USB  ", turn_usb_on
+    '1', '0', " USB  ", turn_usb_on,
+    '1', '1', " 0010 ", switch_rom,
+    '1', '2', "Reset ", reset
 };
 
-static fn_1_10_tbl_t fn_1_10_tbl_ctrl = {
+static fn_1_12_tbl_t fn_1_12_tbl_ctrl = {
     ' ', '1', " EjtL ", do_nothing,
     ' ', '2', " EjtR ", do_nothing,
     ' ', '3', "Debug ", do_nothing,
@@ -295,22 +307,24 @@ static fn_1_10_tbl_t fn_1_10_tbl_ctrl = {
     ' ', '7', " Find ", do_nothing,
     ' ', '8', " Del  ", do_nothing,
     ' ', '9', " Swap ", swap_drives,
-    ' ', '0', " Exit ", mark_to_exit
+    '1', '0', " Exit ", mark_to_exit,
+    '1', '1', " 0010 ", switch_rom,
+    '1', '2', "Reset ", reset
 };
 
-static inline fn_1_10_tbl_t* actual_fn_1_10_tbl() {
-    const fn_1_10_tbl_t * ptbl = &fn_1_10_tbl;
+static inline fn_1_12_tbl_t* actual_fn_1_12_tbl() {
+    const fn_1_12_tbl_t * ptbl = &fn_1_12_tbl;
     if (altPressed) {
-        ptbl = &fn_1_10_tbl_alt;
+        ptbl = &fn_1_12_tbl_alt;
     } else if (ctrlPressed) {
-        ptbl = &fn_1_10_tbl_ctrl;
+        ptbl = &fn_1_12_tbl_ctrl;
     }
     return ptbl;
 }
 
 static inline void bottom_line() {
     for (int i = 0; i < BTNS_COUNT; ++i) {
-        const fn_1_10_tbl_rec_t* rec = &(*actual_fn_1_10_tbl())[i];
+        const fn_1_12_tbl_rec_t* rec = &(*actual_fn_1_12_tbl())[i];
         draw_fn_btn(rec, i * BTN_WIDTH, F_BTN_Y_POS);
     }
     draw_cmd_line(0, CMD_Y_POS, 0);
@@ -320,11 +334,11 @@ static inline void turn_usb_off(uint8_t cmd) { // TODO: support multiple enter f
     set_tud_msc_ejected(true);
     usb_started = false;
     // Alt + F10 no more actions
-    memset(fn_1_10_tbl_alt[9].name, ' ', BTN_WIDTH);
-    fn_1_10_tbl_alt[9].action = do_nothing;
+    memset(fn_1_12_tbl_alt[9].name, ' ', BTN_WIDTH);
+    fn_1_12_tbl_alt[9].action = do_nothing;
     // Ctrl + F10 - Exit
-    sprintf(fn_1_10_tbl_ctrl[9].name, " Exit ");
-    fn_1_10_tbl_ctrl[9].action = mark_to_exit;
+    sprintf(fn_1_12_tbl_ctrl[9].name, " Exit ");
+    fn_1_12_tbl_ctrl[9].action = mark_to_exit;
 
     fill_panel(&left_panel);
     fill_panel(&right_panel);
@@ -335,15 +349,21 @@ static void turn_usb_on(uint8_t cmd) {
     init_pico_usb_drive();
     usb_started = true;
     // do not USB after it was turned on
-    memset(fn_1_10_tbl[9].name, ' ', BTN_WIDTH);
-    fn_1_10_tbl[9].action = do_nothing;
+    memset(fn_1_12_tbl[9].name, ' ', BTN_WIDTH);
+    fn_1_12_tbl[9].action = do_nothing;
     // do not Exit in usb mode
-    memset(fn_1_10_tbl_ctrl[9].name, ' ', BTN_WIDTH);
-    fn_1_10_tbl_ctrl[9].action = do_nothing;
+    memset(fn_1_12_tbl_ctrl[9].name, ' ', BTN_WIDTH);
+    fn_1_12_tbl_ctrl[9].action = do_nothing;
     // Alt + F10 - force unmount usb
-    sprintf(fn_1_10_tbl_alt[9].name, " UnUSB");
-    fn_1_10_tbl_alt[9].action = turn_usb_off;
+    snprintf(fn_1_12_tbl_alt[9].name, BTN_WIDTH, " UnUSB ");
+    fn_1_12_tbl_alt[9].action = turn_usb_off;
+    bottom_line();
+}
 
+static void switch_rom(uint8_t cmd) {
+    bk0010mode = !bk0010mode;
+    snprintf(fn_1_12_tbl_alt[10].name, BTN_WIDTH, bk0010mode ? " 0011M" : " 0010 ");
+    init_rom();
     bottom_line();
 }
 
@@ -413,10 +433,9 @@ inline static void scan_code_processed() {
   lastCleanableScanCode = 0;
 }
 
-inline static fn_1_10_btn_pressed(uint8_t fn_idx) {
-    //sprintf(line, "F%d pressed", fn_idx + 1);
-    //draw_cmd_line(0, CMD_Y_POS, line);
-    (*actual_fn_1_10_tbl())[fn_idx].action(fn_idx);
+inline static fn_1_12_btn_pressed(uint8_t fn_idx) {
+    if (fn_idx > 11) fn_idx -= 18; // F11-12
+    (*actual_fn_1_12_tbl())[fn_idx].action(fn_idx);
 }
 
 inline static void handle_down_pressed() {
@@ -491,9 +510,6 @@ static inline void enter_pressed() {
     while(f_readdir(&dir, &fileInfo) == FR_OK && fileInfo.fname[0] != '\0') {
         if (psp->start_file_offset <= psp->files_number && y <= LAST_FILE_LINE_ON_PANEL_Y) {
             if (psp->selected_file_idx == y) {
-                //sprintf(line, "fn: %s afn: %s sz: %d attr: %03oo date: %04Xh time: %04Xh",
-                //              fileInfo.fname, fileInfo.altname, fileInfo.fsize, fileInfo.fattrib, fileInfo.fdate, fileInfo.ftime);
-                //draw_cmd_line(0, CMD_Y_POS, line);
                 if (fileInfo.fattrib & AM_DIR) {
                     f_closedir(&dir);
                     if (strlen(psp->path) > 1) {
@@ -734,6 +750,8 @@ static inline void work_cycle() {
           case 0x42: // F8
           case 0x43: // F9
           case 0x44: // F10
+          case 0x57: // F11
+          case 0x58: // F12
             scan_code_processed();
             break;
           case 0xBB: // F1..10 up
@@ -746,10 +764,12 @@ static inline void work_cycle() {
           case 0xC2: // F8
           case 0xC3: // F9
           case 0xC4: // F10
+          case 0xD7: // F11
+          case 0xD8: // F12
             if (lastSavedScanCode != lastCleanableScanCode - 0x80) {
                 break;
             }
-            fn_1_10_btn_pressed(lastCleanableScanCode - 0xBB);
+            fn_1_12_btn_pressed(lastCleanableScanCode - 0xBB);
             scan_code_processed();
             break;
           case 0x1D: // Ctrl down
