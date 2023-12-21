@@ -22,6 +22,13 @@
 
 uint32_t ps2get_raw_code(); // TODO:
 
+static int_fast16_t pressed_count = 0;
+inline static bool any_down(uint_fast16_t CodeAndFlags) {
+    if (CodeAndFlags & 0xF000) pressed_count++;
+    else pressed_count--;
+    return pressed_count > 0;
+}
+
 void AT_OVL emu_start (void) {
     uint64_t      cycles_cnt1  = getCycleCount ();
     int_fast32_t  Time         = (int32_t)cycles_cnt1;
@@ -75,24 +82,8 @@ void AT_OVL emu_start (void) {
                 //ps2_periodic ();
                 break;
             case 2:
-                CodeAndFlags = ps2get_raw_code(); // ps2_read ();
+                CodeAndFlags = (uint_fast16_t)(ps2get_raw_code() & 0xFFFF); // ps2_read ();
                 if (CodeAndFlags == 0) RunState = 5;
-                break;
-            case 3:
-                if (CodeAndFlags == PS2_PAUSE) {
-                    RunState = 5;
-                    CPU_Stop ();
-                }
-                else {
-                    Key = Key_Translate (CodeAndFlags);
-                    KBD_PRINT(("CodeAndFlags: %Xh Key_Translate: %Xh", CodeAndFlags, Key));
-                }
-                break;
-            case 4:
-                // ps2_leds ((Key_Flags >> KEY_FLAGS_TURBO_POS) & 7);
-                // писк нажатий LPT/Covox
-                if (Key_Flags & KEY_FLAGS_NUMLOCK) Device_Data.SysRegs.RdReg177714 = (uint16_t) (Key_Flags >> KEY_FLAGS_UP_POS);
-                else                               Device_Data.SysRegs.RdReg177714 = 0;
 /*   Адрес регистра - 177716.
    Старший байт регистра (разряды  8-15) используются для задания адреса, с которого запускается процессор при включении питания (при
 этом младший байт регистра принимается равным 0). Адрес начального пуска процессора равен 100000.
@@ -103,7 +94,7 @@ void AT_OVL emu_start (void) {
    Назначение разрядов выходного системного порта:
    Разряд 4 используется для передачи данных на линию.
    Разряд 5 используется для передачи данных на магнитофон, либо сигнала готовности на линию.
- * Разряд 6 используется для передачи данных на магнитофон и для генерации звукового сигнала.
+   Разряд 6 используется для передачи данных на магнитофон и для генерации звукового сигнала.
    Разряд 7 используется для управления двигателем магнитофона ( "1" - "стоп", "0" - "пуск" ).
    Назначение разрядов входного системного порта:
    Разряд 4 используется для чтения данных с линии.
@@ -111,10 +102,32 @@ void AT_OVL emu_start (void) {
  * Разряд 6 сброшен в "0", если хотя бы одна клавиша нажата и установлен в "1", если все клавиши отжаты.
    Разряд 7 используется для чтения сигнала готовности с линии.
 */
+                else { // TODO:
+                //    if (any_down(CodeAndFlags)) Device_Data.SysRegs.RdReg177716 &= ~0100;
+                //    else Device_Data.SysRegs.RdReg177716 |= 0100;
+                //    KBD_PRINT(("2. CodeAndFlags: %04Xh RdReg177716: %oo", CodeAndFlags, Device_Data.SysRegs.RdReg177716));
+                }
+                break;
+            case 3:
+                if (CodeAndFlags == PS2_PAUSE) {
+                    RunState = 5;
+                    CPU_Stop ();
+                }
+                else {
+                    Key = Key_Translate (CodeAndFlags);
+                    KBD_PRINT(("3. CodeAndFlags: %04Xh RdReg177716: %oo Key: %d (%Xh / %oo)",
+                                   CodeAndFlags, Device_Data.SysRegs.RdReg177716, Key, Key, Key));
+                }
+                break;
+            case 4:
+                // ps2_leds ((Key_Flags >> KEY_FLAGS_TURBO_POS) & 7);
+                // джойстик
+                if (Key_Flags & KEY_FLAGS_NUMLOCK) Device_Data.SysRegs.RdReg177714 = (uint16_t) (Key_Flags >> KEY_FLAGS_UP_POS);
+                else                               Device_Data.SysRegs.RdReg177714 = 0;
                 if (CodeAndFlags & 0x8000U) {
                     if (((LastKey ^ CodeAndFlags) & 0x7FF) == 0) {
                         Device_Data.SysRegs.RdReg177716 |= 0100;
-                        KBD_PRINT(("Device_Data.SysRegs.RdReg177716: %Xh", Device_Data.SysRegs.RdReg177716));
+                        KBD_PRINT(("4. RdReg177716: %oo", Device_Data.SysRegs.RdReg177716));
                         LastKey = 0xC00;
                     }
                 } else if (Key != KEY_UNKNOWN) {
@@ -125,13 +138,14 @@ void AT_OVL emu_start (void) {
                     }
                     else {
                         LastKey  = ((uint_fast32_t) Key << 16) | CodeAndFlags;
-                        KBD_PRINT(("LastKey: %Xh", LastKey));
+                        KBD_PRINT(("4. LastKey: %Xh", LastKey));
                         RunState = 6;
                     }
                 }
                 break;
             case 6:
                 Device_Data.SysRegs.RdReg177716 &= ~0100;
+                KBD_PRINT(("6. RdReg177716: %oo", Device_Data.SysRegs.RdReg177716));
             case 5:
 /*   Регистр состояния клавиатуры имеет адрес 177660.
    В нем используются только два бита.
@@ -146,7 +160,7 @@ void AT_OVL emu_start (void) {
                 if ((LastKey & 0x800) == 0) {
                     if ((Device_Data.SysRegs.Reg177660 & 0200) == 0) {
                         Key = (uint_fast16_t) (LastKey >> 16);
-                        KBD_PRINT(("Key: %d (5)", Key));
+                        KBD_PRINT(("5. Key: %d", Key));
                         if (Key == 14) {
                             Key_SetRusLat ();
                         } else if (Key == 15) {
@@ -161,19 +175,19 @@ void AT_OVL emu_start (void) {
                                 Device_Data.CPU_State.Flags &= ~CPU_FLAG_KEY_VECTOR_274;
                                 Device_Data.CPU_State.Flags |=  CPU_FLAG_KEY_VECTOR_60;
                             }
-                            KBD_PRINT(("CPU_State.Flags: %Xh (5)", Device_Data.CPU_State.Flags));
+                            KBD_PRINT(("5. CPU_State.Flags: %Xh", Device_Data.CPU_State.Flags));
                         }
                         Device_Data.SysRegs.Reg177660 |= 0200;
-                        KBD_PRINT(("SysRegs.Reg177660: %Xh (5)", Device_Data.SysRegs.Reg177660));
+                        KBD_PRINT(("5. Reg177660: %oo", Device_Data.SysRegs.Reg177660));
                     }
                     LastKey |= 0x800;
-                    KBD_PRINT(("LastKey: %Xh (5)", LastKey));
+                    KBD_PRINT(("5. LastKey: %Xh", LastKey));
 /*   Регистр данных клавиатуры имеет адрес 177662.
    При нажатии на определенную клавишу в разрядах 0-6 этого регистра формируется соответствующий нажатой клавише семиразрядный код. Запись
 нового кода в регистр не производится до тех пор, пока не будет прочитан предыдущий код.
    Разряды 7-15 не используются.*/
                     Device_Data.SysRegs.RdReg177662 = (uint16_t) (LastKey >> 16) & 0177;
-                    KBD_PRINT(("SysRegs.RdReg177662: %Xh (5)", Device_Data.SysRegs.RdReg177662));
+                    KBD_PRINT(("5. RdReg177662: %oo", Device_Data.SysRegs.RdReg177662));
                 }
                 RunState = 0;
                 break;

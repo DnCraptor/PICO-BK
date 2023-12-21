@@ -47,7 +47,7 @@ void AT_OVL ps2_periodic (void)
         case 0:
 
             ps2_Data.LedsLast = 0xFF;
-            ps2_Data.TxByte   = 0xFF; // Отправляем команду "Reset"
+            ps2_Data.TxByte   = 0xFF; // п·я┌п©я─п╟п╡п╩я▐п╣п╪ п╨п╬п╪п╟п╫п╢я┐ "Reset"
             State++;
             break;
 
@@ -55,7 +55,7 @@ void AT_OVL ps2_periodic (void)
         case 7:
         case 12:
 
-            gpio_off         (PS2_CLK); // PS2_CLK вниз
+            gpio_off         (PS2_CLK); // PS2_CLK п╡п╫п╦п╥
             gpio_init_output (PS2_CLK);
             ps2_Data.PrevT = getCycleCount ();
             State++;
@@ -67,7 +67,7 @@ void AT_OVL ps2_periodic (void)
 
             if ((getCycleCount () - ps2_Data.PrevT) < (100 * 160)) break;
 
-            gpio_off         (PS2_DATA); // PS2_DATA вниз (старт бит)
+            gpio_off         (PS2_DATA); // PS2_DATA п╡п╫п╦п╥ (я│я┌п╟я─я┌ п╠п╦я┌)
             gpio_init_output (PS2_DATA);
             ps2_Data.PrevT = getCycleCount ();
             State++;
@@ -96,11 +96,11 @@ void AT_OVL ps2_periodic (void)
 
                 if (State != 9) Mask |= PS2_INT_STATE_FLAG_BAT;
 
-                MEMORY_BARRIOR ();
+                MEMORY_BARRIOR (); // ??
                 ps2_Data.IntState = (uint8_t) ((ps2_Data.IntState & Mask) | PS2_INT_STATE_FLAG_TX);
                 MEMORY_BARRIOR ();
             }
-            gpio_init_input_pu (PS2_CLK); // Отпускаем PS2_CLK
+            gpio_init_input_pu (PS2_CLK); // п·я┌п©я┐я│п╨п╟п╣п╪ PS2_CLK
             ps2_Data.PrevT = getCycleCount ();
             State++;
             break;
@@ -109,31 +109,31 @@ void AT_OVL ps2_periodic (void)
         case 10:
         case 15:
 
-            if ((getCycleCount () - ps2_Data.PrevT) < (5000 * 160)) break; // Ждем завершения передачи
+            if ((getCycleCount () - ps2_Data.PrevT) < (5000 * 160)) break; // п√п╢п╣п╪ п╥п╟п╡п╣я─я┬п╣п╫п╦я▐ п©п╣я─п╣п╢п╟я┤п╦
 
-            if (ps2_Data.IntState & PS2_INT_STATE_FLAG_RESEND) State -= 3; // Если нужно повторяем отправку
+            if (ps2_Data.IntState & PS2_INT_STATE_FLAG_RESEND) State -= 3; // п∙я│п╩п╦ п╫я┐п╤п╫п╬ п©п╬п╡я┌п╬я─я▐п╣п╪ п╬я┌п©я─п╟п╡п╨я┐
             else                                               State++;
             break;
 
         case 5:
 
             if (ps2_Data.IntState & PS2_INT_STATE_FLAG_ACK) State++;
-            else                                            State = 0; // Если нужно повторяем Reset
+            else                                            State = 0; // п∙я│п╩п╦ п╫я┐п╤п╫п╬ п©п╬п╡я┌п╬я─я▐п╣п╪ Reset
             break;
 
         case 6:
 
             if (((ps2_Data.LedsNew & 7) == ps2_Data.LedsLast) && ((ps2_Data.IntState & PS2_INT_STATE_FLAG_BAT) == 0)) break;
 
-            ps2_Data.TxByte = 0xED; // Отправляем команду "Set/Reset LEDs"
+            ps2_Data.TxByte = 0xED; // п·я┌п©я─п╟п╡п╩я▐п╣п╪ п╨п╬п╪п╟п╫п╢я┐ "Set/Reset LEDs"
             State++;
             break;
 
         case 11:
 
-            ps2_Data.TxByte = ps2_Data.LedsNew & 7; // Отправляем состояние светодиодов
+            ps2_Data.TxByte = ps2_Data.LedsNew & 7; // п·я┌п©я─п╟п╡п╩я▐п╣п╪ я│п╬я│я┌п╬я▐п╫п╦п╣ я│п╡п╣я┌п╬п╢п╦п╬п╢п╬п╡
             if (ps2_Data.IntState & PS2_INT_STATE_FLAG_ACK) State++;
-            else                                            State = 6; // Если нужно начинаем с начала
+            else                                            State = 6; // п∙я│п╩п╦ п╫я┐п╤п╫п╬ п╫п╟я┤п╦п╫п╟п╣п╪ я│ п╫п╟я┤п╟п╩п╟
             break;
 
         case 16:

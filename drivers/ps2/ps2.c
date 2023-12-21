@@ -228,16 +228,15 @@ uint32_t ps2get_raw_code() {
     }
     if (ps2bufsize < len) return 0;
     retval = 0;
-    //translate code
     if (len == 1) {
         retval = ps2buffer[0];
     }
     if (len == 2) {
-        if (ps2buffer[0] == 0xF0) retval = ps2buffer[1] | 0x80;
-        if (ps2buffer[0] == 0xE0) retval = ps2buffer[1];
+        if (ps2buffer[0] == 0xE0) retval = 0x100 | ps2buffer[1];
+        else retval = (ps2buffer[0] << 8) | ps2buffer[1];
     }
     if (len == 3) {
-        if ((ps2buffer[0] == 0xE0) && (ps2buffer[1] == 0xF0)) retval = ps2buffer[2] | 0x80;
+        retval = (ps2buffer[1] << 8) | ps2buffer[2] | 0x100; // mark 3 bytes in separate bit
     }
     for (i = len; i < KBD_BUFFER_SIZE; i++) {
         ps2buffer[i - len] = ps2buffer[i];
