@@ -26,7 +26,7 @@ void AT_OVL CPU_Init (void)
 //  Device_Data.SysRegs.Reg177710   = 0177777;
 //  Device_Data.SysRegs.Reg177712   = 0177400;
 //  Device_Data.SysRegs.RdReg177714 = 0;
-    Device_Data.SysRegs.RdReg177716 = (0140000 & 0177400) | 0300;
+    Device_Data.SysRegs.RdReg177716 = (bk0010mode ? 0100000 : (0140000 & 0177400)) | 0300;
     Device_Data.SysRegs.WrReg177662  = 047400;
     Device_Data.SysRegs.Wr1Reg177716 = (1 << 12) | 1;
 

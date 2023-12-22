@@ -362,7 +362,9 @@ static void turn_usb_on(uint8_t cmd) {
 
 static void switch_rom(uint8_t cmd) {
     bk0010mode = !bk0010mode;
-    snprintf(fn_1_12_tbl_alt[10].name, BTN_WIDTH, bk0010mode ? " 0011M" : " 0010 ");
+    snprintf(fn_1_12_tbl     [10].name, BTN_WIDTH, bk0010mode ? " 0011M" : " 0010 ");
+    snprintf(fn_1_12_tbl_alt [10].name, BTN_WIDTH, bk0010mode ? " 0011M" : " 0010 ");
+    snprintf(fn_1_12_tbl_ctrl[10].name, BTN_WIDTH, bk0010mode ? " 0011M" : " 0010 ");
     init_rom();
     bottom_line();
 }
