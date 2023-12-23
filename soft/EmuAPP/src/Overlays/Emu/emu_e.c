@@ -42,7 +42,7 @@ void AT_OVL emu_start (void) {
                                CodeAndFlags,     Key,     LastKey, Device_Data.CPU_State.Flags));
     // Запускаем эмуляцию
     while (1) {
-        if_manager(false);
+        int tormoz = if_manager(false);
         uint_fast8_t  Count;
         DEBUG_PRINT(("Key_Flags: %08Xh; (Key_Flags & KEY_FLAGS_TURBO): %d", Key_Flags, (Key_Flags & KEY_FLAGS_TURBO)));
         if (Key_Flags & KEY_FLAGS_TURBO) {
@@ -57,7 +57,7 @@ void AT_OVL emu_start (void) {
         else {
             for (Count = 0; Count < 16; Count++) {
                 uint64_t cycles_cnt2 = getCycleCount ();
-                if (cycles_cnt2 - cycles_cnt1 < 6) { // чем выше константа, тем медленнее БК
+                if (cycles_cnt2 - cycles_cnt1 < tormoz) { // чем выше константа, тем медленнее БК
                     DEBUG_PRINT(("break"));
                     break;
                 }
@@ -132,7 +132,7 @@ void AT_OVL emu_start (void) {
                     }
                 } else if (Key != KEY_UNKNOWN) {
                     if (Key == KEY_MENU_ESC) {
-                        if_manager(true);
+                        tormoz = if_manager(true);
                         Time = getCycleCount ();
                         T    = Device_Data.CPU_State.Time;
                     }

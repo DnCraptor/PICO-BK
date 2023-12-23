@@ -4,6 +4,7 @@
 #include "vga.h"
 #include "usb.h"
 #include "pico-vision.h"
+#include "CPU.h"
 #include "CPU_i.h"
 #include "stdlib.h"
 
@@ -15,6 +16,10 @@ extern void logMsg(char* msg);
 #define DBGM_PRINT( X)
 #endif
 
+static void bottom_line();
+static void redraw_window();
+
+static volatile int tormoz = 6;
 static volatile bool backspacePressed = false;
 static volatile bool enterPressed = false;
 static volatile bool plusPressed = false;
@@ -29,6 +34,10 @@ static volatile bool f5Pressed = false;
 static volatile bool f6Pressed = false;
 static volatile bool f7Pressed = false;
 static volatile bool f8Pressed = false;
+static volatile bool f9Pressed = false;
+static volatile bool f10Pressed = false;
+static volatile bool f11Pressed = false;
+static volatile bool f12Pressed = false;
 static volatile bool tabPressed = false;
 static volatile bool escPressed = false;
 static volatile bool leftPressed = false;
@@ -190,6 +199,18 @@ inline static void swap_sound_state_message(volatile bool* p_state, char* sys_na
     restore_video_ram();
 }
 
+static void do_nothing(uint8_t cmd) {
+    snprintf(line, 130, "CMD: F%d", cmd + 1);
+    const line_t lns[2] = {
+        { -1, "Not yet implemented function" },
+        { -1, line }
+    };
+    const lines_t lines = { 2, 3, lns };
+    draw_box((MAX_WIDTH - 60) / 2, 7, 60, 10, "Info", &lines);
+    sleep_ms(1500);
+    redraw_window();
+}
+
 typedef struct drive_state {
     char* path;
     char* lbl;
@@ -206,6 +227,7 @@ void notify_image_insert_action(uint8_t drivenum, char *pathname) {
 }
 
 static void swap_drives(uint8_t cmd) {
+  do_nothing(cmd);
   /*
     sprintf(line, "F%d pressed - swap FDD images", cmd + 1);
     draw_cmd_line(0, CMD_Y_POS, line);
@@ -226,8 +248,6 @@ inline static void if_swap_drives() {
         swap_drives(8);
     }
 }
-
-#include "CPU.h"
 
 inline static void if_video_mode() {
   if (ctrlPressed || altPressed)
@@ -273,26 +293,12 @@ static void draw_window() {
     draw_panel(MAX_WIDTH / 2, PANEL_TOP_Y, MAX_WIDTH / 2, PANEL_LAST_Y + 1, line, 0);
 }
 
-static void bottom_line();
-
-static inline void redraw_window() {
+static void redraw_window() {
     draw_window();
     fill_panel(&left_panel);
     fill_panel(&right_panel);
     draw_cmd_line(0, CMD_Y_POS, 0);
     bottom_line();
-}
-
-static void do_nothing(uint8_t cmd) {
-    snprintf(line, 130, "CMD: F%d", cmd + 1);
-    const line_t lns[2] = {
-        { -1, "Not yet implemented function" },
-        { -1, line }
-    };
-    const lines_t lines = { 2, 3, lns };
-    draw_box((MAX_WIDTH - 60) / 2, 7, 60, 10, "Info", &lines);
-    sleep_ms(1500);
-    redraw_window();
 }
 
 static bool mark_to_exit_flag = false;
@@ -365,9 +371,9 @@ static void m_delete_file(uint8_t cmd) {
         if (result != FR_OK) {
         snprintf(line, MAX_WIDTH, "FRESULT: %d", result);
             const line_t lns[3] = {
-                { -1, "Unable to read selected file!" },
+                { -1, "Unable to delete selected item!" },
                 { -1, path },
-               { -1, line }
+                { -1, line }
             };
             const lines_t lines = { 3, 2, lns };
             draw_box((MAX_WIDTH - 60) / 2, 7, 60, 10, "Error", &lines);
@@ -1144,6 +1150,14 @@ bool handleScancode(uint32_t ps2scancode) { // core 1
         f7Pressed = true; break;
       case 0x42: // F8
         f8Pressed = true; break;
+      case 0x43: // F9
+        f9Pressed = true; break;
+      case 0x44: // F10
+        f10Pressed = true; break;
+      case 0x57: // F11
+        f11Pressed = true; break;
+      case 0x58: // F12
+        f12Pressed = true; break;
       case 0xBB: // F1..10 up
         f1Pressed = false; break;
       case 0xBC: // F2
@@ -1160,6 +1174,14 @@ bool handleScancode(uint32_t ps2scancode) { // core 1
         f7Pressed = false; break;
       case 0xC2: // F8
         f8Pressed = false; break;
+      case 0xC3: // F9
+        f9Pressed = false; break;
+      case 0xC4: // F10
+        f10Pressed = false; break;
+      case 0xD7: // F11
+        f11Pressed = false; break;
+      case 0xD8: // F12
+        f12Pressed = false; break;
       case 0x0F:
         tabPressed = true;
         break;
@@ -1218,19 +1240,31 @@ inline void if_overclock() {
     }
 }
 
-void if_manager(bool force) {
+int if_manager(bool force) {
+    if (ctrlPressed) {
+        if (f11Pressed) {
+            f11Pressed = false;
+            tormoz++;
+        }
+        if (f12Pressed) {
+            f12Pressed = false;
+            tormoz--;
+            if (tormoz < 0) tormoz = 0;
+        }
+    }
     if_video_mode();
     if_swap_drives();
     if_overclock();
     if_sound_control();
     if (manager_started) {
-        return;
+        return tormoz;
     }
     if (force) {
         manager_started = true;
         start_manager();
         manager_started = false;
     }
+    return tormoz;
 }
 
 #endif
