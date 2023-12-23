@@ -617,6 +617,23 @@ inline static fn_1_12_btn_pressed(uint8_t fn_idx) {
     (*actual_fn_1_12_tbl())[fn_idx].action(fn_idx);
 }
 
+inline static void handle_pagedown_pressed() {
+  for (int i = 0; i < MAX_HEIGHT / 2; ++i)
+    if (psp->selected_file_idx < LAST_FILE_LINE_ON_PANEL_Y &&
+        psp->start_file_offset + psp->selected_file_idx < psp->files_number
+    ) {
+        psp->selected_file_idx++;
+    } else if (
+        psp->selected_file_idx == LAST_FILE_LINE_ON_PANEL_Y &&
+        psp->start_file_offset + psp->selected_file_idx < psp->files_number
+    ) {
+        psp->selected_file_idx--;
+        psp->start_file_offset++;
+    }
+  fill_panel(psp);
+  scan_code_processed();
+}
+
 inline static void handle_down_pressed() {
     if (psp->selected_file_idx < LAST_FILE_LINE_ON_PANEL_Y &&
         psp->start_file_offset + psp->selected_file_idx < psp->files_number
@@ -632,6 +649,18 @@ inline static void handle_down_pressed() {
         fill_panel(psp);    
     }
     scan_code_processed();
+}
+
+inline static void handle_pageup_pressed() {
+  for (int i = 0; i < MAX_HEIGHT / 2; ++i)
+    if (psp->selected_file_idx > FIRST_FILE_LINE_ON_PANEL_Y) {
+        psp->selected_file_idx--;
+    } else if (psp->selected_file_idx == FIRST_FILE_LINE_ON_PANEL_Y && psp->start_file_offset > 0) {
+        psp->selected_file_idx++;
+        psp->start_file_offset--;
+    }
+  fill_panel(psp);
+  scan_code_processed();
 }
 
 inline static void handle_up_pressed() {
@@ -957,6 +986,24 @@ static inline void work_cycle() {
                 break;
             }
             handle_down_pressed();
+            break;
+          case 0x49: // pageup arr down
+            scan_code_processed();
+            break;
+          case 0xC9: // pageup arr up
+            if (lastSavedScanCode != 0x49) {
+                break;
+            }
+            handle_pageup_pressed();
+            break;
+          case 0x51: // pagedown arr down
+            scan_code_processed();
+            break;
+          case 0xD1: // pagedown arr up
+            if (lastSavedScanCode != 0x51) {
+                break;
+            }
+            handle_pagedown_pressed();
             break;
           case 0x48: // up arr down
             scan_code_processed();
