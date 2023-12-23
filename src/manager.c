@@ -448,7 +448,6 @@ static inline void fill_panel(file_panel_desc_t* p) {
         y++;
         p->files_number++;
     }
-    DBGM_PRINT(("1 y: %d", y));
     for(int fn = 0; fn < files_count; ++ fn) {
         file_info_t* fp = &files_info[fn];
         if (p->start_file_offset <= p->files_number && y <= LAST_FILE_LINE_ON_PANEL_Y) {
@@ -538,72 +537,7 @@ static inline void redraw_current_panel() {
     draw_cmd_line(0, CMD_Y_POS, 0);
 }
 
-static inline void enter_pressed() {
-    if (psp->selected_file_idx == 1 && psp->start_file_offset == 0 && strlen(psp->path) > 1) {
-        int i = strlen(psp->path);
-        while(--i > 0) {
-            if (psp->path[i] == '\\') {
-                psp->path[i] = 0;
-                redraw_current_panel();
-                return;
-            }
-        }
-        psp->path[0] = '\\';
-        psp->path[1] = 0;
-        redraw_current_panel();
-        return;
-    }
-    DIR dir;
-    if (f_opendir(&dir, psp->path) != FR_OK) {
-        const line_t lns[1] = {
-            { -1, "It is not a folder!" }
-        };
-        const lines_t lines = { 1, 3, lns };
-        draw_box((MAX_WIDTH - 60) / 2, 7, 60, 10, "Warning", &lines);
-        // redraw
-        sleep_ms(1500);
-        return;
-    }
-    FILINFO fileInfo;
-    int y = 1;
-    if (psp->start_file_offset == 0 && strlen(psp->path) > 1) {
-        y++;
-    }
-    while(f_readdir(&dir, &fileInfo) == FR_OK && fileInfo.fname[0] != '\0') {
-        if (psp->start_file_offset <= psp->files_number && y <= LAST_FILE_LINE_ON_PANEL_Y) {
-            if (psp->selected_file_idx == y) {
-                if (fileInfo.fattrib & AM_DIR) {
-                    f_closedir(&dir);
-                    if (strlen(psp->path) > 1) {
-                        sprintf(line, "%s\\%s", psp->path, fileInfo.fname);
-                    } else {
-                        sprintf(line, "\\%s", fileInfo.fname);
-                    }
-                    if (f_opendir(&dir, line) != FR_OK) {
-                        const line_t lns[1] = {
-                            { -1, "It is not a folder!" }
-                        };
-                        const lines_t lines = { 1, 3, lns };
-                        draw_box((MAX_WIDTH - 60) / 2, 7, 60, 10, "Warning", &lines);
-                        sleep_ms(1500);
-                        // redraw
-                    } else {
-                        f_closedir(&dir);
-                        strcpy(psp->path, line);
-                        redraw_current_panel();
-                    }
-                    return;
-                } else {
-                    size_t slen = strlen(fileInfo.fname);
-                    if (slen > 4 &&
-                        (fileInfo.fname[slen - 1] == 'N' || fileInfo.fname[slen - 1] == 'n') &&
-                        (fileInfo.fname[slen - 2] == 'I' || fileInfo.fname[slen - 2] == 'i') &&
-                        (fileInfo.fname[slen - 3] == 'B' || fileInfo.fname[slen - 3] == 'b') &&
-                         fileInfo.fname[slen - 4] == '.'
-                    ) {
-                        f_closedir(&dir);
-                        char path[256];
-                        snprintf(path, 256, "%s\\%s", psp->path, fileInfo.fname);
+static inline void run_bin(char* path) {
                         FIL file;
                         FRESULT result = f_open(&file, path, FA_READ);
                         if (result != FR_OK) {
@@ -675,6 +609,52 @@ static inline void enter_pressed() {
                         }
                         SP = 01000;
                         mark_to_exit_flag = true;
+}
+
+static inline void enter_pressed() {
+    if (psp->selected_file_idx == 1 && psp->start_file_offset == 0 && strlen(psp->path) > 1) {
+        int i = strlen(psp->path);
+        while(--i > 0) {
+            if (psp->path[i] == '\\') {
+                psp->path[i] = 0;
+                redraw_current_panel();
+                return;
+            }
+        }
+        psp->path[0] = '\\';
+        psp->path[1] = 0;
+        redraw_current_panel();
+        return;
+    }
+    collect_files(psp);
+    int y = 1;
+    if (psp->start_file_offset == 0 && strlen(psp->path) > 1) {
+        y++;
+    }
+    for(int fn = 0; fn < files_count; ++ fn) {
+        file_info_t* fp = &files_info[fn];
+        if (psp->start_file_offset <= psp->files_number && y <= LAST_FILE_LINE_ON_PANEL_Y) {
+            if (psp->selected_file_idx == y) {
+                if (fp->fattrib & AM_DIR) {
+                    if (strlen(psp->path) > 1) {
+                        sprintf(line, "%s\\%s", psp->path, fp->name);
+                    } else {
+                        sprintf(line, "\\%s", fp->name);
+                    }
+                    strcpy(psp->path, line);
+                    redraw_current_panel();
+                    return;
+                } else {
+                    size_t slen = strlen(fp->name);
+                    if (slen > 4 &&
+                        (fp->name[slen - 1] == 'N' || fp->name[slen - 1] == 'n') &&
+                        (fp->name[slen - 2] == 'I' || fp->name[slen - 2] == 'i') &&
+                        (fp->name[slen - 3] == 'B' || fp->name[slen - 3] == 'b') &&
+                         fp->name[slen - 4] == '.'
+                    ) {
+                        char path[256];
+                        snprintf(path, 256, "%s\\%s", psp->path, fp->name); // TODO: 15+?
+                        run_bin(path);
                         return;
                     }
                 }
@@ -682,7 +662,6 @@ static inline void enter_pressed() {
             y++;
         }
     }
-    f_closedir(&dir);
 }
 
 const static char* adlib_name = "AdLib emulation";
