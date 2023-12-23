@@ -9,6 +9,7 @@
 typedef struct color_schema {
     uint8_t BACKGROUND_FIELD_COLOR;
     uint8_t FOREGROUND_FIELD_COLOR;
+    uint8_t HIGHLIGHTED_FIELD_COLOR;
     uint8_t BACKGROUND_F1_12_COLOR;
     uint8_t FOREGROUND_F1_12_COLOR;
     uint8_t BACKGROUND_F_BTN_COLOR;
@@ -41,7 +42,7 @@ void draw_fn_btn(fn_1_12_tbl_rec_t* prec, int left, int top);
 
 void draw_cmd_line(int left, int top, char* cmd);
 
-void draw_label(int left, int top, int width, char* txt, bool selected);
+void draw_label(int left, int top, int width, char* txt, bool selected, bool highlighted);
 
 typedef struct line {
    int8_t off;

@@ -7,6 +7,7 @@
 static const color_schema_t color_schema = {
    /*BACKGROUND_FIELD_COLOR =*/ 1, // Blue
    /*FOREGROUND_FIELD_COLOR =*/ 7, // White
+   /*HIGHLIGHTED_FIELD_COLOR=*/15, // LightWhite
 
    /*BACKGROUND_F1_10_COLOR =*/ 0, // Black
    /*FOREGROUND_F1_10_COLOR =*/ 7, // White
@@ -79,7 +80,7 @@ void draw_box(int left, int top, int width, int height, const char* title, const
     draw_panel(left, top, width, height, title, 0);
     int y = top + 1;
     for (int i = y; y < top + height - 1; ++y) {
-        draw_label(left + 1, y, width - 2, "", false);
+        draw_label(left + 1, y, width - 2, "", false, false);
     }
     for (int i = 0, y = top + 1 + plines->toff; i < plines->sz; ++i, ++y) {
         const line_t * pl = plines->plns + i;
@@ -90,7 +91,7 @@ void draw_box(int left, int top, int width, int height, const char* title, const
         } else {
             off = pl->off;
         }
-        draw_label(left + 1 + off, y, width - 2 - off, pl->txt, false);
+        draw_label(left + 1 + off, y, width - 2 - off, pl->txt, false, false);
     }
 }
 
@@ -119,7 +120,7 @@ void draw_cmd_line(int left, int top, char* cmd) {
     draw_text(line, left, top, pcs->FOREGROUND_CMD_COLOR, pcs->BACKGROUND_CMD_COLOR);
 }
 
-void draw_label(int left, int top, int width, char* txt, bool selected) {
+void draw_label(int left, int top, int width, char* txt, bool selected, bool highlighted) {
     char line[MAX_WIDTH + 2];
     bool fin = false;
     for (int i = 0; i < width; ++i) {
@@ -135,7 +136,7 @@ void draw_label(int left, int top, int width, char* txt, bool selected) {
         }
     }
     line[width] = 0;
-    int fgc = selected ? pcs->FOREGROUND_SELECTED_COLOR : pcs->FOREGROUND_FIELD_COLOR;
+    int fgc = selected ? pcs->FOREGROUND_SELECTED_COLOR : highlighted ? pcs->HIGHLIGHTED_FIELD_COLOR : pcs->FOREGROUND_FIELD_COLOR;
     int bgc = selected ? pcs->BACKGROUND_SELECTED_COLOR : pcs->BACKGROUND_FIELD_COLOR;
     draw_text(line, left, top, fgc, bgc);
 }

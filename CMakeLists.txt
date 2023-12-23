@@ -156,6 +156,7 @@ target_compile_definitions(${PROJECT_NAME} PRIVATE
         #BOOT_DEBUG=1
         #BOOT_DEBUG_ACC=0xA0000
         #KBD_DEBUG=1
+        #MNGR_DEBUG
 
         SOUND_SYSTEM
         COVOX

@@ -5,6 +5,15 @@
 #include "usb.h"
 #include "pico-vision.h"
 #include "CPU_i.h"
+#include "stdlib.h"
+
+#ifdef MNGR_DEBUG
+extern void logMsg(char* msg);
+#define printf(...) { char tmp[80]; snprintf(tmp, 80, __VA_ARGS__); logMsg(tmp); }
+#define DBGM_PRINT( X) printf X
+#else
+#define DBGM_PRINT( X)
+#endif
 
 static volatile bool backspacePressed = false;
 static volatile bool enterPressed = false;
@@ -369,51 +378,102 @@ static void switch_rom(uint8_t cmd) {
     bottom_line();
 }
 
-static inline void fill_panel(file_panel_desc_t* p) {
-    DIR dir;
-    if (f_opendir(&dir, p->path) != FR_OK) {
+
+typedef struct {
+	  FSIZE_t fsize;			/* File size */
+	  WORD    fdate;			/* Modified date */
+	  WORD    ftime;			/* Modified time */
+	  BYTE    fattrib;		/* File attribute */
+    char    name[15];
+} file_info_t;
+
+static file_info_t files_info[500] = { 0 };
+static size_t files_count = 0;
+
+inline static void m_cleanup() {
+    files_count = 0;
+}
+
+inline static void m_add_file(FILINFO* fi) {
+    files_count++;
+    file_info_t* fp = &files_info[files_count - 1];
+    fp->fattrib = fi->fattrib;
+    fp->fdate   = fi->fdate;
+    fp->ftime   = fi->ftime;
+    fp->fsize   = fi->fsize;
+    strncpy(fp->name, fi->fname, 15);
+}
+
+inline static bool m_openfir(
+	DIR* dp,			/* Pointer to directory object to create */
+	const TCHAR* path	/* Pointer to the directory path */
+) {
+    if (f_opendir(dp, path) != FR_OK) {
         const line_t lns[1] = {
             { -1, "It is not a folder!" }
         };
         const lines_t lines = { 1, 4, lns };
         draw_box((MAX_WIDTH - 60) / 2, 7, 60, 10, "Warning", &lines);
         sleep_ms(1500);
-        return;
+        return false;
     }
+    return true;
+}
+
+static int m_comp(const file_info_t * e1, const file_info_t * e2) {
+    if ((e1->fattrib & AM_DIR) && !(e2->fattrib & AM_DIR)) return -1;
+    if (!(e1->fattrib & AM_DIR) && (e2->fattrib & AM_DIR)) return 1;
+    return strncmp(e1->name, e2->name, 15);
+}
+
+inline static void collect_files(file_panel_desc_t* p) {
+    m_cleanup();
+    DIR dir;
+    if (!m_openfir(&dir, p->path)) return;
     FILINFO fileInfo;
+    while(f_readdir(&dir, &fileInfo) == FR_OK && fileInfo.fname[0] != '\0') {
+        m_add_file(&fileInfo);
+    }
+    f_closedir(&dir);
+    qsort (files_info, files_count, sizeof(file_info_t), m_comp);
+}
+
+static inline void fill_panel(file_panel_desc_t* p) {
+    collect_files(p);
+    DBGM_PRINT(("files_count: %d", files_count));
     int y = 1;
     p->files_number = 0;
     if (p->start_file_offset == 0 && strlen(p->path) > 1) {
-        draw_label(p->left + 1, y, p->width - 2, "..", p == psp && p->selected_file_idx == y);
+        draw_label(p->left + 1, y, p->width - 2, "..", p == psp && p->selected_file_idx == y, true);
         y++;
         p->files_number++;
     }
-    while(f_readdir(&dir, &fileInfo) == FR_OK &&
-          fileInfo.fname[0] != '\0'
-    ) {
+    DBGM_PRINT(("1 y: %d", y));
+    for(int fn = 0; fn < files_count; ++ fn) {
+        file_info_t* fp = &files_info[fn];
         if (p->start_file_offset <= p->files_number && y <= LAST_FILE_LINE_ON_PANEL_Y) {
-            char* name = fileInfo.fname;
-            snprintf(line, MAX_WIDTH, "%s\\%s", p->path, fileInfo.fname);
-            for (int i = 0; i < 3; ++i) {
-                if (drives_states[i].path && strcmp(drives_states[i].path, line) == 0) {
-                    snprintf(line, p->width, "%s", name);
-                    for (int j = strlen(name); j < p->width - 6; ++j) {
+            snprintf(line, MAX_WIDTH, "%s\\%s", p->path, fp->name);
+            for (int i = 0; i < 3; ++i) { // mark mounted drived by labels FDD0,FDD1,HDD0...
+                if (drives_states[i].path && strncmp(drives_states[i].path, line, MAX_WIDTH) == 0) {
+                    snprintf(line, p->width, "%s", fp->name);
+                    for (int j = strlen(fp->name); j < p->width - 6; ++j) {
                         line[j] = ' ';
                     }
                     snprintf(line + p->width - 6, 6, "%s", drives_states[i].lbl);
-                    name = line;
                     break;
                 }
             }
-            draw_label(p->left + 1, y, p->width - 2, name, p == psp && p->selected_file_idx == y);
+            draw_label(p->left + 1, y, p->width - 2, fp->name, p == psp && p->selected_file_idx == y, fp->fattrib & AM_DIR);
             y++;
+            DBGM_PRINT(("2 y: %d", y));
         }
         p->files_number++;
     }
-    f_closedir(&dir);
+    DBGM_PRINT(("3 y: %d", y));
     for (; y <= LAST_FILE_LINE_ON_PANEL_Y; ++y) {
-        draw_label(p->left + 1, y, p->width - 2, "", false);
+        draw_label(p->left + 1, y, p->width - 2, "", false, false);
     }
+    DBGM_PRINT(("4 y: %d", y));
 }
 
 inline static void select_right_panel() {
