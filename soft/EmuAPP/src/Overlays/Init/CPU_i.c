@@ -8,7 +8,7 @@
 
 #define AT_OVL __attribute__((section(".ovl3_i.text")))
 
-bool bk0010mode = false;
+bool bk0010mode = true;
 
 void init_rom() {
     Device_Data.MemPages [2] = bk0010mode ? CPU_PAGE14_MEM_ADR : CPU_PAGE8_MEM_ADR; /* ROM Page 0 - bk11m_328_basic2.rom + bk11m_329_basic3.rom */

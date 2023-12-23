@@ -14,7 +14,7 @@
 #include "fnt8x16.h"
 #include "pico-vision.h"
 
-// #include "../../src/cga.h"
+bool color_mode = true;
 
 uint16_t pio_program_VGA_instructions[] = {
     //     .wrap_target

@@ -14,6 +14,9 @@ enum graphics_mode_t {
     BK_512x256x1,
 };
 
+extern volatile uint16_t true_covox;
+extern bool color_mode;
+
 void graphics_init();
 
 void graphics_set_buffer(uint8_t *buffer, uint16_t width, uint16_t height);
@@ -43,3 +46,5 @@ char* get_free_vram_ptr();
 bool save_video_ram();
 
 bool restore_video_ram();
+
+void graphics_set_page(uint8_t* buffer, uint8_t pallette_idx);

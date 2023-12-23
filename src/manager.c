@@ -256,9 +256,26 @@ static void draw_window() {
     draw_panel(MAX_WIDTH / 2, PANEL_TOP_Y, MAX_WIDTH / 2, PANEL_LAST_Y + 1, line, 0);
 }
 
+static void bottom_line();
+
+static inline void redraw_window() {
+    draw_window();
+    fill_panel(&left_panel);
+    fill_panel(&right_panel);
+    draw_cmd_line(0, CMD_Y_POS, 0);
+    bottom_line();
+}
+
 void do_nothing(uint8_t cmd) {
-  //  sprintf(line, "F%d pressed - not yet implemnted", cmd + 1);
-  //  draw_cmd_line(0, CMD_Y_POS, line);
+    snprintf(line, 130, "CMD: F%d", cmd + 1);
+    const line_t lns[2] = {
+        { -1, "Not yet implemented function" },
+        { -1, line }
+    };
+    const lines_t lines = { 2, 3, lns };
+    draw_box((MAX_WIDTH - 60) / 2, 7, 60, 10, "Info", &lines);
+    sleep_ms(1500);
+    redraw_window();
 }
 
 static bool mark_to_exit_flag = false;
@@ -269,6 +286,8 @@ void mark_to_exit(uint8_t cmd) {
 static void turn_usb_on(uint8_t cmd);
 
 static void switch_rom(uint8_t cmd);
+
+static void switch_color(uint8_t cmd);
 
 static void reset(uint8_t cmd) {
     memset(RAM, 0, sizeof RAM);
@@ -317,7 +336,7 @@ static fn_1_12_tbl_t fn_1_12_tbl_ctrl = {
     ' ', '8', " Del  ", do_nothing,
     ' ', '9', " Swap ", swap_drives,
     '1', '0', " Exit ", mark_to_exit,
-    '1', '1', " 0010 ", switch_rom,
+    '1', '1', " B/W  ", switch_color,
     '1', '2', "Reset ", reset
 };
 
@@ -331,7 +350,7 @@ static inline fn_1_12_tbl_t* actual_fn_1_12_tbl() {
     return ptbl;
 }
 
-static inline void bottom_line() {
+static void bottom_line() {
     for (int i = 0; i < BTNS_COUNT; ++i) {
         const fn_1_12_tbl_rec_t* rec = &(*actual_fn_1_12_tbl())[i];
         draw_fn_btn(rec, i * BTN_WIDTH, F_BTN_Y_POS);
@@ -348,10 +367,7 @@ static inline void turn_usb_off(uint8_t cmd) { // TODO: support multiple enter f
     // Ctrl + F10 - Exit
     sprintf(fn_1_12_tbl_ctrl[9].name, " Exit ");
     fn_1_12_tbl_ctrl[9].action = mark_to_exit;
-
-    fill_panel(&left_panel);
-    fill_panel(&right_panel);
-    bottom_line();
+    redraw_window();
 }
 
 static void turn_usb_on(uint8_t cmd) {
@@ -373,11 +389,16 @@ static void switch_rom(uint8_t cmd) {
     bk0010mode = !bk0010mode;
     snprintf(fn_1_12_tbl     [10].name, BTN_WIDTH, bk0010mode ? " 0011M" : " 0010 ");
     snprintf(fn_1_12_tbl_alt [10].name, BTN_WIDTH, bk0010mode ? " 0011M" : " 0010 ");
-    snprintf(fn_1_12_tbl_ctrl[10].name, BTN_WIDTH, bk0010mode ? " 0011M" : " 0010 ");
     init_rom();
     bottom_line();
 }
 
+static void switch_color(uint8_t cmd) {
+    color_mode = !color_mode;
+    snprintf(fn_1_12_tbl_ctrl[10].name, BTN_WIDTH, color_mode ? " B/W  " : " Color");
+    init_rom();
+    bottom_line();
+}
 
 typedef struct {
 	  FSIZE_t fsize;			/* File size */
@@ -420,6 +441,7 @@ inline static bool m_openfir(
         const lines_t lines = { 1, 4, lns };
         draw_box((MAX_WIDTH - 60) / 2, 7, 60, 10, "Warning", &lines);
         sleep_ms(1500);
+        redraw_window();
         return false;
     }
     return true;
@@ -542,78 +564,80 @@ static inline void redraw_current_panel() {
     draw_cmd_line(0, CMD_Y_POS, 0);
 }
 
-static inline void run_bin(char* path) {
-                        FIL file;
-                        FRESULT result = f_open(&file, path, FA_READ);
-                        if (result != FR_OK) {
-                            const line_t lns[2] = {
-                                { -1, "Selected file was not found!" },
-                                { -1, path }
-                            };
-                            const lines_t lines = { 2, 3, lns };
-                            draw_box((MAX_WIDTH - 60) / 2, 7, 60, 10, "Error", &lines);
-                            sleep_ms(1500);
-                            // redraw
-                            return;
-                        }
-                        UINT bw;
-                        result = f_read(&file, line, 4, &bw);
-                        uint16_t offset = ((uint16_t)line[1] << 8) | line[0];
-                        uint16_t len = ((uint16_t)line[3] << 8) | line[2];
-                        if (result != FR_OK) {
-                            f_close(&file);
-                            snprintf(line, MAX_WIDTH, "FRESULT: %d (bw: %d)", result, bw);
-                            const line_t lns[3] = {
-                                { -1, "Unable to read selected file!" },
-                                { -1, path },
-                                { -1, line }
-                            };
-                            const lines_t lines = { 3, 2, lns };
-                            draw_box((MAX_WIDTH - 60) / 2, 7, 60, 10, "Error", &lines);
-                            sleep_ms(1500);
-                            return;
-                        } else {
-                            Device_Data.MemPages [0] = CPU_PAGE0_MEM_ADR; /* RAM Page 0 */
-                            Device_Data.MemPages [1] = CPU_PAGE5_MEM_ADR; /* RAM Page 4 video 0 */
-                            graphics_set_page(CPU_PAGE5_MEM_ADR, 0);
-                            graphics_shift_screen((uint16_t)0330 | 0b01000000000);
-                            snprintf(line, MAX_WIDTH, "offset = 0%o; len = %d", offset, len);
-                            const line_t lns[3] = {
-                                { -1, "Selected file header info:" },
-                                { -1, path },
-                                { -1, line }
-                            };
-                            const lines_t lines = { 3, 2, lns };
-                            draw_box((MAX_WIDTH - 60) / 2, 7, 60, 10, "Info", &lines);
-                            sleep_ms(2500);
-                        }
-                        uint16_t len2 = (len > (16 << 10) - offset) ? (16 << 10) - offset : len;
-                        result = f_read(&file, RAM + offset, len2, &bw);
-                        if (result != FR_OK) {
-                            f_close(&file);
-                            snprintf(line, MAX_WIDTH, "FRESULT: %d (bw: %d)", result, bw);
-                            const line_t lns[3] = {
-                                { -1, "Unable to read selected file!" },
-                                { -1, path },
-                                { -1, line }
-                            };
-                            const lines_t lines = { 3, 2, lns };
-                            draw_box((MAX_WIDTH - 60) / 2, 7, 60, 10, "Error", &lines);
-                            sleep_ms(1500);
-                            return;
-                        }
-                        if (len2 != len) {
-                            result = f_read(&file, CPU_PAGE5_MEM_ADR, len - len2, &bw);
-                            // TODO: more than 1 page, error handling
-                        }
-                        f_close(&file);
-                        if (offset < 01000) { // assimed autostat
-                            PC = ((uint16_t)RAM[offset + 1] << 8) | RAM[offset];
-                        } else {
-                            PC = offset;
-                        }
-                        SP = 01000;
-                        mark_to_exit_flag = true;
+static inline bool run_bin(char* path) {
+    FIL file;
+    FRESULT result = f_open(&file, path, FA_READ);
+    if (result != FR_OK) {
+        const line_t lns[2] = {
+            { -1, "Selected file was not found!" },
+            { -1, path }
+        };
+        const lines_t lines = { 2, 3, lns };
+        draw_box((MAX_WIDTH - 60) / 2, 7, 60, 10, "Error", &lines);
+        sleep_ms(1500);
+        redraw_window();
+        return false;
+    }
+    UINT bw;
+    result = f_read(&file, line, 4, &bw);
+    uint16_t offset = ((uint16_t)line[1] << 8) | line[0];
+    uint16_t len = ((uint16_t)line[3] << 8) | line[2];
+    if (result != FR_OK) {
+        f_close(&file);
+        snprintf(line, MAX_WIDTH, "FRESULT: %d (bw: %d)", result, bw);
+        const line_t lns[3] = {
+            { -1, "Unable to read selected file!" },
+                { -1, path },
+                { -1, line }
+            };
+            const lines_t lines = { 3, 2, lns };
+            draw_box((MAX_WIDTH - 60) / 2, 7, 60, 10, "Error", &lines);
+            sleep_ms(1500);
+            redraw_window();
+            return false;
+    }
+    Device_Data.MemPages [0] = CPU_PAGE0_MEM_ADR; /* RAM Page 0 */
+    Device_Data.MemPages [1] = CPU_PAGE5_MEM_ADR; /* RAM Page 4 video 0 */
+    graphics_set_page(CPU_PAGE5_MEM_ADR, 0);
+    graphics_shift_screen((uint16_t)0330 | 0b01000000000);
+    snprintf(line, MAX_WIDTH, "offset = 0%o; len = %d", offset, len);
+    const line_t lns[3] = {
+        { -1, "Selected file header info:" },
+        { -1, path },
+        { -1, line }
+    };
+    const lines_t lines = { 3, 2, lns };
+    draw_box((MAX_WIDTH - 60) / 2, 7, 60, 10, "Info", &lines);
+    sleep_ms(2500);
+    uint16_t len2 = (len > (16 << 10) - offset) ? (16 << 10) - offset : len;
+    result = f_read(&file, RAM + offset, len2, &bw);
+    if (result != FR_OK) {
+        f_close(&file);
+        snprintf(line, MAX_WIDTH, "FRESULT: %d (bw: %d)", result, bw);
+        const line_t lns[3] = {
+            { -1, "Unable to read selected file!" },
+            { -1, path },
+            { -1, line }
+        };
+        const lines_t lines = { 3, 2, lns };
+        draw_box((MAX_WIDTH - 60) / 2, 7, 60, 10, "Error", &lines);
+        sleep_ms(1500);
+        redraw_window();
+        return false;
+    }
+    if (len2 != len) {
+        result = f_read(&file, CPU_PAGE5_MEM_ADR, len - len2, &bw);
+        // TODO: more than 1 page, error handling
+    }
+    f_close(&file);
+    if (offset < 01000) { // assimed autostat
+        PC = ((uint16_t)RAM[offset + 1] << 8) | RAM[offset];
+    } else {
+        PC = offset;
+    }
+    SP = 01000;
+    mark_to_exit_flag = true;
+    return true;
 }
 
 static inline void enter_pressed() {
@@ -878,7 +902,7 @@ static inline void work_cycle() {
 inline static void start_manager() {
     mark_to_exit_flag = false;
     save_video_ram();
-    enum graphics_mode_t ret = graphics_set_mode(TEXTMODE_);
+    graphics_set_mode(TEXTMODE_);
     set_start_debug_line(MAX_HEIGHT);
     draw_window();
     select_left_panel();
@@ -887,7 +911,7 @@ inline static void start_manager() {
     work_cycle();
     
     set_start_debug_line(25); // ?? to be removed
-    graphics_set_mode(ret);
+    graphics_set_mode(color_mode ? BK_256x256x2 : BK_512x256x1);
     restore_video_ram();
 }
 

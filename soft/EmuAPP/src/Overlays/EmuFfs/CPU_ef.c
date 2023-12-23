@@ -10,6 +10,7 @@
 #include "CPU.h"
 
 #include "CPU_ef.h"
+#include "vga.h"
 
 #define AT_OVL __attribute__((section(".ovl0_ef.text")))
 
@@ -150,11 +151,6 @@ TCPU_Arg AT_OVL CPU_ReadMemB (TCPU_Arg Adr) {
 
     return ((uint8_t *) pReg) [Adr & 1];
 }
-
-// TODO: organise
-void graphics_set_page(uint8_t* buffer, uint8_t pallette_idx);
-void graphics_shift_screen(uint16_t Word);
-extern volatile uint16_t true_covox;
 
 TCPU_Arg AT_OVL CPU_WriteW (TCPU_Arg Adr, uint_fast16_t Word)
 {
