@@ -384,10 +384,12 @@ typedef struct {
 	  WORD    fdate;			/* Modified date */
 	  WORD    ftime;			/* Modified time */
 	  BYTE    fattrib;		/* File attribute */
-    char    name[15];
+    char    name[MAX_WIDTH >> 1];
 } file_info_t;
 
-static file_info_t files_info[500] = { 0 };
+#define MAX_FILES 500
+
+static file_info_t files_info[MAX_FILES] = { 0 };
 static size_t files_count = 0;
 
 inline static void m_cleanup() {
@@ -395,13 +397,16 @@ inline static void m_cleanup() {
 }
 
 inline static void m_add_file(FILINFO* fi) {
-    files_count++;
-    file_info_t* fp = &files_info[files_count - 1];
+    if (files_count >= MAX_FILES) {
+        // WARN?
+        return;
+    }
+    file_info_t* fp = &files_info[files_count++];
     fp->fattrib = fi->fattrib;
     fp->fdate   = fi->fdate;
     fp->ftime   = fi->ftime;
     fp->fsize   = fi->fsize;
-    strncpy(fp->name, fi->fname, 15);
+    strncpy(fp->name, fi->fname, MAX_WIDTH >> 1);
 }
 
 inline static bool m_openfir(
@@ -423,7 +428,7 @@ inline static bool m_openfir(
 static int m_comp(const file_info_t * e1, const file_info_t * e2) {
     if ((e1->fattrib & AM_DIR) && !(e2->fattrib & AM_DIR)) return -1;
     if (!(e1->fattrib & AM_DIR) && (e2->fattrib & AM_DIR)) return 1;
-    return strncmp(e1->name, e2->name, 15);
+    return strncmp(e1->name, e2->name, MAX_WIDTH >> 1);
 }
 
 inline static void collect_files(file_panel_desc_t* p) {
@@ -628,20 +633,23 @@ static inline void enter_pressed() {
     }
     collect_files(psp);
     int y = 1;
+    int files_number = 0;
     if (psp->start_file_offset == 0 && strlen(psp->path) > 1) {
         y++;
+        files_number++;
     }
     for(int fn = 0; fn < files_count; ++ fn) {
         file_info_t* fp = &files_info[fn];
-        if (psp->start_file_offset <= psp->files_number && y <= LAST_FILE_LINE_ON_PANEL_Y) {
+        if (psp->start_file_offset <= files_number && y <= LAST_FILE_LINE_ON_PANEL_Y) {
             if (psp->selected_file_idx == y) {
                 if (fp->fattrib & AM_DIR) {
+                    char path[256];
                     if (strlen(psp->path) > 1) {
-                        sprintf(line, "%s\\%s", psp->path, fp->name);
+                        snprintf(path, 256, "%s\\%s", psp->path, fp->name);
                     } else {
-                        sprintf(line, "\\%s", fp->name);
+                        snprintf(path, 256, "\\%s", fp->name);
                     }
-                    strcpy(psp->path, line);
+                    strncpy(psp->path, path, 256);
                     redraw_current_panel();
                     return;
                 } else {
@@ -653,7 +661,7 @@ static inline void enter_pressed() {
                          fp->name[slen - 4] == '.'
                     ) {
                         char path[256];
-                        snprintf(path, 256, "%s\\%s", psp->path, fp->name); // TODO: 15+?
+                        snprintf(path, 256, "%s\\%s", psp->path, fp->name);
                         run_bin(path);
                         return;
                     }
@@ -661,6 +669,7 @@ static inline void enter_pressed() {
             }
             y++;
         }
+        files_number++;
     }
 }
 
