@@ -30,6 +30,9 @@ static volatile bool f6Pressed = false;
 static volatile bool f7Pressed = false;
 static volatile bool f8Pressed = false;
 static volatile bool tabPressed = false;
+static volatile bool escPressed = false;
+static volatile bool leftPressed = false;
+static volatile bool rightPressed = false;
 static volatile bool upPressed = false;
 static volatile bool downPressed = false;
 static volatile bool aPressed = false;
@@ -303,16 +306,64 @@ static void switch_rom(uint8_t cmd);
 
 static void switch_color(uint8_t cmd);
 
-file_info_t* selected_file();
+static file_info_t* selected_file();
 
-void no_selected_file() {
+inline static void construct_full_name(char* dst, const char* folder, const char* file) {
+    if (strlen(psp->path) > 1) {
+        snprintf(dst, 256, "%s\\%s", folder, file);
+    } else {
+        snprintf(dst, 256, "\\%s", file);
+    }
+}
+
+inline static void no_selected_file() {
     const line_t lns[1] = {
-        { -1, "Pls. select some file to copy" },
+        { -1, "Pls. select some file for this action" },
     };
     const lines_t lines = { 1, 3, lns };
     draw_box((MAX_WIDTH - 60) / 2, 7, 60, 10, "Info", &lines);
     sleep_ms(1500);
     redraw_window();
+}
+
+static int m_prompt(const char* txt) {
+    const line_t lns[1] = {
+        { -1, txt },
+    };
+    const lines_t lines = { 1, 2, lns };
+    draw_box((MAX_WIDTH - 60) / 2, 7, 60, 10, "Are you sure?", &lines);
+    bool yes = true;
+    draw_button((MAX_WIDTH - 60) / 2 + 16, 12, 11, "Yes", yes);
+    draw_button((MAX_WIDTH - 60) / 2 + 35, 12, 10, "No", !yes);
+    while(1) {
+        if (enterPressed) {
+            return yes;
+        }
+        if (tabPressed || leftPressed || rightPressed) { // TODO: own msgs cycle
+            yes = !yes;
+            draw_button((MAX_WIDTH - 60) / 2 + 16, 12, 11, "Yes", yes);
+            draw_button((MAX_WIDTH - 60) / 2 + 35, 12, 10, "No", !yes);
+            sleep_ms(200);
+        }
+        if (escPressed) {
+            return false;
+        }
+    }
+}
+
+static void m_delete_file(uint8_t cmd) {
+    file_info_t* fp = selected_file();
+    if (!fp) {
+       no_selected_file();
+       return;
+    }
+    char path[256];
+    snprintf(path, 256, "Remove %s %s?", fp->name, fp->fattrib & AM_DIR ? "folder" : "file");
+    if (m_prompt(path)) {
+        construct_full_name(path, psp->path, fp->name);
+        f_unlink(path);
+    }
+    redraw_window();    
 }
 
 static void m_copy_file(uint8_t cmd) {
@@ -339,7 +390,7 @@ static fn_1_12_tbl_t fn_1_12_tbl = {
     ' ', '5', " Copy ", m_copy_file,
     ' ', '6', " Move ", do_nothing,
     ' ', '7', "MkDir ", do_nothing,
-    ' ', '8', " Del  ", do_nothing,
+    ' ', '8', " Del  ", m_delete_file,
     ' ', '9', " Swap ", swap_drives,
     '1', '0', " USB  ", turn_usb_on,
     '1', '1', " 0011M", switch_rom,
@@ -354,7 +405,7 @@ static fn_1_12_tbl_t fn_1_12_tbl_alt = {
     ' ', '5', " Copy ", m_copy_file,
     ' ', '6', " Move ", do_nothing,
     ' ', '7', " Find ", do_nothing,
-    ' ', '8', " Del  ", do_nothing,
+    ' ', '8', " Del  ", m_delete_file,
     ' ', '9', " UpMn ", do_nothing,
     '1', '0', " USB  ", turn_usb_on,
     '1', '1', " 0011M", switch_rom,
@@ -369,7 +420,7 @@ static fn_1_12_tbl_t fn_1_12_tbl_ctrl = {
     ' ', '5', " Copy ", m_copy_file,
     ' ', '6', " Move ", do_nothing,
     ' ', '7', " Find ", do_nothing,
-    ' ', '8', " Del  ", do_nothing,
+    ' ', '8', " Del  ", m_delete_file,
     ' ', '9', " Swap ", swap_drives,
     '1', '0', " Exit ", mark_to_exit,
     '1', '1', " B/W  ", switch_color,
@@ -663,7 +714,7 @@ static inline bool run_bin(char* path) {
     return true;
 }
 
-file_info_t* selected_file() {
+static file_info_t* selected_file() {
     if (psp->selected_file_idx == 1 && psp->start_file_offset == 0 && strlen(psp->path) > 1) {
         return 0;
     }
@@ -685,14 +736,6 @@ file_info_t* selected_file() {
         files_number++;
     }
     return 0; // ?? what a case?
-}
-
-void construct_full_name(char* dst, const char* folder, const char* file) {
-    if (strlen(psp->path) > 1) {
-        snprintf(dst, 256, "%s\\%s", folder, file);
-    } else {
-        snprintf(dst, 256, "\\%s", file);
-    }
 }
 
 static inline void enter_pressed() {
@@ -954,6 +997,18 @@ inline static void start_manager() {
 bool handleScancode(uint32_t ps2scancode) { // core 1
     lastCleanableScanCode = ps2scancode;
     switch (ps2scancode) {
+      case 0x01: // Esc down
+        escPressed = true; break;
+      case 0x81: // Esc up
+        escPressed = false; break;
+      case 0x4B: // left
+        leftPressed = true; break;
+      case 0xCB: // left
+        leftPressed = false; break;
+      case 0x4D: // right
+        rightPressed = true;  break;
+      case 0xCD: // right
+        rightPressed = false;  break;
       case 0x48:
         upPressed = true;
         break;

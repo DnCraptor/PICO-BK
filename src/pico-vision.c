@@ -14,12 +14,13 @@ static const color_schema_t color_schema = {
 
    /*BACKGROUND_F_BTN_COLOR =*/ 3, // Green
    /*FOREGROUND_F_BTN_COLOR =*/ 0, // Black
-
+ 
    /*BACKGROUND_CMD_COLOR =*/ 0, // Black
    /*FOREGROUND_CMD_COLOR =*/ 7, // White
-
+  /*BACKGROUND_SEL_BTN_COLOR*/ 11, // Light Blue
+  
    /*FOREGROUND_SELECTED_COLOR =*/ 0, // Black
-   /*BACKGROUND_SELECTED_COLOR =*/ 11, //
+   /*BACKGROUND_SELECTED_COLOR =*/ 11, // Light Blue
 };
 
 static color_schema_t* pcs = &color_schema;
@@ -74,6 +75,32 @@ void draw_panel(int left, int top, int width, int height, char* title, char* bot
         sprintf(line, " %s ", bottom);
         draw_text(line, bottom_left, top + height - 1, pcs->FOREGROUND_FIELD_COLOR, pcs->BACKGROUND_FIELD_COLOR);
     }
+}
+
+void draw_button(int left, int top, int width, const char* txt, bool selected) {
+    int len = strlen(txt);
+    if (len > 39) return;
+    char tmp[40];
+    int start = (width - len) / 2;
+    for (int i = 0; i < start; ++i) {
+        tmp[i] = ' ';
+    }
+    bool fin = false;
+    int j = 0;
+    for (int i = start; i < width; ++i) {
+        if (!fin) {
+            if (!txt[j]) {
+                fin = true;
+                tmp[i] = ' ';
+            } else {
+                tmp[i] = txt[j++];
+            }
+        } else {
+            tmp[i] = ' ';
+        }
+    }
+    tmp[width] = 0;
+    draw_text(tmp, left, top, pcs->FOREGROUND_F_BTN_COLOR, selected ? pcs->BACKGROUND_SEL_BTN_COLOR : pcs->BACKGROUND_F_BTN_COLOR);
 }
 
 void draw_box(int left, int top, int width, int height, const char* title, const lines_t* plines) {

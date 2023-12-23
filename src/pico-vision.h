@@ -16,6 +16,7 @@ typedef struct color_schema {
     uint8_t FOREGROUND_F_BTN_COLOR;
     uint8_t BACKGROUND_CMD_COLOR;
     uint8_t FOREGROUND_CMD_COLOR;
+    uint8_t BACKGROUND_SEL_BTN_COLOR;
     uint8_t FOREGROUND_SELECTED_COLOR;
     uint8_t BACKGROUND_SELECTED_COLOR;
 } color_schema_t;
@@ -37,6 +38,8 @@ typedef fn_1_12_tbl_rec_t fn_1_12_tbl_t[BTNS_COUNT];
 void set_color_schems(color_schema_t* pschema);
 
 void draw_panel(int left, int top, int width, int height, char* title, char* bottom);
+
+void draw_button(int left, int top, int width, const char* txt, bool selected);
 
 void draw_fn_btn(fn_1_12_tbl_rec_t* prec, int left, int top);
 
