@@ -80,6 +80,20 @@ static const uint8_t PANEL_LAST_Y = CMD_Y_POS - 1;
 static uint8_t FIRST_FILE_LINE_ON_PANEL_Y = PANEL_TOP_Y + 1;
 static uint8_t LAST_FILE_LINE_ON_PANEL_Y = PANEL_LAST_Y - 1;
 
+
+typedef struct {
+	  FSIZE_t fsize;			/* File size */
+	  WORD    fdate;			/* Modified date */
+	  WORD    ftime;			/* Modified time */
+	  BYTE    fattrib;		/* File attribute */
+    char    name[MAX_WIDTH >> 1];
+} file_info_t;
+
+#define MAX_FILES 500
+
+static file_info_t files_info[MAX_FILES] = { 0 };
+static size_t files_count = 0;
+
 typedef struct file_panel_desc {
     int left;
     int width;
@@ -266,7 +280,7 @@ static inline void redraw_window() {
     bottom_line();
 }
 
-void do_nothing(uint8_t cmd) {
+static void do_nothing(uint8_t cmd) {
     snprintf(line, 130, "CMD: F%d", cmd + 1);
     const line_t lns[2] = {
         { -1, "Not yet implemented function" },
@@ -289,6 +303,28 @@ static void switch_rom(uint8_t cmd);
 
 static void switch_color(uint8_t cmd);
 
+file_info_t* selected_file();
+
+void no_selected_file() {
+    const line_t lns[1] = {
+        { -1, "Pls. select some file to copy" },
+    };
+    const lines_t lines = { 1, 3, lns };
+    draw_box((MAX_WIDTH - 60) / 2, 7, 60, 10, "Info", &lines);
+    sleep_ms(1500);
+    redraw_window();
+}
+
+static void m_copy_file(uint8_t cmd) {
+    file_info_t* fp = selected_file();
+    if (!fp) {
+       no_selected_file();
+       return;
+    }
+    // TODO:
+    do_nothing(cmd);
+}
+
 static void reset(uint8_t cmd) {
     memset(RAM, 0, sizeof RAM);
     main_init();
@@ -300,13 +336,13 @@ static fn_1_12_tbl_t fn_1_12_tbl = {
     ' ', '2', " Menu ", do_nothing,
     ' ', '3', " View ", do_nothing,
     ' ', '4', " Edit ", do_nothing,
-    ' ', '5', " Copy ", do_nothing,
+    ' ', '5', " Copy ", m_copy_file,
     ' ', '6', " Move ", do_nothing,
     ' ', '7', "MkDir ", do_nothing,
     ' ', '8', " Del  ", do_nothing,
     ' ', '9', " Swap ", swap_drives,
     '1', '0', " USB  ", turn_usb_on,
-    '1', '1', " 0010 ", switch_rom,
+    '1', '1', " 0011M", switch_rom,
     '1', '2', "Reset ", reset
 };
 
@@ -315,13 +351,13 @@ static fn_1_12_tbl_t fn_1_12_tbl_alt = {
     ' ', '2', " Left ", do_nothing,
     ' ', '3', " View ", do_nothing,
     ' ', '4', " Edit ", do_nothing,
-    ' ', '5', " Copy ", do_nothing,
+    ' ', '5', " Copy ", m_copy_file,
     ' ', '6', " Move ", do_nothing,
     ' ', '7', " Find ", do_nothing,
     ' ', '8', " Del  ", do_nothing,
     ' ', '9', " UpMn ", do_nothing,
     '1', '0', " USB  ", turn_usb_on,
-    '1', '1', " 0010 ", switch_rom,
+    '1', '1', " 0011M", switch_rom,
     '1', '2', "Reset ", reset
 };
 
@@ -330,7 +366,7 @@ static fn_1_12_tbl_t fn_1_12_tbl_ctrl = {
     ' ', '2', " EjtR ", do_nothing,
     ' ', '3', "Debug ", do_nothing,
     ' ', '4', " Edit ", do_nothing,
-    ' ', '5', " Copy ", do_nothing,
+    ' ', '5', " Copy ", m_copy_file,
     ' ', '6', " Move ", do_nothing,
     ' ', '7', " Find ", do_nothing,
     ' ', '8', " Del  ", do_nothing,
@@ -399,19 +435,6 @@ static void switch_color(uint8_t cmd) {
     init_rom();
     bottom_line();
 }
-
-typedef struct {
-	  FSIZE_t fsize;			/* File size */
-	  WORD    fdate;			/* Modified date */
-	  WORD    ftime;			/* Modified time */
-	  BYTE    fattrib;		/* File attribute */
-    char    name[MAX_WIDTH >> 1];
-} file_info_t;
-
-#define MAX_FILES 500
-
-static file_info_t files_info[MAX_FILES] = { 0 };
-static size_t files_count = 0;
 
 inline static void m_cleanup() {
     files_count = 0;
@@ -640,8 +663,41 @@ static inline bool run_bin(char* path) {
     return true;
 }
 
-static inline void enter_pressed() {
+file_info_t* selected_file() {
     if (psp->selected_file_idx == 1 && psp->start_file_offset == 0 && strlen(psp->path) > 1) {
+        return 0;
+    }
+    collect_files(psp);
+    int y = 1;
+    int files_number = 0;
+    if (psp->start_file_offset == 0 && strlen(psp->path) > 1) {
+        y++;
+        files_number++;
+    }
+    for(int fn = 0; fn < files_count; ++ fn) {
+        file_info_t* fp = &files_info[fn];
+        if (psp->start_file_offset <= files_number && y <= LAST_FILE_LINE_ON_PANEL_Y) {
+            if (psp->selected_file_idx == y) {
+                return fp;
+            }
+            y++;
+        }
+        files_number++;
+    }
+    return 0; // ?? what a case?
+}
+
+void construct_full_name(char* dst, const char* folder, const char* file) {
+    if (strlen(psp->path) > 1) {
+        snprintf(dst, 256, "%s\\%s", folder, file);
+    } else {
+        snprintf(dst, 256, "\\%s", file);
+    }
+}
+
+static inline void enter_pressed() {
+    file_info_t* fp = selected_file();
+    if (!fp) { // up to parent dir
         int i = strlen(psp->path);
         while(--i > 0) {
             if (psp->path[i] == '\\') {
@@ -655,45 +711,25 @@ static inline void enter_pressed() {
         redraw_current_panel();
         return;
     }
-    collect_files(psp);
-    int y = 1;
-    int files_number = 0;
-    if (psp->start_file_offset == 0 && strlen(psp->path) > 1) {
-        y++;
-        files_number++;
-    }
-    for(int fn = 0; fn < files_count; ++ fn) {
-        file_info_t* fp = &files_info[fn];
-        if (psp->start_file_offset <= files_number && y <= LAST_FILE_LINE_ON_PANEL_Y) {
-            if (psp->selected_file_idx == y) {
-                if (fp->fattrib & AM_DIR) {
-                    char path[256];
-                    if (strlen(psp->path) > 1) {
-                        snprintf(path, 256, "%s\\%s", psp->path, fp->name);
-                    } else {
-                        snprintf(path, 256, "\\%s", fp->name);
-                    }
-                    strncpy(psp->path, path, 256);
-                    redraw_current_panel();
-                    return;
-                } else {
-                    size_t slen = strlen(fp->name);
-                    if (slen > 4 &&
-                        (fp->name[slen - 1] == 'N' || fp->name[slen - 1] == 'n') &&
-                        (fp->name[slen - 2] == 'I' || fp->name[slen - 2] == 'i') &&
-                        (fp->name[slen - 3] == 'B' || fp->name[slen - 3] == 'b') &&
-                         fp->name[slen - 4] == '.'
-                    ) {
-                        char path[256];
-                        snprintf(path, 256, "%s\\%s", psp->path, fp->name);
-                        run_bin(path);
-                        return;
-                    }
-                }
-            }
-            y++;
+    if (fp->fattrib & AM_DIR) {
+        char path[256];
+        construct_full_name(path, psp->path, fp->name);
+        strncpy(psp->path, path, 256);
+        redraw_current_panel();
+        return;
+    } else {
+        size_t slen = strlen(fp->name);
+        if (slen > 4 &&
+            (fp->name[slen - 1] == 'N' || fp->name[slen - 1] == 'n') &&
+            (fp->name[slen - 2] == 'I' || fp->name[slen - 2] == 'i') &&
+            (fp->name[slen - 3] == 'B' || fp->name[slen - 3] == 'b') &&
+             fp->name[slen - 4] == '.'
+        ) {
+            char path[256];
+            construct_full_name(path, psp->path, fp->name);
+            run_bin(path);
+            return;
         }
-        files_number++;
     }
 }
 
