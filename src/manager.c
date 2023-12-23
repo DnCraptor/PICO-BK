@@ -250,6 +250,13 @@ inline static void if_swap_drives() {
 }
 
 inline static void if_video_mode() {
+  if (!ctrlPressed && !altPressed) {
+    if (f12Pressed) {
+      f12Pressed = false;
+      color_mode = !color_mode;
+      graphics_set_mode(color_mode ? BK_256x256x2 : BK_512x256x1);
+    }
+  }
   if (ctrlPressed || altPressed)
     if(f1Pressed) {
         graphics_set_buffer(CPU_PAGE0_MEM_ADR, 512, 256);
