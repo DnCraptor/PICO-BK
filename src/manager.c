@@ -326,7 +326,7 @@ inline static void no_selected_file() {
     redraw_window();
 }
 
-static int m_prompt(const char* txt) {
+static bool m_prompt(const char* txt) {
     const line_t lns[1] = {
         { -1, txt },
     };
@@ -361,7 +361,18 @@ static void m_delete_file(uint8_t cmd) {
     snprintf(path, 256, "Remove %s %s?", fp->name, fp->fattrib & AM_DIR ? "folder" : "file");
     if (m_prompt(path)) {
         construct_full_name(path, psp->path, fp->name);
-        f_unlink(path);
+        FRESULT result = f_unlink(path);
+        if (result != FR_OK) {
+        snprintf(line, MAX_WIDTH, "FRESULT: %d", result);
+            const line_t lns[3] = {
+                { -1, "Unable to read selected file!" },
+                { -1, path },
+               { -1, line }
+            };
+            const lines_t lines = { 3, 2, lns };
+            draw_box((MAX_WIDTH - 60) / 2, 7, 60, 10, "Error", &lines);
+            sleep_ms(2500);
+        }
     }
     redraw_window();    
 }
@@ -661,14 +672,14 @@ static inline bool run_bin(char* path) {
         snprintf(line, MAX_WIDTH, "FRESULT: %d (bw: %d)", result, bw);
         const line_t lns[3] = {
             { -1, "Unable to read selected file!" },
-                { -1, path },
-                { -1, line }
-            };
-            const lines_t lines = { 3, 2, lns };
-            draw_box((MAX_WIDTH - 60) / 2, 7, 60, 10, "Error", &lines);
-            sleep_ms(1500);
-            redraw_window();
-            return false;
+            { -1, path },
+            { -1, line }
+        };
+        const lines_t lines = { 3, 2, lns };
+        draw_box((MAX_WIDTH - 60) / 2, 7, 60, 10, "Error", &lines);
+        sleep_ms(1500);
+        redraw_window();
+        return false;
     }
     Device_Data.MemPages [0] = CPU_PAGE0_MEM_ADR; /* RAM Page 0 */
     Device_Data.MemPages [1] = CPU_PAGE5_MEM_ADR; /* RAM Page 4 video 0 */
