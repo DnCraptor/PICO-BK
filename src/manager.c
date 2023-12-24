@@ -83,6 +83,13 @@ static char line[MAX_WIDTH + 2];
 static volatile uint32_t lastCleanableScanCode = 0;
 static uint32_t lastSavedScanCode = 0;
 
+inline static void scan_code_processed() {
+  if (lastCleanableScanCode) {
+      lastSavedScanCode = lastCleanableScanCode;
+  }
+  lastCleanableScanCode = 0;
+}
+
 static const uint8_t PANEL_TOP_Y = 0;
 static const uint8_t TOTAL_SCREEN_LINES = MAX_HEIGHT;
 static const uint8_t F_BTN_Y_POS = TOTAL_SCREEN_LINES - 1;
@@ -91,7 +98,6 @@ static const uint8_t PANEL_LAST_Y = CMD_Y_POS - 1;
 
 static uint8_t FIRST_FILE_LINE_ON_PANEL_Y = PANEL_TOP_Y + 1;
 static uint8_t LAST_FILE_LINE_ON_PANEL_Y = PANEL_LAST_Y - 1;
-
 
 typedef struct {
 	  FSIZE_t fsize;			/* File size */
@@ -351,6 +357,7 @@ static bool m_prompt(const char* txt) {
     while(1) {
         if (enterPressed) {
             enterPressed = false;
+            scan_code_processed();
             return yes;
         }
         if (tabPressed || leftPressed || rightPressed) { // TODO: own msgs cycle
@@ -361,6 +368,7 @@ static bool m_prompt(const char* txt) {
         }
         if (escPressed) {
             escPressed = false;
+            scan_code_processed();
             return false;
         }
     }
@@ -402,7 +410,7 @@ static void m_delete_file(uint8_t cmd) {
         construct_full_name(path, psp->path, fp->name);
         FRESULT result = fp->fattrib & AM_DIR ? m_unlink_recursive(path) : f_unlink(path);
         if (result != FR_OK) {
-        snprintf(line, MAX_WIDTH, "FRESULT: %d", result);
+            snprintf(line, MAX_WIDTH, "FRESULT: %d", result);
             const line_t lns[3] = {
                 { -1, "Unable to delete selected item!" },
                 { -1, path },
@@ -416,14 +424,59 @@ static void m_delete_file(uint8_t cmd) {
     redraw_window();    
 }
 
+inline static FRESULT m_copy(char* path, char* dest) {
+    FIL file1;
+    FRESULT result = f_open(&file1, path, FA_READ);
+    if (result != FR_OK) return result;
+    FIL file2;
+    result = f_open(&file2, dest, FA_CREATE_ALWAYS);
+    if (result != FR_OK) {
+        f_close(&file1);
+        return result;
+    }
+    UINT br;
+    do {
+        result = f_read(&file1, files_info, sizeof(files_info), &br);
+        if (result != FR_OK || br == 0) break;
+        f_write(&file2, files_info, br, &br);
+        if (result != FR_OK) break;
+    } while (br);
+    f_close(&file1);
+    f_close(&file2);
+    return result;
+}
+
+inline static FRESULT m_copy_recursive(char* path, char* dest) {
+    return FR_INVALID_PARAMETER;
+}
+
 static void m_copy_file(uint8_t cmd) {
     file_info_t* fp = selected_file();
     if (!fp) {
        no_selected_file();
        return;
     }
-    // TODO:
-    do_nothing(cmd);
+    char path[256];
+    file_panel_desc_t* dsp = psp == &left_panel ? &right_panel : &left_panel;
+    snprintf(path, 256, "Copy %s %s to %s?", fp->name, fp->fattrib & AM_DIR ? "folder" : "file", dsp->path);
+    if (m_prompt(path)) { // TODO: ask name
+        construct_full_name(path, psp->path, fp->name);
+        char dest[256];
+        construct_full_name(dest, dsp->path, fp->name);
+        FRESULT result = fp->fattrib & AM_DIR ? m_copy_recursive(path, dest) : m_copy(path, dest);
+        if (result != FR_OK) {
+            snprintf(line, MAX_WIDTH, "FRESULT: %d", result);
+            const line_t lns[3] = {
+                { -1, "Unable to copy selected item!" },
+                { -1, path },
+                { -1, line }
+            };
+            const lines_t lines = { 3, 2, lns };
+            draw_box((MAX_WIDTH - 60) / 2, 7, 60, 10, "Error", &lines);
+            sleep_ms(2500);
+        }
+    }
+    redraw_window();
 }
 
 static void reset(uint8_t cmd) {
@@ -632,13 +685,6 @@ inline static void select_left_panel() {
     psp = &left_panel;
     fill_panel(&left_panel);
     fill_panel(&right_panel);
-}
-
-inline static void scan_code_processed() {
-  if (lastCleanableScanCode) {
-      lastSavedScanCode = lastCleanableScanCode;
-  }
-  lastCleanableScanCode = 0;
 }
 
 inline static fn_1_12_btn_pressed(uint8_t fn_idx) {
