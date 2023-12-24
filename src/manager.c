@@ -322,7 +322,7 @@ static void switch_color(uint8_t cmd);
 static file_info_t* selected_file();
 
 inline static void construct_full_name(char* dst, const char* folder, const char* file) {
-    if (strlen(psp->path) > 1) {
+    if (strlen(folder) > 1) {
         snprintf(dst, 256, "%s\\%s", folder, file);
     } else {
         snprintf(dst, 256, "\\%s", file);
@@ -350,18 +350,44 @@ static bool m_prompt(const char* txt) {
     draw_button((MAX_WIDTH - 60) / 2 + 35, 12, 10, "No", !yes);
     while(1) {
         if (enterPressed) {
+            enterPressed = false;
             return yes;
         }
         if (tabPressed || leftPressed || rightPressed) { // TODO: own msgs cycle
             yes = !yes;
             draw_button((MAX_WIDTH - 60) / 2 + 16, 12, 11, "Yes", yes);
             draw_button((MAX_WIDTH - 60) / 2 + 35, 12, 10, "No", !yes);
-            sleep_ms(200);
+            tabPressed = leftPressed = rightPressed = false;
         }
         if (escPressed) {
+            escPressed = false;
             return false;
         }
     }
+}
+
+static FRESULT m_unlink_recursive(char * path) {
+    DIR dir;
+    FRESULT res = f_opendir(&dir, path);
+    if (res != FR_OK) return res;
+    FILINFO fileInfo;
+    while(f_readdir(&dir, &fileInfo) == FR_OK && fileInfo.fname[0] != '\0') {
+        char path2[256];
+        construct_full_name(path2, path, fileInfo.fname);
+        draw_cmd_line(0, CMD_Y_POS, path2);
+        if (fileInfo.fattrib & AM_DIR) {
+            res = m_unlink_recursive(path2);
+        } else {
+            res = f_unlink(path2);
+        }
+        if (res != FR_OK) break;
+    }
+    f_closedir(&dir);
+    if (res == FR_OK) {
+        draw_cmd_line(0, CMD_Y_POS, 0);
+        res = f_unlink(path);
+    }
+    return res;
 }
 
 static void m_delete_file(uint8_t cmd) {
@@ -374,7 +400,7 @@ static void m_delete_file(uint8_t cmd) {
     snprintf(path, 256, "Remove %s %s?", fp->name, fp->fattrib & AM_DIR ? "folder" : "file");
     if (m_prompt(path)) {
         construct_full_name(path, psp->path, fp->name);
-        FRESULT result = f_unlink(path);
+        FRESULT result = fp->fattrib & AM_DIR ? m_unlink_recursive(path) : f_unlink(path);
         if (result != FR_OK) {
         snprintf(line, MAX_WIDTH, "FRESULT: %d", result);
             const line_t lns[3] = {
@@ -565,7 +591,6 @@ inline static void collect_files(file_panel_desc_t* p) {
 
 static inline void fill_panel(file_panel_desc_t* p) {
     collect_files(p);
-    DBGM_PRINT(("files_count: %d", files_count));
     int y = 1;
     p->files_number = 0;
     if (p->start_file_offset == 0 && strlen(p->path) > 1) {
@@ -589,15 +614,12 @@ static inline void fill_panel(file_panel_desc_t* p) {
             }
             draw_label(p->left + 1, y, p->width - 2, fp->name, p == psp && p->selected_file_idx == y, fp->fattrib & AM_DIR);
             y++;
-            DBGM_PRINT(("2 y: %d", y));
         }
         p->files_number++;
     }
-    DBGM_PRINT(("3 y: %d", y));
     for (; y <= LAST_FILE_LINE_ON_PANEL_Y; ++y) {
         draw_label(p->left + 1, y, p->width - 2, "", false, false);
     }
-    DBGM_PRINT(("4 y: %d", y));
 }
 
 inline static void select_right_panel() {
