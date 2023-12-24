@@ -8,11 +8,23 @@
 
 #define AT_OVL __attribute__((section(".ovl3_i.text")))
 
-bool bk0010mode = true;
+bk_mode_t bk0010mode = BK_0010_01;
 
 void init_rom() {
-    Device_Data.MemPages [2] = bk0010mode ? CPU_PAGE14_MEM_ADR : CPU_PAGE8_MEM_ADR; /* ROM Page 0 - bk11m_328_basic2.rom + bk11m_329_basic3.rom */
-    Device_Data.MemPages [3] = bk0010mode ? CPU_PAGE15_MEM_ADR : CPU_PAGE12_MEM_ADR; /* ROM Page 2 - bk11m_324_bos.rom + bk11m_330_mstd.rom */
+    switch (bk0010mode) {
+        case BK_0010:
+            Device_Data.MemPages [2] = CPU_PAGE16_MEM_ADR;
+            Device_Data.MemPages [3] = CPU_PAGE17_MEM_ADR;
+            break;
+        case BK_0010_01:
+            Device_Data.MemPages [2] = CPU_PAGE14_MEM_ADR;
+            Device_Data.MemPages [3] = CPU_PAGE15_MEM_ADR;
+            break;
+        case BK_0011M:
+            Device_Data.MemPages [2] = CPU_PAGE8_MEM_ADR; /* ROM Page 0 - bk11m_328_basic2.rom + bk11m_329_basic3.rom */
+            Device_Data.MemPages [3] = CPU_PAGE12_MEM_ADR; /* ROM Page 2 - bk11m_324_bos.rom + bk11m_330_mstd.rom */
+            break;
+    }
 }
 
 void AT_OVL CPU_Init (void)
@@ -26,7 +38,7 @@ void AT_OVL CPU_Init (void)
 //  Device_Data.SysRegs.Reg177710   = 0177777;
 //  Device_Data.SysRegs.Reg177712   = 0177400;
 //  Device_Data.SysRegs.RdReg177714 = 0;
-    Device_Data.SysRegs.RdReg177716 = (bk0010mode ? 0100000 : (0140000 & 0177400)) | 0300;
+    Device_Data.SysRegs.RdReg177716 = (bk0010mode != BK_0011M ? 0100000 : 0140000) | 0300;
     Device_Data.SysRegs.WrReg177662  = 047400;
     Device_Data.SysRegs.Wr1Reg177716 = (1 << 12) | 1;
 

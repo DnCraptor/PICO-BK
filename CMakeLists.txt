@@ -12,7 +12,6 @@ set(CMAKE_CXX_STANDARD 17)
 
 pico_sdk_init()
 
-set(CMAKE_INCLUDE_PATH ${PROJECT_SOURCE_DIR}/include)
 set(OUTPUT_DIR "${CMAKE_SOURCE_DIR}/bin/${CMAKE_BUILD_TYPE}")
 set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY "${OUTPUT_DIR}")
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY "${OUTPUT_DIR}")
@@ -97,6 +96,7 @@ pico_set_program_version(pico-bk "test")
     )
     target_include_directories(${PROJECT_NAME} PRIVATE
             ${CMAKE_CURRENT_SOURCE_DIR}/src
+            ${CMAKE_CURRENT_SOURCE_DIR}/disks
             ${CMAKE_CURRENT_SOURCE_DIR}/drivers/usb
             ${CMAKE_CURRENT_SOURCE_DIR}/soft/EmuAPP/src
             ${CMAKE_CURRENT_SOURCE_DIR}/soft/EmuAPP/src/Overlays/Emu

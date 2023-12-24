@@ -5,6 +5,10 @@
 #include "ram_page.h"
 #include "ROM10.h"
 #include "ROM11.h"
+#include "FDDROM.h"
+#include "DISK_327ROM.h"
+#include "Focal.h"
+#include "Tests.h"
 
 #ifdef BOOT_DEBUG
 extern void logMsg(char* msg);
@@ -21,7 +25,13 @@ extern void logMsg(char* msg);
 #define KBD_PRINT( X)
 #endif
 
-extern bool bk0010mode;
+typedef enum BK_MODE {
+    BK_0010,
+    BK_0010_01,
+    BK_0011M
+} bk_mode_t;
+
+extern bk_mode_t bk0010mode;
 void init_rom();
 
 #define RAM_PAGES_SIZE (sizeof RAM)
@@ -35,12 +45,15 @@ void init_rom();
 #define CPU_PAGE7_MEM_ADR  &RAM[0x0C000] /* RAM Page 3          it was 0x3FFF8000 */
 #define CPU_PAGE8_MEM_ADR  &ROM11[0x00000] /* ROM11 Page 0          it was 0x40250000 - bk11m_328_basic2.rom + bk11m_329_basic3.rom  */
 #define CPU_PAGE9_MEM_ADR  &ROM11[0x04000] /* ROM11 Page 1          it was 0x40254000 - bk11m_327_basic1.rom + bk11m_325_ext.rom */
-#define CPU_PAGE10_MEM_ADR 0 /* ? */
+#define CPU_PAGE10_MEM_ADR 0 /* &DISK_327ROM[0x00000] /* КНГМД для БК-0011М // &FDDROM[0x00000] КНГМД для БК-0010 */
 #define CPU_PAGE11_MEM_ADR 0 /* ? */
 #define CPU_PAGE12_MEM_ADR &ROM11[0x08000] /* ROM11 Page 2          it was 0x40258000 - bk11m_324_bos.rom + bk11m_330_mstd.rom */
 
-#define CPU_PAGE14_MEM_ADR &ROM10[0x00000] /* ROM10 Basic 0010-01 */
-#define CPU_PAGE15_MEM_ADR &ROM10[0x04000] /* ROM10 Basik + monitor 0010-01 */
+#define CPU_PAGE14_MEM_ADR &ROM10[0x00000] /* monitor 0010-01 + ROM10 Basic 0010-01 */
+#define CPU_PAGE15_MEM_ADR &ROM10[0x04000] /* ... ROM10 0010-01 Basic */
+
+#define CPU_PAGE16_MEM_ADR &ROM10F[0x00000] /* monitor 0010 + Focal 0010 */
+#define CPU_PAGE17_MEM_ADR &TESTS_ROM[0x00000] /* not used + Tests 0010 */
 
 #define CPU_START_IO_ADR 0177600
 

@@ -556,7 +556,7 @@ static fn_1_12_tbl_t fn_1_12_tbl = {
     ' ', '8', " Del  ", m_delete_file,
     ' ', '9', " Swap ", swap_drives,
     '1', '0', " USB  ", turn_usb_on,
-    '1', '1', " 0011M", switch_rom,
+    '1', '1', " 0010B", switch_rom,
     '1', '2', "Reset ", reset
 };
 
@@ -571,7 +571,7 @@ static fn_1_12_tbl_t fn_1_12_tbl_alt = {
     ' ', '8', " Del  ", m_delete_file,
     ' ', '9', " UpMn ", do_nothing,
     '1', '0', " USB  ", turn_usb_on,
-    '1', '1', " 0011M", switch_rom,
+    '1', '1', " 0010B", switch_rom,
     '1', '2', "Reset ", reset
 };
 
@@ -635,10 +635,24 @@ static void turn_usb_on(uint8_t cmd) {
     bottom_line();
 }
 
+inline static const char* curr_mode() {
+    switch (bk0010mode) {
+        case BK_0010:
+            return " 0010F";
+        case BK_0010_01:
+            return " 0010B";
+        case BK_0011M:
+            return " 0011M";
+    }
+    return "";
+}
+
 static void switch_rom(uint8_t cmd) {
-    bk0010mode = !bk0010mode;
-    snprintf(fn_1_12_tbl     [10].name, BTN_WIDTH, bk0010mode ? " 0011M" : " 0010 ");
-    snprintf(fn_1_12_tbl_alt [10].name, BTN_WIDTH, bk0010mode ? " 0011M" : " 0010 ");
+    bk0010mode++;
+    if (bk0010mode > BK_0011M) bk0010mode = BK_0010;
+    const char* cm = curr_mode();
+    snprintf(fn_1_12_tbl     [10].name, BTN_WIDTH, cm);
+    snprintf(fn_1_12_tbl_alt [10].name, BTN_WIDTH, cm);
     init_rom();
     bottom_line();
 }
