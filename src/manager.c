@@ -90,6 +90,11 @@ inline static void scan_code_processed() {
   lastCleanableScanCode = 0;
 }
 
+inline static void scan_code_cleanup() {
+  lastSavedScanCode = 0;
+  lastCleanableScanCode = 0;
+}
+
 static const uint8_t PANEL_TOP_Y = 0;
 static const uint8_t TOTAL_SCREEN_LINES = MAX_HEIGHT;
 static const uint8_t F_BTN_Y_POS = TOTAL_SCREEN_LINES - 1;
@@ -357,7 +362,7 @@ static bool m_prompt(const char* txt) {
     while(1) {
         if (enterPressed) {
             enterPressed = false;
-            scan_code_processed();
+            scan_code_cleanup();
             return yes;
         }
         if (tabPressed || leftPressed || rightPressed) { // TODO: own msgs cycle
@@ -365,10 +370,11 @@ static bool m_prompt(const char* txt) {
             draw_button((MAX_WIDTH - 60) / 2 + 16, 12, 11, "Yes", yes);
             draw_button((MAX_WIDTH - 60) / 2 + 35, 12, 10, "No", !yes);
             tabPressed = leftPressed = rightPressed = false;
+            scan_code_cleanup();
         }
         if (escPressed) {
             escPressed = false;
-            scan_code_processed();
+            scan_code_cleanup();
             return false;
         }
     }
@@ -1064,6 +1070,7 @@ static inline void work_cycle() {
                repeat_cnt = 0;
             }
         }
+        if (lastCleanableScanCode) DBGM_PRINT(("lastCleanableScanCode: %02Xh", lastCleanableScanCode));
         switch(lastCleanableScanCode) {
           case 0x01: // Esc down
           case 0x81: // Esc up
@@ -1367,10 +1374,10 @@ bool handleScancode(uint32_t ps2scancode) { // core 1
         tabPressed = false;
         break;
       default:
-        //snprintf(line, MAX_WIDTH, "Scan-code: %02Xh", ps2scancode);
-        //draw_cmd_line(0, CMD_Y_POS, line);
+        DBGM_PRINT(("handleScancode default: %02Xh", ps2scancode));
         break;
     }
+    if (ps2scancode) DBGM_PRINT(("handleScancode processed: %02Xh", ps2scancode));
     return manager_started;
 }
 
