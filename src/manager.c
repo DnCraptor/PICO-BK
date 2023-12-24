@@ -429,7 +429,7 @@ inline static FRESULT m_copy(char* path, char* dest) {
     FRESULT result = f_open(&file1, path, FA_READ);
     if (result != FR_OK) return result;
     FIL file2;
-    result = f_open(&file2, dest, FA_CREATE_ALWAYS);
+    result = f_open(&file2, dest, FA_WRITE | FA_CREATE_ALWAYS);
     if (result != FR_OK) {
         f_close(&file1);
         return result;
@@ -438,7 +438,8 @@ inline static FRESULT m_copy(char* path, char* dest) {
     do {
         result = f_read(&file1, files_info, sizeof(files_info), &br);
         if (result != FR_OK || br == 0) break;
-        f_write(&file2, files_info, br, &br);
+        UINT bw;
+        f_write(&file2, files_info, br, &bw);
         if (result != FR_OK) break;
     } while (br);
     f_close(&file1);
@@ -447,7 +448,31 @@ inline static FRESULT m_copy(char* path, char* dest) {
 }
 
 inline static FRESULT m_copy_recursive(char* path, char* dest) {
-    return FR_INVALID_PARAMETER;
+    DIR dir;
+    FRESULT res = f_opendir(&dir, path);
+    if (res != FR_OK) return res;
+    res = f_mkdir(dest);
+    draw_cmd_line(0, CMD_Y_POS, dest);
+    if (res != FR_OK) return res;
+    FILINFO fileInfo;
+    while(f_readdir(&dir, &fileInfo) == FR_OK && fileInfo.fname[0] != '\0') {
+        char path2[256];
+        construct_full_name(path2, path, fileInfo.fname);
+        char dest2[256];
+        construct_full_name(dest2, dest, fileInfo.fname);
+        draw_cmd_line(0, CMD_Y_POS, dest2);
+        if (fileInfo.fattrib & AM_DIR) {
+            res = m_copy_recursive(path2, dest2);
+        } else {
+            res = m_copy(path2, dest2);
+        }
+        if (res != FR_OK) break;
+    }
+    f_closedir(&dir);
+    if (res == FR_OK) {
+        draw_cmd_line(0, CMD_Y_POS, 0);
+    }
+    return res;
 }
 
 static void m_copy_file(uint8_t cmd) {
@@ -479,6 +504,35 @@ static void m_copy_file(uint8_t cmd) {
     redraw_window();
 }
 
+static void m_move_file(uint8_t cmd) {
+    file_info_t* fp = selected_file();
+    if (!fp) {
+       no_selected_file();
+       return;
+    }
+    char path[256];
+    file_panel_desc_t* dsp = psp == &left_panel ? &right_panel : &left_panel;
+    snprintf(path, 256, "Move %s %s to %s?", fp->name, fp->fattrib & AM_DIR ? "folder" : "file", dsp->path);
+    if (m_prompt(path)) { // TODO: ask name
+        construct_full_name(path, psp->path, fp->name);
+        char dest[256];
+        construct_full_name(dest, dsp->path, fp->name);
+        FRESULT result = f_rename(path, dest);
+        if (result != FR_OK) {
+            snprintf(line, MAX_WIDTH, "FRESULT: %d", result);
+            const line_t lns[3] = {
+                { -1, "Unable to move selected item!" },
+                { -1, path },
+                { -1, line }
+            };
+            const lines_t lines = { 3, 2, lns };
+            draw_box((MAX_WIDTH - 60) / 2, 7, 60, 10, "Error", &lines);
+            sleep_ms(2500);
+        }
+    }
+    redraw_window();
+}
+
 static void reset(uint8_t cmd) {
     memset(RAM, 0, sizeof RAM);
     main_init();
@@ -491,7 +545,7 @@ static fn_1_12_tbl_t fn_1_12_tbl = {
     ' ', '3', " View ", do_nothing,
     ' ', '4', " Edit ", do_nothing,
     ' ', '5', " Copy ", m_copy_file,
-    ' ', '6', " Move ", do_nothing,
+    ' ', '6', " Move ", m_move_file,
     ' ', '7', "MkDir ", do_nothing,
     ' ', '8', " Del  ", m_delete_file,
     ' ', '9', " Swap ", swap_drives,
@@ -506,7 +560,7 @@ static fn_1_12_tbl_t fn_1_12_tbl_alt = {
     ' ', '3', " View ", do_nothing,
     ' ', '4', " Edit ", do_nothing,
     ' ', '5', " Copy ", m_copy_file,
-    ' ', '6', " Move ", do_nothing,
+    ' ', '6', " Move ", m_move_file,
     ' ', '7', " Find ", do_nothing,
     ' ', '8', " Del  ", m_delete_file,
     ' ', '9', " UpMn ", do_nothing,
@@ -521,7 +575,7 @@ static fn_1_12_tbl_t fn_1_12_tbl_ctrl = {
     ' ', '3', "Debug ", do_nothing,
     ' ', '4', " Edit ", do_nothing,
     ' ', '5', " Copy ", m_copy_file,
-    ' ', '6', " Move ", do_nothing,
+    ' ', '6', " Move ", m_move_file,
     ' ', '7', " Find ", do_nothing,
     ' ', '8', " Del  ", m_delete_file,
     ' ', '9', " Swap ", swap_drives,
