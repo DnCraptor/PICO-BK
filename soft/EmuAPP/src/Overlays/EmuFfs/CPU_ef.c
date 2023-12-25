@@ -91,6 +91,14 @@ TCPU_Arg AT_OVL CPU_ReadMemW (TCPU_Arg Adr) {
     DEBUG_PRINT(("CPU_ReadMemW Adr: %oo (%Xh) Page: (#%d)", Adr, Adr, (Adr) >> 14));
     uint16_t *pReg;
     if (Adr < CPU_START_IO_ADR) {
+        if (bk0010mode == BK_FDD) {
+            switch (Adr >> 1) {
+                case (0177130 >> 1):
+                    return Device_Data.SysRegs.RdReg177130;
+                case (0177132 >> 1):
+                    return Device_Data.SysRegs.Reg177132;
+            }
+        }
         uintptr_t Page;
         if (Adr >= 0120000 && Adr < 0160000 && bk0010mode == BK_FDD) {
             Page = Device_Data.MemPages [4]; // W/A
@@ -107,8 +115,7 @@ TCPU_Arg AT_OVL CPU_ReadMemW (TCPU_Arg Adr) {
         }
         return CPU_ARG_READ_ERR;
     }
-    switch (Adr >> 1)
-    {
+    switch (Adr >> 1) {
         case (0177660 >> 1): pReg = &Device_Data.SysRegs.Reg177660;   break;
         case (0177662 >> 1): Device_Data.SysRegs.Reg177660 &= ~0200;
                              pReg = &Device_Data.SysRegs.RdReg177662; break;
@@ -129,6 +136,14 @@ TCPU_Arg AT_OVL CPU_ReadMemB (TCPU_Arg Adr) {
     uint16_t *pReg;
     DEBUG_PRINT(("CPU_ReadMemB Adr: %oo (%Xh) Page: (#%d)", Adr, Adr, (Adr) >> 14));
     if (Adr < CPU_START_IO_ADR) {
+        if (bk0010mode == BK_FDD) {
+            switch (Adr >> 1) {
+                case (0177130 >> 1):
+                    return (uint8_t)Device_Data.SysRegs.RdReg177130;
+                case (0177132 >> 1):
+                    return (uint8_t)Device_Data.SysRegs.Reg177132;
+            }
+        }
         uintptr_t Page;
         if (Adr >= 0120000 && Adr < 0160000 && bk0010mode == BK_FDD) {
             Page = Device_Data.MemPages [4]; // W/A
@@ -138,9 +153,7 @@ TCPU_Arg AT_OVL CPU_ReadMemB (TCPU_Arg Adr) {
         if (Page) return AnyMem_r_u8 ((uint8_t *) (Page + ((Adr) & 0x3FFF)));
         return CPU_ARG_READ_ERR;
     }
-
-    switch (Adr >> 1)
-    {
+    switch (Adr >> 1)  {
         case (0177660 >> 1): pReg = &Device_Data.SysRegs.Reg177660;   break;
         case (0177662 >> 1): Device_Data.SysRegs.Reg177660 &= ~0200;
                              pReg = &Device_Data.SysRegs.RdReg177662; break;
@@ -152,10 +165,8 @@ TCPU_Arg AT_OVL CPU_ReadMemB (TCPU_Arg Adr) {
                              pReg = &Device_Data.SysRegs.Reg177712;   break;
         case (0177714 >> 1): pReg = &Device_Data.SysRegs.RdReg177714; break;
         case (0177716 >> 1): pReg = &Device_Data.SysRegs.RdReg177716; break;
-
         default: return CPU_ARG_READ_ERR;
     }
-
     return ((uint8_t *) pReg) [Adr & 1];
 }
 
@@ -183,6 +194,14 @@ TCPU_Arg AT_OVL CPU_WriteW (TCPU_Arg Adr, uint_fast16_t Word)
         return CPU_ARG_WRITE_ERR;
     }
     switch (Adr >> 1) {
+        case (0177130 >> 1):
+            Device_Data.SysRegs.WrReg177130 = (uint16_t) Word;
+            // TODO:
+            break;
+        case (0177132 >> 1):
+            Device_Data.SysRegs.Reg177132 = (uint16_t) Word;
+            // TODO:
+            break;
         case (0177660 >> 1):
             PrevWord = Device_Data.SysRegs.Reg177660;
             Device_Data.SysRegs.Reg177660 = (uint16_t) ((Word & 0100) | (PrevWord & ~0100));
@@ -276,19 +295,20 @@ TCPU_Arg AT_OVL CPU_WriteB (TCPU_Arg Adr, uint_fast8_t Byte)
         return CPU_ARG_WRITE_ERR;
     }
     Word = Byte;
-
     if (Adr & 1) Word <<= 8;
-
-    switch (Adr >> 1)
-    {
-        case (0177660 >> 1):
-
-            PrevWord = Device_Data.SysRegs.Reg177660;
-
-            Device_Data.SysRegs.Reg177660 = (uint16_t) ((Word & 0100) | (PrevWord & ~0100));
-
+    switch (Adr >> 1) {
+        case (0177130 >> 1):
+            Device_Data.SysRegs.WrReg177130 = (uint16_t) Word;
+            // TODO:
             break;
-
+        case (0177132 >> 1):
+            Device_Data.SysRegs.Reg177132 = (uint16_t) Word;
+            // TODO:
+            break;
+        case (0177660 >> 1):
+            PrevWord = Device_Data.SysRegs.Reg177660;
+            Device_Data.SysRegs.Reg177660 = (uint16_t) ((Word & 0100) | (PrevWord & ~0100));
+            break;
         case (0177662 >> 1):
             Device_Data.SysRegs.WrReg177662 = (uint16_t) Word;
             graphics_set_page(Word & 0100000 ? CPU_PAGE6_MEM_ADR : CPU_PAGE5_MEM_ADR, (Word >> 8) & 15);
@@ -300,14 +320,11 @@ TCPU_Arg AT_OVL CPU_WriteB (TCPU_Arg Adr, uint_fast8_t Byte)
             graphics_shift_screen(Word);
             break;
         case (0177706 >> 1):
-
             CPU_TimerRun ();
             Device_Data.SysRegs.Reg177706 = (uint16_t) Word;
             break;
-
 //      case (0177710 >> 1):
         case (0177712 >> 1):
-
             Word |= 0xFF00U;
             Device_Data.SysRegs.Reg177712 = (uint16_t) Word;
             Device_Data.SysRegs.Reg177710 = Device_Data.SysRegs.Reg177706;
@@ -315,7 +332,6 @@ TCPU_Arg AT_OVL CPU_WriteB (TCPU_Arg Adr, uint_fast8_t Byte)
             Device_Data.Timer.T     = 0;
             Device_Data.Timer.Div   = (~Word >> 4) & 6;
             break;
-
         case (0177714 >> 1):
             Device_Data.SysRegs.WrReg177714 = (uint16_t) Word;
             {
@@ -325,11 +341,8 @@ TCPU_Arg AT_OVL CPU_WriteB (TCPU_Arg Adr, uint_fast8_t Byte)
             }
             break;
         case (0177716 >> 1):
-
-            if (Word & (1U << 11))
-            {
-                const uintptr_t PageTab [8] =
-                {
+            if (Word & (1U << 11)) {
+                const uintptr_t PageTab [8] = {
                     CPU_PAGE1_MEM_ADR,
                     CPU_PAGE5_MEM_ADR,
                     CPU_PAGE2_MEM_ADR,
@@ -338,21 +351,16 @@ TCPU_Arg AT_OVL CPU_WriteB (TCPU_Arg Adr, uint_fast8_t Byte)
                     CPU_PAGE7_MEM_ADR,
                     CPU_PAGE0_MEM_ADR,
                     CPU_PAGE6_MEM_ADR
-
                 }; // {1, 5, 2, 3, 4, 7, 0, 6};
-
                 Device_Data.SysRegs.Wr1Reg177716 = (uint16_t) Word;
-
                 Device_Data.MemPages [1] = PageTab [(Word >> 12) & 7];
-   
                 if      (Word &  01) Device_Data.MemPages [2] = CPU_PAGE8_MEM_ADR;
                 else if (Word &  02) Device_Data.MemPages [2] = CPU_PAGE9_MEM_ADR;
                 else if (Word & 010) Device_Data.MemPages [2] = CPU_PAGE10_MEM_ADR;
                 else if (Word & 020) Device_Data.MemPages [2] = CPU_PAGE11_MEM_ADR;
                 else                 Device_Data.MemPages [2] = PageTab [(Word >> 8) & 7];
             }
-            else
-            {
+            else {
                 Device_Data.SysRegs.WrReg177716 = (uint16_t) Word;
                 {
                     uint_fast32_t Reg = *(uint8_t *) &Device_Data.SysRegs.WrReg177714 >> 1;
