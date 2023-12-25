@@ -7,8 +7,7 @@
 #include "ROM11.h"
 #include "FDDROM.h"
 #include "DISK_327ROM.h"
-#include "Focal.h"
-#include "Tests.h"
+#include "BK0010_ROM.h"
 
 #ifdef BOOT_DEBUG
 extern void logMsg(char* msg);
@@ -53,8 +52,8 @@ void init_rom();
 #define CPU_PAGE14_MEM_ADR &ROM10[0x00000] /* monitor 0010-01 + ROM10 Basic 0010-01 */
 #define CPU_PAGE15_MEM_ADR &ROM10[0x04000] /* ... ROM10 0010-01 Basic */
 
-#define CPU_PAGE16_MEM_ADR &ROM10F[0x00000] /* monitor 0010 + Focal 0010 */
-#define CPU_PAGE17_MEM_ADR &TESTS_ROM[0x00000] /* not used + Tests 0010 */
+#define CPU_PAGE16_MEM_ADR &BK0010_ROM[0x00000] /* monitor 0010 + Focal 0010 */
+#define CPU_PAGE17_MEM_ADR &BK0010_ROM[0x04000] /* not used 8k + Tests 0010 */
 
 #define CPU_PAGE18_MEM_ADR &DISK_327ROM[0x00000] /* not used + DISK_327.ROM */
 
