@@ -102,6 +102,8 @@ TCPU_Arg AT_OVL CPU_ReadMemW (TCPU_Arg Adr) {
         uintptr_t Page;
         if (Adr >= 0120000 && Adr < 0160000 && bk0010mode == BK_FDD) {
             Page = Device_Data.MemPages [4]; // W/A
+        } else if (Adr >= 0140000 && Adr < 0160000 && bk0010mode == BK_0010) {
+            return CPU_ARG_READ_ERR;
         } else {
             Page = Device_Data.MemPages [(Adr) >> 14];
         }
@@ -147,6 +149,8 @@ TCPU_Arg AT_OVL CPU_ReadMemB (TCPU_Arg Adr) {
         uintptr_t Page;
         if (Adr >= 0120000 && Adr < 0160000 && bk0010mode == BK_FDD) {
             Page = Device_Data.MemPages [4]; // W/A
+        } else if (Adr >= 0140000 && Adr < 0160000 && bk0010mode == BK_0010) {
+            return CPU_ARG_READ_ERR;
         } else {
             Page = Device_Data.MemPages [(Adr) >> 14];
         }
