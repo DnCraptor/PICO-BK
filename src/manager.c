@@ -541,6 +541,8 @@ static void m_move_file(uint8_t cmd) {
 
 static void reset(uint8_t cmd) {
     memset(RAM, 0, sizeof RAM);
+    graphics_set_page(CPU_PAGE5_MEM_ADR, 0);
+    graphics_shift_screen((uint16_t)0330 | 0b01000000000);
     main_init();
     mark_to_exit_flag = true;
 }
@@ -867,6 +869,7 @@ static inline bool run_bin(char* path) {
         redraw_window();
         return false;
     }
+    // TODO: ensue it is ok for ever game
     Device_Data.MemPages [0] = CPU_PAGE0_MEM_ADR; /* RAM Page 0 */
     Device_Data.MemPages [1] = CPU_PAGE5_MEM_ADR; /* RAM Page 4 video 0 */
     graphics_set_page(CPU_PAGE5_MEM_ADR, 0);

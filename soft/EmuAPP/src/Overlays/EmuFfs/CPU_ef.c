@@ -245,7 +245,7 @@ TCPU_Arg AT_OVL CPU_WriteW (TCPU_Arg Adr, uint_fast16_t Word)
             break;
         case (0177716 >> 1):
             DEBUG_PRINT(("case (0177716 >> 1) on CPU_WriteW - switch pages: %d", (Word >> 12) & 7));
-            if (Word & (1U << 11)) {
+            if (Word & (1U << 11) && bk0010mode == BK_0011M) {
                 static const uintptr_t PageTab [8] = {
                     CPU_PAGE1_MEM_ADR,
                     CPU_PAGE5_MEM_ADR,
@@ -352,7 +352,7 @@ TCPU_Arg AT_OVL CPU_WriteB (TCPU_Arg Adr, uint_fast8_t Byte)
             }
             break;
         case (0177716 >> 1):
-            if (Word & (1U << 11)) {
+            if (Word & (1U << 11) && bk0010mode == BK_0011M) {
                 const uintptr_t PageTab [8] = {
                     CPU_PAGE1_MEM_ADR,
                     CPU_PAGE5_MEM_ADR,

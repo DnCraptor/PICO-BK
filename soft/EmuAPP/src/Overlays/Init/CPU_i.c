@@ -35,16 +35,40 @@ void AT_OVL CPU_Init (void)
 {
     memset (&Device_Data, 0, sizeof (Device_Data));
 
-//  Device_Data.SysRegs.Reg177660   = 0;
-//  Device_Data.SysRegs.RdReg177662 = 0;
+  Device_Data.SysRegs.Reg177660   = 0;
+  Device_Data.SysRegs.RdReg177662 = 0;
     Device_Data.SysRegs.Reg177664   = 01330;
-//  Device_Data.SysRegs.Reg177706   = 0;
-//  Device_Data.SysRegs.Reg177710   = 0177777;
-//  Device_Data.SysRegs.Reg177712   = 0177400;
-//  Device_Data.SysRegs.RdReg177714 = 0;
+  Device_Data.SysRegs.Reg177706   = 0;
+  Device_Data.SysRegs.Reg177710   = 0177777;
+  Device_Data.SysRegs.Reg177712   = 0177400;
+  Device_Data.SysRegs.RdReg177714 = 0;
     Device_Data.SysRegs.RdReg177716 = (bk0010mode != BK_0011M ? 0100000 : 0140000) | 0300;
     Device_Data.SysRegs.WrReg177662  = 047400;
     Device_Data.SysRegs.Wr1Reg177716 = (1 << 12) | 1;
+/*
+ * бит 0: признак 0-ой дорожки
+ * бит 1: готовность к работе
+ * бит 2: защита от записи
+ * бит 7: запрос на чтение/запись данных из регистра данных
+ * бит 14: признак записи циклического контрольного кода на диск
+ * бит 15: признак 0-го сектора (индексного отверстия)
+*/
+    Device_Data.SysRegs.RdReg177130 = 0;
+/*
+ * биты 0-3: выбор накопителя; бит 3: см. примечание (АльтПро)
+ * бит 4: включение мотора
+ * бит 5: выбор головки, "0" -- верхняя, "1" -- нижняя.
+ * бит 6: направление перемещения головок
+ * бит 7: шаг (40/80 дорожек?)
+ * бит 8: признак "начало чтения"
+ * бит 9: признак "запись маркера"
+ * бит 10: включение схемы предкоррекции
+(АльтПро) При установленном бите 010 при записи в регистр 0177130 для контроллеров с количеством ДОЗУ 64 или 128Кб подключается ПЗУ Бейсика.
+ Для остальных контроллеров Бейсик подключается полным его копированием в одну из страниц.
+ Однако бит 010 всё равно надо записать в 0177130 (иначе при чтении по адресам портов контроллера будет читаться не Бейсик, а содержимое портов)
+*/
+    Device_Data.SysRegs.WrReg177130 = 0;
+    Device_Data.SysRegs.Reg177132   = 0;
 
     Device_Data.MemPages [0] = CPU_PAGE0_MEM_ADR; /* RAM Page 0 */
     Device_Data.MemPages [1] = CPU_PAGE5_MEM_ADR; /* RAM Page 4 video 0 */
