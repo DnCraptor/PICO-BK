@@ -16,7 +16,7 @@ _FILE * getFileC() { return &fileC; }
 size_t getFileA_sz() { return fileA.obj.fs ? f_size(&fileA) : 0; }
 size_t getFileB_sz() { return fileB.obj.fs ? f_size(&fileB) : 0; }
 size_t getFileC_sz() { return fileC.obj.fs ? f_size(&fileC) : 0; }
-#if BOOT_DEBUG || KBD_DEBUG || MNGR_DEBUG
+#if BOOT_DEBUG || KBD_DEBUG || MNGR_DEBUG || DSK_DEBUG
 _FILE fileD; // for debug output
 #endif
 #else
@@ -51,7 +51,9 @@ void ejectdisk(uint8_t drivenum) {
     }
 }
 
-#if PICO_ON_DEVICE
+void dsk_start_engine(uint8_t drivenum) {
+
+}
 
 static _FILE* actualDrive(uint8_t drivenum) {
     return (drivenum > 1) ? &fileC : ( drivenum == 0 ? &fileA : &fileB );
@@ -113,7 +115,6 @@ static _FILE* tryDefaultDrive(uint8_t drivenum, size_t size, char *path) {
 */
 // manager.h
 void notify_image_insert_action(uint8_t drivenum, char *pathname);
-#endif
 
 uint8_t insertdisk(uint8_t drivenum, size_t size, char *ROM, char *pathname) {
     if (drivenum & 0x80) drivenum -= 126;
@@ -255,7 +256,7 @@ bool img_disk_write_sec(int drv, BYTE * buffer, LBA_t lba) {
 }
 #endif
 
-#if BOOT_DEBUG || KBD_DEBUG || MNGR_DEBUG
+#if BOOT_DEBUG || KBD_DEBUG || MNGR_DEBUG || DSK_DEBUG
 void logFile(char* msg) {
     gpio_put(PICO_DEFAULT_LED_PIN, true);
     f_open(&fileD, "\\BK\\boot.log", FA_WRITE | FA_OPEN_APPEND);

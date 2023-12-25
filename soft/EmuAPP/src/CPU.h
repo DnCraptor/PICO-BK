@@ -9,10 +9,19 @@
 #include "DISK_327ROM.h"
 #include "BK0010_ROM.h"
 
-#ifdef BOOT_DEBUG
+#if BOOT_DEBUG || DSK_DEBUG
 extern void logMsg(char* msg);
 #define printf(...) { char tmp[80]; snprintf(tmp, 80, __VA_ARGS__); logMsg(tmp); }
+#if BOOT_DEBUG
 #define DEBUG_PRINT( X) printf X
+#else
+#define DEBUG_PRINT( X)
+#endif
+#if DSK_DEBUG
+#define DSK_PRINT( X) printf X
+#else
+#define DSK_PRINT( X)
+#endif
 #else
 #define DEBUG_PRINT( X)
 #endif

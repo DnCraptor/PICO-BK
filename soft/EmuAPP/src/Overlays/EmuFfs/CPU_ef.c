@@ -87,6 +87,53 @@ void AT_OVL CPU_TimerRun (void)
     }
 }
 
+#include "MKDOS318B.h"
+
+void dsk_start_engine(uint8_t drivenum); // TODO:
+
+static int hdr = 0;
+static int sec = 0;
+static int track = 0;
+static int byte_in_sec = 0;
+
+static inline void dsk_read() {
+    Device_Data.SysRegs.Reg177132  = MKDOS318B[byte_in_sec++ + sec * 512 + hdr * 5120] << 8;
+    Device_Data.SysRegs.Reg177132 |= MKDOS318B[byte_in_sec++ + sec * 512 + hdr * 5120];
+    if (byte_in_sec == 512) {
+        byte_in_sec = 0;
+        sec++;
+    }
+    if (sec == 10) {
+        sec = 0;
+    }
+    Device_Data.SysRegs.RdReg177130 |= 0b0100000000000000; // formatted
+    if (sec == 0) {
+        Device_Data.SysRegs.RdReg177130 |= 0b1000000000000000; // признак '0' сектор
+    } else {
+        Device_Data.SysRegs.RdReg177130 &= ~0b1000000000000000;
+    }
+}
+
+static inline void dsk_word(uint16_t Word) {
+    if ((Word >> 8) & 1) { // признак 'начало чтения'
+        hdr = (Word >> 5) & 1; // выбор головки: "0"-верхняя
+        sec = 0;
+    //    track = 0;
+        byte_in_sec = 0;     
+    }
+    if (Word & 0b10000) {
+        dsk_start_engine(Word & 0b1111);
+        // признак '0' сектор
+        if (sec == 0) {
+            Device_Data.SysRegs.RdReg177130 |= 0b1000000000000000;
+        } else {
+            Device_Data.SysRegs.RdReg177130 &= ~0b1000000000000000;
+        }
+        // данные в регистре данных, защита от записи, готовность к работе, признак '0' дорожка
+        Device_Data.SysRegs.RdReg177130 |= 0b0000000010000111;
+    }
+} 
+
 TCPU_Arg AT_OVL CPU_ReadMemW (TCPU_Arg Adr) {
     DEBUG_PRINT(("CPU_ReadMemW Adr: %oo (%Xh) Page: (#%d)", Adr, Adr, (Adr) >> 14));
     uint16_t *pReg;
@@ -94,8 +141,11 @@ TCPU_Arg AT_OVL CPU_ReadMemW (TCPU_Arg Adr) {
         if (bk0010mode == BK_FDD) {
             switch (Adr >> 1) {
                 case (0177130 >> 1):
+                    DSK_PRINT(("W RdReg177130: %04Xh",  Device_Data.SysRegs.RdReg177130));
                     return Device_Data.SysRegs.RdReg177130;
                 case (0177132 >> 1):
+                    dsk_read();
+                    DSK_PRINT(("W Reg177132: %04Xh",  Device_Data.SysRegs.Reg177132));
                     return Device_Data.SysRegs.Reg177132;
             }
         }
@@ -112,7 +162,7 @@ TCPU_Arg AT_OVL CPU_ReadMemW (TCPU_Arg Adr) {
             uintptr_t t = (Page + ((Adr) & 0x3FFE));
             DEBUG_PRINT(("CPU_ReadMemW (Page + ((Adr) & 0x3FFE)): %08Xh", t));
             uint16_t r = AnyMem_r_u16 ((uint16_t *)t);
-            DEBUG_PRINT(("CPU_ReadMemW AnyMem_r_u16(%08X): %oo", t, r))
+            DEBUG_PRINT(("CPU_ReadMemW AnyMem_r_u16(%08X): %oo", t, r));
             return r;
         }
         return CPU_ARG_READ_ERR;
@@ -141,8 +191,11 @@ TCPU_Arg AT_OVL CPU_ReadMemB (TCPU_Arg Adr) {
         if (bk0010mode == BK_FDD) {
             switch (Adr >> 1) {
                 case (0177130 >> 1):
+                    DSK_PRINT(("B RdReg177130: %04Xh",  Device_Data.SysRegs.RdReg177130));
                     return (uint8_t)Device_Data.SysRegs.RdReg177130;
                 case (0177132 >> 1):
+                    dsk_read(); // TODO: read one byte?
+                    DSK_PRINT(("B Reg177132: %04Xh",  Device_Data.SysRegs.Reg177132));
                     return (uint8_t)Device_Data.SysRegs.Reg177132;
             }
         }
@@ -174,8 +227,7 @@ TCPU_Arg AT_OVL CPU_ReadMemB (TCPU_Arg Adr) {
     return ((uint8_t *) pReg) [Adr & 1];
 }
 
-TCPU_Arg AT_OVL CPU_WriteW (TCPU_Arg Adr, uint_fast16_t Word)
-{
+TCPU_Arg AT_OVL CPU_WriteW (TCPU_Arg Adr, uint_fast16_t Word) {
     uint_fast16_t PrevWord;
     DEBUG_PRINT(("CPU_WriteW(%oo, %oo) Page: #%d", Adr, Word, (Adr) >> 14));
     if (CPU_IS_ARG_REG (Adr)) {
@@ -206,14 +258,16 @@ TCPU_Arg AT_OVL CPU_WriteW (TCPU_Arg Adr, uint_fast16_t Word)
     switch (Adr >> 1) {
         case (0177130 >> 1):
             if (bk0010mode == BK_FDD) {
+                DSK_PRINT(("W WrReg177130 <- %04Xh", Word));
                 Device_Data.SysRegs.WrReg177130 = (uint16_t) Word;
+                dsk_word(Word);
             } else {
                 return CPU_ARG_WRITE_ERR;
             }
-            // TODO:
             break;
         case (0177132 >> 1):
             if (bk0010mode == BK_FDD) {
+                DSK_PRINT(("W Reg177132 <- %04Xh", Word));
                 Device_Data.SysRegs.Reg177132 = (uint16_t) Word;
             } else {
                 return CPU_ARG_WRITE_ERR;
@@ -290,8 +344,7 @@ TCPU_Arg AT_OVL CPU_WriteW (TCPU_Arg Adr, uint_fast16_t Word)
     return CPU_ARG_WRITE_OK;
 }
 
-TCPU_Arg AT_OVL CPU_WriteB (TCPU_Arg Adr, uint_fast8_t Byte)
-{
+TCPU_Arg AT_OVL CPU_WriteB (TCPU_Arg Adr, uint_fast8_t Byte) {
     uint_fast16_t Word;
     uint_fast16_t PrevWord;
     DEBUG_PRINT(("CPU_WriteB(%08Xh, %oo) Page: #%d", Adr, Word, (Adr) >> 14));
@@ -322,10 +375,12 @@ TCPU_Arg AT_OVL CPU_WriteB (TCPU_Arg Adr, uint_fast8_t Byte)
     if (Adr & 1) Word <<= 8;
     switch (Adr >> 1) {
         case (0177130 >> 1):
+            DSK_PRINT(("B WrReg177130 <- %04Xh", Word));
             Device_Data.SysRegs.WrReg177130 = (uint16_t) Word;
-            // TODO:
+            dsk_word(Word);
             break;
         case (0177132 >> 1):
+            DSK_PRINT(("B Reg177132 <- %04Xh", Word)); // TODO: byte?
             Device_Data.SysRegs.Reg177132 = (uint16_t) Word;
             // TODO:
             break;

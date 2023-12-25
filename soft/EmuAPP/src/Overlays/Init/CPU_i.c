@@ -8,7 +8,7 @@
 
 #define AT_OVL __attribute__((section(".ovl3_i.text")))
 
-bk_mode_t bk0010mode = BK_0010_01;
+bk_mode_t bk0010mode = BK_FDD;
 
 void init_rom() {
     switch (bk0010mode) {
