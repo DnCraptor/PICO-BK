@@ -35,14 +35,14 @@ void AT_OVL CPU_Init (void)
 {
     memset (&Device_Data, 0, sizeof (Device_Data));
 
-  Device_Data.SysRegs.Reg177660   = 0;
-  Device_Data.SysRegs.RdReg177662 = 0;
+//  Device_Data.SysRegs.Reg177660   = 0;
+//  Device_Data.SysRegs.RdReg177662 = 0;
     Device_Data.SysRegs.Reg177664   = 01330;
-  Device_Data.SysRegs.Reg177706   = 0;
-  Device_Data.SysRegs.Reg177710   = 0177777;
-  Device_Data.SysRegs.Reg177712   = 0177400;
-  Device_Data.SysRegs.RdReg177714 = 0;
-    Device_Data.SysRegs.RdReg177716 = (bk0010mode != BK_0011M ? 0100000 : 0140000) | 0300;
+//  Device_Data.SysRegs.Reg177706   = 0;
+//  Device_Data.SysRegs.Reg177710   = 0177777;
+//  Device_Data.SysRegs.Reg177712   = 0177400;
+//  Device_Data.SysRegs.RdReg177714 = 0;
+    Device_Data.SysRegs.RdReg177716 = ((bk0010mode != BK_0011M ? 0100000 : 0140000) & 0177400) | 0300;
     Device_Data.SysRegs.WrReg177662  = 047400;
     Device_Data.SysRegs.Wr1Reg177716 = (1 << 12) | 1;
 /*
