@@ -26,6 +26,7 @@ extern void logMsg(char* msg);
 #endif
 
 typedef enum BK_MODE {
+    BK_FDD,
     BK_0010,
     BK_0010_01,
     BK_0011M
@@ -54,6 +55,8 @@ void init_rom();
 
 #define CPU_PAGE16_MEM_ADR &ROM10F[0x00000] /* monitor 0010 + Focal 0010 */
 #define CPU_PAGE17_MEM_ADR &TESTS_ROM[0x00000] /* not used + Tests 0010 */
+
+#define CPU_PAGE18_MEM_ADR &DISK_327ROM[0x00000] /* not used + DISK_327.ROM */
 
 #define CPU_START_IO_ADR 0177600
 
@@ -142,7 +145,7 @@ typedef struct
 typedef struct
 {
     TCPU_State CPU_State;
-    uintptr_t MemPages [4];
+    uintptr_t MemPages [5];
     struct
     {
         uint32_t PrevT;

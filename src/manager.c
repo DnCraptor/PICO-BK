@@ -637,6 +637,8 @@ static void turn_usb_on(uint8_t cmd) {
 
 inline static const char* curr_mode() {
     switch (bk0010mode) {
+        case BK_FDD:
+            return "10+FDD";
         case BK_0010:
             return " 0010F";
         case BK_0010_01:
@@ -649,7 +651,7 @@ inline static const char* curr_mode() {
 
 static void switch_rom(uint8_t cmd) {
     bk0010mode++;
-    if (bk0010mode > BK_0011M) bk0010mode = BK_0010;
+    if (bk0010mode > BK_0011M) bk0010mode = BK_FDD;
     const char* cm = curr_mode();
     snprintf(fn_1_12_tbl     [10].name, BTN_WIDTH, cm);
     snprintf(fn_1_12_tbl_alt [10].name, BTN_WIDTH, cm);

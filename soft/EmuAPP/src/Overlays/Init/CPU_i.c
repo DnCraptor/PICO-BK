@@ -12,13 +12,17 @@ bk_mode_t bk0010mode = BK_0010_01;
 
 void init_rom() {
     switch (bk0010mode) {
+        case BK_FDD:
+            Device_Data.MemPages [2] = CPU_PAGE16_MEM_ADR; // monitor 8k + focal 8k (masked out)
+            Device_Data.MemPages [3] = CPU_PAGE18_MEM_ADR; // masked out 8k + fdd rom
+            break;
         case BK_0010:
-            Device_Data.MemPages [2] = CPU_PAGE16_MEM_ADR;
-            Device_Data.MemPages [3] = CPU_PAGE17_MEM_ADR;
+            Device_Data.MemPages [2] = CPU_PAGE16_MEM_ADR; // monitor 8k + focal 8k
+            Device_Data.MemPages [3] = CPU_PAGE17_MEM_ADR; // empty 8k + tests 7.5k
             break;
         case BK_0010_01:
-            Device_Data.MemPages [2] = CPU_PAGE14_MEM_ADR;
-            Device_Data.MemPages [3] = CPU_PAGE15_MEM_ADR;
+            Device_Data.MemPages [2] = CPU_PAGE14_MEM_ADR; // monitor 8k + basic 8k
+            Device_Data.MemPages [3] = CPU_PAGE15_MEM_ADR; // + basic 16k
             break;
         case BK_0011M:
             Device_Data.MemPages [2] = CPU_PAGE8_MEM_ADR; /* ROM Page 0 - bk11m_328_basic2.rom + bk11m_329_basic3.rom */
@@ -45,6 +49,7 @@ void AT_OVL CPU_Init (void)
     Device_Data.MemPages [0] = CPU_PAGE0_MEM_ADR; /* RAM Page 0 */
     Device_Data.MemPages [1] = CPU_PAGE5_MEM_ADR; /* RAM Page 4 video 0 */
     init_rom();
+    Device_Data.MemPages [4] = CPU_PAGE1_MEM_ADR; // temporary W/A for FDD case
 
     Device_Data.CPU_State.psw   = 0340;
     Device_Data.CPU_State.r [7] = Device_Data.SysRegs.RdReg177716 & 0177400;
