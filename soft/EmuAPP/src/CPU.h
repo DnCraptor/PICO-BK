@@ -10,10 +10,15 @@
 #include "Focal.h"
 #include "Tests.h"
 
-#ifdef BOOT_DEBUG
+#ifdef BOOT_DEBUG || RAM_DEBUG
 extern void logMsg(char* msg);
 #define printf(...) { char tmp[80]; snprintf(tmp, 80, __VA_ARGS__); logMsg(tmp); }
+#ifdef BOOT_DEBUG
 #define DEBUG_PRINT( X) printf X
+#endif
+#ifdef RAM_DEBUG
+#define RAM_PRINT( X) printf X
+#endif
 #else
 #define DEBUG_PRINT( X)
 #endif
@@ -36,36 +41,56 @@ extern bk_mode_t bk0010mode;
 void init_rom();
 
 #define RAM_PAGES_SIZE (sizeof RAM)
-#define CPU_PAGE0_MEM_ADR  &RAM[0x00000] /* RAM Page 0 0..40000 it was 0x3FFEC000 */
-#define CPU_PAGE1_MEM_ADR  &RAM[0x04000] /* RAM Page 1          it was 0x3FFF0000 */
-#define CPU_PAGE2_MEM_ADR  &RAM[0x14000] /* RAM Page 5          it was 0x40104000 */
-#define CPU_PAGE3_MEM_ADR  &RAM[0x18000] /* RAM Page 6          it was 0x40108000 */
-#define CPU_PAGE4_MEM_ADR  &RAM[0x1C000] /* RAM Page 7          it was 0x4010C000 - system */
-#define CPU_PAGE5_MEM_ADR  &RAM[0x10000] /* RAM Page 4          it was 0x3FFFC000 - video page 0 */
-#define CPU_PAGE6_MEM_ADR  &RAM[0x08000] /* RAM Page 2          it was 0x3FFF4000 - video page 1 */
-#define CPU_PAGE7_MEM_ADR  &RAM[0x0C000] /* RAM Page 3          it was 0x3FFF8000 */
-#define CPU_PAGE8_MEM_ADR  &ROM11[0x00000] /* ROM11 Page 0          it was 0x40250000 - bk11m_328_basic2.rom + bk11m_329_basic3.rom  */
-#define CPU_PAGE9_MEM_ADR  &ROM11[0x04000] /* ROM11 Page 1          it was 0x40254000 - bk11m_327_basic1.rom + bk11m_325_ext.rom */
-#define CPU_PAGE10_MEM_ADR 0 /* &DISK_327ROM[0x00000] /* КНГМД для БК-0011М // &FDDROM[0x00000] КНГМД для БК-0010 */
-#define CPU_PAGE11_MEM_ADR 0 /* ? */
-#define CPU_PAGE12_MEM_ADR &ROM11[0x08000] /* ROM11 Page 2          it was 0x40258000 - bk11m_324_bos.rom + bk11m_330_mstd.rom */
+#define CPU_PAGE0_1_MEM_ADR  &RAM[0x00000] /* RAM Page 0.1 0..40000 it was 0x3FFEC000 */
+#define CPU_PAGE0_2_MEM_ADR  &RAM[0x02000] /* RAM Page 0.2 0..40000 it was 0x3FFEC000 */
+#define CPU_PAGE1_1_MEM_ADR  &RAM[0x04000] /* RAM Page 1.1          it was 0x3FFF0000 */
+#define CPU_PAGE1_2_MEM_ADR  &RAM[0x06000] /* RAM Page 1.2          it was 0x3FFF0000 */
+#define CPU_PAGE2_1_MEM_ADR  &RAM[0x14000] /* RAM Page 5.1          it was 0x40104000 */
+#define CPU_PAGE2_2_MEM_ADR  &RAM[0x16000] /* RAM Page 5.2          it was 0x40104000 */
+#define CPU_PAGE3_1_MEM_ADR  &RAM[0x18000] /* RAM Page 6.1          it was 0x40108000 */
+#define CPU_PAGE3_2_MEM_ADR  &RAM[0x1A000] /* RAM Page 6.2          it was 0x40108000 */
+#define CPU_PAGE4_1_MEM_ADR  &RAM[0x1C000] /* RAM Page 7.1          it was 0x4010C000 - system */
+#define CPU_PAGE4_2_MEM_ADR  &RAM[0x1E000] /* RAM Page 7.2          it was 0x4010C000 - system */
+#define CPU_PAGE5_1_MEM_ADR  &RAM[0x10000] /* RAM Page 4.1          it was 0x3FFFC000 - video page 0 */
+#define CPU_PAGE5_2_MEM_ADR  &RAM[0x12000] /* RAM Page 4.2          it was 0x3FFFC000 - video page 0 */
+#define CPU_PAGE6_1_MEM_ADR  &RAM[0x08000] /* RAM Page 2.1          it was 0x3FFF4000 - video page 1 */
+#define CPU_PAGE6_2_MEM_ADR  &RAM[0x0A000] /* RAM Page 2.2          it was 0x3FFF4000 - video page 1 */
+#define CPU_PAGE7_1_MEM_ADR  &RAM[0x0C000] /* RAM Page 3.1          it was 0x3FFF8000 */
+#define CPU_PAGE7_2_MEM_ADR  &RAM[0x0E000] /* RAM Page 3.2          it was 0x3FFF8000 */
+#define CPU_PAGE8_1_MEM_ADR  &ROM11[0x00000] /* ROM11 Page 0.1          it was 0x40250000 - bk11m_328_basic2.rom */
+#define CPU_PAGE8_2_MEM_ADR  &ROM11[0x02000] /* ROM11 Page 0.2          it was 0x40250000 - bk11m_329_basic3.rom  */
+#define CPU_PAGE9_1_MEM_ADR  &ROM11[0x04000] /* ROM11 Page 1.1          it was 0x40254000 - bk11m_327_basic1.rom */
+#define CPU_PAGE9_2_MEM_ADR  &ROM11[0x06000] /* ROM11 Page 1.2          it was 0x40254000 - bk11m_325_ext.rom */
+#define CPU_PAGEA_1_MEM_ADR 0 /* &DISK_327ROM[0x00000] /* КНГМД для БК-0011М // &FDDROM[0x00000] КНГМД для БК-0010 */
+#define CPU_PAGEA_2_MEM_ADR 0 /* &DISK_327ROM[0x00000] /* КНГМД для БК-0011М // &FDDROM[0x00000] КНГМД для БК-0010 */
+#define CPU_PAGEB_1_MEM_ADR 0 /* ? */
+#define CPU_PAGEB_2_MEM_ADR 0 /* ? */
+#define CPU_PAGEC_1_MEM_ADR &ROM11[0x08000] /* ROM11 Page 2.1          it was 0x40258000 - bk11m_324_bos.rom */
+#define CPU_PAGEC_2_MEM_ADR &ROM11[0x0A000] /* ROM11 Page 2.2          it was 0x40258000 - bk11m_330_mstd.rom */
 
-#define CPU_PAGE14_MEM_ADR &ROM10[0x00000] /* monitor 0010-01 + ROM10 Basic 0010-01 */
-#define CPU_PAGE15_MEM_ADR &ROM10[0x04000] /* ... ROM10 0010-01 Basic */
+#define CPU_PAGE_0010_01_1_MEM_ADR &ROM10[0x00000] /* monitor 0010-01 */
+#define CPU_PAGE_0010_01_2_MEM_ADR &ROM10[0x02000] /* Basic 0010-01 */
+#define CPU_PAGE_0010_01_3_MEM_ADR &ROM10[0x04000] /* ... ROM10 0010-01 Basic */
+#define CPU_PAGE_0010_01_4_MEM_ADR &ROM10[0x06000] /* ... ROM10 0010-01 Basic */
 
-#define CPU_PAGE16_MEM_ADR &ROM10F[0x00000] /* monitor 0010 + Focal 0010 */
-#define CPU_PAGE17_MEM_ADR &TESTS_ROM[0x00000] /* not used + Tests 0010 */
+#define CPU_PAGE_0010_1_MEM_ADR &ROM10[0x00000] /* monitor 0010-01 */
+#define CPU_PAGE_0010_2_MEM_ADR &ROM10F[0x00000] /* Focal 0010 */
+#define CPU_PAGE_0010_3_MEM_ADR 0 /* not used */
+#define CPU_PAGE_0010_4_MEM_ADR &TESTS_ROM[0x00000] /* Tests 0010 */
 
-#define CPU_PAGE18_MEM_ADR &DISK_327ROM[0x00000] /* not used + DISK_327.ROM */
+#define CPU_PAGE_0010N_1_MEM_ADR &ROM10[0x00000] /* monitor 0010-01 */
+#define CPU_PAGE_0010N_2_MEM_ADR &RAM[0x04000] /* RAM 8k page 1.1 */
+#define CPU_PAGE_0010N_3_MEM_ADR &RAM[0x06000] /* RAM 8k page 1.2 */
+#define CPU_PAGE_0010N_4_MEM_ADR &DISK_327ROM[0x00000] /* DISK_327.ROM */
 
 #define CPU_START_IO_ADR 0177600
 
-#define CPU_PAGE0_MEM8  ((uint8_t  *) CPU_PAGE0_MEM_ADR)
-#define CPU_PAGE0_MEM16 ((uint16_t *) CPU_PAGE0_MEM_ADR)
-#define CPU_PAGE0_MEM32 ((uint32_t *) CPU_PAGE0_MEM_ADR)
-#define CPU_PAGE1_MEM32 ((uint32_t *) CPU_PAGE1_MEM_ADR)
-#define CPU_PAGE5_MEM32 ((uint32_t *) CPU_PAGE5_MEM_ADR)
-#define CPU_PAGE6_MEM32 ((uint32_t *) CPU_PAGE6_MEM_ADR)
+//#define CPU_PAGE0_MEM8  ((uint8_t  *) CPU_PAGE0_1_MEM_ADR)
+#define CPU_PAGE0_MEM16 ((uint16_t *) CPU_PAGE0_1_MEM_ADR)
+//#define CPU_PAGE0_MEM32 ((uint32_t *) CPU_PAGE0_1_MEM_ADR)
+//#define CPU_PAGE1_MEM32 ((uint32_t *) CPU_PAGE1_1_MEM_ADR)
+#define CPU_PAGE5_MEM32 ((uint32_t *) CPU_PAGE5_1_MEM_ADR)
+#define CPU_PAGE6_MEM32 ((uint32_t *) CPU_PAGE6_1_MEM_ADR)
 
 #define R     Device_Data.CPU_State.r
 #define PSW   Device_Data.CPU_State.psw
@@ -145,7 +170,7 @@ typedef struct
 typedef struct
 {
     TCPU_State CPU_State;
-    uintptr_t MemPages [5];
+    uintptr_t MemPages [8];
     struct
     {
         uint32_t PrevT;
@@ -204,8 +229,8 @@ extern const uint8_t CPU_timing_TwoOps_MOV [64];
 extern const uint8_t CPU_timing_TwoOps_CMP [64];
 extern const uint8_t CPU_timing_TwoOps_BIS [64];
 
-#define CPU_GET_PAGE_ADR_MEM16( Adr) ((uint16_t *) (Device_Data.MemPages [(Adr) >> 14] + ((Adr) & 0x3FFE)))
-#define CPU_GET_PAGE_ADR_MEM8(  Adr) ((uint8_t  *) (Device_Data.MemPages [(Adr) >> 14] + ((Adr) & 0x3FFF)))
+#define CPU_GET_PAGE_ADR_MEM16( Adr) ((uint16_t *) (Device_Data.MemPages [Adr >> 13] + (Adr & 0x1FFE)))
+#define CPU_GET_PAGE_ADR_MEM8(  Adr) ((uint8_t  *) (Device_Data.MemPages [Adr >> 13] + (Adr & 0x1FFF)))
 
 //#define MEM8  ((uint8_t  *) 0x3FFE8000)
 //#define MEM16 ((uint16_t *) 0x3FFE8000)

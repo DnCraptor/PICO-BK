@@ -270,35 +270,35 @@ inline static void if_video_mode() {
   }
   if (ctrlPressed || altPressed)
     if(f1Pressed) {
-        graphics_set_buffer(CPU_PAGE0_MEM_ADR, 512, 256);
+        graphics_set_buffer(CPU_PAGE0_1_MEM_ADR, 512, 256);
         if (altPressed) graphics_set_mode(BK_256x256x2);
         else graphics_set_mode(BK_512x256x1);
     } else if (f2Pressed) {
-        graphics_set_buffer(CPU_PAGE1_MEM_ADR, 512, 256);
+        graphics_set_buffer(CPU_PAGE1_1_MEM_ADR, 512, 256);
         if (altPressed) graphics_set_mode(BK_256x256x2);
         else graphics_set_mode(BK_512x256x1);
     } else if (f3Pressed) {
-        graphics_set_buffer(CPU_PAGE2_MEM_ADR, 512, 256);
+        graphics_set_buffer(CPU_PAGE2_1_MEM_ADR, 512, 256);
         if (altPressed) graphics_set_mode(BK_256x256x2);
         else graphics_set_mode(BK_512x256x1);
     } else if (f4Pressed) {
-        graphics_set_buffer(CPU_PAGE3_MEM_ADR, 512, 256);
+        graphics_set_buffer(CPU_PAGE3_1_MEM_ADR, 512, 256);
         if (altPressed) graphics_set_mode(BK_256x256x2);
         else graphics_set_mode(BK_512x256x1);
     } else if (f5Pressed) {
-        graphics_set_buffer(CPU_PAGE4_MEM_ADR, 512, 256);
+        graphics_set_buffer(CPU_PAGE4_1_MEM_ADR, 512, 256);
         if (altPressed) graphics_set_mode(BK_256x256x2);
         else graphics_set_mode(BK_512x256x1);
     } else if (f6Pressed) {
-        graphics_set_buffer(CPU_PAGE5_MEM_ADR, 512, 256);
+        graphics_set_buffer(CPU_PAGE5_1_MEM_ADR, 512, 256);
         if (altPressed) graphics_set_mode(BK_256x256x2);
         else graphics_set_mode(BK_512x256x1);
     } else if (f7Pressed) {
-        graphics_set_buffer(CPU_PAGE6_MEM_ADR, 512, 256);
+        graphics_set_buffer(CPU_PAGE6_1_MEM_ADR, 512, 256);
         if (altPressed) graphics_set_mode(BK_256x256x2);
         else graphics_set_mode(BK_512x256x1);
     } else if (f8Pressed) {
-        graphics_set_buffer(CPU_PAGE7_MEM_ADR, 512, 256);
+        graphics_set_buffer(CPU_PAGE7_1_MEM_ADR, 512, 256);
         if (altPressed) graphics_set_mode(BK_256x256x2);
         else graphics_set_mode(BK_512x256x1);
     }
@@ -541,7 +541,7 @@ static void m_move_file(uint8_t cmd) {
 
 static void reset(uint8_t cmd) {
     memset(RAM, 0, sizeof RAM);
-    graphics_set_page(CPU_PAGE5_MEM_ADR, 0);
+    graphics_set_page(CPU_PAGE5_1_MEM_ADR, 0);
     graphics_shift_screen((uint16_t)0330 | 0b01000000000);
     main_init();
     mark_to_exit_flag = true;
@@ -870,9 +870,11 @@ static inline bool run_bin(char* path) {
         return false;
     }
     // TODO: ensue it is ok for ever game
-    Device_Data.MemPages [0] = CPU_PAGE0_MEM_ADR; /* RAM Page 0 */
-    Device_Data.MemPages [1] = CPU_PAGE5_MEM_ADR; /* RAM Page 4 video 0 */
-    graphics_set_page(CPU_PAGE5_MEM_ADR, 0);
+    Device_Data.MemPages [0] = CPU_PAGE0_1_MEM_ADR; /* RAM Page 0.1 */
+    Device_Data.MemPages [1] = CPU_PAGE0_2_MEM_ADR; /* RAM Page 0.2 */
+    Device_Data.MemPages [2] = CPU_PAGE5_1_MEM_ADR; /* RAM Page 4.1 video 0 */
+    Device_Data.MemPages [3] = CPU_PAGE5_2_MEM_ADR; /* RAM Page 4.2 video 0 */
+    graphics_set_page(CPU_PAGE5_1_MEM_ADR, 0);
     graphics_shift_screen((uint16_t)0330 | 0b01000000000);
     snprintf(line, MAX_WIDTH, "offset = 0%o; len = %d", offset, len);
     const line_t lns[3] = {
@@ -900,7 +902,7 @@ static inline bool run_bin(char* path) {
         return false;
     }
     if (len2 != len) {
-        result = f_read(&file, CPU_PAGE5_MEM_ADR, len - len2, &bw);
+        result = f_read(&file, CPU_PAGE5_1_MEM_ADR, len - len2, &bw);
         // TODO: more than 1 page, error handling
     }
     f_close(&file);

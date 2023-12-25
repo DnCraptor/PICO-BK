@@ -13,28 +13,34 @@ bk_mode_t bk0010mode = BK_0010_01;
 void init_rom() {
     switch (bk0010mode) {
         case BK_FDD:
-            Device_Data.MemPages [2] = CPU_PAGE16_MEM_ADR; // monitor 8k + focal 8k (masked out)
-            Device_Data.MemPages [3] = CPU_PAGE18_MEM_ADR; // masked out 8k + fdd rom
+            Device_Data.MemPages [4] = CPU_PAGE_0010N_1_MEM_ADR; // monitor 8k
+            Device_Data.MemPages [5] = CPU_PAGE_0010N_2_MEM_ADR; // RAM 8k from 0011 page 1.1
+            Device_Data.MemPages [6] = CPU_PAGE_0010N_3_MEM_ADR; // RAM 8k from 0011 page 1.2
+            Device_Data.MemPages [7] = CPU_PAGE_0010N_4_MEM_ADR; // fdd rom
             break;
         case BK_0010:
-            Device_Data.MemPages [2] = CPU_PAGE16_MEM_ADR; // monitor 8k + focal 8k
-            Device_Data.MemPages [3] = CPU_PAGE17_MEM_ADR; // empty 8k + tests 7.5k
+            Device_Data.MemPages [4] = CPU_PAGE_0010_1_MEM_ADR; // monitor 8k
+            Device_Data.MemPages [5] = CPU_PAGE_0010_2_MEM_ADR; // focal 8k
+            Device_Data.MemPages [6] = CPU_PAGE_0010_3_MEM_ADR; // empty 8k
+            Device_Data.MemPages [7] = CPU_PAGE_0010_4_MEM_ADR; // tests 7.5k
             break;
         case BK_0010_01:
-            Device_Data.MemPages [2] = CPU_PAGE14_MEM_ADR; // monitor 8k + basic 8k
-            Device_Data.MemPages [3] = CPU_PAGE15_MEM_ADR; // + basic 16k
+            Device_Data.MemPages [4] = CPU_PAGE_0010_01_1_MEM_ADR; // monitor 8k
+            Device_Data.MemPages [5] = CPU_PAGE_0010_01_2_MEM_ADR; // basic 8k
+            Device_Data.MemPages [6] = CPU_PAGE_0010_01_3_MEM_ADR; // + basic 8k
+            Device_Data.MemPages [7] = CPU_PAGE_0010_01_4_MEM_ADR; // + basic 8k
             break;
         case BK_0011M:
-            Device_Data.MemPages [2] = CPU_PAGE8_MEM_ADR; /* ROM Page 0 - bk11m_328_basic2.rom + bk11m_329_basic3.rom */
-            Device_Data.MemPages [3] = CPU_PAGE12_MEM_ADR; /* ROM Page 2 - bk11m_324_bos.rom + bk11m_330_mstd.rom */
+            Device_Data.MemPages [4] = CPU_PAGE8_1_MEM_ADR; /* ROM Page 0.1 - bk11m_328_basic2.rom */
+            Device_Data.MemPages [5] = CPU_PAGE8_2_MEM_ADR; /* ROM Page 0.2 - bk11m_329_basic3.rom */
+            Device_Data.MemPages [6] = CPU_PAGEC_1_MEM_ADR; /* ROM Page 2.1 - bk11m_324_bos.rom */
+            Device_Data.MemPages [7] = CPU_PAGEC_2_MEM_ADR; /* ROM Page 2.2 - bk11m_330_mstd.rom */
             break;
     }
 }
 
-void AT_OVL CPU_Init (void)
-{
+void AT_OVL CPU_Init (void) {
     memset (&Device_Data, 0, sizeof (Device_Data));
-
 //  Device_Data.SysRegs.Reg177660   = 0;
 //  Device_Data.SysRegs.RdReg177662 = 0;
     Device_Data.SysRegs.Reg177664   = 01330;
@@ -70,10 +76,11 @@ void AT_OVL CPU_Init (void)
     Device_Data.SysRegs.WrReg177130 = 0;
     Device_Data.SysRegs.Reg177132   = 0;
 
-    Device_Data.MemPages [0] = CPU_PAGE0_MEM_ADR; /* RAM Page 0 */
-    Device_Data.MemPages [1] = CPU_PAGE5_MEM_ADR; /* RAM Page 4 video 0 */
+    Device_Data.MemPages [0] = CPU_PAGE0_1_MEM_ADR; /* RAM Page 0.1 */
+    Device_Data.MemPages [1] = CPU_PAGE0_2_MEM_ADR; /* RAM Page 0.2 */
+    Device_Data.MemPages [2] = CPU_PAGE5_1_MEM_ADR; /* RAM Page 4.1 video 0 */
+    Device_Data.MemPages [3] = CPU_PAGE5_2_MEM_ADR; /* RAM Page 4.2 video 0 */
     init_rom();
-    Device_Data.MemPages [4] = CPU_PAGE1_MEM_ADR; // temporary W/A for FDD case
 
     Device_Data.CPU_State.psw   = 0340;
     Device_Data.CPU_State.r [7] = Device_Data.SysRegs.RdReg177716 & 0177400;
