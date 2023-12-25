@@ -26,6 +26,7 @@ static volatile bool plusPressed = false;
 static volatile bool minusPressed = false;
 static volatile bool ctrlPressed = false;
 static volatile bool altPressed = false;
+static volatile bool delPressed = false;
 static volatile bool f1Pressed = false;
 static volatile bool f2Pressed = false;
 static volatile bool f3Pressed = false;
@@ -139,7 +140,21 @@ static file_panel_desc_t right_panel = {
 static volatile bool left_panel_make_active = true;
 static file_panel_desc_t* psp = &left_panel;
 
+static bool mark_to_exit_flag = false;
+static void mark_to_exit(uint8_t cmd) {
+    mark_to_exit_flag = true;
+}
+
 static inline void fill_panel(file_panel_desc_t* p);
+
+static void reset(uint8_t cmd) {
+    f12Pressed = false;
+    memset(RAM, 0, sizeof RAM);
+    graphics_set_page(CPU_PAGE5_MEM_ADR, 0);
+    graphics_shift_screen((uint16_t)0330 | 0b01000000000);
+    main_init();
+    mark_to_exit_flag = true;
+}
 
 inline static void swap_drive_message() {
     save_video_ram();
@@ -270,8 +285,16 @@ inline static void if_video_mode() {
     if (f11Pressed) {
       f11Pressed = false;
       pallete_mask--;
-      if (pallete_mask == 0) pallete_mask = 3;
+      if (pallete_mask <= 0) pallete_mask = 3;
     }
+    if (f10Pressed) {
+      f10Pressed = false;
+      graphics_inc_palleter_offset();
+    }
+  }
+  if (ctrlPressed && altPressed && delPressed) {
+      reset(11);
+      ctrlPressed = altPressed = delPressed = false;
   }
   if (ctrlPressed || altPressed)
     if(f1Pressed) {
@@ -322,11 +345,6 @@ static void redraw_window() {
     fill_panel(&right_panel);
     draw_cmd_line(0, CMD_Y_POS, 0);
     bottom_line();
-}
-
-static bool mark_to_exit_flag = false;
-void mark_to_exit(uint8_t cmd) {
-    mark_to_exit_flag = true;
 }
 
 static void turn_usb_on(uint8_t cmd);
@@ -542,14 +560,6 @@ static void m_move_file(uint8_t cmd) {
         }
     }
     redraw_window();
-}
-
-static void reset(uint8_t cmd) {
-    memset(RAM, 0, sizeof RAM);
-    graphics_set_page(CPU_PAGE5_MEM_ADR, 0);
-    graphics_shift_screen((uint16_t)0330 | 0b01000000000);
-    main_init();
-    mark_to_exit_flag = true;
 }
 
 static fn_1_12_tbl_t fn_1_12_tbl = {
@@ -1389,6 +1399,10 @@ bool handleScancode(uint32_t ps2scancode) { // core 1
         f11Pressed = false; break;
       case 0xD8: // F12
         f12Pressed = false; break;
+      case 0x53: // Del down
+        delPressed = true; break;
+      case 0xD3: // Del up
+        delPressed = false; break;
       case 0x0F:
         tabPressed = true;
         break;

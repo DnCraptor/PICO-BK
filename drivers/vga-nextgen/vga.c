@@ -164,6 +164,11 @@ inline static void sound_callback() {
 }
 #endif
 
+void graphics_inc_palleter_offset() {
+    graphics_pallette_idx++;
+    if (graphics_pallette_idx > 0b1111) graphics_pallette_idx = 0;
+}
+
 inline static void dma_handler_VGA_impl() {
     dma_hw->ints0 = 1u << dma_chan_ctrl;
     static uint32_t frame_number = 0;

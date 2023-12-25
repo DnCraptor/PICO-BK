@@ -18,6 +18,8 @@ extern volatile uint16_t true_covox;
 extern bool color_mode;
 extern int pallete_mask;
 
+void graphics_inc_palleter_offset();
+
 void graphics_init();
 
 void graphics_set_buffer(uint8_t *buffer, uint16_t width, uint16_t height);
