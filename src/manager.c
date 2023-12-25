@@ -150,7 +150,7 @@ static inline void fill_panel(file_panel_desc_t* p);
 static void reset(uint8_t cmd) {
     f12Pressed = false;
     memset(RAM, 0, sizeof RAM);
-    graphics_set_page(CPU_PAGE5_MEM_ADR, 0);
+    graphics_set_page(CPU_PAGE5_MEM_ADR, bk0010mode == BK_0011M ? 15 : 0);
     graphics_shift_screen((uint16_t)0330 | 0b01000000000);
     main_init();
     mark_to_exit_flag = true;
@@ -329,6 +329,9 @@ inline static void if_video_mode() {
         graphics_set_buffer(CPU_PAGE7_MEM_ADR, 512, 256);
         if (altPressed) graphics_set_mode(BK_256x256x2);
         else graphics_set_mode(BK_512x256x1);
+    } else if (f10Pressed) {
+        if (altPressed) graphics_set_pallette_idx(0);
+        else graphics_set_pallette_idx(15);
     }
 }
 
@@ -887,7 +890,7 @@ static inline bool run_bin(char* path) {
     // TODO: ensue it is ok for ever game
     Device_Data.MemPages [0] = CPU_PAGE0_MEM_ADR; /* RAM Page 0 */
     Device_Data.MemPages [1] = CPU_PAGE5_MEM_ADR; /* RAM Page 4 video 0 */
-    graphics_set_page(CPU_PAGE5_MEM_ADR, 0);
+    graphics_set_page(CPU_PAGE5_MEM_ADR, bk0010mode == BK_0011M ? 15 : 0);
     graphics_shift_screen((uint16_t)0330 | 0b01000000000);
     snprintf(line, MAX_WIDTH, "offset = 0%o; len = %d", offset, len);
     const line_t lns[3] = {

@@ -49,7 +49,7 @@ static int dma_chan_ctrl;
 static int dma_chan;
 
 static uint8_t* graphics_buffer;
-static uint8_t graphics_pallette_idx = 0b1111;
+static uint8_t graphics_pallette_idx = 0; // 0b1111;
 static uint8_t shift_y = 0330;
 static uint graphics_buffer_width = 0;
 static uint graphics_buffer_height = 0;
@@ -496,6 +496,10 @@ enum graphics_mode_t graphics_set_mode(enum graphics_mode_t mode) {
 
 void graphics_set_page(uint8_t* buffer, uint8_t pallette_idx) {
     graphics_buffer = buffer;
+    graphics_pallette_idx = pallette_idx;
+};
+
+void graphics_set_pallette_idx(uint8_t pallette_idx) {
     graphics_pallette_idx = pallette_idx;
 };
 

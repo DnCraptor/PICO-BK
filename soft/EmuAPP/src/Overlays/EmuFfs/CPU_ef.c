@@ -222,6 +222,7 @@ TCPU_Arg AT_OVL CPU_WriteW (TCPU_Arg Adr, uint_fast16_t Word)
             break;
         case (0177662 >> 1):
             Device_Data.SysRegs.WrReg177662 = (uint16_t) Word;
+            // TODO: if 0011
             graphics_set_page(Word & 0100000 ? CPU_PAGE6_MEM_ADR : CPU_PAGE5_MEM_ADR, (Word >> 8) & 15);
             break;
         case (0177664 >> 1):
@@ -330,6 +331,7 @@ TCPU_Arg AT_OVL CPU_WriteB (TCPU_Arg Adr, uint_fast8_t Byte)
             break;
         case (0177662 >> 1):
             Device_Data.SysRegs.WrReg177662 = (uint16_t) Word;
+            // TODO: if 0011 ?
             graphics_set_page(Word & 0100000 ? CPU_PAGE6_MEM_ADR : CPU_PAGE5_MEM_ADR, (Word >> 8) & 15);
             break;
         case (0177664 >> 1):

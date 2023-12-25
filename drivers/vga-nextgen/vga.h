@@ -51,3 +51,5 @@ bool save_video_ram();
 bool restore_video_ram();
 
 void graphics_set_page(uint8_t* buffer, uint8_t pallette_idx);
+
+void graphics_set_pallette_idx(uint8_t pallette_idx);
