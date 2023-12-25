@@ -179,13 +179,19 @@ TCPU_Arg AT_OVL CPU_WriteW (TCPU_Arg Adr, uint_fast16_t Word)
         Device_Data.CPU_State.r [CPU_GET_ARG_REG_INDEX (Adr)] = (uint16_t) Word;
         return CPU_ARG_WRITE_OK;
     }
-    if (Adr < 0160000) { // it was 0140000
-        uintptr_t Page;
-        if (Adr >= 0120000 && bk0010mode == BK_FDD) {
-            Page = Device_Data.MemPages [4]; // W/A
-        } else {
-            Page = Device_Data.MemPages [(Adr) >> 14];
+    if (bk0010mode == BK_FDD) {
+        if (Adr < 0160000) {
+            uintptr_t Page = Device_Data.MemPages[(Adr >= 0120000) ? 4 : ((Adr) >> 14)];
+            DEBUG_PRINT(("CPU_WriteW(%oo, %oo) Page: %08X (#%d)", Adr, Word, Page, (Adr) >> 14));
+            if (Page && Page < CPU_PAGE0_MEM_ADR + RAM_PAGES_SIZE) {
+                AnyMem_w_u16 ((uint16_t *) (Page + ((Adr) & 0x3FFE)), Word);
+                return CPU_ARG_WRITE_OK;
+            }
+            return CPU_ARG_WRITE_ERR;
         }
+    }
+    else if (Adr < 0140000) {
+        uintptr_t Page = Device_Data.MemPages [(Adr) >> 14];
         DEBUG_PRINT(("CPU_WriteW(%oo, %oo) Page: %08X (#%d)", Adr, Word, Page, (Adr) >> 14));
         if (Page && Page < CPU_PAGE0_MEM_ADR + RAM_PAGES_SIZE) {
             AnyMem_w_u16 ((uint16_t *) (Page + ((Adr) & 0x3FFE)), Word);
@@ -281,13 +287,18 @@ TCPU_Arg AT_OVL CPU_WriteB (TCPU_Arg Adr, uint_fast8_t Byte)
 
         return CPU_ARG_WRITE_OK;
     }
-    if (Adr < 0160000) { // was 0140000
-        uintptr_t Page;
-        if (Adr >= 0120000 && bk0010mode == BK_FDD) {
-            Page = Device_Data.MemPages [4]; // W/A
-        } else {
-            Page = Device_Data.MemPages [(Adr) >> 14];
-        }
+    if (bk0010mode == BK_FDD) {
+        if (Adr < 0160000) {
+            uintptr_t Page = Device_Data.MemPages[(Adr >= 0120000) ? 4 : (Adr >> 14)];
+            if (Page && Page < CPU_PAGE0_MEM_ADR + RAM_PAGES_SIZE) {
+                AnyMem_w_u8 ((uint8_t *) (Page + ((Adr) & 0x3FFF)), Byte);
+                return CPU_ARG_WRITE_OK;
+            }
+            return CPU_ARG_WRITE_ERR;
+        }       
+    }
+    if (Adr < 0140000) {
+        uintptr_t Page = Device_Data.MemPages [(Adr) >> 14];
         if (Page && Page < CPU_PAGE0_MEM_ADR + RAM_PAGES_SIZE) {
             AnyMem_w_u8 ((uint8_t *) (Page + ((Adr) & 0x3FFF)), Byte);
             return CPU_ARG_WRITE_OK;
