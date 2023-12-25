@@ -15,6 +15,7 @@
 #include "pico-vision.h"
 
 bool color_mode = true;
+int pallete_mask = 3; // 11 - 2 bits
 
 uint16_t pio_program_VGA_instructions[] = {
     //     .wrap_target
@@ -339,11 +340,13 @@ inline static void dma_handler_VGA_impl() {
         }
         case BK_256x256x2: {
             current_palette += graphics_pallette_idx * 4;
+            register uint16_t m = (3 << 6) | (pallete_mask << 4) | (pallete_mask << 2) | pallete_mask; // TODO: outside
+            m |= m << 8;
             //2bit buf
             for (int x = 256 / 4; x--;) {
                 register uint8_t i = *input_buffer_8bit++;
                 for (register uint8_t shift = 0; shift < 8; shift += 2) {
-                    register uint8_t t = current_palette[(i >> shift) & 3];
+                    register uint8_t t = current_palette[(i >> shift) & 3] & m;
                     *output_buffer_8bit++ = t;
                     *output_buffer_8bit++ = t;
                     *output_buffer_8bit++ = t;

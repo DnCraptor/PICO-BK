@@ -267,6 +267,11 @@ inline static void if_video_mode() {
       color_mode = !color_mode;
       graphics_set_mode(color_mode ? BK_256x256x2 : BK_512x256x1);
     }
+    if (f11Pressed) {
+      f11Pressed = false;
+      pallete_mask--;
+      if (pallete_mask == 0) pallete_mask = 3;
+    }
   }
   if (ctrlPressed || altPressed)
     if(f1Pressed) {
