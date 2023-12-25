@@ -201,11 +201,19 @@ TCPU_Arg AT_OVL CPU_WriteW (TCPU_Arg Adr, uint_fast16_t Word)
     }
     switch (Adr >> 1) {
         case (0177130 >> 1):
-            Device_Data.SysRegs.WrReg177130 = (uint16_t) Word;
+            if (bk0010mode == BK_FDD) {
+                Device_Data.SysRegs.WrReg177130 = (uint16_t) Word;
+            } else {
+                return CPU_ARG_WRITE_ERR;
+            }
             // TODO:
             break;
         case (0177132 >> 1):
-            Device_Data.SysRegs.Reg177132 = (uint16_t) Word;
+            if (bk0010mode == BK_FDD) {
+                Device_Data.SysRegs.Reg177132 = (uint16_t) Word;
+            } else {
+                return CPU_ARG_WRITE_ERR;
+            }
             // TODO:
             break;
         case (0177660 >> 1):
