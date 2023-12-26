@@ -98,7 +98,7 @@ extern volatile uint8_t snd_divider;
 extern volatile uint8_t dss_divider;
 extern volatile uint8_t adlib_divider;
 extern volatile uint8_t tandy3v_divider;
-extern volatile uint8_t covox_divider;
+extern volatile int8_t covox_multiplier;
 
 inline static void sound_callback() {
     static uint32_t dss_cycles_per_vga = 0;
@@ -138,8 +138,9 @@ inline static void sound_callback() {
 #endif
 #ifdef COVOX
     if (is_covox_on && true_covox) {
-        register uint8_t d = covox_divider;
-        out += (int16_t)((((int32_t)true_covox - (int32_t)0x0080) << 7) >> d); // 8 unsigned on LPT2 mix to signed 16
+        register uint32_t d = covox_multiplier;
+        register int32_t v = ((int32_t)true_covox - (int32_t)0x80) << d;
+        out += (int16_t)v; // 8 unsigned to signed 16
     }
 #endif
 #ifdef TANDY3V

@@ -68,7 +68,7 @@ volatile uint8_t cms_divider = 6;
 volatile uint8_t dss_divider = 0;
 volatile uint8_t adlib_divider = 0;
 volatile uint8_t tandy3v_divider = 8;
-volatile uint8_t covox_divider = 0;
+volatile int8_t covox_multiplier = 7;
 
 // TODO: cleanup
 volatile bool is_xms_on = false;
@@ -1004,10 +1004,12 @@ const static char* cms_name = "Game Blaster (Creative Music System)";
 
 static inline void if_sound_control() { // core #0
     if (ctrlPressed && plusPressed) {
-        covox_divider -= covox_divider == 0 ? 0 : 1;
+        covox_multiplier++;
+        if(covox_multiplier > 8) covox_multiplier = 8;
         plusPressed = false;
     } else if (ctrlPressed && minusPressed) {
-        covox_divider += covox_divider >= 16 ? 0 : 1;
+        covox_multiplier--;
+        if(covox_multiplier < 0) covox_multiplier = 0;
         minusPressed = false;
     }
 }
@@ -1203,16 +1205,20 @@ bool handleScancode(uint32_t ps2scancode) { // core 1
       case 0x9C:
         enterPressed = false;
         break;
-      case 0x4A:
+      case 0x0C: // -
+      case 0x4A: // numpad -
         minusPressed = true;
         break;
-      case 0xCA:
+      case 0x8C: // -
+      case 0xCA: // numpad 
         minusPressed = false;
         break;
-      case 0x4E:
+      case 0x0D: // +=
+      case 0x4E: // numpad +
         plusPressed = true;
         break;
-      case 0xCE:
+      case 0x8D: // += 82?
+      case 0xCE: // numpad +
         plusPressed = false;
         break;
       case 0x1D:
