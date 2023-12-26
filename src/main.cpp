@@ -3,7 +3,6 @@ extern "C" {
 #include "manager.h"
 }
 
-#if PICO_ON_DEVICE
 #include <pico/time.h>
 #include <pico/multicore.h>
 #include <hardware/pwm.h>
@@ -23,18 +22,6 @@ extern "C" {
 #include "main_i.h"
 #include "emu_e.h"
 }
-
-#else
-#define SDL_MAIN_HANDLED
-
-#include "SDL2/SDL.h"
-#include "../drivers/vga-nextgen/fnt8x16.h"
-
-SDL_Window* window;
-
-SDL_Surface* screen;
-volatile uint16_t true_covox = 0;
-#endif
 
 bool PSRAM_AVAILABLE = false;
 bool SD_CARD_AVAILABLE = false;

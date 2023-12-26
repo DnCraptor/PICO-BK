@@ -51,9 +51,11 @@ void ejectdisk(uint8_t drivenum) {
     }
 }
 
+#if KNGMD
 void dsk_start_engine(uint8_t drivenum) {
 
 }
+#endif
 
 static _FILE* actualDrive(uint8_t drivenum) {
     return (drivenum > 1) ? &fileC : ( drivenum == 0 ? &fileA : &fileB );

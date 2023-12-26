@@ -149,6 +149,7 @@ static inline void fill_panel(file_panel_desc_t* p);
 
 static void reset(uint8_t cmd) {
     f12Pressed = false;
+    tormoz = 6;
     memset(RAM, 0, sizeof RAM);
     graphics_set_page(CPU_PAGE5_MEM_ADR, bk0010mode == BK_0011M ? 15 : 0);
     graphics_shift_screen((uint16_t)0330 | 0b01000000000);
@@ -1002,86 +1003,12 @@ const static char* ss_name = "Whole Sound System";
 const static char* cms_name = "Game Blaster (Creative Music System)";
 
 static inline void if_sound_control() { // core #0
-    if (ctrlPressed && tabPressed) {
-        if (aPressed) {
-            swap_sound_state_message(&is_adlib_on, adlib_name, 'A');
-        } else if (cPressed) {
-            char tmp[80]; snprintf(tmp, 80, covox_name_template, '1');
-            swap_sound_state_message(&is_covox_on, tmp, 'C');
-        } else if (dPressed) {
-            char tmp[80]; snprintf(tmp, 80, dss_name_template, '2');
-            swap_sound_state_message(&is_dss_on, tmp, 'D');
-        } else if (tPressed) {
-            swap_sound_state_message(&is_tandy3v_on, tandy3v_name, 'T');
-        } else if (gPressed) {
-            swap_sound_state_message(&is_game_balaster_on, cms_name, 'G');
-        } else if (sPressed) {
-            swap_sound_state_message(&is_sound_on, ss_name, 'S');
-        } else if (xPressed) {
-            swap_sound_state_message(&is_xms_on, "Extended Memory Manager (XMS)", 'X');
-        } else if (ePressed) {
-            swap_sound_state_message(&is_ems_on, "Expanded Memory Manager (EMS)", 'E');
-        } else if (uPressed) {
-            swap_sound_state_message(&is_umb_on, "Upper Memory Blocks Manager (UMB)", 'U');
-        } else if (hPressed) {
-            swap_sound_state_message(&is_hma_on, "Hight Memory Address Manager (HMA)", 'H');
-        }
-    } else if (ctrlPressed && plusPressed) {
-        if (aPressed) {
-            adlib_divider -= adlib_divider == 0 ? 0 : 1;
-            plusPressed = false;
-            level_state_message(adlib_divider, adlib_name);
-        } else if (sPressed) {
-            snd_divider -= snd_divider == 0 ? 0 : 1;
-            plusPressed = false;
-            level_state_message(snd_divider, ss_name);
-        } else if (tPressed) {
-            tandy3v_divider -= tandy3v_divider == 0 ? 0 : 1;
-            plusPressed = false;
-            level_state_message(tandy3v_divider, tandy3v_name);
-        } else if (cPressed) {
-            covox_divider -= covox_divider == 0 ? 0 : 1;
-            plusPressed = false;
-            char tmp[80]; snprintf(tmp, 80, covox_name_template, '1');
-            level_state_message(covox_divider, tmp);
-        } else if (dPressed) {
-            dss_divider -= dss_divider == 0 ? 0 : 1;
-            plusPressed = false;
-            char tmp[80]; snprintf(tmp, 80, dss_name_template, '2');
-            level_state_message(dss_divider, tmp);
-        } else if (gPressed) {
-            cms_divider -= cms_divider == 0 ? 0 : 1;
-            plusPressed = false;
-            level_state_message(cms_divider, cms_name);
-        }
+    if (ctrlPressed && plusPressed) {
+        covox_divider -= covox_divider == 0 ? 0 : 1;
+        plusPressed = false;
     } else if (ctrlPressed && minusPressed) {
-        if (aPressed) {
-            adlib_divider += adlib_divider >= 16 ? 0 : 1;
-            minusPressed = false;
-            level_state_message(adlib_divider, adlib_name);
-        } else if (sPressed) {
-            snd_divider += snd_divider >= 12 ? 0 : 1;
-            minusPressed = false;
-            level_state_message(snd_divider, ss_name);
-        } else if (tPressed) {
-            tandy3v_divider += tandy3v_divider >= 16 ? 0 : 1;
-            minusPressed = false;
-            level_state_message(tandy3v_divider, tandy3v_name);
-        } else if (cPressed) {
-            covox_divider += covox_divider >= 16 ? 0 : 1;
-            minusPressed = false;
-            char tmp[80]; snprintf(tmp, 80, covox_name_template, '1');
-            level_state_message(covox_divider, tmp);
-        } else if (dPressed) {
-            dss_divider += dss_divider >= 16 ? 0 : 1;
-            minusPressed = false;
-            char tmp[80]; snprintf(tmp, 80, dss_name_template, '2');
-            level_state_message(dss_divider, tmp);
-        } else if (gPressed) {
-            cms_divider += cms_divider >= 16 ? 0 : 1;
-            minusPressed = false;
-            level_state_message(cms_divider, cms_name);
-        }
+        covox_divider += covox_divider >= 16 ? 0 : 1;
+        minusPressed = false;
     }
 }
 

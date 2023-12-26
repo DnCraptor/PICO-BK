@@ -8,7 +8,11 @@
 
 #define AT_OVL __attribute__((section(".ovl3_i.text")))
 
+#if DSK_DEBUG
 bk_mode_t bk0010mode = BK_FDD;
+#else
+bk_mode_t bk0010mode = BK_0010_01;
+#endif
 
 void init_rom() {
     switch (bk0010mode) {

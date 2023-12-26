@@ -24,6 +24,7 @@ extern void logMsg(char* msg);
 #endif
 #else
 #define DEBUG_PRINT( X)
+#define DSK_PRINT( X)
 #endif
 #ifdef KBD_DEBUG
 extern void logMsg(char* msg);
