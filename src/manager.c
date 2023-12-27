@@ -580,7 +580,7 @@ static void m_info(uint8_t cmd) {
         { 1, " - F11          - adjust brightness" },
         { 1, " - F12          - Switch B/W 512x256 to Color 256x256 and back" },
         { 1, " - Alt + F1..F8 - fast review RAM pages in color representation" },
-        { 1, " - Ctrl+ F1..F8- fast review RAM pages in B/W representation" },
+        { 1, " - Ctrl+ F1..F8 - fast review RAM pages in B/W representation" },
         { 1, " - Ctrl + F11   - slower emulation (default emulation is about to BK on 3 MHz)" },
         { 1, " - Ctrl + F12   - faster emulation" },
         { 1, " - Ctrl + \"+\"   - increase volume" },
