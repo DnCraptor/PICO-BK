@@ -589,6 +589,9 @@ static void m_info(uint8_t cmd) {
     };
     lines_t lines = { 33, 1, plns };
     draw_box(3, 2, MAX_WIDTH - 10, MAX_HEIGHT - 10, "Help", &lines);
+    int t = lastCleanableScanCode;
+    while(t == lastCleanableScanCode) { }
+    redraw_window();
 }
 
 static fn_1_12_tbl_t fn_1_12_tbl = {
