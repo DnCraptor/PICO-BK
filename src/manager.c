@@ -57,24 +57,10 @@ static volatile bool ePressed = false;
 static volatile bool uPressed = false;
 static volatile bool hPressed = false;
 
-volatile bool is_adlib_on = false;
 volatile bool is_covox_on = true;
-volatile bool is_game_balaster_on = false;
-volatile bool is_tandy3v_on = false;
-volatile bool is_dss_on = false;
 volatile bool is_sound_on = true;
 volatile uint8_t snd_divider = 0;
-volatile uint8_t cms_divider = 6;
-volatile uint8_t dss_divider = 0;
-volatile uint8_t adlib_divider = 0;
-volatile uint8_t tandy3v_divider = 8;
 volatile int8_t covox_multiplier = 7;
-
-// TODO: cleanup
-volatile bool is_xms_on = false;
-volatile bool is_ems_on = true;
-volatile bool is_umb_on = true;
-volatile bool is_hma_on = true;
 
 bool already_swapped_fdds = false;
 volatile bool manager_started = false;
@@ -106,10 +92,10 @@ static uint8_t FIRST_FILE_LINE_ON_PANEL_Y = PANEL_TOP_Y + 1;
 static uint8_t LAST_FILE_LINE_ON_PANEL_Y = PANEL_LAST_Y - 1;
 
 typedef struct {
-	  FSIZE_t fsize;			/* File size */
-	  WORD    fdate;			/* Modified date */
-	  WORD    ftime;			/* Modified time */
-	  BYTE    fattrib;		/* File attribute */
+	  FSIZE_t fsize;   /* File size */
+	  WORD    fdate;   /* Modified date */
+	  WORD    ftime;   /* Modified time */
+	  BYTE    fattrib; /* File attribute */
     char    name[MAX_WIDTH >> 1];
 } file_info_t;
 
@@ -566,8 +552,47 @@ static void m_move_file(uint8_t cmd) {
     redraw_window();
 }
 
+static void m_info(uint8_t cmd) {
+    line_t plns[33] = {
+        { 1, "Key mapping BK-0011M:" },
+        { 1, " - Alt   + \"key\"    - AP2" },
+        { 1, " - Shift + \"key\"  - register up/down" },
+        { 1, " - Ctrl  + \"key\"   - CU" },
+        { 1, " - Caps Lock      - lock up/down register" },
+        { 1, " - left  Win      - RUS" },
+        { 1, " - right Win      - LAT" },
+        { 1, " - Pause          - STOP" },
+        { 1, " - F1             - POVTOR" },
+        { 1, " - F2             - KT" },
+        { 1, " - F3             - =|=>|" },
+        { 1, " - F4             - |<==" },
+        { 1, " - F5             - |==>" },
+        { 1, " - F6             - IND SU" },
+        { 1, " - F7             - BLOCK REDACT" },
+        { 1, " - F8             - STEP" },
+        { 1, " - F9             - SBROS" },
+        { 1, " " },
+        { 1, "Emulation hot keys:" },
+        { 1, " - Ctrl+Alt+Del - Reset CPU, RAM clenup, set default pages, deafult speed, init system registers" },
+        { 1, " - F10          - cyclic change pallete" },
+        { 1, " - Alt + F10    - default BK-0010 pallete" },
+        { 1, " - Ctrl + F10   - default BK-0011 pallete" },
+        { 1, " - F11          - adjust brightness" },
+        { 1, " - F12          - Switch B/W 512x256 to Color 256x256 and back" },
+        { 1, " - Alt + F1..F8 - fast review RAM pages in color representation" },
+        { 1, " - Ctrl+ F1..F8- fast review RAM pages in B/W representation" },
+        { 1, " - Ctrl + F11   - slower emulation (default emulation is about to BK on 3 MHz)" },
+        { 1, " - Ctrl + F12   - faster emulation" },
+        { 1, " - Ctrl + \"+\"   - increase volume" },
+        { 1, " - Ctrl + \"-\"   - decrease volume" },
+        { 1, " - Esc          - go to File Manager" },
+    };
+    lines_t lines = { 33, 1, plns };
+    draw_box(3, 2, MAX_WIDTH - 10, MAX_HEIGHT - 10, "Help", &lines);
+}
+
 static fn_1_12_tbl_t fn_1_12_tbl = {
-    ' ', '1', " Help ", do_nothing,
+    ' ', '1', " Help ", m_info,
     ' ', '2', " Menu ", do_nothing,
     ' ', '3', " View ", do_nothing,
     ' ', '4', " Edit ", do_nothing,
@@ -994,13 +1019,6 @@ static inline void enter_pressed() {
         }
     }
 }
-
-const static char* adlib_name = "AdLib emulation";
-const static char* covox_name_template = "COVOX on LPT%c";
-const static char* dss_name_template = "Digital Sound Source on LPT%c";
-const static char* tandy3v_name = "Tandy 3-voices music device";
-const static char* ss_name = "Whole Sound System";
-const static char* cms_name = "Game Blaster (Creative Music System)";
 
 static inline void if_sound_control() { // core #0
     if (ctrlPressed && plusPressed) {
