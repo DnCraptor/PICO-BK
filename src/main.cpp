@@ -75,6 +75,8 @@ void __time_critical_func(render_core)() {
 #endif
 }
 
+#include "fdd_controller.h"
+
 int main() {
 #if (OVERCLOCKING > 270)
     hw_set_bits(&vreg_and_chip_reset_hw->vreg, VREG_AND_CHIP_RESET_VREG_VSEL_BITS);
@@ -126,6 +128,9 @@ int main() {
     } else {
         SD_CARD_AVAILABLE = true;
     }
+CMotherBoard mb;
+CFDDController cFDDController;
+cFDDController.EmulateFDD(&mb);
 
     DIRECT_RAM_BORDER = PSRAM_AVAILABLE ? RAM_SIZE : (SD_CARD_AVAILABLE ? RAM_PAGE_SIZE : RAM_SIZE);
     main_init();

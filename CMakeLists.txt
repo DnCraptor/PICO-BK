@@ -101,6 +101,7 @@ pico_set_program_version(pico-bk "test")
             ${CMAKE_CURRENT_SOURCE_DIR}/soft/EmuAPP/src
             ${CMAKE_CURRENT_SOURCE_DIR}/soft/EmuAPP/src/Overlays/Emu
             ${CMAKE_CURRENT_SOURCE_DIR}/soft/EmuAPP/src/Overlays/Init
+            ${CMAKE_CURRENT_SOURCE_DIR}/soft/EmuAPP/src/Overlays/EmuFfs
             ${CMAKE_CURRENT_SOURCE_DIR}/soft/EmuAPP/ROM
 #            ${CMAKE_CURRENT_SOURCE_DIR}/assets
     )
