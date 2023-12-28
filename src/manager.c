@@ -128,6 +128,7 @@ static file_panel_desc_t* psp = &left_panel;
 
 static bool mark_to_exit_flag = false;
 static void mark_to_exit(uint8_t cmd) {
+    f10Pressed = false;
     mark_to_exit_flag = true;
 }
 
