@@ -75,48 +75,6 @@ void __time_critical_func(render_core)() {
 #endif
 }
 
-#include "fdd_controller.h"
-CMotherBoard mb;
-CFDDController m_fdd;
-
-static void cb() {
-	/*	switch (m_fdd.GetFDDType())
-		{
-			case BK_DEV_MPI::A16M:
-			{
-				const uint16_t m = GetAltProMode();
-
-				if (m == 0 || m == 040)
-				{
-					return false;
-				}
-
-				break;
-			}
-
-			case BK_DEV_MPI::SMK512:
-			{
-				const uint16_t m = GetAltProMode();
-
-				if (m == 0 || m == 040 || m == 20 || m == 120 || m == 0100)
-				{
-					return false;
-				}
-
-				break;
-			}
-		}
-*/
-		/*
-		эмуляция работы с дисководом. Если мы работаем стандартными методами,
-		а если нестандартными - то у нас есть полная эмуляция работы с дисководом через порты.
-		*/
-	//	if (g_Config.m_bEmulateFDDIO)
-		{
-			m_fdd.EmulateFDD(&mb);
-		}
-}
-
 int main() {
 #if (OVERCLOCKING > 270)
     hw_set_bits(&vreg_and_chip_reset_hw->vreg, VREG_AND_CHIP_RESET_VREG_VSEL_BITS);
@@ -171,6 +129,6 @@ int main() {
 
     DIRECT_RAM_BORDER = PSRAM_AVAILABLE ? RAM_SIZE : (SD_CARD_AVAILABLE ? RAM_PAGE_SIZE : RAM_SIZE);
     main_init();
-    emu_start(cb);
+    emu_start();
     return 0;
 }

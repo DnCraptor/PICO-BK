@@ -31,7 +31,23 @@ inline static bool any_down(uint_fast16_t CodeAndFlags) {
     return pressed_count > 0;
 }
 
-void AT_OVL emu_start (cb_fn_ptr pcb) {
+#include "fdd.h"
+#include "CPU.h"
+
+inline static void EmulateFDD() {
+    uint16_t table_addr = Device_Data.CPU_State.r[3];
+    // заполняем блок параметров драйвера дисковода
+    TABLE_EMFDD dt = { 0 };
+    uint16_t* wdt = (uint16_t*)(&dt); // структура в виде массива слов.
+	uint16_t t = table_addr;
+	for (size_t i = 0; i < sizeof(dt) / sizeof(uint16_t); ++i) {
+		*(wdt + i) = CPU_ReadMemW(t);
+		t += sizeof(uint16_t);
+	}
+	int drive = dt.UNIT;
+}
+
+void AT_OVL emu_start () {
     uint64_t      cycles_cnt1  = getCycleCount ();
     int_fast32_t  Time         = (int32_t)cycles_cnt1;
     uint_fast32_t T            = 0;
@@ -46,7 +62,7 @@ void AT_OVL emu_start (cb_fn_ptr pcb) {
     while (1) {
         int tormoz = if_manager(false);
         if ((PC & 0177776) == m_nFDDCatchAddr && get_bk0010mode() == BK_FDD) {
-            pcb();
+            EmulateFDD();
             PC = m_nFDDExitCatchAddr;
         }
         uint_fast8_t  Count;
