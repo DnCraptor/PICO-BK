@@ -153,7 +153,7 @@ TCPU_Arg AT_OVL CPU_ReadMemW (TCPU_Arg Adr) {
     DEBUG_PRINT(("CPU_ReadMemW Adr: %oo (%Xh) Page: (#%d)", Adr, Adr, (Adr) >> 14));
     uint16_t *pReg;
     if (Adr < CPU_START_IO_ADR) {
-        if (bk0010mode == BK_FDD) {
+        if (get_bk0010mode() == BK_FDD) {
             switch (Adr >> 1) {
                 case (0177130 >> 1):
                     DSK_PRINT(("W RdReg177130: %04Xh",  Device_Data.SysRegs.RdReg177130));
@@ -165,9 +165,9 @@ TCPU_Arg AT_OVL CPU_ReadMemW (TCPU_Arg Adr) {
             }
         }
         uintptr_t Page;
-        if (Adr >= 0120000 && Adr < 0160000 && bk0010mode == BK_FDD) {
+        if (Adr >= 0120000 && Adr < 0160000 && get_bk0010mode() == BK_FDD) {
             Page = Device_Data.MemPages [4]; // W/A
-        } else if (Adr >= 0140000 && Adr < 0160000 && bk0010mode == BK_0010) {
+        } else if (Adr >= 0140000 && Adr < 0160000 && get_bk0010mode() == BK_0010) {
             return CPU_ARG_READ_ERR;
         } else {
             Page = Device_Data.MemPages [(Adr) >> 14];
@@ -203,7 +203,7 @@ TCPU_Arg AT_OVL CPU_ReadMemB (TCPU_Arg Adr) {
     uint16_t *pReg;
     DEBUG_PRINT(("CPU_ReadMemB Adr: %oo (%Xh) Page: (#%d)", Adr, Adr, (Adr) >> 14));
     if (Adr < CPU_START_IO_ADR) {
-        if (bk0010mode == BK_FDD) {
+        if (get_bk0010mode() == BK_FDD) {
             switch (Adr >> 1) {
                 case (0177130 >> 1):
                     if (0177131 == Adr) {
@@ -219,9 +219,9 @@ TCPU_Arg AT_OVL CPU_ReadMemB (TCPU_Arg Adr) {
             }
         }
         uintptr_t Page;
-        if (Adr >= 0120000 && Adr < 0160000 && bk0010mode == BK_FDD) {
+        if (Adr >= 0120000 && Adr < 0160000 && get_bk0010mode() == BK_FDD) {
             Page = Device_Data.MemPages [4]; // W/A
-        } else if (Adr >= 0140000 && Adr < 0160000 && bk0010mode == BK_0010) {
+        } else if (Adr >= 0140000 && Adr < 0160000 && get_bk0010mode() == BK_0010) {
             return CPU_ARG_READ_ERR;
         } else {
             Page = Device_Data.MemPages [(Adr) >> 14];
@@ -254,7 +254,7 @@ TCPU_Arg AT_OVL CPU_WriteW (TCPU_Arg Adr, uint_fast16_t Word) {
         Device_Data.CPU_State.r [CPU_GET_ARG_REG_INDEX (Adr)] = (uint16_t) Word;
         return CPU_ARG_WRITE_OK;
     }
-    if (bk0010mode == BK_FDD) {
+    if (get_bk0010mode() == BK_FDD) {
         if (Adr < 0160000) {
             uintptr_t Page = Device_Data.MemPages[(Adr >= 0120000) ? 4 : ((Adr) >> 14)];
             DEBUG_PRINT(("CPU_WriteW(%oo, %oo) Page: %08X (#%d)", Adr, Word, Page, (Adr) >> 14));
@@ -276,7 +276,7 @@ TCPU_Arg AT_OVL CPU_WriteW (TCPU_Arg Adr, uint_fast16_t Word) {
     }
     switch (Adr >> 1) {
         case (0177130 >> 1):
-            if (bk0010mode == BK_FDD) {
+            if (get_bk0010mode() == BK_FDD) {
                 DSK_PRINT(("W WrReg177130 <- %04Xh", Word));
                 Device_Data.SysRegs.WrReg177130 = (uint16_t) Word;
                 dsk_word(Word);
@@ -285,7 +285,7 @@ TCPU_Arg AT_OVL CPU_WriteW (TCPU_Arg Adr, uint_fast16_t Word) {
             }
             break;
         case (0177132 >> 1):
-            if (bk0010mode == BK_FDD) {
+            if (get_bk0010mode() == BK_FDD) {
                 DSK_PRINT(("W Reg177132 <- %04Xh", Word));
                 Device_Data.SysRegs.Reg177132 = (uint16_t) Word;
             } else {
@@ -331,7 +331,7 @@ TCPU_Arg AT_OVL CPU_WriteW (TCPU_Arg Adr, uint_fast16_t Word) {
             break;
         case (0177716 >> 1):
             DEBUG_PRINT(("case (0177716 >> 1) on CPU_WriteW - switch pages: %d", (Word >> 12) & 7));
-            if (Word & (1U << 11) && bk0010mode == BK_0011M) {
+            if (Word & (1U << 11) && get_bk0010mode() == BK_0011M) {
                 static const uintptr_t PageTab [8] = {
                     CPU_PAGE1_MEM_ADR,
                     CPU_PAGE5_MEM_ADR,
@@ -372,7 +372,7 @@ TCPU_Arg AT_OVL CPU_WriteB (TCPU_Arg Adr, uint_fast8_t Byte) {
 
         return CPU_ARG_WRITE_OK;
     }
-    if (bk0010mode == BK_FDD) {
+    if (get_bk0010mode() == BK_FDD) {
         if (Adr < 0160000) {
             uintptr_t Page = Device_Data.MemPages[(Adr >= 0120000) ? 4 : (Adr >> 14)];
             if (Page && Page < CPU_PAGE0_MEM_ADR + RAM_PAGES_SIZE) {
@@ -440,7 +440,7 @@ TCPU_Arg AT_OVL CPU_WriteB (TCPU_Arg Adr, uint_fast8_t Byte) {
             }
             break;
         case (0177716 >> 1):
-            if (Word & (1U << 11) && bk0010mode == BK_0011M) {
+            if (Word & (1U << 11) && get_bk0010mode() == BK_0011M) {
                 const uintptr_t PageTab [8] = {
                     CPU_PAGE1_MEM_ADR,
                     CPU_PAGE5_MEM_ADR,

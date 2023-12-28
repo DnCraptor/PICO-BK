@@ -138,7 +138,7 @@ static void reset(uint8_t cmd) {
     f12Pressed = false;
     tormoz = 6;
     memset(RAM, 0, sizeof RAM);
-    graphics_set_page(CPU_PAGE5_MEM_ADR, bk0010mode == BK_0011M ? 15 : 0);
+    graphics_set_page(CPU_PAGE5_MEM_ADR, get_bk0010mode() == BK_0011M ? 15 : 0);
     graphics_shift_screen((uint16_t)0330 | 0b01000000000);
     main_init();
     mark_to_exit_flag = true;
@@ -686,7 +686,7 @@ static void turn_usb_on(uint8_t cmd) {
 }
 
 inline static const char* curr_mode() {
-    switch (bk0010mode) {
+    switch (get_bk0010mode()) {
         case BK_FDD:
             return "10+FDD";
         case BK_0010:
@@ -700,8 +700,10 @@ inline static const char* curr_mode() {
 }
 
 static void switch_rom(uint8_t cmd) {
+    bk_mode_t bk0010mode = get_bk0010mode();
     bk0010mode++;
     if (bk0010mode > BK_0011M) bk0010mode = BK_FDD;
+    set_bk0010mode(bk0010mode);
     const char* cm = curr_mode();
     snprintf(fn_1_12_tbl     [10].name, BTN_WIDTH, cm);
     snprintf(fn_1_12_tbl_alt [10].name, BTN_WIDTH, cm);
@@ -920,7 +922,7 @@ static inline bool run_bin(char* path) {
     // TODO: ensue it is ok for ever game
     Device_Data.MemPages [0] = CPU_PAGE0_MEM_ADR; /* RAM Page 0 */
     Device_Data.MemPages [1] = CPU_PAGE5_MEM_ADR; /* RAM Page 4 video 0 */
-    graphics_set_page(CPU_PAGE5_MEM_ADR, bk0010mode == BK_0011M ? 15 : 0);
+    graphics_set_page(CPU_PAGE5_MEM_ADR, get_bk0010mode() == BK_0011M ? 15 : 0);
     graphics_shift_screen((uint16_t)0330 | 0b01000000000);
     snprintf(line, MAX_WIDTH, "offset = 0%o; len = %d", offset, len);
     const line_t lns[3] = {

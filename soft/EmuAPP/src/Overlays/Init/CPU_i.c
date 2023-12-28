@@ -8,14 +8,8 @@
 
 #define AT_OVL __attribute__((section(".ovl3_i.text")))
 
-#if DSK_DEBUG
-bk_mode_t bk0010mode = BK_FDD;
-#else
-bk_mode_t bk0010mode = BK_0010_01;
-#endif
-
 void init_rom() {
-    switch (bk0010mode) {
+    switch (get_bk0010mode()) {
         case BK_FDD:
             Device_Data.MemPages [2] = CPU_PAGE16_MEM_ADR; // monitor 8k + focal 8k (masked out)
             Device_Data.MemPages [3] = CPU_PAGE18_MEM_ADR; // masked out 8k + fdd rom
@@ -33,6 +27,9 @@ void init_rom() {
             Device_Data.MemPages [3] = CPU_PAGE12_MEM_ADR; /* ROM Page 2 - bk11m_324_bos.rom + bk11m_330_mstd.rom */
             break;
     }
+
+    // ensure initialized mode
+    set_bk0010mode(get_bk0010mode());
 }
 
 void AT_OVL CPU_Init (void)
@@ -46,7 +43,7 @@ void AT_OVL CPU_Init (void)
 //  Device_Data.SysRegs.Reg177710   = 0177777;
 //  Device_Data.SysRegs.Reg177712   = 0177400;
 //  Device_Data.SysRegs.RdReg177714 = 0;
-    Device_Data.SysRegs.RdReg177716 = ((bk0010mode != BK_0011M ? 0100000 : 0140000) & 0177400) | 0300;
+    Device_Data.SysRegs.RdReg177716 = ((get_bk0010mode() != BK_0011M ? 0100000 : 0140000) & 0177400) | 0300;
     Device_Data.SysRegs.WrReg177662  = 047400;
     Device_Data.SysRegs.Wr1Reg177716 = (1 << 12) | 1;
 /*

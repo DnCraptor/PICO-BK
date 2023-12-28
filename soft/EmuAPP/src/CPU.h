@@ -41,7 +41,8 @@ typedef enum BK_MODE {
     BK_0011M
 } bk_mode_t;
 
-extern bk_mode_t bk0010mode;
+bk_mode_t get_bk0010mode();
+void set_bk0010mode(bk_mode_t mode);
 void init_rom();
 
 #define RAM_PAGES_SIZE (sizeof RAM)
