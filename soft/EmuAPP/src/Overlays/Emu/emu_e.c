@@ -12,6 +12,7 @@
 
 #include "emu_e.h"
 #include "CPU_e.h"
+#include "fdd.h"
 
 #include "../EmuUi/Key_eu.h"
 #include "../EmuUi/ps2_eu.h"
@@ -29,22 +30,6 @@ inline static bool any_down(uint_fast16_t CodeAndFlags) {
     if (CodeAndFlags & 0xF000) pressed_count++;
     else pressed_count--;
     return pressed_count > 0;
-}
-
-#include "fdd.h"
-#include "CPU.h"
-
-inline static void EmulateFDD() {
-    uint16_t table_addr = Device_Data.CPU_State.r[3];
-    // заполняем блок параметров драйвера дисковода
-    TABLE_EMFDD dt = { 0 };
-    uint16_t* wdt = (uint16_t*)(&dt); // структура в виде массива слов.
-	uint16_t t = table_addr;
-	for (size_t i = 0; i < sizeof(dt) / sizeof(uint16_t); ++i) {
-		*(wdt + i) = CPU_ReadMemW(t);
-		t += sizeof(uint16_t);
-	}
-	int drive = dt.UNIT;
 }
 
 void AT_OVL emu_start () {
