@@ -11,6 +11,7 @@
 
 #include "CPU_ef.h"
 #include "vga.h"
+#include "fdd.h"
 
 #define AT_OVL __attribute__((section(".ovl0_ef.text")))
 
@@ -156,10 +157,12 @@ TCPU_Arg AT_OVL CPU_ReadMemW (TCPU_Arg Adr) {
         if (get_bk0010mode() == BK_FDD) {
             switch (Adr >> 1) {
                 case (0177130 >> 1):
+                    Device_Data.SysRegs.RdReg177130 = GetState();
                     DSK_PRINT(("W RdReg177130: %04Xh",  Device_Data.SysRegs.RdReg177130));
                     return Device_Data.SysRegs.RdReg177130;
                 case (0177132 >> 1):
-                    dsk_read();
+                    //dsk_read();
+                    Device_Data.SysRegs.Reg177132 = GetData();
                     DSK_PRINT(("W Reg177132: %04Xh",  Device_Data.SysRegs.Reg177132));
                     return Device_Data.SysRegs.Reg177132;
             }
@@ -206,14 +209,16 @@ TCPU_Arg AT_OVL CPU_ReadMemB (TCPU_Arg Adr) {
         if (get_bk0010mode() == BK_FDD) {
             switch (Adr >> 1) {
                 case (0177130 >> 1):
-                    if (0177131 == Adr) {
+                    Device_Data.SysRegs.RdReg177130 = GetState();
+                    if (0177131 == Adr) { // ?
                         DSK_PRINT(("B RdReg177131: %02Xh", (Device_Data.SysRegs.RdReg177130 >> 8) & 0xff));
                         return (Device_Data.SysRegs.RdReg177130 >> 8) & 0xff;
                     }
                     DSK_PRINT(("B RdReg177130: %02Xh", Device_Data.SysRegs.RdReg177130 & 0xff));
                     return Device_Data.SysRegs.RdReg177130 & 0xff;
                 case (0177132 >> 1):
-                    dsk_read(); // TODO: read one byte really used by someone?
+                    //dsk_read(); // TODO: read one byte really used by someone?
+                    Device_Data.SysRegs.Reg177132 = GetData();
                     DSK_PRINT(("B Reg177132: %04Xh",  Device_Data.SysRegs.Reg177132));
                     return Device_Data.SysRegs.Reg177132 & 0xff;
             }
@@ -279,7 +284,8 @@ TCPU_Arg AT_OVL CPU_WriteW (TCPU_Arg Adr, uint_fast16_t Word) {
             if (get_bk0010mode() == BK_FDD) {
                 DSK_PRINT(("W WrReg177130 <- %04Xh", Word));
                 Device_Data.SysRegs.WrReg177130 = (uint16_t) Word;
-                dsk_word(Word);
+                SetCommand(Word);
+                // dsk_word(Word);
             } else {
                 return CPU_ARG_WRITE_ERR;
             }
@@ -396,7 +402,8 @@ TCPU_Arg AT_OVL CPU_WriteB (TCPU_Arg Adr, uint_fast8_t Byte) {
         case (0177130 >> 1):
             DSK_PRINT(("B WrReg177130 <- %04Xh", Word));
             Device_Data.SysRegs.WrReg177130 = (uint16_t) Word;
-            dsk_word(Word);
+            SetCommand(Word & 0xFF);
+            //dsk_word(Word);
             break;
         case (0177132 >> 1):
             DSK_PRINT(("B Reg177132 <- %04Xh", Word)); // TODO: byte?

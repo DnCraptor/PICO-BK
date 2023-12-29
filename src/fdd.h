@@ -79,3 +79,7 @@ enum {
 };
 
 void EmulateFDD();
+void SetCommand(uint16_t cmd);
+uint16_t GetState();
+uint16_t GetData();
+void WriteData(uint16_t data);
