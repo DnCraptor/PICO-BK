@@ -631,8 +631,77 @@ void AT_OVL CPU_Stop (void)
     return;
 }
 
+#include "fdd.h"
+static uint16_t m_nFDDCatchAddr, m_nFDDExitCatchAddr = -1;
+
+#if DSK_DEBUG
+static bk_mode_t _bk0010mode = BK_FDD;
+#else
+static bk_mode_t _bk0010mode = BK_0010_01;
+#endif
+
+bk_mode_t get_bk0010mode() {
+    return _bk0010mode;
+}
+
+static inline uint16_t GetWordIndirect(uint16_t addr) {
+	return CPU_ReadMemW(addr);
+}
+
+void set_bk0010mode(bk_mode_t mode) {
+    _bk0010mode = mode;
+    switch (mode)
+    {
+    case BK_FDD:
+		if (0167 == GetWordIndirect(0160016))
+		{
+			// 326 прошивка
+			m_nFDDCatchAddr = 0160372;
+			m_nFDDExitCatchAddr = 0161564;
+		}
+		else
+		{
+			// 253 прошивка, там нету перехода к эмулятору EIS/FIS
+			m_nFDDCatchAddr = 0160422;
+			m_nFDDExitCatchAddr = 0161540;
+		}
+		// дополнительная проверка на правильную прошивку.
+		if (GetWordIndirect(m_nFDDCatchAddr)       == 0010663
+		        && GetWordIndirect(m_nFDDCatchAddr + 2)   == 0000050
+		        && GetWordIndirect(m_nFDDCatchAddr + 4)   == 0106763
+		        && GetWordIndirect(m_nFDDCatchAddr + 6)   == 0000052
+		        && GetWordIndirect(m_nFDDCatchAddr + 010) == 0012700
+		        && GetWordIndirect(m_nFDDCatchAddr + 012) == 0000004
+		        && GetWordIndirect(m_nFDDCatchAddr + 014) == 0011063
+		        && GetWordIndirect(m_nFDDCatchAddr + 016) == 0000046
+		        && GetWordIndirect(m_nFDDCatchAddr + 020) == 0010710
+		        && GetWordIndirect(m_nFDDCatchAddr + 022) == 0062710
+		   )
+		{
+			// всё ок
+		}
+		else
+		{
+			// нестандартная прошивка
+			m_nFDDCatchAddr = 0177777;
+			m_nFDDExitCatchAddr = 0177777;
+		}
+        break;
+    default:
+			// нестандартная прошивка
+			m_nFDDCatchAddr = 0177777;
+			m_nFDDExitCatchAddr = 0177777;
+        break;
+    }
+}
+
 void AT_OVL CPU_RunInstruction (void)
 {
+  //  if ((PC & 0177776) == m_nFDDCatchAddr && get_bk0010mode() == BK_FDD) {
+  //      EmulateFDD();
+  //      PC = m_nFDDExitCatchAddr;
+  //  }
+  Periodic();
     TCPU_Arg OpCode;
     TCPU_Arg AdrS;
     TCPU_Arg AdrD;

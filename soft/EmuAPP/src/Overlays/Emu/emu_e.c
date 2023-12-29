@@ -12,7 +12,6 @@
 
 #include "emu_e.h"
 #include "CPU_e.h"
-#include "fdd.h"
 
 #include "../EmuUi/Key_eu.h"
 #include "../EmuUi/ps2_eu.h"
@@ -22,8 +21,6 @@
 #define AT_OVL __attribute__((section(".ovl3_e.text")))
 
 uint32_t ps2get_raw_code(); // TODO:
-
-static uint16_t m_nFDDCatchAddr, m_nFDDExitCatchAddr = -1;
 
 static int_fast16_t pressed_count = 0;
 inline static bool any_down(uint_fast16_t CodeAndFlags) {
@@ -46,10 +43,6 @@ void AT_OVL emu_start () {
     // Запускаем эмуляцию
     while (1) {
         int tormoz = if_manager(false);
-        if ((PC & 0177776) == m_nFDDCatchAddr && get_bk0010mode() == BK_FDD) {
-            EmulateFDD();
-            PC = m_nFDDExitCatchAddr;
-        }
         uint_fast8_t  Count;
         DEBUG_PRINT(("Key_Flags: %08Xh; (Key_Flags & KEY_FLAGS_TURBO): %d", Key_Flags, (Key_Flags & KEY_FLAGS_TURBO)));
         if (Key_Flags & KEY_FLAGS_TURBO) {
@@ -199,67 +192,5 @@ void AT_OVL emu_start () {
                 RunState = 0;
                 break;
         }
-    }
-}
-
-
-#if DSK_DEBUG
-static bk_mode_t _bk0010mode = BK_FDD;
-#else
-static bk_mode_t _bk0010mode = BK_0010_01;
-#endif
-
-bk_mode_t get_bk0010mode() {
-    return _bk0010mode;
-}
-
-static inline uint16_t GetWordIndirect(uint16_t addr) {
-	return CPU_ReadMemW(addr);
-}
-
-void set_bk0010mode(bk_mode_t mode) {
-    _bk0010mode = mode;
-    switch (mode)
-    {
-    case BK_FDD:
-		if (0167 == GetWordIndirect(0160016))
-		{
-			// 326 прошивка
-			m_nFDDCatchAddr = 0160372;
-			m_nFDDExitCatchAddr = 0161564;
-		}
-		else
-		{
-			// 253 прошивка, там нету перехода к эмулятору EIS/FIS
-			m_nFDDCatchAddr = 0160422;
-			m_nFDDExitCatchAddr = 0161540;
-		}
-		// дополнительная проверка на правильную прошивку.
-		if (GetWordIndirect(m_nFDDCatchAddr)       == 0010663
-		        && GetWordIndirect(m_nFDDCatchAddr + 2)   == 0000050
-		        && GetWordIndirect(m_nFDDCatchAddr + 4)   == 0106763
-		        && GetWordIndirect(m_nFDDCatchAddr + 6)   == 0000052
-		        && GetWordIndirect(m_nFDDCatchAddr + 010) == 0012700
-		        && GetWordIndirect(m_nFDDCatchAddr + 012) == 0000004
-		        && GetWordIndirect(m_nFDDCatchAddr + 014) == 0011063
-		        && GetWordIndirect(m_nFDDCatchAddr + 016) == 0000046
-		        && GetWordIndirect(m_nFDDCatchAddr + 020) == 0010710
-		        && GetWordIndirect(m_nFDDCatchAddr + 022) == 0062710
-		   )
-		{
-			// всё ок
-		}
-		else
-		{
-			// нестандартная прошивка
-			m_nFDDCatchAddr = 0177777;
-			m_nFDDExitCatchAddr = 0177777;
-		}
-        break;
-    default:
-			// нестандартная прошивка
-			m_nFDDCatchAddr = 0177777;
-			m_nFDDExitCatchAddr = 0177777;
-        break;
     }
 }

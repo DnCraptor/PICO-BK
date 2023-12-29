@@ -267,3 +267,121 @@ void WriteData(uint16_t data) {
 		m_writereg = data;
 	}
 }
+
+bool IsEngineOn() {
+	return !!(m_flags & FLOPPY_CMD_ENGINESTART);
+}
+
+const size_t FLOPPY_TRKLEN_DD = 6250;
+const size_t FLOPPY_INDEXLENGTH = 32;
+static size_t m_nDataPtr = 0;
+
+static void MovePtr() { // TODO: per drive
+	m_nDataPtr += 2;
+	if (m_nDataPtr >= FLOPPY_TRKLEN_DD) {
+		m_nDataPtr = 0;
+	}
+}
+
+static bool isIndex() { // проверка, находится ли указатель в зоне индексного отверстия
+	return (m_nDataPtr < FLOPPY_INDEXLENGTH);
+}
+
+static uint16_t RdData() {
+	//return (m_pData[m_nDataPtr] << 8) | m_pData[m_nDataPtr + 1];
+	uint16_t t = *((uint16_t*)(&MKDOS318B[m_nDataPtr]));
+	return ((t & 0377) << 8) | ((t >> 8) & 0377);
+}
+
+//static uint8_t m_pMarker[] = {};
+
+static bool getMarker() { // получение позиции маркера
+	return true;// m_pMarker[m_nDataPtr / 2];
+}
+
+void Periodic() { // сдвиг на 1 RAW слово на дорожке
+	if (!IsEngineOn()) {
+		return;    // Вращаем дискеты только если включён мотор
+	}
+	{
+		// область действия мутекса
+//		std::lock_guard<std::mutex> lk(m_mutPeriodicBusy);
+		// Вращаем дискеты во всех приводах сразу
+//		for (auto &flp : m_pFloppy)	{
+//			if (flp) {
+				MovePtr();
+//			}
+//		}
+		// Далее обрабатываем чтение/запись на текущем приводе
+//		if (m_pDrive && m_pDrive->isAttached())	{
+		if (true) {
+			if (isIndex()) {
+				m_status |= FLOPPY_STATUS_INDEXMARK;
+			}
+			else {
+				m_status &= ~FLOPPY_STATUS_INDEXMARK;
+			}
+			if (m_bWriteMode) { // Режим записи
+/*				if (m_shiftflag) {
+					m_pDrive->WrData(m_shiftreg);
+					m_shiftflag = false;
+					if (m_shiftmarker) {
+						m_pDrive->setMarker(true);
+						m_shiftmarker = false;
+						m_bCRCCalc = true;  // Начинаем считать CRC
+						ini_crc_16_rd();
+					} else {
+						m_pDrive->setMarker(false);
+					}
+					if (m_bCRCCalc)	{
+						add_crc_16(m_shiftreg & 0377);
+						add_crc_16((m_shiftreg >> 8) & 0377);
+					}
+					if (m_writeflag) {
+						m_shiftreg = m_writereg;
+						m_shiftflag = m_writeflag;
+						m_writeflag = false;
+						m_shiftmarker = m_writemarker;
+						m_writemarker = false;
+						m_status |= FLOPPY_STATUS_MOREDATA;
+					} else {
+						if (m_bCRCCalc) { // Прекращаем считать CRC
+							m_bCRCCalc = false;
+							m_shiftreg = (m_nCRCAcc << 8) | (m_nCRCAcc >> 8) & 0377; // вот она, наша рассчитанная CRC, пока так.
+							m_shiftflag = true;
+							m_shiftmarker = false;
+							m_status |= FLOPPY_STATUS_CHECKSUMOK;
+						}
+					}
+				}
+*/			} else {   // Режим чтения
+				m_datareg = RdData();
+				if (m_bCRCCalc) {
+				//	add_crc_16_rd((m_shiftreg >> 8) & 0377);
+				//	add_crc_16_rd(m_shiftreg & 0377);
+				}
+				if (m_status & FLOPPY_STATUS_MOREDATA) {
+					if (m_bCRCCalc) { // Прекращаем считать CRC
+						m_bCRCCalc = false;
+						// Сравниваем рассчитанную CRC с m_datareg
+						if (m_bCrcOK) {
+							m_status |= FLOPPY_STATUS_CHECKSUMOK;
+						}
+					}
+				} else {
+					m_shiftreg = m_datareg;
+					if (m_bSearchSync) { // Поиск маркера
+						if (getMarker()) { // Нашли маркер
+							m_status |= FLOPPY_STATUS_MOREDATA;
+							m_bSearchSync = false;
+							m_bCRCCalc = true;
+					//		ini_crc_16_rd();
+						}
+					} else { // Просто чтение
+						m_status |= FLOPPY_STATUS_MOREDATA;
+					}
+				}
+			}
+		}
+	}   // область действия мутекса
+}

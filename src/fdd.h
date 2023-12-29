@@ -1,6 +1,7 @@
 #pragma once
 
 #include "stdint-gcc.h"
+#include <stdbool.h>
 
 typedef struct TABLE_EMFDD {
 			uint16_t    CSRW;               // 00 копия по записи регистра состояния КНГМД
@@ -83,3 +84,5 @@ void SetCommand(uint16_t cmd);
 uint16_t GetState();
 uint16_t GetData();
 void WriteData(uint16_t data);
+bool IsEngineOn();
+void Periodic();
