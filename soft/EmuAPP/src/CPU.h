@@ -67,6 +67,7 @@ void init_rom();
 #define CPU_PAGE17_MEM_ADR &BK0010_ROM[0x04000] /* not used 8k + Tests 0010 */
 
 #define CPU_PAGE18_MEM_ADR &DISK_327ROM[0x00000] /* not used + DISK_327.ROM */
+#define CPU_PAGE19_MEM_ADR &FDDROM[0x00000] /* not used + FDD.ROM */
 
 #define CPU_START_IO_ADR 0177600
 

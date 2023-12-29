@@ -12,7 +12,7 @@ void init_rom() {
     switch (get_bk0010mode()) {
         case BK_FDD:
             Device_Data.MemPages [2] = CPU_PAGE16_MEM_ADR; // monitor 8k + focal 8k (masked out)
-            Device_Data.MemPages [3] = CPU_PAGE18_MEM_ADR; // masked out 8k + fdd rom
+            Device_Data.MemPages [3] = CPU_PAGE19_MEM_ADR; // masked out 8k + fdd rom
             break;
         case BK_0010:
             Device_Data.MemPages [2] = CPU_PAGE16_MEM_ADR; // monitor 8k + focal 8k
