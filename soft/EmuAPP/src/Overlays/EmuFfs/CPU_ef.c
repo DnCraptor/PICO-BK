@@ -294,6 +294,7 @@ TCPU_Arg AT_OVL CPU_WriteW (TCPU_Arg Adr, uint_fast16_t Word) {
             if (get_bk0010mode() == BK_FDD) {
                 DSK_PRINT(("W Reg177132 <- %04Xh", Word));
                 Device_Data.SysRegs.Reg177132 = (uint16_t) Word;
+                WriteData(Word);
             } else {
                 return CPU_ARG_WRITE_ERR;
             }
@@ -408,7 +409,7 @@ TCPU_Arg AT_OVL CPU_WriteB (TCPU_Arg Adr, uint_fast8_t Byte) {
         case (0177132 >> 1):
             DSK_PRINT(("B Reg177132 <- %04Xh", Word)); // TODO: byte?
             Device_Data.SysRegs.Reg177132 = (uint16_t) Word;
-            // TODO:
+            WriteData(Word & 0xFF);
             break;
         case (0177660 >> 1):
             PrevWord = Device_Data.SysRegs.Reg177660;
