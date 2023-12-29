@@ -632,6 +632,7 @@ void AT_OVL CPU_Stop (void)
 }
 
 #include "fdd.h"
+#include "CPU_i.h"
 static uint16_t m_nFDDCatchAddr, m_nFDDExitCatchAddr = -1;
 
 #if DSK_DEBUG
@@ -658,12 +659,14 @@ void set_bk0010mode(bk_mode_t mode) {
 			// 326 прошивка
 			m_nFDDCatchAddr = 0160372;
 			m_nFDDExitCatchAddr = 0161564;
+            DSK_PRINT(("EmulateFDD 326 m_nFDDCatchAddr: 0%o", m_nFDDCatchAddr));
 		}
 		else
 		{
 			// 253 прошивка, там нету перехода к эмулятору EIS/FIS
 			m_nFDDCatchAddr = 0160422;
 			m_nFDDExitCatchAddr = 0161540;
+            DSK_PRINT(("EmulateFDD 253 m_nFDDCatchAddr: 0%o", m_nFDDCatchAddr));
 		}
 		// дополнительная проверка на правильную прошивку.
 		if (GetWordIndirect(m_nFDDCatchAddr)       == 0010663
@@ -679,29 +682,31 @@ void set_bk0010mode(bk_mode_t mode) {
 		   )
 		{
 			// всё ок
+            DSK_PRINT(("EmulateFDD m_nFDDCatchAddr: 0%o OK", m_nFDDCatchAddr));
 		}
 		else
 		{
 			// нестандартная прошивка
 			m_nFDDCatchAddr = 0177777;
 			m_nFDDExitCatchAddr = 0177777;
+            DSK_PRINT(("EmulateFDD ??? m_nFDDCatchAddr: 0%o", m_nFDDCatchAddr));
 		}
         break;
     default:
-			// нестандартная прошивка
-			m_nFDDCatchAddr = 0177777;
-			m_nFDDExitCatchAddr = 0177777;
+		// нестандартная прошивка
+		m_nFDDCatchAddr = 0177777;
+		m_nFDDExitCatchAddr = 0177777;
+        DSK_PRINT(("EmulateFDD ??? m_nFDDCatchAddr: 0%o", m_nFDDCatchAddr));
         break;
     }
 }
 
-void AT_OVL CPU_RunInstruction (void)
-{
-  //  if ((PC & 0177776) == m_nFDDCatchAddr && get_bk0010mode() == BK_FDD) {
-  //      EmulateFDD();
-  //      PC = m_nFDDExitCatchAddr;
-  //  }
-  Periodic();
+void AT_OVL CPU_RunInstruction (void) {
+    if ((PC & 0177776) == m_nFDDCatchAddr && get_bk0010mode() == BK_FDD) {
+        EmulateFDD();
+        PC = m_nFDDExitCatchAddr;
+    }
+  //Periodic();
     TCPU_Arg OpCode;
     TCPU_Arg AdrS;
     TCPU_Arg AdrD;

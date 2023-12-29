@@ -4,16 +4,57 @@
 
 void EmulateFDD() {
     DSK_PRINT(("EmulateFDD enter"));
-    uint16_t table_addr = Device_Data.CPU_State.r[3];
+    uint16_t table_addr, t = Device_Data.CPU_State.r[3];
     // заполняем блок параметров драйвера дисковода
     TABLE_EMFDD dt = { 0 };
-    uint16_t* wdt = (uint16_t*)(&dt); // структура в виде массива слов.
-	uint16_t t = table_addr;
-	for (size_t i = 0; i < sizeof(dt) / sizeof(uint16_t); ++i) {
-		wdt[i] = CPU_ReadMemW(t);
-        DSK_PRINT(("EmulateFDD 0%o: %04Xh", i*2, wdt[i]));
-		t += sizeof(uint16_t);
-	}
+	register uint16_t v = 0;
+	dt.CSRW   = CPU_ReadMemW(t); t += 2;  // 00 копия по записи регистра состояния КНГМД
+    dt.CURTRK = CPU_ReadMemW(t); t += 2;  // 02 адрес текущей дорожки (адрес одного из последующих байтов)
+	v = CPU_ReadMemW(t); t += 2;          // 04 таблица текущих дорожек
+    dt.TRKTAB[0] = (uint8_t)(v & 0xFF);
+    dt.TRKTAB[1] = (uint8_t)(v >> 8);
+	v = CPU_ReadMemW(t); t += 2;
+    dt.TRKTAB[2] = (uint8_t)(v & 0xFF);
+    dt.TRKTAB[3] = (uint8_t)(v >> 8);
+    dt.TDOWN = CPU_ReadMemW(t); t += 2;     // 10 задержка опускания головки
+    dt.TSTEP = CPU_ReadMemW(t); t += 2;     // 12 задержка перехода с дорожки на дорожку
+	v = CPU_ReadMemW(t); t += 2;
+    dt.TRKCOR = (uint8_t)(v & 0xFF);        // 14 дорожка начала предкомпенсации
+    dt.BRETRY = (uint8_t)(v >> 8);          // 15 число попыток повтора при ошибке
+	v = CPU_ReadMemW(t); t += 2;
+	dt.FLAGS = (uint8_t)(v & 0xFF);         // 16 рабочая ячейка драйвера
+    dt.FILLB = (uint8_t)(v >> 8);           // 17 код заполнения при форматировании
+    dt.FLGPTR = CPU_ReadMemW(t); t += 2;    // 20 указатель на байт признаков (один из следующих байтов)
+	v = CPU_ReadMemW(t); t += 2;            // 22 байты признаков
+    dt.FLGTAB[0] = (uint8_t)(v & 0xFF);
+    dt.FLGTAB[1] = (uint8_t)(v >> 8);
+	v = CPU_ReadMemW(t); t += 2;
+    dt.FLGTAB[2] = (uint8_t)(v & 0xFF);
+    dt.FLGTAB[3] = (uint8_t)(v >> 8);
+    dt.ADDR = CPU_ReadMemW(t); t += 2;      // 26 адрес начала массива данных в ОЗУ (обязательно чётный)
+    dt.WCNT = CPU_ReadMemW(t); t += 2;      // 30 количество слов для пересылки
+	v = CPU_ReadMemW(t); t += 2;
+	dt.SIDE = (uint8_t)(v & 0xFF);          // 32 номер стороны диска
+	dt.TRK  = (uint8_t)(v >> 8);            // 33 номер дорожки
+	v = CPU_ReadMemW(t); t += 2;
+    dt.UNIT   = (uint8_t)(v & 0xFF);        // 34 номер привода
+    dt.SECTOR = (uint8_t)(v >> 8);          // 35 номер сектора
+    dt.WRTVAR = CPU_ReadMemW(t); t += 2;    // 36 значение, записываемое при форматировании
+    dt.MARKER = CPU_ReadMemW(t); t += 2;    // 40 буфер маркера при записи
+    dt.FREE   = CPU_ReadMemW(t); t += 2;    // 42 длина пустого остатка сектора
+    dt.INTIME = CPU_ReadMemW(t); t += 2;    // 44 счётчик длительности индекса
+    dt.BUF4   = CPU_ReadMemW(t); t += 2;    // 46 буфер для сохранения вектора 4
+    dt.BUFSP  = CPU_ReadMemW(t); t += 2;    // 50 буфер для сохранения SP
+    dt.BUFPSW = CPU_ReadMemW(t); t += 2;    // 52 буфер для сохранения PSW
+	v = CPU_ReadMemW(t); t += 2;
+	dt.CRETRY = (uint8_t)(v & 0xFF);        // 54 счётчик повторов при ошибке
+	dt.TURNS = (uint8_t)(v >> 8);           // 55 число оборотов диска при поиске сектора
+	v = CPU_ReadMemW(t); t += 2;
+	dt.SECRET = (uint8_t)(v & 0xFF);        // 56 число повторных попыток поиска сектора
+	dt.ERRNUM = (uint8_t)(v >> 8);          // 57 буфер для номера ошибки
+    dt.MAXSEC = CPU_ReadMemW(t); t += 2;    // 60 число секторов на дорожке
+    dt.HOLTIN = CPU_ReadMemW(t); t += 2;    // 62 время задержки после индекса до первого сектора
+    dt.SECLEN = CPU_ReadMemW(t);            // 64 
 	int drive = dt.UNIT;
     DSK_PRINT(("EmulateFDD drive: %d", drive));
 	// Если номер привода выходит за диапазон A: - D:

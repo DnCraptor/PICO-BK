@@ -3,7 +3,7 @@
 #include "stdint-gcc.h"
 #include <stdbool.h>
 
-typedef struct TABLE_EMFDD {
+typedef struct __attribute__ ((__packed__)) TABLE_EMFDD {
 			uint16_t    CSRW;               // 00 копия по записи регистра состояния КНГМД
 			uint16_t    CURTRK;             // 02 адрес текущей дорожки (адрес одного из последующих байтов)
 			uint8_t     TRKTAB[4];          // 04 таблица текущих дорожек
