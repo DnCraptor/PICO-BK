@@ -129,7 +129,9 @@ static file_panel_desc_t* psp = &left_panel;
 static bool mark_to_exit_flag = false;
 static void mark_to_exit(uint8_t cmd) {
     f10Pressed = false;
-    mark_to_exit_flag = true;
+    escPressed = false;
+    if (!usb_started) // TODO: USB in emulation mode
+        mark_to_exit_flag = true;
 }
 
 static inline void fill_panel(file_panel_desc_t* p);
@@ -230,10 +232,11 @@ typedef struct drive_state {
     char* lbl;
 } drive_state_t;
 
-static drive_state_t drives_states[3] = {
+static drive_state_t drives_states[4] = { // TODO:
     0, "FDD0",
     0, "FDD1",
-    0, "HDD0"
+    0, "HDD0",
+    0, "HDD1"
 };
 
 void notify_image_insert_action(uint8_t drivenum, char *pathname) {
@@ -241,20 +244,17 @@ void notify_image_insert_action(uint8_t drivenum, char *pathname) {
 }
 
 static void swap_drives(uint8_t cmd) {
-  do_nothing(cmd);
-  /*
     sprintf(line, "F%d pressed - swap FDD images", cmd + 1);
     draw_cmd_line(0, CMD_Y_POS, line);
     if (already_swapped_fdds) {
-        insertdisk(0, fdd0_sz(), fdd0_rom(), "\\XT\\fdd0.img");
-        insertdisk(1, fdd1_sz(), fdd1_rom(), "\\XT\\fdd1.img");
+        insertdisk(0, fdd0_sz(), fdd0_rom(), drives_states[0].path);
+        insertdisk(1, fdd1_sz(), fdd1_rom(), drives_states[1].path);
     } else {
-        insertdisk(1, fdd0_sz(), fdd0_rom(), "\\XT\\fdd0.img");
-        insertdisk(0, fdd1_sz(), fdd1_rom(), "\\XT\\fdd1.img");
+        insertdisk(1, fdd0_sz(), fdd0_rom(), drives_states[0].path);
+        insertdisk(0, fdd1_sz(), fdd1_rom(), drives_states[1].path);
     }
     already_swapped_fdds = !already_swapped_fdds;
     swap_drive_message();
-  */
 }
 
 inline static void if_swap_drives() {
@@ -704,6 +704,10 @@ static void switch_rom(uint8_t cmd) {
     bk0010mode++;
     if (bk0010mode > BK_0011M) bk0010mode = BK_FDD;
     set_bk0010mode(bk0010mode);
+    if ( is_fdd_suppored() && color_mode ) {
+        color_mode = false;
+        snprintf(fn_1_12_tbl_ctrl[10].name, BTN_WIDTH, color_mode ? " B/W  " : " Color");
+    }
     const char* cm = curr_mode();
     snprintf(fn_1_12_tbl     [10].name, BTN_WIDTH, cm);
     snprintf(fn_1_12_tbl_alt [10].name, BTN_WIDTH, cm);
@@ -714,7 +718,6 @@ static void switch_rom(uint8_t cmd) {
 static void switch_color(uint8_t cmd) {
     color_mode = !color_mode;
     snprintf(fn_1_12_tbl_ctrl[10].name, BTN_WIDTH, color_mode ? " B/W  " : " Color");
-    init_rom();
     bottom_line();
 }
 
@@ -735,7 +738,7 @@ inline static void m_add_file(FILINFO* fi) {
     strncpy(fp->name, fi->fname, MAX_WIDTH >> 1);
 }
 
-inline static bool m_openfir(
+inline static bool m_opendir(
 	DIR* dp,			/* Pointer to directory object to create */
 	const TCHAR* path	/* Pointer to the directory path */
 ) {
@@ -761,7 +764,7 @@ static int m_comp(const file_info_t * e1, const file_info_t * e2) {
 inline static void collect_files(file_panel_desc_t* p) {
     m_cleanup();
     DIR dir;
-    if (!m_openfir(&dir, p->path)) return;
+    if (!m_opendir(&dir, p->path)) return;
     FILINFO fileInfo;
     while(f_readdir(&dir, &fileInfo) == FR_OK && fileInfo.fname[0] != '\0') {
         m_add_file(&fileInfo);
@@ -964,6 +967,17 @@ static inline bool run_bin(char* path) {
     return true;
 }
 
+static inline bool run_img(char* path) {
+    insertdisk(1, 0, 0, path); // TODO: select drive #
+    if ( !is_fdd_suppored() ) {
+        color_mode = false;
+        set_bk0010mode(BK_0011M);
+        reset(0);
+    }
+    mark_to_exit_flag = true;
+    return true;
+}
+
 static file_info_t* selected_file() {
     if (psp->selected_file_idx == 1 && psp->start_file_offset == 0 && strlen(psp->path) > 1) {
         return 0;
@@ -1012,15 +1026,24 @@ static inline void enter_pressed() {
         return;
     } else {
         size_t slen = strlen(fp->name);
-        if (slen > 4 &&
+        if (slen > 4 && fp->name[slen - 4] == '.')
+        if(
             (fp->name[slen - 1] == 'N' || fp->name[slen - 1] == 'n') &&
             (fp->name[slen - 2] == 'I' || fp->name[slen - 2] == 'i') &&
-            (fp->name[slen - 3] == 'B' || fp->name[slen - 3] == 'b') &&
-             fp->name[slen - 4] == '.'
+            (fp->name[slen - 3] == 'B' || fp->name[slen - 3] == 'b')
         ) {
             char path[256];
             construct_full_name(path, psp->path, fp->name);
             run_bin(path);
+            return;
+        } else if (
+            (fp->name[slen - 1] == 'G' || fp->name[slen - 1] == 'g') &&
+            (fp->name[slen - 2] == 'M' || fp->name[slen - 2] == 'm') &&
+            (fp->name[slen - 3] == 'I' || fp->name[slen - 3] == 'i')
+        ) {
+            char path[256];
+            construct_full_name(path, psp->path, fp->name);
+            run_img(path);
             return;
         }
     }
@@ -1063,7 +1086,9 @@ static inline void work_cycle() {
         if (lastCleanableScanCode) DBGM_PRINT(("lastCleanableScanCode: %02Xh", lastCleanableScanCode));
         switch(lastCleanableScanCode) {
           case 0x01: // Esc down
+          //  mark_to_exit(9);
           case 0x81: // Esc up
+          //  scan_code_processed();
             break;
           case 0x3B: // F1..10 down
           case 0x3C: // F2
@@ -1188,7 +1213,8 @@ bool handleScancode(uint32_t ps2scancode) { // core 1
     lastCleanableScanCode = ps2scancode;
     switch (ps2scancode) {
       case 0x01: // Esc down
-        escPressed = true; break;
+        escPressed = true;
+        break;
       case 0x81: // Esc up
         escPressed = false; break;
       case 0x4B: // left
@@ -1421,6 +1447,8 @@ inline void if_overclock() {
     }
 }
 
+void ps2cleanup(); // TODO:
+
 int if_manager(bool force) {
     if (ctrlPressed) {
         if (f11Pressed) {
@@ -1441,6 +1469,8 @@ int if_manager(bool force) {
         return tormoz;
     }
     if (force) {
+        escPressed = false;
+        ps2cleanup();
         manager_started = true;
         start_manager();
         manager_started = false;

@@ -247,6 +247,10 @@ uint32_t ps2get_raw_code() {
 
 extern volatile bool manager_started;
 
+void ps2cleanup() {
+    ps2bufsize = 0;
+}
+
 uint32_t ps2getcode() {
     uint32_t retval, i, len;
     if (!ps2bufsize) return 0;

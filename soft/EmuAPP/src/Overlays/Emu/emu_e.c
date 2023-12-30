@@ -23,6 +23,8 @@ inline static bool any_down(uint_fast16_t CodeAndFlags) {
     return pressed_count > 0;
 }
 
+int if_manager(bool force); // TODO:
+
 void AT_OVL emu_start () {
     uint64_t      cycles_cnt1  = getCycleCount ();
     int_fast32_t  Time         = (int32_t)cycles_cnt1;
