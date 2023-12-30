@@ -1045,6 +1045,15 @@ static inline void enter_pressed() {
             construct_full_name(path, psp->path, fp->name);
             run_img(path);
             return;
+        } else if (
+            (fp->name[slen - 1] == 'D' || fp->name[slen - 1] == 'd') &&
+            (fp->name[slen - 2] == 'K' || fp->name[slen - 2] == 'k') &&
+            (fp->name[slen - 3] == 'B' || fp->name[slen - 3] == 'b')
+        ) {
+            char path[256];
+            construct_full_name(path, psp->path, fp->name);
+            run_img(path); // TODO: separate support for .BKD
+            return;
         }
     }
 }
