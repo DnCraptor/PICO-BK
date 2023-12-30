@@ -6,7 +6,7 @@
 #include "ROM10.h"
 #include "ROM11.h"
 #include "FDDROM.h"
-#include "DISK_327ROM.h"
+#include "BOS_N_DISK_327.h"
 #include "BK0010_ROM.h"
 
 #if BOOT_DEBUG || DSK_DEBUG
@@ -43,22 +43,28 @@ typedef enum BK_MODE {
 
 bk_mode_t get_bk0010mode();
 void set_bk0010mode(bk_mode_t mode);
+bool is_fdd_suppored();
 void init_rom();
 
 #define RAM_PAGES_SIZE (sizeof RAM)
-#define CPU_PAGE0_MEM_ADR  &RAM[0x00000] /* RAM Page 0 0..40000 it was 0x3FFEC000 */
-#define CPU_PAGE1_MEM_ADR  &RAM[0x04000] /* RAM Page 1          it was 0x3FFF0000 */
-#define CPU_PAGE2_MEM_ADR  &RAM[0x14000] /* RAM Page 5          it was 0x40104000 */
-#define CPU_PAGE3_MEM_ADR  &RAM[0x18000] /* RAM Page 6          it was 0x40108000 */
-#define CPU_PAGE4_MEM_ADR  &RAM[0x1C000] /* RAM Page 7          it was 0x4010C000 - system */
-#define CPU_PAGE5_MEM_ADR  &RAM[0x10000] /* RAM Page 4          it was 0x3FFFC000 - video page 0 */
-#define CPU_PAGE6_MEM_ADR  &RAM[0x08000] /* RAM Page 2          it was 0x3FFF4000 - video page 1 */
-#define CPU_PAGE7_MEM_ADR  &RAM[0x0C000] /* RAM Page 3          it was 0x3FFF8000 */
-#define CPU_PAGE8_MEM_ADR  &ROM11[0x00000] /* ROM11 Page 0          it was 0x40250000 - bk11m_328_basic2.rom + bk11m_329_basic3.rom  */
-#define CPU_PAGE9_MEM_ADR  &ROM11[0x04000] /* ROM11 Page 1          it was 0x40254000 - bk11m_327_basic1.rom + bk11m_325_ext.rom */
-#define CPU_PAGE10_MEM_ADR 0 /* &DISK_327ROM[0x00000] /* КНГМД для БК-0011М // &FDDROM[0x00000] КНГМД для БК-0010 */
-#define CPU_PAGE11_MEM_ADR 0 /* ? */
-#define CPU_PAGE12_MEM_ADR &ROM11[0x08000] /* ROM11 Page 2          it was 0x40258000 - bk11m_324_bos.rom + bk11m_330_mstd.rom */
+#define CPU_PAGE0_MEM_ADR  &RAM[0x00000] /* RAM Page 0 0..40000 */
+#define CPU_PAGE1_MEM_ADR  &RAM[0x04000] /* RAM Page 1          */
+#define CPU_PAGE2_MEM_ADR  &RAM[0x14000] /* RAM Page 5          */
+#define CPU_PAGE3_MEM_ADR  &RAM[0x18000] /* RAM Page 6          */
+#define CPU_PAGE4_MEM_ADR  &RAM[0x1C000] /* RAM Page 7          - system */
+#define CPU_PAGE5_MEM_ADR  &RAM[0x10000] /* RAM Page 4          - video page 0 */
+#define CPU_PAGE6_MEM_ADR  &RAM[0x08000] /* RAM Page 2          - video page 1 */
+#define CPU_PAGE7_MEM_ADR  &RAM[0x0C000] /* RAM Page 3          */
+#define CPU_PAGE8_MEM_ADR  &ROM11[0x00000] /* ROM11 Page 0      - bk11m_328_basic2.rom + bk11m_329_basic3.rom  */
+#define CPU_PAGE9_MEM_ADR  &ROM11[0x04000] /* ROM11 Page 1      - bk11m_327_basic1.rom + bk11m_325_ext.rom */
+#define CPU_PAGE10_MEM_ADR 0 /* страница ПЗУ3.1 3.2 */
+#define CPU_PAGE11_MEM_ADR 0 /* страница ПЗУ4.1 4.1 */
+#if NO_FDD_0011M
+#define CPU_PAGE12_MEM_ADR &ROM11[0x08000] /* ROM11 Page 2      - bk11m_324_bos.rom + bk11m_330_mstd.rom */
+#else
+#define CPU_PAGE12_MEM_ADR &BOS_N_DISK_327[0x00000] /* bk11m_324_bos.rom + КНГМД для БК-0011М */
+#endif
+#define CPU_PAGE13_MEM_ADR TODO /* 16кб: ОЗУ А16М */
 
 #define CPU_PAGE14_MEM_ADR &ROM10[0x00000] /* monitor 0010-01 + ROM10 Basic 0010-01 */
 #define CPU_PAGE15_MEM_ADR &ROM10[0x04000] /* ... ROM10 0010-01 Basic */
