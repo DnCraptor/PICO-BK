@@ -9,12 +9,15 @@ uint8_t bootdrive, hdcount, fdcount;
 _FILE fileA;
 _FILE fileB;
 _FILE fileC;
+_FILE fileD;
 _FILE * getFileA() { return &fileA; }
 _FILE * getFileB() { return &fileB; }
 _FILE * getFileC() { return &fileC; }
+_FILE * getFileD() { return &fileD; }
 size_t getFileA_sz() { return fileA.obj.fs ? f_size(&fileA) : 0; }
 size_t getFileB_sz() { return fileB.obj.fs ? f_size(&fileB) : 0; }
 size_t getFileC_sz() { return fileC.obj.fs ? f_size(&fileC) : 0; }
+size_t getFileD_sz() { return fileD.obj.fs ? f_size(&fileD) : 0; }
 #if BOOT_DEBUG || KBD_DEBUG || MNGR_DEBUG || DSK_DEBUG
 _FILE fileD; // for debug output
 #endif
@@ -28,6 +31,8 @@ size_t size_of_drive(uint8_t drive) {
         return getFileB_sz();
     case 2:
         return getFileC_sz();
+    case 3:
+        return getFileD_sz();
     }
     return 0;
 }
@@ -44,6 +49,9 @@ uint16_t word_of_drive(uint8_t drive, size_t pos) {
         break;
     case 2:
         f = getFileC();
+        break;
+    case 3:
+        f = getFileD();
         break;
     default:
         return 0;
@@ -71,11 +79,9 @@ struct struct_drive disk[4];
 static uint8_t sectorbuffer[512];
 
 void ejectdisk(uint8_t drivenum) {
-    if (drivenum & 0x80) drivenum -= 126;
-
     if (disk[drivenum].inserted) {
         disk[drivenum].inserted = 0;
-        if (drivenum >= 0x80)
+        if (drivenum >= 2)
             hdcount--;
         else
             fdcount--;
@@ -83,7 +89,18 @@ void ejectdisk(uint8_t drivenum) {
 }
 
 static _FILE* actualDrive(uint8_t drivenum) {
-    return (drivenum > 1) ? &fileC : ( drivenum == 0 ? &fileA : &fileB );
+    switch (drivenum)
+    {
+    case 0:
+        return getFileA();
+    case 1:
+        return getFileB();
+    case 2:
+        return getFileC();
+    case 3:
+        return getFileD();
+    }
+    return 0;
 }
 
 static _FILE* tryFlushROM(uint8_t drivenum, size_t size, char *ROM, char *path) {

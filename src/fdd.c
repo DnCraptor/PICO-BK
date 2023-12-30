@@ -105,11 +105,10 @@ void EmulateFDD() {
 				break;
 			}
 			uint16_t word = word_of_drive(drive, pos);
-           // uint16_t word = (uint16_t)MKDOS318B[pos++];
-           // word |= (uint16_t)MKDOS318B[pos++] << 8;
 			CPU_WriteW(addr, word);
             DSK_PRINT(("EmulateFDD addr: 0%o, %04Xh", addr, word));
 			addr += sizeof(uint16_t);
+			pos  += sizeof(uint16_t);
 		}
 		while (--length);
 	}
