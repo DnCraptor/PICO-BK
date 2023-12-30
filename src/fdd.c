@@ -1,6 +1,5 @@
 #include "fdd.h"
 #include "CPU_ef.h"
-#include "MKDOS318B.h"
 
 void EmulateFDD() {
     DSK_PRINT(("EmulateFDD enter"));
@@ -98,15 +97,16 @@ void EmulateFDD() {
 	if (length > 0) {
 		// чтение
 		do {
-			if (pos > sizeof(MKDOS318B) - sizeof(uint16_t)) {
+			if (pos > size_of_drive(drive) - sizeof(uint16_t)) {
 				bErrors = true;
                 Device_Data.CPU_State.psw |= (1 << C_FLAG);
                 CPU_WriteW(052, FDD_STOP);
                 DSK_PRINT(("EmulateFDD FDD_STOP"));
 				break;
 			}
-            uint16_t word = (uint16_t)MKDOS318B[pos++];
-            word |= (uint16_t)MKDOS318B[pos++] << 8;
+			uint16_t word = word_of_drive(drive, pos);
+           // uint16_t word = (uint16_t)MKDOS318B[pos++];
+           // word |= (uint16_t)MKDOS318B[pos++] << 8;
 			CPU_WriteW(addr, word);
             DSK_PRINT(("EmulateFDD addr: 0%o, %04Xh", addr, word));
 			addr += sizeof(uint16_t);
@@ -330,7 +330,7 @@ static bool isIndex() { // проверка, находится ли указа�
 
 static uint16_t RdData() {
 	//return (m_pData[m_nDataPtr] << 8) | m_pData[m_nDataPtr + 1];
-	uint16_t t = *((uint16_t*)(&MKDOS318B[m_nDataPtr]));
+	uint16_t t = 0; // TODO: *((uint16_t*)(&MKDOS318B[m_nDataPtr]));
 	return ((t & 0377) << 8) | ((t >> 8) & 0377);
 }
 

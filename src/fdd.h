@@ -1,7 +1,8 @@
 #pragma once
 
-#include "stdint-gcc.h"
+#include <stdint.h>
 #include <stdbool.h>
+#include <stddef.h>
 
 typedef struct __attribute__ ((__packed__)) TABLE_EMFDD {
 			uint16_t    CSRW;               // 00 копия по записи регистра состояния КНГМД
@@ -86,3 +87,10 @@ uint16_t GetData();
 void WriteData(uint16_t data);
 bool IsEngineOn();
 void Periodic();
+
+size_t size_of_drive(uint8_t drive);
+uint16_t word_of_drive(uint8_t drive, size_t pos);
+char* fdd0_rom();
+char* fdd1_rom();
+size_t fdd0_sz();
+size_t fdd1_sz();

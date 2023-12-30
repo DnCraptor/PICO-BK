@@ -163,8 +163,6 @@ target_compile_definitions(${PROJECT_NAME} PRIVATE
         SOUND_SYSTEM
         COVOX
 
-        #KNGMD=1
-
         # select onr of the folowing:
         #SWAP_BLOCK_1k
         SWAP_BLOCK_2k

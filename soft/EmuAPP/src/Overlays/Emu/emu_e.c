@@ -1,7 +1,5 @@
-#include "ets.h"
 #include "timer0.h"
 #include "reboot.h"
-#include "esp8266.h"
 #include "ps2_bk.h"
 #include "ps2_codes.h"
 #include "CPU.h"

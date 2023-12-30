@@ -2,11 +2,8 @@
 #include <stdint.h>
 #include <stdio.h>
 #include <string.h>
-#include "ets.h"
-#include "esp8266.h"
 #include "AnyMem.h"
 #include "CPU.h"
-
 #include "CPU_ef.h"
 #include "vga.h"
 #include "fdd.h"
@@ -86,68 +83,6 @@ void AT_OVL CPU_TimerRun (void)
     }
 }
 
-#if KNGMD
-#include "MKDOS318B.h"
-
-void dsk_start_engine(uint8_t drivenum); // TODO:
-
-static int hdr = 0;
-static int sec = 0;
-static int track = 0;
-static int byte_in_sec = 0;
-
-static inline void dsk_read() {
-    unsigned int lba = sec * 512 + hdr * 5120 + track * 5120 * 2;
-    Device_Data.SysRegs.Reg177132  = MKDOS318B[byte_in_sec++ + lba] << 8;
-    Device_Data.SysRegs.Reg177132 |= MKDOS318B[byte_in_sec++ + lba];
-    if (byte_in_sec == 512) {
-        byte_in_sec = 0;
-        sec++;
-    }
-    if (sec == 10) {
-        sec = 0;
-    }
-    if (sec == 0) {
-        Device_Data.SysRegs.RdReg177130 |= 0b1000000000000000; // признак '0' сектор
-    } else {
-        Device_Data.SysRegs.RdReg177130 &= ~0b1000000000000000;
-    }
-    if (track == 0) {
-        Device_Data.SysRegs.RdReg177130 |= 0b0000000000000001; // признак '0' дорожка
-    } else {
-        Device_Data.SysRegs.RdReg177130 &= ~0b0000000000000001;
-    }
-}
-
-static inline void dsk_word(uint16_t Word) {
-    if ((Word >> 7) & 1) { // step
-        track += ((Word >> 6) & 1) ? +1 : -1; // step ditection TODO: ensure
-        if (track > 81) track = 81;
-        else if (track < 0) track = 0;        
-    }
-    if ((Word >> 8) & 1) { // признак 'начало чтения'
-        hdr = (Word >> 5) & 1; // выбор головки: "0"-верхняя
-        sec = 0;
-        byte_in_sec = 0;     
-    }
-    if (Word & 0b10000) {
-        dsk_start_engine(Word & 0b1111);
-        // признак '0' сектор
-        if (sec == 0) {
-            Device_Data.SysRegs.RdReg177130 |= 0b1000000000000000;
-        } else {
-            Device_Data.SysRegs.RdReg177130 &= ~0b1000000000000000;
-        }
-        // данные в регистре данных, защита от записи, готовность к работе, признак '0' дорожка
-        Device_Data.SysRegs.RdReg177130 |= 0b0000000010000111;
-    }
-}
-#else
-static inline void dsk_start_engine(uint8_t drivenum) {}
-static inline void dsk_read() {}
-static inline void dsk_word(uint16_t Word) {}
-#endif
-
 TCPU_Arg AT_OVL CPU_ReadMemW (TCPU_Arg Adr) {
     DEBUG_PRINT(("CPU_ReadMemW Adr: %oo (%Xh) Page: (#%d)", Adr, Adr, (Adr) >> 14));
     uint16_t *pReg;
@@ -159,7 +94,6 @@ TCPU_Arg AT_OVL CPU_ReadMemW (TCPU_Arg Adr) {
                     DSK_PRINT(("W RdReg177130: %04Xh",  Device_Data.SysRegs.RdReg177130));
                     return Device_Data.SysRegs.RdReg177130;
                 case (0177132 >> 1):
-                    //dsk_read();
                     Device_Data.SysRegs.Reg177132 = GetData();
                     DSK_PRINT(("W Reg177132: %04Xh",  Device_Data.SysRegs.Reg177132));
                     return Device_Data.SysRegs.Reg177132;
@@ -215,7 +149,6 @@ TCPU_Arg AT_OVL CPU_ReadMemB (TCPU_Arg Adr) {
                     DSK_PRINT(("B RdReg177130: %02Xh", Device_Data.SysRegs.RdReg177130 & 0xff));
                     return Device_Data.SysRegs.RdReg177130 & 0xff;
                 case (0177132 >> 1):
-                    //dsk_read(); // TODO: read one byte really used by someone?
                     Device_Data.SysRegs.Reg177132 = GetData();
                     DSK_PRINT(("B Reg177132: %04Xh",  Device_Data.SysRegs.Reg177132));
                     return Device_Data.SysRegs.Reg177132 & 0xff;
@@ -283,7 +216,6 @@ TCPU_Arg AT_OVL CPU_WriteW (TCPU_Arg Adr, uint_fast16_t Word) {
                 DSK_PRINT(("W WrReg177130 <- %04Xh", Word));
                 Device_Data.SysRegs.WrReg177130 = (uint16_t) Word;
                 SetCommand(Word);
-                // dsk_word(Word);
             } else {
                 return CPU_ARG_WRITE_ERR;
             }
@@ -296,7 +228,6 @@ TCPU_Arg AT_OVL CPU_WriteW (TCPU_Arg Adr, uint_fast16_t Word) {
             } else {
                 return CPU_ARG_WRITE_ERR;
             }
-            // TODO:
             break;
         case (0177660 >> 1):
             PrevWord = Device_Data.SysRegs.Reg177660;
@@ -402,10 +333,9 @@ TCPU_Arg AT_OVL CPU_WriteB (TCPU_Arg Adr, uint_fast8_t Byte) {
             DSK_PRINT(("B WrReg177130 <- %04Xh", Word));
             Device_Data.SysRegs.WrReg177130 = (uint16_t) Word;
             SetCommand(Word & 0xFF);
-            //dsk_word(Word);
             break;
         case (0177132 >> 1):
-            DSK_PRINT(("B Reg177132 <- %04Xh", Word)); // TODO: byte?
+            DSK_PRINT(("B Reg177132 <- %04Xh", Word));
             Device_Data.SysRegs.Reg177132 = (uint16_t) Word;
             WriteData(Word & 0xFF);
             break;

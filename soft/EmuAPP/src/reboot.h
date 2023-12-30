@@ -1,11 +1,8 @@
 #ifndef REBOOT_H
 #define REBOOT_H
 
-
-#include "ets.h"
-
+#include "stdint.h"
 
 void reboot(uint32_t value);
-
 
 #endif

@@ -1,9 +1,6 @@
 #ifndef TIMER0_H
 #define TIMER0_H
 
-
-#include "ets.h"
-
 #define ETS_CCOMPARE0_INUM  6
 
 #include "hardware/structs/systick.h"

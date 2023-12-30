@@ -2,10 +2,7 @@
 #include <stdint.h>
 #include <stdio.h>
 #include <string.h>
-#include "ets.h"
-#include "esp8266.h"
 #include "AnyMem.h"
-
 #include "CPU.h"
 #include "CPU_e.h"
 #include "../EmuFfs/CPU_ef.h"

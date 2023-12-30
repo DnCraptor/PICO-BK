@@ -27,32 +27,22 @@
 #include "tusb.h"
 #include "usb.h"
 #include "emulator.h"
-
-//#include "fdd.h"
-//#include "startup_disk.h"
+#include "MKDOS318B.h"
 
 char* fdd0_rom() {
-  return 0;// FDD0;
+  return MKDOS318B;
 }
 
 char* fdd1_rom() {
-#if ROM_DRIVE_B
-  return FDD1;
-#else
-  return NULL;
-#endif
+  return MKDOS318B;
 }
 
 size_t fdd0_sz() {
-  return 0; //sizeof FDD0;
+  return sizeof MKDOS318B;
 }
 
 size_t fdd1_sz() {
-#if ROM_DRIVE_B
-  return sizeof FDD1;
-#else
-  return 0;
-#endif
+  return sizeof MKDOS318B;
 }
 
 #if CFG_TUD_MSC

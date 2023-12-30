@@ -128,6 +128,14 @@ int main() {
     }
 
     DIRECT_RAM_BORDER = PSRAM_AVAILABLE ? RAM_SIZE : (SD_CARD_AVAILABLE ? RAM_PAGE_SIZE : RAM_SIZE);
+
+    if (SD_CARD_AVAILABLE) {
+        insertdisk(0, fdd0_sz(), fdd0_rom(), "\\BK\\fdd0.img");
+        insertdisk(1, fdd1_sz(), fdd1_rom(), "\\BK\\fdd1.img");
+        insertdisk(2, 0, 0, "\\BK\\hdd0.img");
+        insertdisk(3, 0, 0, "\\BK\\hdd1.img");
+    }
+
     main_init();
     emu_start();
     return 0;
