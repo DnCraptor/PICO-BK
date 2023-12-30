@@ -39,6 +39,4 @@ extern Tps2_Data ps2_Data;
 #define PS2_INT_STATE_BITN_POS     9
 #define PS2_INT_STATE_BITN_MASK    0xFE00
 
-void gpio_int (void);
-
 #endif

@@ -1,6 +1,4 @@
 #include <string.h>
-#include "board.h"
-#include "gpio_lib.h"
 #include "ets.h"
 
 #include "CPU.h"

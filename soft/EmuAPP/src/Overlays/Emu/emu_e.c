@@ -1,10 +1,7 @@
 #include "ets.h"
-#include "tv.h"
 #include "timer0.h"
 #include "reboot.h"
 #include "esp8266.h"
-#include "pin_mux_register.h"
-#include "ovl.h"
 #include "ps2_bk.h"
 #include "ps2_codes.h"
 #include "CPU.h"
@@ -14,7 +11,6 @@
 #include "CPU_e.h"
 
 #include "../EmuUi/Key_eu.h"
-#include "../EmuUi/ps2_eu.h"
 
 #include "Debug.h"
 

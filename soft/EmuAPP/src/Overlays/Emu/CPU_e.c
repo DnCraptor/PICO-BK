@@ -2,8 +2,6 @@
 #include <stdint.h>
 #include <stdio.h>
 #include <string.h>
-#include "board.h"
-#include "gpio_lib.h"
 #include "ets.h"
 #include "esp8266.h"
 #include "AnyMem.h"
