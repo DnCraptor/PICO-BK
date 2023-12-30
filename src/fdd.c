@@ -105,8 +105,8 @@ void EmulateFDD() {
                 DSK_PRINT(("EmulateFDD FDD_STOP"));
 				break;
 			}
-            uint16_t word = (uint16_t)MKDOS318B[pos++] << 8;
-            word |= (uint16_t) MKDOS318B[pos++];
+            uint16_t word = (uint16_t)MKDOS318B[pos++];
+            word |= (uint16_t)MKDOS318B[pos++] << 8;
 			CPU_WriteW(addr, word);
             DSK_PRINT(("EmulateFDD addr: 0%o, %04Xh", addr, word));
 			addr += sizeof(uint16_t);
