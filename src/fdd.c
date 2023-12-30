@@ -1,5 +1,6 @@
 #include "fdd.h"
 #include "CPU_ef.h"
+#include "emulator.h"
 
 void EmulateFDD() {
     DSK_PRINT(("EmulateFDD enter"));
@@ -114,7 +115,7 @@ void EmulateFDD() {
 	}
 	else {
 		// Если образ примонтирован, и операция записи, а образ защищён от записи
-		if (true) {
+		if (!SD_CARD_AVAILABLE) {
 			// то сообщим об этом ошибкой
             Device_Data.CPU_State.psw |= (1 << C_FLAG);
             CPU_WriteW(052, FDD_DISK_PROTECTED);
@@ -122,18 +123,19 @@ void EmulateFDD() {
 			return;
 		}
 		// запись
-		/*			length = -length;
-					do {
-						uint16_t word = pBoard->GetWord(addr);
-						if (!pFD->FDWrite(&word, sizeof(uint16_t))) {
-							bErrors = true;
-							pBoard->SetPSWBit(PSW_BIT::C, true);
-							pBoard->SetWordIndirect(052, FDD_STOP);
-							break;
-						}
-						addr += sizeof(uint16_t);
-					}
-					while (--length);*/
+		length = -length;
+		do {
+			uint16_t word = CPU_ReadMemW(addr);
+			if (!word_to_drive(drive, pos, word)) {
+                Device_Data.CPU_State.psw |= (1 << C_FLAG);
+                CPU_WriteW(052, FDD_STOP);
+                DSK_PRINT(("EmulateFDD FDD_STOP"));
+				break;
+			}
+			addr += sizeof(uint16_t);
+			pos  += sizeof(uint16_t);
+		}
+		while (--length);
 	}
 	if (!bErrors) {
         Device_Data.CPU_State.psw &= ~(1 << C_FLAG);

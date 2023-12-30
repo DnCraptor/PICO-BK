@@ -37,30 +37,42 @@ size_t size_of_drive(uint8_t drive) {
     return 0;
 }
 
-uint16_t word_of_drive(uint8_t drive, size_t pos) {
-    _FILE * f;
-    switch (drive)
+inline static _FILE* actualDrive(uint8_t drivenum) {
+    switch (drivenum)
     {
     case 0:
-        f = getFileA();
-        break;
+        return getFileA();
     case 1:
-        f = getFileB();
-        break;
+        return getFileB();
     case 2:
-        f = getFileC();
-        break;
+        return getFileC();
     case 3:
-        f = getFileD();
-        break;
-    default:
-        return 0;
+        return getFileD();
     }
-    f_lseek(f, pos); // TODO: FRES
+    return 0;
+}
+
+uint16_t word_of_drive(uint8_t drive, size_t pos) {
+    _FILE * f = actualDrive(drive);
+    if (!f) return 0;
+    FRESULT r = f_lseek(f, pos);
+    if (r != FR_OK) return 0;
     uint16_t res;
     UINT br;
-    f_read(f, &res, 2, &br); // TODO: FRES
+    r = f_read(f, &res, 2, &br);
+    if (r != FR_OK) return 0;
     return res;
+}
+
+bool word_to_drive(uint8_t drive, size_t pos, uint16_t word) {
+    _FILE * f = actualDrive(drive);
+    if (!f) return false;
+    FRESULT r = f_lseek(f, pos);
+    if (r != FR_OK) return false;
+    UINT bw;
+    r = f_read(f, &word, 2, &bw);
+    if (r != FR_OK) return false;
+    return true;
 }
 
 struct struct_drive {
@@ -86,21 +98,6 @@ void ejectdisk(uint8_t drivenum) {
         else
             fdcount--;
     }
-}
-
-static _FILE* actualDrive(uint8_t drivenum) {
-    switch (drivenum)
-    {
-    case 0:
-        return getFileA();
-    case 1:
-        return getFileB();
-    case 2:
-        return getFileC();
-    case 3:
-        return getFileD();
-    }
-    return 0;
 }
 
 static _FILE* tryFlushROM(uint8_t drivenum, size_t size, char *ROM, char *path) {

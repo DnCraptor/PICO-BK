@@ -90,6 +90,7 @@ void Periodic();
 
 size_t size_of_drive(uint8_t drive);
 uint16_t word_of_drive(uint8_t drive, size_t pos);
+bool word_to_drive(uint8_t drive, size_t pos, uint16_t word);
 char* fdd0_rom();
 char* fdd1_rom();
 size_t fdd0_sz();
