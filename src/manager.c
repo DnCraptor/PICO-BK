@@ -244,17 +244,17 @@ void notify_image_insert_action(uint8_t drivenum, char *pathname) {
 }
 
 static void swap_drives(uint8_t cmd) {
-    sprintf(line, "F%d pressed - swap FDD images", cmd + 1);
-    draw_cmd_line(0, CMD_Y_POS, line);
+    //sprintf(line, "F%d pressed - swap FDD images", cmd + 1);
+    //draw_cmd_line(0, CMD_Y_POS, line);
     if (already_swapped_fdds) {
-        insertdisk(0, fdd0_sz(), fdd0_rom(), drives_states[0].path);
-        insertdisk(1, fdd1_sz(), fdd1_rom(), drives_states[1].path);
+        insertdisk(0, 819200, 0, drives_states[0].path);
+        insertdisk(1, 819200, 0, drives_states[1].path);
     } else {
-        insertdisk(1, fdd0_sz(), fdd0_rom(), drives_states[0].path);
-        insertdisk(0, fdd1_sz(), fdd1_rom(), drives_states[1].path);
+        insertdisk(1, 819200, 0, drives_states[0].path);
+        insertdisk(0, 819200, 0, drives_states[1].path);
     }
     already_swapped_fdds = !already_swapped_fdds;
-    swap_drive_message();
+    //swap_drive_message();
 }
 
 inline static void if_swap_drives() {
@@ -968,12 +968,12 @@ static inline bool run_bin(char* path) {
 }
 
 static inline bool run_img(char* path) {
-    insertdisk(1, 0, 0, path); // TODO: select drive #
+    insertdisk(1, 819200, 0, path); // TODO: select drive #
     if ( !is_fdd_suppored() ) {
         color_mode = false;
         set_bk0010mode(BK_0011M);
-        reset(0);
     }
+    reset(0);
     mark_to_exit_flag = true;
     return true;
 }
