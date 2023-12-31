@@ -166,7 +166,9 @@ uint8_t insertdisk(uint8_t drivenum, size_t size, char *ROM, char *pathname) {
             }
         } else {
             size_t sz = f_size(pFile);
-            if (sz > size) {
+            if (sz > size / 2 && sz < size) {
+                size = size / 2;
+            } else if (sz > size) {
                 size = sz;
             }
         }
@@ -202,6 +204,10 @@ uint8_t insertdisk(uint8_t drivenum, size_t size, char *ROM, char *pathname) {
         }
         if (size <= 737280) { // 720 KB
             sects = 9;
+        }
+        if (size <= 819200 / 2) { // 400 KB
+            cyls = 40;
+            sects = 10;
         }
         if (size <= 368640) { // 360 KB
             cyls = 40;

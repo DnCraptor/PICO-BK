@@ -968,7 +968,7 @@ static inline bool run_bin(char* path) {
 }
 
 static inline bool run_img(char* path) {
-    insertdisk(1, 819200, 0, path); // TODO: select drive #
+    insertdisk(3, 819200, 0, path); // TODO: select drive #
     if ( !is_fdd_suppored() ) {
         color_mode = false;
         set_bk0010mode(BK_0011M);
