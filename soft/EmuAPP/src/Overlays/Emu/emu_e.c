@@ -25,6 +25,17 @@ inline static bool any_down(uint_fast16_t CodeAndFlags) {
 
 int if_manager(bool force); // TODO:
 
+#include "hardware/gpio.h"
+
+bool hw_get_bit_LOAD() {
+    uint8_t out = 0;
+#if LOAD_WAV_PIO
+    out = gpio_get(LOAD_WAV_PIO);
+#endif
+    // valLoad=out*10;
+    return out > 0;
+};
+
 void AT_OVL emu_start () {
     uint64_t      cycles_cnt1  = getCycleCount ();
     int_fast32_t  Time         = (int32_t)cycles_cnt1;
@@ -39,6 +50,11 @@ void AT_OVL emu_start () {
     // Запускаем эмуляцию
     while (1) {
         int tormoz = if_manager(false);
+#if LOAD_WAV_PIO
+        bool bit_wav = hw_get_bit_LOAD();
+        if(bit_wav) Device_Data.SysRegs.RdReg177716 |= 0b100000;
+        else Device_Data.SysRegs.RdReg177716 &= ~0b100000;
+#endif
         uint_fast8_t  Count;
         DEBUG_PRINT(("Key_Flags: %08Xh; (Key_Flags & KEY_FLAGS_TURBO): %d", Key_Flags, (Key_Flags & KEY_FLAGS_TURBO)));
         if (Key_Flags & KEY_FLAGS_TURBO) {

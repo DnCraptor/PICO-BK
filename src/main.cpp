@@ -75,6 +75,12 @@ void __time_critical_func(render_core)() {
 #endif
 }
 
+void inInit(uint gpio) {
+    gpio_init(gpio);
+    gpio_set_dir(gpio, GPIO_IN);
+    gpio_pull_up(gpio);
+}
+
 int main() {
 #if (OVERCLOCKING > 270)
     hw_set_bits(&vreg_and_chip_reset_hw->vreg, VREG_AND_CHIP_RESET_VREG_VSEL_BITS);
@@ -91,6 +97,11 @@ int main() {
 #ifdef SOUND_SYSTEM
     PWM_init_pin(PWM_PIN0);
     PWM_init_pin(PWM_PIN1);
+#endif
+
+#if LOAD_WAV_PIO
+    //пин ввода звука
+    inInit(LOAD_WAV_PIO);
 #endif
 
     gpio_init(PICO_DEFAULT_LED_PIN);
