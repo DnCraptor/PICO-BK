@@ -100,9 +100,9 @@ TCPU_Arg AT_OVL CPU_ReadMemW (TCPU_Arg Adr) {
             }
         }
         uintptr_t Page;
-        if (Adr >= 0120000 && Adr < 0160000 && is_fdd_suppored()) {
+        if (Adr >= 0120000 && Adr < 0160000 && get_bk0010mode() == BK_FDD) {
             Page = Device_Data.MemPages [4]; // W/A
-        } else if (Adr >= 0140000 && Adr < 0160000 && is_fdd_suppored()) {
+        } else if (Adr >= 0140000 && Adr < 0160000 && get_bk0010mode() == BK_FDD) {
             return CPU_ARG_READ_ERR;
         } else {
             Page = Device_Data.MemPages [(Adr) >> 14];
@@ -159,9 +159,9 @@ TCPU_Arg AT_OVL CPU_ReadMemB (TCPU_Arg Adr) {
             }
         }
         uintptr_t Page;
-        if (Adr >= 0120000 && Adr < 0160000 && is_fdd_suppored()) {
+        if (Adr >= 0120000 && Adr < 0160000 && get_bk0010mode() == BK_FDD) {
             Page = Device_Data.MemPages [4]; // W/A
-        } else if (Adr >= 0140000 && Adr < 0160000 && is_fdd_suppored()) {
+        } else if (Adr >= 0140000 && Adr < 0160000 && get_bk0010mode() == BK_FDD) {
             return CPU_ARG_READ_ERR;
         } else {
             Page = Device_Data.MemPages [(Adr) >> 14];
@@ -198,7 +198,7 @@ TCPU_Arg AT_OVL CPU_WriteW (TCPU_Arg Adr, uint_fast16_t Word) {
         Device_Data.CPU_State.r [CPU_GET_ARG_REG_INDEX (Adr)] = (uint16_t) Word;
         return CPU_ARG_WRITE_OK;
     }
-    if (is_fdd_suppored()) {
+    if (get_bk0010mode() == BK_FDD) {
         if (Adr < 0160000) {
             uintptr_t Page = Device_Data.MemPages[(Adr >= 0120000) ? 4 : ((Adr) >> 14)];
             DEBUG_PRINT(("CPU_WriteW(%oo, %oo) Page: %08X (#%d)", Adr, Word, Page, (Adr) >> 14));
@@ -316,7 +316,7 @@ TCPU_Arg AT_OVL CPU_WriteB (TCPU_Arg Adr, uint_fast8_t Byte) {
 
         return CPU_ARG_WRITE_OK;
     }
-    if (is_fdd_suppored()) {
+    if (get_bk0010mode() == BK_FDD) {
         if (Adr < 0160000) {
             uintptr_t Page = Device_Data.MemPages[(Adr >= 0120000) ? 4 : (Adr >> 14)];
             if (Page && Page < CPU_PAGE0_MEM_ADR + RAM_PAGES_SIZE) {
@@ -338,14 +338,22 @@ TCPU_Arg AT_OVL CPU_WriteB (TCPU_Arg Adr, uint_fast8_t Byte) {
     if (Adr & 1) Word <<= 8;
     switch (Adr >> 1) {
         case (0177130 >> 1):
-            DSK_PRINT(("B WrReg177130 <- %04Xh", Word));
-            Device_Data.SysRegs.WrReg177130 = (uint16_t) Word;
-            SetCommand(Word & 0xFF);
+            if (is_fdd_suppored()) {
+                DSK_PRINT(("B WrReg177130 <- %04Xh", Word));
+                Device_Data.SysRegs.WrReg177130 = (uint16_t) Word;
+                SetCommand(Word & 0xFF);
+            } else {
+                return CPU_ARG_WRITE_ERR;
+            }
             break;
         case (0177132 >> 1):
-            DSK_PRINT(("B Reg177132 <- %04Xh", Word));
-            Device_Data.SysRegs.Reg177132 = (uint16_t) Word;
-            WriteData(Word & 0xFF);
+            if (is_fdd_suppored()) {
+                DSK_PRINT(("B Reg177132 <- %04Xh", Word));
+                Device_Data.SysRegs.Reg177132 = (uint16_t) Word;
+                WriteData(Word & 0xFF);
+            } else {
+                return CPU_ARG_WRITE_ERR;
+            }
             break;
         case (0177660 >> 1):
             PrevWord = Device_Data.SysRegs.Reg177660;
