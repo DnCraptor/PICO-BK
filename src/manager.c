@@ -704,10 +704,10 @@ static void switch_rom(uint8_t cmd) {
     bk0010mode++;
     if (bk0010mode > BK_0011M) bk0010mode = BK_FDD;
     set_bk0010mode(bk0010mode);
-    if ( is_fdd_suppored() && color_mode ) {
-        color_mode = false;
-        snprintf(fn_1_12_tbl_ctrl[10].name, BTN_WIDTH, color_mode ? " B/W  " : " Color");
-    }
+  //  if ( is_fdd_suppored() && color_mode ) {
+  //      color_mode = false;
+  //      snprintf(fn_1_12_tbl_ctrl[10].name, BTN_WIDTH, color_mode ? " B/W  " : " Color");
+  //  }
     const char* cm = curr_mode();
     snprintf(fn_1_12_tbl     [10].name, BTN_WIDTH, cm);
     snprintf(fn_1_12_tbl_alt [10].name, BTN_WIDTH, cm);
@@ -970,7 +970,7 @@ static inline bool run_bin(char* path) {
 static inline bool run_img(char* path) {
     insertdisk(2, 819200, 0, path); // TODO: select drive #
     if ( !is_fdd_suppored() ) {
-        color_mode = false;
+//        color_mode = false;
         set_bk0010mode(BK_0011M);
     }
     reset(0);
@@ -1209,6 +1209,10 @@ inline static void start_manager() {
     set_start_debug_line(MAX_HEIGHT);
     draw_window();
     select_left_panel();
+
+    const char* cm = curr_mode();
+    snprintf(fn_1_12_tbl     [10].name, BTN_WIDTH, cm);
+    snprintf(fn_1_12_tbl_alt [10].name, BTN_WIDTH, cm);
     bottom_line();
 
     work_cycle();
