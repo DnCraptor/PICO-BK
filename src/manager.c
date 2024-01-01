@@ -1092,7 +1092,7 @@ static inline void work_cycle() {
                repeat_cnt = 0;
             }
         }
-        if (lastCleanableScanCode) DBGM_PRINT(("lastCleanableScanCode: %02Xh", lastCleanableScanCode));
+        //if (lastCleanableScanCode) DBGM_PRINT(("lastCleanableScanCode: %02Xh", lastCleanableScanCode));
         switch(lastCleanableScanCode) {
           case 0x01: // Esc down
           //  mark_to_exit(9);
@@ -1407,10 +1407,10 @@ bool handleScancode(uint32_t ps2scancode) { // core 1
         tabPressed = false;
         break;
       default:
-        DBGM_PRINT(("handleScancode default: %02Xh", ps2scancode));
+        //DBGM_PRINT(("handleScancode default: %02Xh", ps2scancode));
         break;
     }
-    if (ps2scancode) DBGM_PRINT(("handleScancode processed: %02Xh", ps2scancode));
+    //if (ps2scancode) DBGM_PRINT(("handleScancode processed: %02Xh", ps2scancode));
     return manager_started;
 }
 

@@ -128,7 +128,11 @@ TCPU_Arg AT_OVL CPU_ReadMemW (TCPU_Arg Adr) {
         case (0177712 >> 1): CPU_TimerRun ();
                              pReg = &Device_Data.SysRegs.Reg177712;   break;
         case (0177714 >> 1): pReg = &Device_Data.SysRegs.RdReg177714; break;
-        case (0177716 >> 1): pReg = &Device_Data.SysRegs.RdReg177716; break;
+        case (0177716 >> 1): {
+            pReg = &Device_Data.SysRegs.RdReg177716;
+            DBGM_PRINT(("0177716: %04Xh", *pReg));
+            break;
+        }
         default: return CPU_ARG_READ_ERR;
     }
     return *pReg;
@@ -176,7 +180,11 @@ TCPU_Arg AT_OVL CPU_ReadMemB (TCPU_Arg Adr) {
         case (0177712 >> 1): CPU_TimerRun ();
                              pReg = &Device_Data.SysRegs.Reg177712;   break;
         case (0177714 >> 1): pReg = &Device_Data.SysRegs.RdReg177714; break;
-        case (0177716 >> 1): pReg = &Device_Data.SysRegs.RdReg177716; break;
+        case (0177716 >> 1): {
+            pReg = &Device_Data.SysRegs.RdReg177716;
+            DBGM_PRINT(("0177717: 0%o", ((uint8_t *) pReg) [Adr & 1]));
+            break;
+        }
         default: return CPU_ARG_READ_ERR;
     }
     return ((uint8_t *) pReg) [Adr & 1];

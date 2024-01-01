@@ -9,9 +9,15 @@
 #include "BOS_N_DISK_327.h"
 #include "BK0010_ROM.h"
 
-#if BOOT_DEBUG || DSK_DEBUG
+#if BOOT_DEBUG || DSK_DEBUG || MNGR_DEBUG || KBD_DEBUG
+#include "stdio.h"
 extern void logMsg(char* msg);
 #define printf(...) { char tmp[80]; snprintf(tmp, 80, __VA_ARGS__); logMsg(tmp); }
+#if MNGR_DEBUG
+#define DBGM_PRINT( X) printf X
+#else
+#define DBGM_PRINT( X)
+#endif
 #if BOOT_DEBUG
 #define DEBUG_PRINT( X) printf X
 #else
@@ -25,10 +31,9 @@ extern void logMsg(char* msg);
 #else
 #define DEBUG_PRINT( X)
 #define DSK_PRINT( X)
+#define DBGM_PRINT( X)
 #endif
 #ifdef KBD_DEBUG
-extern void logMsg(char* msg);
-#define printf(...) { char tmp[80]; snprintf(tmp, 80, __VA_ARGS__); logMsg(tmp); }
 #define KBD_PRINT( X) printf X
 #else
 #define KBD_PRINT( X)

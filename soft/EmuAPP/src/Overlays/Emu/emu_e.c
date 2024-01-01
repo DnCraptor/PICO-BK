@@ -26,6 +26,7 @@ inline static bool any_down(uint_fast16_t CodeAndFlags) {
 int if_manager(bool force); // TODO:
 
 #include "hardware/gpio.h"
+#include "vga.h"
 
 bool hw_get_bit_LOAD() {
     uint8_t out = 0;
@@ -35,6 +36,9 @@ bool hw_get_bit_LOAD() {
     // valLoad=out*10;
     return out > 0;
 };
+#if LOAD_WAV_2_COVOX && LOAD_WAV_PIO
+static uint8_t covox_plus = 0;
+#endif
 
 void AT_OVL emu_start () {
     uint64_t      cycles_cnt1  = getCycleCount ();
@@ -52,8 +56,12 @@ void AT_OVL emu_start () {
         int tormoz = if_manager(false);
 #if LOAD_WAV_PIO
         bool bit_wav = hw_get_bit_LOAD();
-        if(bit_wav) Device_Data.SysRegs.RdReg177716 |= 0b100000;
+        if (bit_wav) Device_Data.SysRegs.RdReg177716 |= 0b100000;
         else Device_Data.SysRegs.RdReg177716 &= ~0b100000;
+#if LOAD_WAV_2_COVOX
+        if (bit_wav) { covox_plus = 0x10; true_covox |= 0x0F; }
+        if (!bit_wav && covox_plus) { covox_plus = 0; true_covox &= ~0x0F; }
+#endif
 #endif
         uint_fast8_t  Count;
         DEBUG_PRINT(("Key_Flags: %08Xh; (Key_Flags & KEY_FLAGS_TURBO): %d", Key_Flags, (Key_Flags & KEY_FLAGS_TURBO)));
