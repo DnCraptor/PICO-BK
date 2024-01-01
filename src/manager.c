@@ -554,11 +554,11 @@ static void m_move_file(uint8_t cmd) {
 }
 
 static void m_info(uint8_t cmd) {
-    line_t plns[33] = {
+    line_t plns[40] = {
         { 1, "Key mapping BK-0011M:" },
-        { 1, " - Alt   + \"key\"    - AP2" },
+        { 1, " - Alt   + \"key\"  - AP2" },
         { 1, " - Shift + \"key\"  - register up/down" },
-        { 1, " - Ctrl  + \"key\"   - CU" },
+        { 1, " - Ctrl  + \"key\"  - CU" },
         { 1, " - Caps Lock      - lock up/down register" },
         { 1, " - left  Win      - RUS" },
         { 1, " - right Win      - LAT" },
@@ -574,22 +574,29 @@ static void m_info(uint8_t cmd) {
         { 1, " - F9             - SBROS" },
         { 1, " " },
         { 1, "Emulation hot keys:" },
-        { 1, " - Ctrl+Alt+Del - Reset CPU, RAM clenup, set default pages, deafult speed, init system registers" },
+        { 1, " - Ctrl+Alt+Del - Reset BM1 CPU, RAM clenup, set default pages, deafult speed, init system registers" },
+        { 1, " - Print Screen - Reset RP2040 CPU" },
         { 1, " - F10          - cyclic change pallete" },
-        { 1, " - Alt + F10    - default BK-0010 pallete" },
+        { 1, " - Alt  + F10   - default BK-0010 pallete" },
         { 1, " - Ctrl + F10   - default BK-0011 pallete" },
         { 1, " - F11          - adjust brightness" },
         { 1, " - F12          - Switch B/W 512x256 to Color 256x256 and back" },
-        { 1, " - Alt + F1..F8 - fast review RAM pages in color representation" },
-        { 1, " - Ctrl+ F1..F8 - fast review RAM pages in B/W representation" },
+        { 1, " - Alt + F1..F8 - fast review BK RAM pages in color representation" },
+        { 1, " - Ctrl+ F1..F8 - fast review BK RAM pages in B/W representation" },
         { 1, " - Ctrl + F11   - slower emulation (default emulation is about to BK on 3 MHz)" },
         { 1, " - Ctrl + F12   - faster emulation" },
         { 1, " - Ctrl + \"+\"   - increase volume" },
         { 1, " - Ctrl + \"-\"   - decrease volume" },
         { 1, " - Esc          - go to File Manager" },
+        { 1, " " },
+        { 1, "File Manager hot keys:" },
+        { 1, " - F10          - mount SD-card as USB-drive" },
+        { 1, " - F11          - change emulation mode BK-0010-01, BK-0011M..." },
+        { 1, " - F12          - Reset BM1 CPU and go to BK for selected mode" },
+        { 1, " - Ctrl + F10   - exit from the File Manager" },
     };
-    lines_t lines = { 33, 1, plns };
-    draw_box(3, 2, MAX_WIDTH - 10, MAX_HEIGHT - 10, "Help", &lines);
+    lines_t lines = { 40, 0, plns };
+    draw_box(5, 2, MAX_WIDTH - 15, MAX_HEIGHT - 6, "Help", &lines);
     int t = lastCleanableScanCode;
     while(t == lastCleanableScanCode) { }
     redraw_window();
