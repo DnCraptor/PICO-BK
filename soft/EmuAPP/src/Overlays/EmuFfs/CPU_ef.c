@@ -84,7 +84,7 @@ void AT_OVL CPU_TimerRun (void)
 }
 
 TCPU_Arg AT_OVL CPU_ReadMemW (TCPU_Arg Adr) {
-    DEBUG_PRINT(("CPU_ReadMemW Adr: %oo (%Xh) Page: (#%d)", Adr, Adr, (Adr) >> 14));
+    DEBUG_PRINT(("CPU_ReadMemW Adr: %oo (%Xh) Page: (#%d)", Adr, Adr, Adr >> 12));
     uint16_t *pReg;
     if (Adr < CPU_START_IO_ADR) {
         if (is_fdd_suppored()) {
@@ -99,18 +99,11 @@ TCPU_Arg AT_OVL CPU_ReadMemW (TCPU_Arg Adr) {
                     return Device_Data.SysRegs.Reg177132;
             }
         }
-        uintptr_t Page;
-        if (Adr >= 0120000 && Adr < 0160000 && get_bk0010mode() == BK_FDD) {
-            Page = Device_Data.MemPages [4]; // W/A
-        } else if (Adr >= 0140000 && Adr < 0160000 && get_bk0010mode() == BK_FDD) {
-            return CPU_ARG_READ_ERR;
-        } else {
-            Page = Device_Data.MemPages [(Adr) >> 14];
-        }
-        DEBUG_PRINT(("CPU_ReadMemW Adr: %oo (%Xh) Page: %08Xh (#%d)", Adr, Adr, Page, (Adr) >> 14));
+        uintptr_t Page = Device_Data.MemPages [(Adr) >> 12];
+        DEBUG_PRINT(("CPU_ReadMemW Adr: %oo (%Xh) Page: %08Xh (#%d)", Adr, Adr, Page, Adr >> 12));
         if (Page) {
-            uintptr_t t = (Page + ((Adr) & 0x3FFE));
-            DEBUG_PRINT(("CPU_ReadMemW (Page + ((Adr) & 0x3FFE)): %08Xh", t));
+            uintptr_t t = (Page + ((Adr) & 0x0FFE));
+            DEBUG_PRINT(("CPU_ReadMemW (Page + ((Adr) & 0x0FFE)): %08Xh", t));
             uint16_t r = AnyMem_r_u16 ((uint16_t *)t);
             DEBUG_PRINT(("CPU_ReadMemW AnyMem_r_u16(%08X): %oo", t, r));
             return r;
@@ -140,7 +133,7 @@ TCPU_Arg AT_OVL CPU_ReadMemW (TCPU_Arg Adr) {
 
 TCPU_Arg AT_OVL CPU_ReadMemB (TCPU_Arg Adr) {
     uint16_t *pReg;
-    DEBUG_PRINT(("CPU_ReadMemB Adr: %oo (%Xh) Page: (#%d)", Adr, Adr, (Adr) >> 14));
+    DEBUG_PRINT(("CPU_ReadMemB Adr: %oo (%Xh) Page: (#%d)", Adr, Adr, Adr >> 12));
     if (Adr < CPU_START_IO_ADR) {
         if (is_fdd_suppored()) {
             switch (Adr >> 1) {
@@ -158,15 +151,8 @@ TCPU_Arg AT_OVL CPU_ReadMemB (TCPU_Arg Adr) {
                     return Device_Data.SysRegs.Reg177132 & 0xff;
             }
         }
-        uintptr_t Page;
-        if (Adr >= 0120000 && Adr < 0160000 && get_bk0010mode() == BK_FDD) {
-            Page = Device_Data.MemPages [4]; // W/A
-        } else if (Adr >= 0140000 && Adr < 0160000 && get_bk0010mode() == BK_FDD) {
-            return CPU_ARG_READ_ERR;
-        } else {
-            Page = Device_Data.MemPages [(Adr) >> 14];
-        }
-        if (Page) return AnyMem_r_u8 ((uint8_t *) (Page + ((Adr) & 0x3FFF)));
+        uintptr_t Page = Device_Data.MemPages [Adr >> 12];
+        if (Page) return AnyMem_r_u8 ((uint8_t *) (Page + (Adr & 0x0FFF)));
         return CPU_ARG_READ_ERR;
     }
     switch (Adr >> 1)  {
@@ -190,9 +176,91 @@ TCPU_Arg AT_OVL CPU_ReadMemB (TCPU_Arg Adr) {
     return ((uint8_t *) pReg) [Adr & 1];
 }
 
+static const uintptr_t PageTab [8*4] = {
+    CPU_PAGE11_MEM_ADR,
+    CPU_PAGE12_MEM_ADR,
+    CPU_PAGE13_MEM_ADR,
+    CPU_PAGE14_MEM_ADR,
+
+    CPU_PAGE51_MEM_ADR,
+    CPU_PAGE52_MEM_ADR,
+    CPU_PAGE53_MEM_ADR,
+    CPU_PAGE54_MEM_ADR,
+
+    CPU_PAGE21_MEM_ADR,
+    CPU_PAGE22_MEM_ADR,
+    CPU_PAGE23_MEM_ADR,
+    CPU_PAGE24_MEM_ADR,
+
+    CPU_PAGE31_MEM_ADR,
+    CPU_PAGE32_MEM_ADR,
+    CPU_PAGE33_MEM_ADR,
+    CPU_PAGE34_MEM_ADR,
+
+    CPU_PAGE41_MEM_ADR,
+    CPU_PAGE42_MEM_ADR,
+    CPU_PAGE43_MEM_ADR,
+    CPU_PAGE44_MEM_ADR,
+
+    CPU_PAGE71_MEM_ADR,
+    CPU_PAGE72_MEM_ADR,
+    CPU_PAGE73_MEM_ADR,
+    CPU_PAGE74_MEM_ADR,
+
+    CPU_PAGE01_MEM_ADR,
+    CPU_PAGE02_MEM_ADR,
+    CPU_PAGE03_MEM_ADR,
+    CPU_PAGE04_MEM_ADR,
+
+    CPU_PAGE61_MEM_ADR,
+    CPU_PAGE62_MEM_ADR,
+    CPU_PAGE63_MEM_ADR,
+    CPU_PAGE64_MEM_ADR
+}; // {1, 5, 2, 3, 4, 7, 0, 6};
+
+static inline void select_11_page(uint16_t Word) {
+                Device_Data.SysRegs.Wr1Reg177716 = (uint16_t) Word;
+                uint8_t p = ((Word >> 12) & 7) * 4;
+                Device_Data.MemPages [4] = PageTab [p];
+                Device_Data.MemPages [5] = PageTab [p + 1];
+                Device_Data.MemPages [6] = PageTab [p + 2];
+                Device_Data.MemPages [7] = PageTab [p + 3];
+                if (Word &  01) {
+                    Device_Data.MemPages [8]  = CPU_PAGE81_MEM_ADR;
+                    Device_Data.MemPages [9]  = CPU_PAGE82_MEM_ADR;
+                    Device_Data.MemPages [10] = CPU_PAGE83_MEM_ADR;
+                    Device_Data.MemPages [11] = CPU_PAGE84_MEM_ADR;
+                }
+                else if (Word &  02) {
+                    Device_Data.MemPages [8]  = CPU_PAGE91_MEM_ADR;
+                    Device_Data.MemPages [9]  = CPU_PAGE92_MEM_ADR;
+                    Device_Data.MemPages [10] = CPU_PAGE93_MEM_ADR;
+                    Device_Data.MemPages [11] = CPU_PAGE94_MEM_ADR;
+                }
+                else if (Word & 010) {
+                    Device_Data.MemPages [8]  = CPU_PAGE101_MEM_ADR;
+                    Device_Data.MemPages [9]  = CPU_PAGE102_MEM_ADR;
+                    Device_Data.MemPages [10] = CPU_PAGE103_MEM_ADR;
+                    Device_Data.MemPages [11] = CPU_PAGE104_MEM_ADR;
+                }
+                else if (Word & 020) {
+                    Device_Data.MemPages [8]  = CPU_PAGE111_MEM_ADR;
+                    Device_Data.MemPages [9]  = CPU_PAGE112_MEM_ADR;
+                    Device_Data.MemPages [10] = CPU_PAGE113_MEM_ADR;
+                    Device_Data.MemPages [11] = CPU_PAGE114_MEM_ADR;
+                }
+                else {
+                    p = ((Word >> 8) & 7) * 4;
+                    Device_Data.MemPages [8]  = PageTab [p];
+                    Device_Data.MemPages [9]  = PageTab [p + 1];
+                    Device_Data.MemPages [10] = PageTab [p + 2];
+                    Device_Data.MemPages [11] = PageTab [p + 3];
+                }
+}
+
 TCPU_Arg AT_OVL CPU_WriteW (TCPU_Arg Adr, uint_fast16_t Word) {
     uint_fast16_t PrevWord;
-    DEBUG_PRINT(("CPU_WriteW(%oo, %oo) Page: #%d", Adr, Word, (Adr) >> 14));
+    DEBUG_PRINT(("CPU_WriteW(%oo, %oo) Page: #%d", Adr, Word, Adr >> 12));
     if (CPU_IS_ARG_REG (Adr)) {
         DEBUG_PRINT(("R%d <= %oo", CPU_GET_ARG_REG_INDEX (Adr), Word));
         Device_Data.CPU_State.r [CPU_GET_ARG_REG_INDEX (Adr)] = (uint16_t) Word;
@@ -200,20 +268,20 @@ TCPU_Arg AT_OVL CPU_WriteW (TCPU_Arg Adr, uint_fast16_t Word) {
     }
     if (get_bk0010mode() == BK_FDD) {
         if (Adr < 0160000) {
-            uintptr_t Page = Device_Data.MemPages[(Adr >= 0120000) ? 4 : ((Adr) >> 14)];
-            DEBUG_PRINT(("CPU_WriteW(%oo, %oo) Page: %08X (#%d)", Adr, Word, Page, (Adr) >> 14));
-            if (Page && Page < CPU_PAGE0_MEM_ADR + RAM_PAGES_SIZE) {
-                AnyMem_w_u16 ((uint16_t *) (Page + ((Adr) & 0x3FFE)), Word);
+            uintptr_t Page = Device_Data.MemPages[Adr >> 12];
+            DEBUG_PRINT(("CPU_WriteW(%oo, %oo) Page: %08X (#%d)", Adr, Word, Page, Adr >> 12));
+            if (Page && Page < CPU_PAGE01_MEM_ADR + RAM_PAGES_SIZE) {
+                AnyMem_w_u16 ((uint16_t *) (Page + (Adr & 0x0FFE)), Word);
                 return CPU_ARG_WRITE_OK;
             }
             return CPU_ARG_WRITE_ERR;
         }
     }
     else if (Adr < 0140000) {
-        uintptr_t Page = Device_Data.MemPages [(Adr) >> 14];
-        DEBUG_PRINT(("CPU_WriteW(%oo, %oo) Page: %08X (#%d)", Adr, Word, Page, (Adr) >> 14));
-        if (Page && Page < CPU_PAGE0_MEM_ADR + RAM_PAGES_SIZE) {
-            AnyMem_w_u16 ((uint16_t *) (Page + ((Adr) & 0x3FFE)), Word);
+        uintptr_t Page = Device_Data.MemPages [Adr >> 12];
+        DEBUG_PRINT(("CPU_WriteW(%oo, %oo) Page: %08X (#%d)", Adr, Word, Page, Adr >> 12));
+        if (Page && Page < CPU_PAGE01_MEM_ADR + RAM_PAGES_SIZE) {
+            AnyMem_w_u16 ((uint16_t *) (Page + (Adr & 0x0FFE)), Word);
             return CPU_ARG_WRITE_OK;
         }
         return CPU_ARG_WRITE_ERR;
@@ -244,7 +312,7 @@ TCPU_Arg AT_OVL CPU_WriteW (TCPU_Arg Adr, uint_fast16_t Word) {
         case (0177662 >> 1):
             Device_Data.SysRegs.WrReg177662 = (uint16_t) Word;
             // TODO: if 0011
-            graphics_set_page(Word & 0100000 ? CPU_PAGE6_MEM_ADR : CPU_PAGE5_MEM_ADR, (Word >> 8) & 15);
+            graphics_set_page(Word & 0100000 ? CPU_PAGE61_MEM_ADR : CPU_PAGE51_MEM_ADR, (Word >> 8) & 15);
             break;
         case (0177664 >> 1):
             PrevWord = Device_Data.SysRegs.Reg177664;
@@ -276,23 +344,7 @@ TCPU_Arg AT_OVL CPU_WriteW (TCPU_Arg Adr, uint_fast16_t Word) {
         case (0177716 >> 1):
             DEBUG_PRINT(("case (0177716 >> 1) on CPU_WriteW - switch pages: %d", (Word >> 12) & 7));
             if (Word & (1U << 11) && get_bk0010mode() == BK_0011M) {
-                static const uintptr_t PageTab [8] = {
-                    CPU_PAGE1_MEM_ADR,
-                    CPU_PAGE5_MEM_ADR,
-                    CPU_PAGE2_MEM_ADR,
-                    CPU_PAGE3_MEM_ADR,
-                    CPU_PAGE4_MEM_ADR,
-                    CPU_PAGE7_MEM_ADR,
-                    CPU_PAGE0_MEM_ADR,
-                    CPU_PAGE6_MEM_ADR
-                }; // {1, 5, 2, 3, 4, 7, 0, 6};
-                Device_Data.SysRegs.Wr1Reg177716 = (uint16_t) Word;
-                Device_Data.MemPages [1] = PageTab [(Word >> 12) & 7];
-                if      (Word &  01) Device_Data.MemPages [2] = CPU_PAGE8_MEM_ADR;
-                else if (Word &  02) Device_Data.MemPages [2] = CPU_PAGE9_MEM_ADR;
-                else if (Word & 010) Device_Data.MemPages [2] = CPU_PAGE10_MEM_ADR;
-                else if (Word & 020) Device_Data.MemPages [2] = CPU_PAGE11_MEM_ADR;
-                else                 Device_Data.MemPages [2] = PageTab [(Word >> 8) & 7];
+                select_11_page((uint16_t) Word);
             }
             else {
                 Device_Data.SysRegs.WrReg177716 = (uint16_t) Word;
@@ -310,26 +362,25 @@ TCPU_Arg AT_OVL CPU_WriteW (TCPU_Arg Adr, uint_fast16_t Word) {
 TCPU_Arg AT_OVL CPU_WriteB (TCPU_Arg Adr, uint_fast8_t Byte) {
     uint_fast16_t Word;
     uint_fast16_t PrevWord;
-    DEBUG_PRINT(("CPU_WriteB(%08Xh, %oo) Page: #%d", Adr, Word, (Adr) >> 14));
+    DEBUG_PRINT(("CPU_WriteB(%08Xh, %oo) Page: #%d", Adr, Word, Adr >> 12));
     if (CPU_IS_ARG_REG (Adr)) {
         *(uint8_t *) &Device_Data.CPU_State.r [CPU_GET_ARG_REG_INDEX (Adr)] = (uint8_t) Byte;
-
         return CPU_ARG_WRITE_OK;
     }
     if (get_bk0010mode() == BK_FDD) {
         if (Adr < 0160000) {
-            uintptr_t Page = Device_Data.MemPages[(Adr >= 0120000) ? 4 : (Adr >> 14)];
-            if (Page && Page < CPU_PAGE0_MEM_ADR + RAM_PAGES_SIZE) {
-                AnyMem_w_u8 ((uint8_t *) (Page + ((Adr) & 0x3FFF)), Byte);
+            uintptr_t Page = Device_Data.MemPages[Adr >> 12];
+            if (Page && Page < CPU_PAGE01_MEM_ADR + RAM_PAGES_SIZE) {
+                AnyMem_w_u8 ((uint8_t *) (Page + ((Adr) & 0x0FFF)), Byte);
                 return CPU_ARG_WRITE_OK;
             }
             return CPU_ARG_WRITE_ERR;
         }       
     }
     if (Adr < 0140000) {
-        uintptr_t Page = Device_Data.MemPages [(Adr) >> 14];
-        if (Page && Page < CPU_PAGE0_MEM_ADR + RAM_PAGES_SIZE) {
-            AnyMem_w_u8 ((uint8_t *) (Page + ((Adr) & 0x3FFF)), Byte);
+        uintptr_t Page = Device_Data.MemPages [Adr >> 12];
+        if (Page && Page < CPU_PAGE01_MEM_ADR + RAM_PAGES_SIZE) {
+            AnyMem_w_u8 ((uint8_t *) (Page + ((Adr) & 0x0FFF)), Byte);
             return CPU_ARG_WRITE_OK;
         }
         return CPU_ARG_WRITE_ERR;
@@ -362,7 +413,7 @@ TCPU_Arg AT_OVL CPU_WriteB (TCPU_Arg Adr, uint_fast8_t Byte) {
         case (0177662 >> 1):
             Device_Data.SysRegs.WrReg177662 = (uint16_t) Word;
             // TODO: if 0011 ?
-            graphics_set_page(Word & 0100000 ? CPU_PAGE6_MEM_ADR : CPU_PAGE5_MEM_ADR, (Word >> 8) & 15);
+            graphics_set_page(Word & 0100000 ? CPU_PAGE61_MEM_ADR : CPU_PAGE51_MEM_ADR, (Word >> 8) & 15);
             break;
         case (0177664 >> 1):
             PrevWord = Device_Data.SysRegs.Reg177664;
@@ -393,23 +444,7 @@ TCPU_Arg AT_OVL CPU_WriteB (TCPU_Arg Adr, uint_fast8_t Byte) {
             break;
         case (0177716 >> 1):
             if (Word & (1U << 11) && get_bk0010mode() == BK_0011M) {
-                const uintptr_t PageTab [8] = {
-                    CPU_PAGE1_MEM_ADR,
-                    CPU_PAGE5_MEM_ADR,
-                    CPU_PAGE2_MEM_ADR,
-                    CPU_PAGE3_MEM_ADR,
-                    CPU_PAGE4_MEM_ADR,
-                    CPU_PAGE7_MEM_ADR,
-                    CPU_PAGE0_MEM_ADR,
-                    CPU_PAGE6_MEM_ADR
-                }; // {1, 5, 2, 3, 4, 7, 0, 6};
-                Device_Data.SysRegs.Wr1Reg177716 = (uint16_t) Word;
-                Device_Data.MemPages [1] = PageTab [(Word >> 12) & 7];
-                if      (Word &  01) Device_Data.MemPages [2] = CPU_PAGE8_MEM_ADR;
-                else if (Word &  02) Device_Data.MemPages [2] = CPU_PAGE9_MEM_ADR;
-                else if (Word & 010) Device_Data.MemPages [2] = CPU_PAGE10_MEM_ADR;
-                else if (Word & 020) Device_Data.MemPages [2] = CPU_PAGE11_MEM_ADR;
-                else                 Device_Data.MemPages [2] = PageTab [(Word >> 8) & 7];
+                select_11_page((uint16_t) Word);
             }
             else {
                 Device_Data.SysRegs.WrReg177716 = (uint16_t) Word;

@@ -140,7 +140,7 @@ static void reset(uint8_t cmd) {
     f12Pressed = false;
     tormoz = 6;
     memset(RAM, 0, sizeof RAM);
-    graphics_set_page(CPU_PAGE5_MEM_ADR, get_bk0010mode() == BK_0011M ? 15 : 0);
+    graphics_set_page(CPU_PAGE51_MEM_ADR, get_bk0010mode() == BK_0011M ? 15 : 0);
     graphics_shift_screen((uint16_t)0330 | 0b01000000000);
     main_init();
     mark_to_exit_flag = true;
@@ -283,35 +283,35 @@ inline static void if_video_mode() {
   }
   if (ctrlPressed || altPressed)
     if(f1Pressed) {
-        graphics_set_buffer(CPU_PAGE0_MEM_ADR, 512, 256);
+        graphics_set_buffer(CPU_PAGE01_MEM_ADR, 512, 256);
         if (altPressed) graphics_set_mode(BK_256x256x2);
         else graphics_set_mode(BK_512x256x1);
     } else if (f2Pressed) {
-        graphics_set_buffer(CPU_PAGE1_MEM_ADR, 512, 256);
+        graphics_set_buffer(CPU_PAGE11_MEM_ADR, 512, 256);
         if (altPressed) graphics_set_mode(BK_256x256x2);
         else graphics_set_mode(BK_512x256x1);
     } else if (f3Pressed) {
-        graphics_set_buffer(CPU_PAGE2_MEM_ADR, 512, 256);
+        graphics_set_buffer(CPU_PAGE21_MEM_ADR, 512, 256);
         if (altPressed) graphics_set_mode(BK_256x256x2);
         else graphics_set_mode(BK_512x256x1);
     } else if (f4Pressed) {
-        graphics_set_buffer(CPU_PAGE3_MEM_ADR, 512, 256);
+        graphics_set_buffer(CPU_PAGE31_MEM_ADR, 512, 256);
         if (altPressed) graphics_set_mode(BK_256x256x2);
         else graphics_set_mode(BK_512x256x1);
     } else if (f5Pressed) {
-        graphics_set_buffer(CPU_PAGE4_MEM_ADR, 512, 256);
+        graphics_set_buffer(CPU_PAGE41_MEM_ADR, 512, 256);
         if (altPressed) graphics_set_mode(BK_256x256x2);
         else graphics_set_mode(BK_512x256x1);
     } else if (f6Pressed) {
-        graphics_set_buffer(CPU_PAGE5_MEM_ADR, 512, 256);
+        graphics_set_buffer(CPU_PAGE51_MEM_ADR, 512, 256);
         if (altPressed) graphics_set_mode(BK_256x256x2);
         else graphics_set_mode(BK_512x256x1);
     } else if (f7Pressed) {
-        graphics_set_buffer(CPU_PAGE6_MEM_ADR, 512, 256);
+        graphics_set_buffer(CPU_PAGE61_MEM_ADR, 512, 256);
         if (altPressed) graphics_set_mode(BK_256x256x2);
         else graphics_set_mode(BK_512x256x1);
     } else if (f8Pressed) {
-        graphics_set_buffer(CPU_PAGE7_MEM_ADR, 512, 256);
+        graphics_set_buffer(CPU_PAGE71_MEM_ADR, 512, 256);
         if (altPressed) graphics_set_mode(BK_256x256x2);
         else graphics_set_mode(BK_512x256x1);
     } else if (f10Pressed) {
@@ -931,9 +931,15 @@ static inline bool run_bin(char* path) {
         return false;
     }
     // TODO: ensue it is ok for ever game
-    Device_Data.MemPages [0] = CPU_PAGE0_MEM_ADR; /* RAM Page 0 */
-    Device_Data.MemPages [1] = CPU_PAGE5_MEM_ADR; /* RAM Page 4 video 0 */
-    graphics_set_page(CPU_PAGE5_MEM_ADR, get_bk0010mode() == BK_0011M ? 15 : 0);
+    Device_Data.MemPages [0] = CPU_PAGE01_MEM_ADR; /* RAM Page 0.1 */
+    Device_Data.MemPages [1] = CPU_PAGE02_MEM_ADR; /* RAM Page 0.2 */
+    Device_Data.MemPages [2] = CPU_PAGE03_MEM_ADR; /* RAM Page 0.3 */
+    Device_Data.MemPages [3] = CPU_PAGE04_MEM_ADR; /* RAM Page 0.4 */
+    Device_Data.MemPages [4] = CPU_PAGE51_MEM_ADR; /* RAM Page 4.1 video 0 */
+    Device_Data.MemPages [5] = CPU_PAGE52_MEM_ADR; /* RAM Page 4.2 video 0 */
+    Device_Data.MemPages [6] = CPU_PAGE53_MEM_ADR; /* RAM Page 4.3 video 0 */
+    Device_Data.MemPages [7] = CPU_PAGE54_MEM_ADR; /* RAM Page 4.4 video 0 */
+    graphics_set_page(CPU_PAGE51_MEM_ADR, get_bk0010mode() == BK_0011M ? 15 : 0);
     graphics_shift_screen((uint16_t)0330 | 0b01000000000);
     snprintf(line, MAX_WIDTH, "offset = 0%o; len = %d", offset, len);
     const line_t lns[3] = {
@@ -961,7 +967,7 @@ static inline bool run_bin(char* path) {
         return false;
     }
     if (len2 != len) {
-        result = f_read(&file, CPU_PAGE5_MEM_ADR, len - len2, &bw);
+        result = f_read(&file, CPU_PAGE51_MEM_ADR, len - len2, &bw);
         // TODO: more than 1 page, error handling
     }
     f_close(&file);

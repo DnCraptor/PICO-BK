@@ -47,7 +47,7 @@ struct semaphore vga_start_semaphore;
 /* Renderer loop on Pico's second core */
 void __time_critical_func(render_core)() {
     graphics_init();
-    graphics_set_buffer(CPU_PAGE5_MEM_ADR, 512, 256);
+    graphics_set_buffer(CPU_PAGE51_MEM_ADR, 512, 256);
     graphics_set_textbuffer(TEXT_VIDEO_RAM);
     graphics_set_bgcolor(0x80808080);
     graphics_set_offset(0, 0);
