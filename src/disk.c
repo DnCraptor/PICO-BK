@@ -53,6 +53,7 @@ inline static _FILE* actualDrive(uint8_t drivenum) {
 }
 
 uint16_t word_of_drive(uint8_t drive, size_t pos) {
+    gpio_put(PICO_DEFAULT_LED_PIN, true);
     _FILE * f = actualDrive(drive);
     if (!f) return 0;
     FRESULT r = f_lseek(f, pos);
@@ -61,10 +62,12 @@ uint16_t word_of_drive(uint8_t drive, size_t pos) {
     UINT br;
     r = f_read(f, &res, 2, &br);
     if (r != FR_OK) return 0;
+    gpio_put(PICO_DEFAULT_LED_PIN, false);
     return res;
 }
 
 bool word_to_drive(uint8_t drive, size_t pos, uint16_t word) {
+    gpio_put(PICO_DEFAULT_LED_PIN, true);
     _FILE * f = actualDrive(drive);
     if (!f) return false;
     FRESULT r = f_lseek(f, pos);
@@ -72,6 +75,7 @@ bool word_to_drive(uint8_t drive, size_t pos, uint16_t word) {
     UINT bw;
     r = f_read(f, &word, 2, &bw);
     if (r != FR_OK) return false;
+    gpio_put(PICO_DEFAULT_LED_PIN, false);
     return true;
 }
 
@@ -148,6 +152,7 @@ static _FILE* tryDefaultDrive(uint8_t drivenum, size_t size, char *path) {
 void notify_image_insert_action(uint8_t drivenum, char *pathname);
 
 uint8_t insertdisk(uint8_t drivenum, size_t size, char *ROM, char *pathname) {
+    gpio_put(PICO_DEFAULT_LED_PIN, true);
     _FILE *pFile = NULL;
     if (pathname != NULL) {
         pFile = actualDrive(drivenum);
@@ -174,6 +179,7 @@ uint8_t insertdisk(uint8_t drivenum, size_t size, char *ROM, char *pathname) {
         }
         notify_image_insert_action(drivenum, pathname);
     }
+    gpio_put(PICO_DEFAULT_LED_PIN, false);
     const char *err = "?";
     if (size < 360 * 1024) {
         err = "Disk image is too small!";
@@ -252,6 +258,7 @@ static size_t chs2ofs(int drivenum, int cyl, int head, int sect) {
 }
 
 bool img_disk_read_sec(int drv, BYTE * buffer, LBA_t lba) {
+    gpio_put(PICO_DEFAULT_LED_PIN, true);
     _FILE * pFile = actualDrive(drv);
     if(FR_OK != f_lseek(pFile, lba * 512)) {
         return false;
@@ -260,10 +267,12 @@ bool img_disk_read_sec(int drv, BYTE * buffer, LBA_t lba) {
     if(FR_OK != f_read(pFile, buffer, 512, &br)) {
         return false;
     }
+    gpio_put(PICO_DEFAULT_LED_PIN, false);
     return true;
 }
 
 bool img_disk_write_sec(int drv, BYTE * buffer, LBA_t lba) {
+    gpio_put(PICO_DEFAULT_LED_PIN, true);
     _FILE * pFile = actualDrive(drv);
     if(FR_OK != f_lseek(pFile, lba * 512)) {
         return false;
@@ -272,6 +281,7 @@ bool img_disk_write_sec(int drv, BYTE * buffer, LBA_t lba) {
     if(FR_OK != f_write(pFile, buffer, 512, &bw)) {
         return false;
     }
+    gpio_put(PICO_DEFAULT_LED_PIN, false);
     return true;
 }
 

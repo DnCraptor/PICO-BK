@@ -244,17 +244,14 @@ void notify_image_insert_action(uint8_t drivenum, char *pathname) {
 }
 
 static void swap_drives(uint8_t cmd) {
-    //sprintf(line, "F%d pressed - swap FDD images", cmd + 1);
-    //draw_cmd_line(0, CMD_Y_POS, line);
-    if (already_swapped_fdds) {
-        insertdisk(0, 819200, 0, drives_states[0].path);
-        insertdisk(1, 819200, 0, drives_states[1].path);
-    } else {
-        insertdisk(1, 819200, 0, drives_states[0].path);
-        insertdisk(0, 819200, 0, drives_states[1].path);
-    }
+    sprintf(line, "F%d pressed - swap FDD images", cmd + 1);
+    draw_cmd_line(0, CMD_Y_POS, line);
+    char path1[256];
+    strncpy(path1, drives_states[1].path, 256);
+    insertdisk(1, 819200, 0, drives_states[0].path);
+    insertdisk(0, 819200, 0, path1);
     already_swapped_fdds = !already_swapped_fdds;
-    //swap_drive_message();
+    redraw_window();
 }
 
 inline static void if_swap_drives() {
@@ -419,6 +416,7 @@ static FRESULT m_unlink_recursive(char * path) {
 }
 
 static void m_delete_file(uint8_t cmd) {
+    gpio_put(PICO_DEFAULT_LED_PIN, true);
     file_info_t* fp = selected_file();
     if (!fp) {
        no_selected_file();
@@ -441,6 +439,7 @@ static void m_delete_file(uint8_t cmd) {
             sleep_ms(2500);
         }
     }
+    gpio_put(PICO_DEFAULT_LED_PIN, false);
     redraw_window();    
 }
 
@@ -468,6 +467,7 @@ inline static FRESULT m_copy(char* path, char* dest) {
 }
 
 inline static FRESULT m_copy_recursive(char* path, char* dest) {
+    gpio_put(PICO_DEFAULT_LED_PIN, true);
     DIR dir;
     FRESULT res = f_opendir(&dir, path);
     if (res != FR_OK) return res;
@@ -492,10 +492,12 @@ inline static FRESULT m_copy_recursive(char* path, char* dest) {
     if (res == FR_OK) {
         draw_cmd_line(0, CMD_Y_POS, 0);
     }
+    gpio_put(PICO_DEFAULT_LED_PIN, false);
     return res;
 }
 
 static void m_copy_file(uint8_t cmd) {
+    gpio_put(PICO_DEFAULT_LED_PIN, true);
     file_info_t* fp = selected_file();
     if (!fp) {
        no_selected_file();
@@ -522,9 +524,11 @@ static void m_copy_file(uint8_t cmd) {
         }
     }
     redraw_window();
+    gpio_put(PICO_DEFAULT_LED_PIN, false);
 }
 
 static void m_move_file(uint8_t cmd) {
+    gpio_put(PICO_DEFAULT_LED_PIN, true);
     file_info_t* fp = selected_file();
     if (!fp) {
        no_selected_file();
@@ -551,6 +555,7 @@ static void m_move_file(uint8_t cmd) {
         }
     }
     redraw_window();
+    gpio_put(PICO_DEFAULT_LED_PIN, false);
 }
 
 static void m_info(uint8_t cmd) {
@@ -893,6 +898,7 @@ static inline void redraw_current_panel() {
 }
 
 static inline bool run_bin(char* path) {
+    gpio_put(PICO_DEFAULT_LED_PIN, true);
     FIL file;
     FRESULT result = f_open(&file, path, FA_READ);
     if (result != FR_OK) {
@@ -966,6 +972,7 @@ static inline bool run_bin(char* path) {
     }
     SP = 01000;
     mark_to_exit_flag = true;
+    gpio_put(PICO_DEFAULT_LED_PIN, false);
     return true;
 }
 
