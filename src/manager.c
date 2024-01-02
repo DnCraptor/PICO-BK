@@ -248,9 +248,9 @@ static void swap_drives(uint8_t cmd) {
     //draw_cmd_line(0, CMD_Y_POS, line);
     if (already_swapped_fdds) {
         insertdisk(0, 819200, 0, drives_states[0].path);
-        insertdisk(2, 819200, 0, drives_states[1].path);
+        insertdisk(1, 819200, 0, drives_states[1].path);
     } else {
-        insertdisk(2, 819200, 0, drives_states[0].path);
+        insertdisk(1, 819200, 0, drives_states[0].path);
         insertdisk(0, 819200, 0, drives_states[1].path);
     }
     already_swapped_fdds = !already_swapped_fdds;
@@ -967,10 +967,19 @@ static inline bool run_bin(char* path) {
     return true;
 }
 
+static const line_t drive_num_lns[] = {
+    { -1, " FDD0 (A:) " },
+    { -1, " FDD1 (B:) " },
+    { -1, " HDD0 (C:) " },
+    { -1, " HDD1 (D:) " }
+};
+
 static inline bool run_img(char* path) {
-    insertdisk(2, 819200, 0, path); // TODO: select drive #
+    enterPressed = false;
+    const lines_t lines = { 4, 1, drive_num_lns };
+    int mount_as = draw_selector(50, 10, 30, 8, "Device to mount", &lines, 2);
+    insertdisk(mount_as, 819200, 0, path);
     if ( !is_fdd_suppored() ) {
-//        color_mode = false;
         set_bk0010mode(BK_0011M);
     }
     reset(0);
