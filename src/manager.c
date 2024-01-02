@@ -228,19 +228,19 @@ static void do_nothing(uint8_t cmd) {
 }
 
 typedef struct drive_state {
-    char* path;
-    char* lbl;
+    char path[256];
+    const char* lbl;
 } drive_state_t;
 
-static drive_state_t drives_states[4] = { // TODO:
-    0, "FDD0",
-    0, "FDD1",
-    0, "HDD0",
-    0, "HDD1"
+static drive_state_t drives_states[4] = {
+    { { 0 }, "FDD0" },
+    { { 0 }, "FDD1" },
+    { { 0 }, "HDD0" },
+    { { 0 }, "HDD1" }
 };
 
 void notify_image_insert_action(uint8_t drivenum, char *pathname) {
-    drives_states[drivenum].path = pathname;
+    strncpy(drives_states[drivenum].path, pathname, 256);
 }
 
 static void swap_drives(uint8_t cmd) {
@@ -785,18 +785,20 @@ static inline void fill_panel(file_panel_desc_t* p) {
     for(int fn = 0; fn < files_count; ++ fn) {
         file_info_t* fp = &files_info[fn];
         if (p->start_file_offset <= p->files_number && y <= LAST_FILE_LINE_ON_PANEL_Y) {
+            char* filename = fp->name;
             snprintf(line, MAX_WIDTH, "%s\\%s", p->path, fp->name);
-            for (int i = 0; i < 3; ++i) { // mark mounted drived by labels FDD0,FDD1,HDD0...
+            for (int i = 0; i < 4; ++i) { // mark mounted drived by labels FDD0,FDD1,HDD0...
                 if (drives_states[i].path && strncmp(drives_states[i].path, line, MAX_WIDTH) == 0) {
                     snprintf(line, p->width, "%s", fp->name);
                     for (int j = strlen(fp->name); j < p->width - 6; ++j) {
                         line[j] = ' ';
                     }
                     snprintf(line + p->width - 6, 6, "%s", drives_states[i].lbl);
+                    filename = line;
                     break;
                 }
             }
-            draw_label(p->left + 1, y, p->width - 2, fp->name, p == psp && p->selected_file_idx == y, fp->fattrib & AM_DIR);
+            draw_label(p->left + 1, y, p->width - 2, filename, p == psp && p->selected_file_idx == y, fp->fattrib & AM_DIR);
             y++;
         }
         p->files_number++;
