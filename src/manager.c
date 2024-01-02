@@ -21,7 +21,7 @@ static void redraw_window();
 
 static volatile int tormoz = 6;
 static volatile bool backspacePressed = false;
-static volatile bool enterPressed = false;
+volatile bool enterPressed = false;
 static volatile bool plusPressed = false;
 static volatile bool minusPressed = false;
 static volatile bool ctrlPressed = false;
@@ -40,11 +40,11 @@ static volatile bool f10Pressed = false;
 static volatile bool f11Pressed = false;
 static volatile bool f12Pressed = false;
 static volatile bool tabPressed = false;
-static volatile bool escPressed = false;
+volatile bool escPressed = false;
 static volatile bool leftPressed = false;
 static volatile bool rightPressed = false;
-static volatile bool upPressed = false;
-static volatile bool downPressed = false;
+volatile bool upPressed = false;
+volatile bool downPressed = false;
 static volatile bool aPressed = false;
 static volatile bool cPressed = false;
 static volatile bool gPressed = false;
@@ -77,7 +77,7 @@ inline static void scan_code_processed() {
   lastCleanableScanCode = 0;
 }
 
-inline static void scan_code_cleanup() {
+void scan_code_cleanup() {
   lastSavedScanCode = 0;
   lastCleanableScanCode = 0;
 }
@@ -340,7 +340,7 @@ static void redraw_window() {
 
 static void turn_usb_on(uint8_t cmd);
 
-static void switch_rom(uint8_t cmd);
+static void switch_mode(uint8_t cmd);
 
 static void switch_color(uint8_t cmd);
 
@@ -613,7 +613,7 @@ static fn_1_12_tbl_t fn_1_12_tbl = {
     ' ', '8', " Del  ", m_delete_file,
     ' ', '9', " Swap ", swap_drives,
     '1', '0', " USB  ", turn_usb_on,
-    '1', '1', " 0010B", switch_rom,
+    '1', '1', "EmMODE", switch_mode,
     '1', '2', "Reset ", reset
 };
 
@@ -628,7 +628,7 @@ static fn_1_12_tbl_t fn_1_12_tbl_alt = {
     ' ', '8', " Del  ", m_delete_file,
     ' ', '9', " UpMn ", do_nothing,
     '1', '0', " USB  ", turn_usb_on,
-    '1', '1', " 0010B", switch_rom,
+    '1', '1', "EmMODE", switch_mode,
     '1', '2', "Reset ", reset
 };
 
@@ -657,11 +657,25 @@ static inline fn_1_12_tbl_t* actual_fn_1_12_tbl() {
     return ptbl;
 }
 
+static const line_t bk_mode_lns[] = {
+    { 1, " BK 0010 + KNGMD 16k " },
+    { 1, " BK 0010 Focal       " },
+    { 1, " BK 0010-01 Basic 86 " },
+    { 1, " BK 0011M + KNGMD    " }
+};
+
 static void bottom_line() {
     for (int i = 0; i < BTNS_COUNT; ++i) {
         const fn_1_12_tbl_rec_t* rec = &(*actual_fn_1_12_tbl())[i];
         draw_fn_btn(rec, i * BTN_WIDTH, F_BTN_Y_POS);
     }
+    draw_text( // TODO: move to pico-vision
+        bk_mode_lns[get_bk0010mode()].txt,
+        BTN_WIDTH * 13 + 3,
+        F_BTN_Y_POS,
+        get_color_schema()->FOREGROUND_FIELD_COLOR,
+        get_color_schema()->BACKGROUND_FIELD_COLOR
+    );
     draw_cmd_line(0, CMD_Y_POS, 0);
 }
 
@@ -692,34 +706,13 @@ static void turn_usb_on(uint8_t cmd) {
     bottom_line();
 }
 
-inline static const char* curr_mode() {
-    switch (get_bk0010mode()) {
-        case BK_FDD:
-            return "10+FDD";
-        case BK_0010:
-            return " 0010F";
-        case BK_0010_01:
-            return " 0010B";
-        case BK_0011M:
-            return " 0011M";
-    }
-    return "";
-}
-
-static void switch_rom(uint8_t cmd) {
+static void switch_mode(uint8_t cmd) {
     bk_mode_t bk0010mode = get_bk0010mode();
-    bk0010mode++;
-    if (bk0010mode > BK_0011M) bk0010mode = BK_FDD;
+    const lines_t lines = { 4, 1, bk_mode_lns };
+    bk0010mode = draw_selector(50, 10, 30, 8, "BK Emulation Mode", &lines, bk0010mode);
     set_bk0010mode(bk0010mode);
-  //  if ( is_fdd_suppored() && color_mode ) {
-  //      color_mode = false;
-  //      snprintf(fn_1_12_tbl_ctrl[10].name, BTN_WIDTH, color_mode ? " B/W  " : " Color");
-  //  }
-    const char* cm = curr_mode();
-    snprintf(fn_1_12_tbl     [10].name, BTN_WIDTH, cm);
-    snprintf(fn_1_12_tbl_alt [10].name, BTN_WIDTH, cm);
     init_rom();
-    bottom_line();
+    redraw_window();
 }
 
 static void switch_color(uint8_t cmd) {
@@ -1217,9 +1210,7 @@ inline static void start_manager() {
     draw_window();
     select_left_panel();
 
-    const char* cm = curr_mode();
-    snprintf(fn_1_12_tbl     [10].name, BTN_WIDTH, cm);
-    snprintf(fn_1_12_tbl_alt [10].name, BTN_WIDTH, cm);
+    snprintf(fn_1_12_tbl_ctrl[10].name, BTN_WIDTH, color_mode ? " B/W  " : " Color");
     bottom_line();
 
     work_cycle();

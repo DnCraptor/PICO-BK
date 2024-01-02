@@ -25,8 +25,12 @@ static const color_schema_t color_schema = {
 
 static color_schema_t* pcs = &color_schema;
 
-void set_color_schems(color_schema_t* pschema) {
+void set_color_schema(color_schema_t* pschema) {
     pcs = pschema;
+}
+
+const color_schema_t* get_color_schema() {
+    return pcs;
 }
 
 void draw_panel(int left, int top, int width, int height, char* title, char* bottom) {
@@ -120,6 +124,55 @@ void draw_box(int left, int top, int width, int height, const char* title, const
         }
         draw_label(left + 1 + off, y, width - 2 - off, pl->txt, false, false);
     }
+}
+
+extern volatile bool enterPressed;
+extern volatile bool escPressed;
+extern volatile bool upPressed;
+extern volatile bool downPressed;
+void scan_code_cleanup();
+
+int draw_selector(int left, int top, int width, int height, const char* title, const lines_t* plines, int selected_line) {
+    int s_line = selected_line;
+    draw_panel(left, top, width, height, title, 0);
+    int y = top + 1;
+    for (int i = y; y < top + height - 1; ++y) {
+        draw_label(left + 1, y, width - 2, "", false, false);
+    }
+    while(1) {
+        for (int i = 0, y = top + 1 + plines->toff; i < plines->sz; ++i, ++y) {
+            const line_t * pl = plines->plns + i;
+            uint8_t off;
+            if (pl->off < 0) {
+                size_t len = strnlen(pl->txt, MAX_WIDTH);
+                off = width - 2 > len ? (width - len) >> 1 : 0;
+            } else {
+                off = pl->off;
+            }
+            draw_label(left + 1 + off, y, width - 2 - off, pl->txt, i == s_line, false);
+        }
+        if (enterPressed) {
+            enterPressed = false;
+            selected_line = s_line;
+            break;
+        }
+        if (upPressed) { // TODO: own msgs cycle
+            s_line--;
+            if (s_line < 0) s_line = 0;
+            upPressed = false;
+        }
+        if (downPressed) { // TODO: own msgs cycle
+            s_line++;
+            if (s_line >= plines->sz) s_line = plines->sz - 1;
+            downPressed = false;
+        }
+        if (escPressed) {
+            escPressed = false;
+            break;
+        }
+    }
+    scan_code_cleanup();
+    return selected_line;
 }
 
 void draw_fn_btn(fn_1_12_tbl_rec_t* prec, int left, int top) {
