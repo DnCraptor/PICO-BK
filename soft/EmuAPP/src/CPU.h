@@ -7,7 +7,8 @@
 #include "ROM11.h"
 #include "FDDROM.h"
 #include "BOS_N_DISK_327.h"
-#include "BK0010_ROM.h"
+#include "018_bk0010_focal.h"
+#include "Tests.h"
 
 #if BOOT_DEBUG || DSK_DEBUG || MNGR_DEBUG || KBD_DEBUG
 #include "stdio.h"
@@ -130,15 +131,15 @@ void init_rom();
 #define CPU_PAGE153_MEM_ADR &ROM10[0x06000] /* ... ROM10 0010-01 Basic */
 #define CPU_PAGE154_MEM_ADR &ROM10[0x07000] /* ... ROM10 0010-01 Basic */
 
-#define CPU_PAGE161_MEM_ADR &BK0010_ROM[0x00000] /* monitor 0010 */
-#define CPU_PAGE162_MEM_ADR &BK0010_ROM[0x01000] /* monitor 0010 */
-#define CPU_PAGE163_MEM_ADR &BK0010_ROM[0x02000] /* Focal 0010 */
-#define CPU_PAGE164_MEM_ADR &BK0010_ROM[0x03000] /* Focal 0010 */
+#define CPU_PAGE161_MEM_ADR &ROM10[0x00000] /* monitor 0010 */
+#define CPU_PAGE162_MEM_ADR &ROM10[0x01000] /* monitor 0010 */
+#define CPU_PAGE163_MEM_ADR &FOCAL_018[0x00000] /* Focal 0010 */
+#define CPU_PAGE164_MEM_ADR &FOCAL_018[0x01000] /* Focal 0010 */
 
-#define CPU_PAGE171_MEM_ADR 0 // TODO: &BK0010_ROM[0x04000] /* not used 8k */
-#define CPU_PAGE172_MEM_ADR 0 // TODO: &BK0010_ROM[0x05000] /* not used 8k */
-#define CPU_PAGE173_MEM_ADR &BK0010_ROM[0x06000] /* Tests 0010 */
-#define CPU_PAGE174_MEM_ADR &BK0010_ROM[0x07000] /* Tests 0010 */
+#define CPU_PAGE171_MEM_ADR 0 // &BK0010_ROM[0x04000] /* not used 8k */
+#define CPU_PAGE172_MEM_ADR 0 // &BK0010_ROM[0x05000] /* not used 8k */
+#define CPU_PAGE173_MEM_ADR &TESTS_ROM[0x00000] /* Tests 0010 */
+#define CPU_PAGE174_MEM_ADR &TESTS_ROM[0x01000] /* Tests 0010 */
 
 #define CPU_PAGE181_MEM_ADR 0 // &DISK_327ROM[0x00000] /* not used */
 #define CPU_PAGE182_MEM_ADR 0 // &DISK_327ROM[0x01000] /* not used */
