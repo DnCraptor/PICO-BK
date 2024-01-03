@@ -62,8 +62,9 @@ void init_rom() {
     set_bk0010mode(get_bk0010mode());
 }
 
-void AT_OVL CPU_Init (void)
-{
+extern volatile uint16_t true_covox; // vga.h
+
+void AT_OVL CPU_Init (void) {
     memset (&Device_Data, 0, sizeof (Device_Data));
 
 //  Device_Data.SysRegs.Reg177660   = 0;
@@ -76,6 +77,8 @@ void AT_OVL CPU_Init (void)
     Device_Data.SysRegs.RdReg177716 = ((!is_bk0011mode() ? 0100000 : 0140000) & 0177400) | 0300;
     Device_Data.SysRegs.WrReg177662  = 047400;
     Device_Data.SysRegs.Wr1Reg177716 = (1 << 12) | 1;
+    true_covox = 0;
+
 /*
  * бит 0: признак 0-ой дорожки
  * бит 1: готовность к работе

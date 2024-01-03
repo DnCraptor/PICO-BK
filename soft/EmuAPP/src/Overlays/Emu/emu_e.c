@@ -59,8 +59,9 @@ void AT_OVL emu_start () {
         if (bit_wav) Device_Data.SysRegs.RdReg177716 |= 0b100000;
         else Device_Data.SysRegs.RdReg177716 &= ~0b100000;
 #if LOAD_WAV_2_COVOX
-        if (bit_wav) { covox_plus = true; true_covox |= covox_mix; }
-        if (!bit_wav && covox_plus) { covox_plus = false; true_covox &= ~covox_mix; }
+        if (bit_wav && covox_mix) { covox_plus = true; true_covox |= covox_mix; }
+        if (!bit_wav && covox_plus && covox_mix) { covox_plus = false; true_covox &= ~covox_mix; }
+        if (covox_plus && !covox_mix) { covox_plus = false; true_covox = 0; }
 #endif
 #endif
         uint_fast8_t  Count;

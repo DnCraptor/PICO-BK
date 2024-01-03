@@ -1094,7 +1094,7 @@ static inline void if_sound_control() { // core #0
         minusPressed = false;
     } else if (ctrlPressed && plusPressed && altPressed) {
         covox_mix = covox_mix << 1 | 01;
-        if (covox_mix > 0x7F) covox_mix = 0x7F;
+        if (covox_mix > 0x3F) covox_mix = 0x3F;
         plusPressed = false;
     } else if (ctrlPressed && minusPressed && altPressed) {
         covox_mix = covox_mix >> 1;
