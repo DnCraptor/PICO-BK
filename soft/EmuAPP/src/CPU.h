@@ -7,8 +7,9 @@
 #include "ROM11.h"
 #include "FDDROM.h"
 #include "BOS_N_DISK_327.h"
-#include "018_bk0010_focal.h"
+#include "Focal.h"
 #include "Tests.h"
+#include "bk11m_330_mstd.h"
 
 #if BOOT_DEBUG || DSK_DEBUG || MNGR_DEBUG || KBD_DEBUG
 #include "stdio.h"
@@ -44,6 +45,7 @@ typedef enum BK_MODE {
     BK_FDD,
     BK_0010,
     BK_0010_01,
+    BK_0011M_FDD,
     BK_0011M
 } bk_mode_t;
 
@@ -51,6 +53,10 @@ bk_mode_t get_bk0010mode();
 void set_bk0010mode(bk_mode_t mode);
 bool is_fdd_suppored();
 void init_rom();
+
+static inline bool is_bk0011mode() {
+    return get_bk0010mode() >= BK_0011M_FDD;
+}
 
 #define RAM_PAGES_SIZE (sizeof RAM)
 #define CPU_PAGE01_MEM_ADR  &RAM[0x00000] /* RAM Page 0.1 0..40000 */
@@ -111,15 +117,17 @@ void init_rom();
 #define CPU_PAGE112_MEM_ADR 0 /* страница ПЗУ4.1 4.1 */
 #define CPU_PAGE113_MEM_ADR 0 /* страница ПЗУ4.1 4.1 */
 #define CPU_PAGE114_MEM_ADR 0 /* страница ПЗУ4.1 4.1 */
-#if NO_FDD_0011M
-#define CPU_PAGE12_MEM_ADR &ROM11[0x08000] /* ROM11 Page 2      - bk11m_324_bos.rom + bk11m_330_mstd.rom */
-#else
+
 #define CPU_PAGE121_MEM_ADR &BOS_N_DISK_327[0x00000] /* bk11m_324_bos.rom */
 #define CPU_PAGE122_MEM_ADR &BOS_N_DISK_327[0x01000] /* bk11m_324_bos.rom */
 #define CPU_PAGE123_MEM_ADR &BOS_N_DISK_327[0x02000] /* КНГМД для БК-0011М */
 #define CPU_PAGE124_MEM_ADR &BOS_N_DISK_327[0x03000] /* КНГМД для БК-0011М */
-#endif
-#define CPU_PAGE13x_MEM_ADR TODO /* 16кб: ОЗУ А16М */
+
+// actually "virtual" pages, just to have some easy to use defines
+#define CPU_PAGE131_MEM_ADR &BOS_N_DISK_327[0x00000] /* bk11m_324_bos.rom */
+#define CPU_PAGE132_MEM_ADR &BOS_N_DISK_327[0x01000] /* bk11m_324_bos.rom */
+#define CPU_PAGE133_MEM_ADR &bk11m_330_mstd[0x00000] /* БК0010М МСТД */
+#define CPU_PAGE134_MEM_ADR &bk11m_330_mstd[0x01000] /* БК0010М МСТД */
 
 #define CPU_PAGE141_MEM_ADR &ROM10[0x00000] /* monitor 0010-01 */
 #define CPU_PAGE142_MEM_ADR &ROM10[0x01000] /* monitor 0010-01 */
@@ -133,8 +141,8 @@ void init_rom();
 
 #define CPU_PAGE161_MEM_ADR &ROM10[0x00000] /* monitor 0010 */
 #define CPU_PAGE162_MEM_ADR &ROM10[0x01000] /* monitor 0010 */
-#define CPU_PAGE163_MEM_ADR &FOCAL_018[0x00000] /* Focal 0010 */
-#define CPU_PAGE164_MEM_ADR &FOCAL_018[0x01000] /* Focal 0010 */
+#define CPU_PAGE163_MEM_ADR &ROM10FOCAL[0x00000] /* Focal 0010 */
+#define CPU_PAGE164_MEM_ADR &ROM10FOCAL[0x01000] /* Focal 0010 */
 
 #define CPU_PAGE171_MEM_ADR 0 // &BK0010_ROM[0x04000] /* not used 8k */
 #define CPU_PAGE172_MEM_ADR 0 // &BK0010_ROM[0x05000] /* not used 8k */

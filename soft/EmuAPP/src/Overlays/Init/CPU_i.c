@@ -36,15 +36,25 @@ void init_rom() {
             Device_Data.MemPages [14] = CPU_PAGE153_MEM_ADR; // + basic 16k
             Device_Data.MemPages [15] = CPU_PAGE154_MEM_ADR; // + basic 16k
             break;
-        case BK_0011M:
+        case BK_0011M_FDD:
             Device_Data.MemPages [8]  = CPU_PAGE81_MEM_ADR; /* ROM Page 0.1 - bk11m_328_basic2.rom */
             Device_Data.MemPages [9]  = CPU_PAGE82_MEM_ADR; /* ROM Page 0.2 - bk11m_328_basic2.rom */
             Device_Data.MemPages [10] = CPU_PAGE83_MEM_ADR; /* ROM Page 0.3 - bk11m_329_basic3.rom */
             Device_Data.MemPages [11] = CPU_PAGE84_MEM_ADR; /* ROM Page 0.4 - bk11m_329_basic3.rom */
             Device_Data.MemPages [12] = CPU_PAGE121_MEM_ADR; /* ROM Page 2.1 - bk11m_324_bos.rom */
             Device_Data.MemPages [13] = CPU_PAGE122_MEM_ADR; /* ROM Page 2.2 - bk11m_324_bos.rom */
-            Device_Data.MemPages [14] = CPU_PAGE123_MEM_ADR; /* ROM Page 2.3 - bk11m_330_mstd.rom */
-            Device_Data.MemPages [15] = CPU_PAGE124_MEM_ADR; /* ROM Page 2.4 - bk11m_330_mstd.rom */
+            Device_Data.MemPages [14] = CPU_PAGE123_MEM_ADR; /* ROM Page 2.3 - КНГМД */
+            Device_Data.MemPages [15] = CPU_PAGE124_MEM_ADR; /* ROM Page 2.4 - КНГМД */
+            break;
+        case BK_0011M:
+            Device_Data.MemPages [8]  = CPU_PAGE81_MEM_ADR; /* ROM Page 0.1 - bk11m_328_basic2.rom */
+            Device_Data.MemPages [9]  = CPU_PAGE82_MEM_ADR; /* ROM Page 0.2 - bk11m_328_basic2.rom */
+            Device_Data.MemPages [10] = CPU_PAGE83_MEM_ADR; /* ROM Page 0.3 - bk11m_329_basic3.rom */
+            Device_Data.MemPages [11] = CPU_PAGE84_MEM_ADR; /* ROM Page 0.4 - bk11m_329_basic3.rom */
+            Device_Data.MemPages [12] = CPU_PAGE131_MEM_ADR; /* ROM Page 2.1 - bk11m_324_bos.rom */
+            Device_Data.MemPages [13] = CPU_PAGE132_MEM_ADR; /* ROM Page 2.2 - bk11m_324_bos.rom */
+            Device_Data.MemPages [14] = CPU_PAGE133_MEM_ADR; /* ROM Page 2.3 - bk11m_330_mstd.rom */
+            Device_Data.MemPages [15] = CPU_PAGE134_MEM_ADR; /* ROM Page 2.4 - bk11m_330_mstd.rom */
             break;
     }
 
@@ -63,7 +73,7 @@ void AT_OVL CPU_Init (void)
 //  Device_Data.SysRegs.Reg177710   = 0177777;
 //  Device_Data.SysRegs.Reg177712   = 0177400;
 //  Device_Data.SysRegs.RdReg177714 = 0;
-    Device_Data.SysRegs.RdReg177716 = ((get_bk0010mode() != BK_0011M ? 0100000 : 0140000) & 0177400) | 0300;
+    Device_Data.SysRegs.RdReg177716 = ((!is_bk0011mode() ? 0100000 : 0140000) & 0177400) | 0300;
     Device_Data.SysRegs.WrReg177662  = 047400;
     Device_Data.SysRegs.Wr1Reg177716 = (1 << 12) | 1;
 /*

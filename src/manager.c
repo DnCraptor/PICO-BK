@@ -140,7 +140,7 @@ static void reset(uint8_t cmd) {
     f12Pressed = false;
     tormoz = 6;
     memset(RAM, 0, sizeof RAM);
-    graphics_set_page(CPU_PAGE51_MEM_ADR, get_bk0010mode() == BK_0011M ? 15 : 0);
+    graphics_set_page(CPU_PAGE51_MEM_ADR, is_bk0011mode() ? 15 : 0);
     graphics_shift_screen((uint16_t)0330 | 0b01000000000);
     main_init();
     mark_to_exit_flag = true;
@@ -666,7 +666,8 @@ static const line_t bk_mode_lns[] = {
     { 1, " BK 0010 + KNGMD 16k " },
     { 1, " BK 0010 Focal       " },
     { 1, " BK 0010-01 Basic 86 " },
-    { 1, " BK 0011M + KNGMD    " }
+    { 1, " BK 0011M + KNGMD    " },
+    { 1, " BK 0011M + MSTD     " }
 };
 
 static void bottom_line() {
@@ -713,7 +714,7 @@ static void turn_usb_on(uint8_t cmd) {
 
 static void switch_mode(uint8_t cmd) {
     bk_mode_t bk0010mode = get_bk0010mode();
-    const lines_t lines = { 4, 1, bk_mode_lns };
+    const lines_t lines = { 5, 1, bk_mode_lns };
     bk0010mode = draw_selector(50, 10, 30, 8, "BK Emulation Mode", &lines, bk0010mode);
     set_bk0010mode(bk0010mode);
     init_rom();
@@ -995,7 +996,7 @@ static inline bool run_img(char* path) {
     int mount_as = draw_selector(50, 10, 30, 8, "Device to mount", &lines, 2);
     insertdisk(mount_as, 819200, 0, path);
     if ( !is_fdd_suppored() ) {
-        set_bk0010mode(BK_0011M);
+        set_bk0010mode(BK_0011M_FDD);
     }
     reset(0);
     mark_to_exit_flag = true;

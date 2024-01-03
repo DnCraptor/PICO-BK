@@ -341,7 +341,7 @@ TCPU_Arg AT_OVL CPU_WriteW (TCPU_Arg Adr, uint_fast16_t Word) {
             break;
         case (0177716 >> 1):
             DEBUG_PRINT(("case (0177716 >> 1) on CPU_WriteW - switch pages: %d", (Word >> 12) & 7));
-            if (Word & (1U << 11) && get_bk0010mode() == BK_0011M) {
+            if (Word & (1U << 11) && is_bk0011mode()) {
                 select_11_page((uint16_t) Word);
             }
             else {
@@ -443,7 +443,7 @@ TCPU_Arg AT_OVL CPU_WriteB (TCPU_Arg Adr, uint_fast8_t Byte) {
             }
             break;
         case (0177716 >> 1):
-            if (Word & (1U << 11) && get_bk0010mode() == BK_0011M) {
+            if (Word & (1U << 11) && is_bk0011mode()) {
                 DBGM_PRINT(("CPU_WriteB -> select_11_page(0%o) ", Word));
                 select_11_page((uint16_t) Word);
             }

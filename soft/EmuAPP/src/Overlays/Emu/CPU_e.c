@@ -641,7 +641,7 @@ bk_mode_t get_bk0010mode() {
 }
 
 bool is_fdd_suppored() {
-    return _bk0010mode == BK_FDD || _bk0010mode == BK_0011M;
+    return _bk0010mode == BK_FDD || _bk0010mode == BK_0011M_FDD;
 }
 
 static inline uint16_t GetWordIndirect(uint16_t addr) {
@@ -652,7 +652,7 @@ void set_bk0010mode(bk_mode_t mode) {
     _bk0010mode = mode;
     switch (mode)
     {
-    case BK_0011M:
+    case BK_0011M_FDD:
     case BK_FDD:
 		if (0167 == GetWordIndirect(0160016))
 		{
