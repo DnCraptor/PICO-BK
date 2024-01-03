@@ -706,7 +706,7 @@ void AT_OVL CPU_RunInstruction (void) {
         EmulateFDD();
         PC = m_nFDDExitCatchAddr;
     }
-  //Periodic();
+    Periodic();
     TCPU_Arg OpCode;
     TCPU_Arg AdrS;
     TCPU_Arg AdrD;

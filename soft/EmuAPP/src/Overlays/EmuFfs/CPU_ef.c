@@ -86,15 +86,15 @@ void AT_OVL CPU_TimerRun (void)
 TCPU_Arg AT_OVL CPU_ReadMemW (TCPU_Arg Adr) {
     DEBUG_PRINT(("CPU_ReadMemW Adr: %oo (%Xh) Page: (#%d)", Adr, Adr, Adr >> 12));
     uint16_t *pReg;
-    if (is_fdd_suppored()) {
+    if (Adr >= 0177130 && is_fdd_suppored()) {
         switch (Adr >> 1) {
             case (0177130 >> 1):
                 Device_Data.SysRegs.RdReg177130 = GetState();
-                DSK_PRINT(("W RdReg177130: %04Xh",  Device_Data.SysRegs.RdReg177130));
+                DSK_PRINT(("W RdReg177130: %04Xh", Device_Data.SysRegs.RdReg177130));
                 return Device_Data.SysRegs.RdReg177130;
             case (0177132 >> 1):
                 Device_Data.SysRegs.Reg177132 = GetData();
-                DSK_PRINT(("W Reg177132: %04Xh",  Device_Data.SysRegs.Reg177132));
+                DSK_PRINT(("W Reg177132: %04Xh", Device_Data.SysRegs.Reg177132));
                 return Device_Data.SysRegs.Reg177132;
             }
     }
@@ -133,7 +133,7 @@ TCPU_Arg AT_OVL CPU_ReadMemW (TCPU_Arg Adr) {
 TCPU_Arg AT_OVL CPU_ReadMemB (TCPU_Arg Adr) {
     uint16_t *pReg;
     DEBUG_PRINT(("CPU_ReadMemB Adr: %oo (%Xh) Page: (#%d)", Adr, Adr, Adr >> 12));
-    if (is_fdd_suppored()) {
+    if (Adr >= 0177130 && is_fdd_suppored()) {
         switch (Adr >> 1) {
             case (0177130 >> 1):
                 Device_Data.SysRegs.RdReg177130 = GetState();
@@ -265,9 +265,10 @@ TCPU_Arg AT_OVL CPU_WriteW (TCPU_Arg Adr, uint_fast16_t Word) {
     if (get_bk0010mode() == BK_FDD) {
         if (Adr < 0160000) {
             uintptr_t Page = Device_Data.MemPages[Adr >> 12];
+            auto addr = Page + (Adr & 0x0FFE);
             DEBUG_PRINT(("CPU_WriteW(%oo, %oo) Page: %08X (#%d)", Adr, Word, Page, Adr >> 12));
-            if (Page && Page < CPU_PAGE01_MEM_ADR + RAM_PAGES_SIZE) {
-                AnyMem_w_u16 ((uint16_t *) (Page + (Adr & 0x0FFE)), Word);
+            if (Page && addr < CPU_PAGE01_MEM_ADR + RAM_PAGES_SIZE) {
+                AnyMem_w_u16 ((uint16_t *)addr, Word);
                 return CPU_ARG_WRITE_OK;
             }
             return CPU_ARG_WRITE_ERR;
@@ -275,9 +276,10 @@ TCPU_Arg AT_OVL CPU_WriteW (TCPU_Arg Adr, uint_fast16_t Word) {
     }
     else if (Adr < 0140000) {
         uintptr_t Page = Device_Data.MemPages [Adr >> 12];
+        auto addr = Page + (Adr & 0x0FFE);
         DEBUG_PRINT(("CPU_WriteW(%oo, %oo) Page: %08X (#%d)", Adr, Word, Page, Adr >> 12));
-        if (Page && Page < CPU_PAGE01_MEM_ADR + RAM_PAGES_SIZE) {
-            AnyMem_w_u16 ((uint16_t *) (Page + (Adr & 0x0FFE)), Word);
+        if (Page && addr < CPU_PAGE01_MEM_ADR + RAM_PAGES_SIZE) {
+            AnyMem_w_u16 ((uint16_t *)addr, Word);
             return CPU_ARG_WRITE_OK;
         }
         return CPU_ARG_WRITE_ERR;
@@ -366,8 +368,9 @@ TCPU_Arg AT_OVL CPU_WriteB (TCPU_Arg Adr, uint_fast8_t Byte) {
     if (get_bk0010mode() == BK_FDD) {
         if (Adr < 0160000) {
             uintptr_t Page = Device_Data.MemPages[Adr >> 12];
-            if (Page && Page < CPU_PAGE01_MEM_ADR + RAM_PAGES_SIZE) {
-                AnyMem_w_u8 ((uint8_t *) (Page + ((Adr) & 0x0FFF)), Byte);
+            auto addr = Page + ((Adr) & 0x0FFF);
+            if (Page && addr < CPU_PAGE01_MEM_ADR + RAM_PAGES_SIZE) {
+                AnyMem_w_u8 ((uint8_t *)addr, Byte);
                 return CPU_ARG_WRITE_OK;
             }
             return CPU_ARG_WRITE_ERR;
@@ -375,8 +378,9 @@ TCPU_Arg AT_OVL CPU_WriteB (TCPU_Arg Adr, uint_fast8_t Byte) {
     }
     if (Adr < 0140000) {
         uintptr_t Page = Device_Data.MemPages [Adr >> 12];
-        if (Page && Page < CPU_PAGE01_MEM_ADR + RAM_PAGES_SIZE) {
-            AnyMem_w_u8 ((uint8_t *) (Page + ((Adr) & 0x0FFF)), Byte);
+        auto addr = Page + ((Adr) & 0x0FFF);
+        if (Page && addr < CPU_PAGE01_MEM_ADR + RAM_PAGES_SIZE) {
+            AnyMem_w_u8 ((uint8_t *)addr, Byte);
             return CPU_ARG_WRITE_OK;
         }
         return CPU_ARG_WRITE_ERR;

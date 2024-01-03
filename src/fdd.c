@@ -331,7 +331,7 @@ static bool isIndex() { // проверка, находится ли указа�
 
 static uint16_t RdData() {
 	//return (m_pData[m_nDataPtr] << 8) | m_pData[m_nDataPtr + 1];
-	uint16_t t = 0; // TODO: *((uint16_t*)(&MKDOS318B[m_nDataPtr]));
+	uint16_t t = word_of_drive(0, m_nDataPtr); // *((uint16_t*)(&MKDOS318B[m_nDataPtr]));
 	return ((t & 0377) << 8) | ((t >> 8) & 0377);
 }
 
