@@ -87,6 +87,8 @@ extern volatile bool manager_started;
 #define PWM_PIN1 (27)
 // регистр "защёлка" для примитивного ковокса без буфера
 volatile uint16_t true_covox = 0;
+volatile uint16_t covox_mix = 0x0F;
+extern volatile int8_t covox_multiplier;
 
 extern volatile bool is_adlib_on;
 extern volatile bool is_covox_on;
@@ -98,7 +100,6 @@ extern volatile uint8_t snd_divider;
 extern volatile uint8_t dss_divider;
 extern volatile uint8_t adlib_divider;
 extern volatile uint8_t tandy3v_divider;
-extern volatile int8_t covox_multiplier;
 
 inline static void sound_callback() {
     static uint32_t dss_cycles_per_vga = 0;

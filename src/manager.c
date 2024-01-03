@@ -1084,13 +1084,20 @@ static inline void enter_pressed() {
 }
 
 static inline void if_sound_control() { // core #0
-    if (ctrlPressed && plusPressed) {
+    if (ctrlPressed && plusPressed && !altPressed) {
         covox_multiplier++;
         if(covox_multiplier > 8) covox_multiplier = 8;
         plusPressed = false;
-    } else if (ctrlPressed && minusPressed) {
+    } else if (ctrlPressed && minusPressed && !altPressed) {
         covox_multiplier--;
         if(covox_multiplier < 0) covox_multiplier = 0;
+        minusPressed = false;
+    } else if (ctrlPressed && plusPressed && altPressed) {
+        covox_mix = covox_mix << 1 | 01;
+        if (covox_mix > 0x7F) covox_mix = 0x7F;
+        plusPressed = false;
+    } else if (ctrlPressed && minusPressed && altPressed) {
+        covox_mix = covox_mix >> 1;
         minusPressed = false;
     }
 }

@@ -37,7 +37,7 @@ bool hw_get_bit_LOAD() {
     return out > 0;
 };
 #if LOAD_WAV_2_COVOX && LOAD_WAV_PIO
-static uint8_t covox_plus = 0;
+static bool covox_plus = 0;
 #endif
 
 void AT_OVL emu_start () {
@@ -59,8 +59,8 @@ void AT_OVL emu_start () {
         if (bit_wav) Device_Data.SysRegs.RdReg177716 |= 0b100000;
         else Device_Data.SysRegs.RdReg177716 &= ~0b100000;
 #if LOAD_WAV_2_COVOX
-        if (bit_wav) { covox_plus = 0x10; true_covox |= 0x0F; }
-        if (!bit_wav && covox_plus) { covox_plus = 0; true_covox &= ~0x0F; }
+        if (bit_wav) { covox_plus = true; true_covox |= covox_mix; }
+        if (!bit_wav && covox_plus) { covox_plus = false; true_covox &= ~covox_mix; }
 #endif
 #endif
         uint_fast8_t  Count;

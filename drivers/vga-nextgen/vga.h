@@ -15,6 +15,8 @@ enum graphics_mode_t {
 };
 
 extern volatile uint16_t true_covox;
+extern volatile uint16_t covox_mix;
+
 extern bool color_mode;
 extern int pallete_mask;
 

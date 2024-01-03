@@ -39,11 +39,15 @@
 при одновременной установке скорость снижается, соответственно в 64 раза
 (200)бит 7: EXPIRY: флаг окончания счета, устанавливается в "1" при достижении счётчиком нуля, сбрасывается только программно
 биты 8-15 не используются, "1".
+177662 Разряд 14 - управляет включением системного таймера. При значении 0 таймер выключен, при 1 - включен.
 */
 
 void AT_OVL CPU_TimerRun (void)
 {
     DEBUG_PRINT(("CPU_TimerRun"));
+    if (!(Device_Data.SysRegs.WrReg177662 & (1ul << 14))) {
+        return;
+    }
     uint_fast16_t Cfg = Device_Data.SysRegs.Reg177712;
     //если счётчик остановлен
     if (Cfg & 1) {
@@ -309,6 +313,7 @@ TCPU_Arg AT_OVL CPU_WriteW (TCPU_Arg Adr, uint_fast16_t Word) {
             break;
         case (0177662 >> 1):
             Device_Data.SysRegs.WrReg177662 = (uint16_t) Word;
+            // Разряд 14 - управляет включением системного таймера. При значении 0 таймер выключен, при 1 - включен.
             // TODO: if 0011
             graphics_set_page(Word & 0100000 ? CPU_PAGE61_MEM_ADR : CPU_PAGE51_MEM_ADR, (Word >> 8) & 15);
             break;
