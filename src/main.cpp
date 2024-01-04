@@ -151,3 +151,38 @@ int main() {
     emu_start();
     return 0;
 }
+
+/*
+177662 Разряд 14 (БК11М) - управляет включением системного таймера. (вектор 100) При значении 0 таймер выключен, при 1 - включен.
+F таймера = 48.5 Hz
+? Manwe@ - 17.02.2020 15:51
+Можно и без потрошения видеоконтроллера посчитать экспериментально.
+Таймер процессора насчитывает 640 тиков за кадр на БК 0011м. Это 640*128 тактов процессора.
+Я проводил эксперимент: 320 тиков таймера показывал одну страницу памяти, 320 другую (обе страницы раскрашены в разные цвета).
+ В таком эксперименте экран «разрезан» на две части. Эта линия разреза стабильно держится на месте и никуда не уплывает.
+  Если бы между кадрами проходило не ровно 640 тиков таймера, граница постепенно уплывала.
+Теперь считаем кадровую частоту: 4 МГц / (640*128) = 48.828125
+t = 1 / 48,828125 Hz = 0,02048 s = 20,48 ms == 20480 mks (us)
+*/
+//#include "hardware/timer.h"
+static repeating_timer_t system_timer_50_Hz = { 0 };
+#define SYSTEM_TIMER_US (int64_t)20480
+
+extern "C" void Call_ET100();
+
+static bool system_timer_50_Hz_cb(repeating_timer_t *rt) {
+    if ((*(uint16_t*)rt->user_data) & (1 << 14)) {  // timer is not masked by system register
+        Call_ET100();
+        return true;
+    }
+    return true;
+}
+
+extern "C" void init_system_timer(uint16_t* pReg, bool enable) {
+    if (enable) {
+        add_repeating_timer_us (SYSTEM_TIMER_US, system_timer_50_Hz_cb, pReg, &system_timer_50_Hz);
+    } else if (system_timer_50_Hz.user_data) {
+        cancel_repeating_timer(&system_timer_50_Hz);
+        system_timer_50_Hz.user_data = 0;
+    }
+}

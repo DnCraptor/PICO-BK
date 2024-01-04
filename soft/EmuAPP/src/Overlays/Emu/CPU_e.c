@@ -11,6 +11,10 @@
 
 #define AT_OVL __attribute__((section(".ovl3_e.text")))
 
+static bool call_ET100 = false;
+void Call_ET100() {
+    call_ET100 = true;
+}
 
 #define CPU_CALC_TIMING_D(  Tab) {Device_Data.CPU_State.Time += Tab [(OpCode >> 3) & 07];}
 #define CPU_CALC_TIMING_SD( Tab) {Device_Data.CPU_State.Time += Tab [((OpCode >> 6) & 070) | ((OpCode >> 3) & 07)];}
@@ -733,6 +737,16 @@ void AT_OVL CPU_RunInstruction (void) {
             CPU_CALC_TIMING    (CPU_TIMING_INT);
             goto Exit;
         }
+    }
+    if (call_ET100) {
+        call_ET100 = false;
+        DEBUG_PRINT (("  !!!SYSTEM TIMER!!!"));
+        CPU_INST_INTERRUPT (0100);
+        PSW = Psw;
+        DEBUG_PRINT (("  PSW=%o\n", (int) Psw));
+        CPU_CALC_TIMING (CPU_TIMING_INT);
+        //  exit (1);
+        return;
     }
 
     DEBUG_PRINT (("%06o: ", (int) PC));

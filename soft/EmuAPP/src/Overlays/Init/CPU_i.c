@@ -63,9 +63,11 @@ void init_rom() {
 }
 
 extern volatile uint16_t true_covox; // vga.h
+void init_system_timer(uint16_t* pReg, bool enable);
 
 void AT_OVL CPU_Init (void) {
     memset (&Device_Data, 0, sizeof (Device_Data));
+    bool bk11m = is_bk0011mode();
 
 //  Device_Data.SysRegs.Reg177660   = 0;
 //  Device_Data.SysRegs.RdReg177662 = 0;
@@ -74,10 +76,14 @@ void AT_OVL CPU_Init (void) {
 //  Device_Data.SysRegs.Reg177710   = 0177777;
 //  Device_Data.SysRegs.Reg177712   = 0177400;
 //  Device_Data.SysRegs.RdReg177714 = 0;
-    Device_Data.SysRegs.RdReg177716 = ((!is_bk0011mode() ? 0100000 : 0140000) & 0177400) | 0300;
+    Device_Data.SysRegs.RdReg177716 = ((!bk11m ? 0100000 : 0140000) & 0177400) | 0300;
     Device_Data.SysRegs.WrReg177662  = 047400;
+    if (bk11m) Device_Data.SysRegs.WrReg177662 &= ~(1 << 14); // TODO: ensure
     Device_Data.SysRegs.Wr1Reg177716 = (1 << 12) | 1;
+    // TODO:^ (200)бит 7: включение двигателя магнитофона, "1" -- стоп, "0" -- пуск. Начальное состояние "1".
     true_covox = 0;
+
+    init_system_timer(&Device_Data.SysRegs.WrReg177662, bk11m);
 
 /*
  * бит 0: признак 0-ой дорожки
