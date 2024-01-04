@@ -168,11 +168,11 @@ t = 1 / 48,828125 Hz = 0,02048 s = 20,48 ms == 20480 mks (us)
 static repeating_timer_t system_timer_50_Hz = { 0 };
 #define SYSTEM_TIMER_US (int64_t)20480
 
-extern "C" void Call_ET100();
+extern "C" void TickIRQ2();
 
 static bool system_timer_50_Hz_cb(repeating_timer_t *rt) {
     if ((*(uint16_t*)rt->user_data) & (1 << 14)) {  // timer is not masked by system register
-        Call_ET100();
+        TickIRQ2();
         return true;
     }
     return true;

@@ -63,11 +63,13 @@ void init_rom() {
 }
 
 extern volatile uint16_t true_covox; // vga.h
+extern bool m_bIRQ2rq;
 void init_system_timer(uint16_t* pReg, bool enable);
 
 void AT_OVL CPU_Init (void) {
     memset (&Device_Data, 0, sizeof (Device_Data));
     bool bk11m = is_bk0011mode();
+    m_bIRQ2rq = false;
 
 //  Device_Data.SysRegs.Reg177660   = 0;
 //  Device_Data.SysRegs.RdReg177662 = 0;

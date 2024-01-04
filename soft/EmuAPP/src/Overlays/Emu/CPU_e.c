@@ -11,9 +11,9 @@
 
 #define AT_OVL __attribute__((section(".ovl3_e.text")))
 
-static bool call_ET100 = false;
-void Call_ET100() {
-    call_ET100 = true;
+bool m_bIRQ2rq = false;
+void TickIRQ2() {
+    m_bIRQ2rq = true;
 }
 
 #define CPU_CALC_TIMING_D(  Tab) {Device_Data.CPU_State.Time += Tab [(OpCode >> 3) & 07];}
@@ -719,7 +719,19 @@ void AT_OVL CPU_RunInstruction (void) {
     TCPU_Arg Res;
     TCPU_Psw Psw = PSW;
 
-    if ((Psw & 0200) == 0 && (Device_Data.CPU_State.Flags & (CPU_FLAG_KEY_VECTOR_60 | CPU_FLAG_KEY_VECTOR_274)))
+    if (!(Psw & ((1 << 10) | (1 << 7) | (1 << 4)))) { // not masked, not P (priority), not T (trace)
+        if (m_bIRQ2rq) {
+            m_bIRQ2rq = false;
+            DEBUG_PRINT (("               INTERRUPT VEC=100"));
+            CPU_INST_INTERRUPT (0100);
+            CPU_CALC_TIMING    (CPU_TIMING_INT);
+            goto Exit;
+        }
+    } else if (m_bIRQ2rq) {
+        m_bIRQ2rq = false;
+    }
+
+    if ((Psw & (1 << 8)) == 0 /*&& (Device_Data.CPU_State.Flags & (CPU_FLAG_KEY_VECTOR_60 | CPU_FLAG_KEY_VECTOR_274))*/)
     {
         if (Device_Data.CPU_State.Flags & CPU_FLAG_KEY_VECTOR_60)
         {
@@ -737,16 +749,6 @@ void AT_OVL CPU_RunInstruction (void) {
             CPU_CALC_TIMING    (CPU_TIMING_INT);
             goto Exit;
         }
-    }
-    if (call_ET100) {
-        call_ET100 = false;
-        DEBUG_PRINT (("  !!!SYSTEM TIMER!!!"));
-        CPU_INST_INTERRUPT (0100);
-        PSW = Psw;
-        DEBUG_PRINT (("  PSW=%o\n", (int) Psw));
-        CPU_CALC_TIMING (CPU_TIMING_INT);
-        //  exit (1);
-        return;
     }
 
     DEBUG_PRINT (("%06o: ", (int) PC));
