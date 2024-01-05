@@ -81,6 +81,10 @@ void inInit(uint gpio) {
     gpio_pull_up(gpio);
 }
 
+static FATFS fat_fs;
+
+#include "Config.h"
+
 int main() {
 #if (OVERCLOCKING > 270)
     hw_set_bits(&vreg_and_chip_reset_hw->vreg, VREG_AND_CHIP_RESET_VREG_VSEL_BITS);
@@ -129,7 +133,7 @@ int main() {
 
     init_psram();
 
-    FRESULT result = f_mount(&fs, "", 1);
+    FRESULT result = f_mount(&fat_fs, "", 1);
     if (FR_OK != result) {
         char tmp[80];
         sprintf(tmp, "Unable to mount SD-card: %s (%d)", FRESULT_str(result), result);
@@ -139,6 +143,10 @@ int main() {
     }
 
     DIRECT_RAM_BORDER = PSRAM_AVAILABLE ? RAM_SIZE : (SD_CARD_AVAILABLE ? RAM_PAGE_SIZE : RAM_SIZE);
+
+    while(1) {
+        // TODO: remove it
+    }
 
     if (SD_CARD_AVAILABLE) {
         insertdisk(0, fdd0_sz(), fdd0_rom(), "\\BK\\fdd0.img");
@@ -180,7 +188,7 @@ static bool system_timer_50_Hz_cb(repeating_timer_t *rt) {
 
 extern "C" void init_system_timer(uint16_t* pReg, bool enable) {
     if (enable) {
-        add_repeating_timer_us (SYSTEM_TIMER_US, system_timer_50_Hz_cb, pReg, &system_timer_50_Hz);
+ //       add_repeating_timer_us (SYSTEM_TIMER_US, system_timer_50_Hz_cb, pReg, &system_timer_50_Hz);
     } else if (system_timer_50_Hz.user_data) {
         cancel_repeating_timer(&system_timer_50_Hz);
         system_timer_50_Hz.user_data = 0;
