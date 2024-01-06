@@ -204,13 +204,13 @@ class CMainFrame ///: public CFrameWndEx
 
 		inline void         StartTimer()
 		{
-			SetTimer(BKTIMER_UI_REFRESH, 20, nullptr);  // запустить таймер для OnMainLoop
-			SetTimer(BKTIMER_UI_TIME, 1000, nullptr);   // запустить таймер для OnMainLoopTimer
+	///		SetTimer(BKTIMER_UI_REFRESH, 20, nullptr);  // запустить таймер для OnMainLoop
+	///		SetTimer(BKTIMER_UI_TIME, 1000, nullptr);   // запустить таймер для OnMainLoopTimer
 		}
 		inline void         StopTimer()
 		{
-			KillTimer(BKTIMER_UI_REFRESH);      // остановить таймер для OnMainLoop
-			KillTimer(BKTIMER_UI_TIME);         // остановить таймер для OnMainLoopTimer
+	///		KillTimer(BKTIMER_UI_REFRESH);      // остановить таймер для OnMainLoop
+	///		KillTimer(BKTIMER_UI_TIME);         // остановить таймер для OnMainLoopTimer
 		}
 		void                OnMainLoop();       // функция вызова по таймеру
 		void                OnMainLoopTime();   // функция вызова по таймеру

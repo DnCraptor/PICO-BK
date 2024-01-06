@@ -191,6 +191,7 @@ public:
 namespace std {
     class mutex {};
     class condition_variable {};
+    class thread {};
 };
 
 namespace std {

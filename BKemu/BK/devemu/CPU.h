@@ -6,6 +6,9 @@
 
 #include "Config.h"
 #include <deque>
+#include <bits/unique_ptr.h>
+
+#define TRACE0(x)
 
 #define SWAP_BYTE(A) ( (((A) & 0x00FF) << 8) | (((A) >> 8) & 0x00FF) )
 
@@ -120,7 +123,7 @@ class CCPU
 		};
 	protected: // Statics
 		using ExecuteMethodRef = void (CCPU::*)();
-	//	std::unique_ptr<ExecuteMethodRef[]> m_pExecuteMethodMap;
+		std::unique_ptr<ExecuteMethodRef[]> m_pExecuteMethodMap;
 		void            RegisterMethodRef(uint16_t start, uint16_t end, ExecuteMethodRef methodref);
 
 		uint16_t        m_RON[static_cast<int>(REGISTER::PSW)];   // PSW не входит в массив
