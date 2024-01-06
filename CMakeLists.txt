@@ -94,12 +94,15 @@ pico_set_program_version(pico-bk "test")
             ${CMAKE_CURRENT_SOURCE_DIR}/drivers/usb/msc_disk.c
             ${CMAKE_CURRENT_SOURCE_DIR}/drivers/usb/usb_descriptors.c
             ${CMAKE_CURRENT_SOURCE_DIR}/BKemu/shared/Ini.cpp
+            ${CMAKE_CURRENT_SOURCE_DIR}/BKemu/shared/HDIStuff.cpp
             ${CMAKE_CURRENT_SOURCE_DIR}/BKemu/BK/devemu/ScreenColors_Shared.cpp
+            ${CMAKE_CURRENT_SOURCE_DIR}/BKemu/BK/devemu/CPU.cpp
     )
     target_include_directories(${PROJECT_NAME} PRIVATE
             ${CMAKE_CURRENT_SOURCE_DIR}/src
             ${CMAKE_CURRENT_SOURCE_DIR}/BKemu/BK
             ${CMAKE_CURRENT_SOURCE_DIR}/BKemu/BK/devemu
+            ${CMAKE_CURRENT_SOURCE_DIR}/BKemu/BK/emutools
             ${CMAKE_CURRENT_SOURCE_DIR}/BKemu/shared
             ${CMAKE_CURRENT_SOURCE_DIR}/disks
             ${CMAKE_CURRENT_SOURCE_DIR}/drivers/usb

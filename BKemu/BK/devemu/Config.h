@@ -544,7 +544,7 @@ namespace Global
 	bool        CheckFFMPEG();
 
 	bool        SaveBinFile(uint8_t *buf, uint16_t addr, uint16_t len, const fs::path &strName);
-	bool        LoadBinFile(std::unique_ptr<uint8_t[]> &buf, uint16_t &addr, uint16_t &len, const fs::path &strName, bool bStrict);
+//	bool        LoadBinFile(std::unique_ptr<uint8_t[]> &buf, uint16_t &addr, uint16_t &len, const fs::path &strName, bool bStrict);
 
 	bool        isEmptyUnit(const CString &s);
 	bool        isEmptyUnit(const fs::path &s);
@@ -568,7 +568,7 @@ namespace Global
 		return tCompileDate.Format(p_format).GetString();
 	}
 
-	void    SetMonospaceFont(HWND hwnd, CFont *pFont);
+//	void    SetMonospaceFont(HWND hwnd, CFont *pFont);
 }
 
 // #define WM_DBG_BREAKPOINT             (WM_USER + 100)

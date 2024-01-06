@@ -1,6 +1,6 @@
 ﻿#pragma once
-#include <vector>
 #include "pch.h"
+#include <vector>
 
 constexpr auto INI_BUFFER_LENGTH = 1024;
 

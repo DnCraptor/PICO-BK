@@ -18,7 +18,7 @@ extern "C" {
 #include "vga.h"
 #include "ps2.h"
 #include "usb.h"
-#include "CPU.h"
+//#include "CPU_bk.h"
 #include "main_i.h"
 #include "emu_e.h"
 }
@@ -47,7 +47,7 @@ struct semaphore vga_start_semaphore;
 /* Renderer loop on Pico's second core */
 void __time_critical_func(render_core)() {
     graphics_init();
-    graphics_set_buffer(CPU_PAGE51_MEM_ADR, 512, 256);
+    graphics_set_buffer(&RAM[0x10000], 512, 256);
     graphics_set_textbuffer(TEXT_VIDEO_RAM);
     graphics_set_bgcolor(0x80808080);
     graphics_set_offset(0, 0);
@@ -83,7 +83,7 @@ void inInit(uint gpio) {
 
 static FATFS fat_fs;
 
-#include "Config.h"
+#include "CPU.h"
 
 int main() {
 #if (OVERCLOCKING > 270)

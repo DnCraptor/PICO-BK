@@ -23,13 +23,13 @@ const DWORD  g_pColorPalettes_std[16][4] =
 };
 
 // 0,1,2,3
-static const DWORD  g_pMonochromePalette_std[2][4] =
+const DWORD  g_pMonochromePalette_std[2][4] =
 {
 	Color_Black, Color_White, Color_Black, Color_White,
 	Color_Black, Color_Black, Color_White, Color_White
 };
 
-static const DWORD  g_pAdaptMonochromePalette_std[8][4] =
+const DWORD  g_pAdaptMonochromePalette_std[8][4] =
 {
 	// Gray
 	Color_Black, 0xff6B6B6B, 0xffa9a9a9, Color_White,
@@ -51,13 +51,12 @@ DWORD g_pColorPalettes[16][4] = { 0, };
 DWORD g_pMonochromePalette[2][4] = { 0, };
 DWORD g_pAdaptMonochromePalette[2][4] = { 0, };
 
-
 CString ColorToStr(DWORD col)
 {
 #pragma warning(disable:4996)
 	CString strCol;
 	LPTSTR buf = strCol.GetBufferSetLength(16);
-	_sntprintf(buf, 16, _T("%06x"), (col & 0xffffff));
+	snprintf(buf, 16, _T("%06x"), (col & 0xffffff));
 	strCol.ReleaseBuffer();
 	return _T("#") + strCol;
 }

@@ -2,7 +2,7 @@
 #include "reboot.h"
 #include "ps2_bk.h"
 #include "ps2_codes.h"
-#include "CPU.h"
+#include "CPU_bk.h"
 #include "Key.h"
 
 #include "emu_e.h"
