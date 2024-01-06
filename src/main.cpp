@@ -83,7 +83,7 @@ void inInit(uint gpio) {
 
 static FATFS fat_fs;
 
-#include "CPU.h"
+#include "Board.h"
 
 int main() {
 #if (OVERCLOCKING > 270)
@@ -144,6 +144,10 @@ int main() {
 
     DIRECT_RAM_BORDER = PSRAM_AVAILABLE ? RAM_SIZE : (SD_CARD_AVAILABLE ? RAM_PAGE_SIZE : RAM_SIZE);
 
+CMotherBoard* pboard = new CMotherBoard();
+pboard->StartTimerThread();
+pboard->RunCPU();
+//StartTimer
     while(1) {
         // TODO: remove it
     }

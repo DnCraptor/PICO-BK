@@ -1,6 +1,7 @@
 ﻿// Device.h: interface for the CDevice class.
 //
 #pragma once
+#include "afx.h"
 
 // флаги операций для функций обащения к системным регистрам
 #define GSSR_NONE 0

@@ -3,6 +3,7 @@
 #include "string.h"
 #include "stdio.h"
 #include "stdlib.h"
+#include <vector>
 
 #define DECLARE_HANDLE(name) struct name##__{int unused;}; typedef struct name##__ *name
 DECLARE_HANDLE            (HWND);
@@ -64,82 +65,90 @@ typedef ULONG_PTR DWORD_PTR, *PDWORD_PTR;
 #define TRUE true
 #define LOCALE_NOUSEROVERRIDE         0x80000000   // Not Recommended - do not use user overrides
 #define _T(x)  (const char*)x
-#define MAX_CSTR_LEN 252
 
 class CString { // string container from MicrosoftFM
-    char m_pszData[MAX_CSTR_LEN]; // TODO: dynamic
-	int sz;
+    std::vector<char> m_pszData;
 public:
-    CString() { m_pszData[0] = 0; sz = 0; }
-	CString(const char* x) { sz = strlen(x); strncpy(m_pszData, x, MAX_CSTR_LEN); if (sz > MAX_CSTR_LEN) sz = MAX_CSTR_LEN; }
-    CString(const char* x, int _sz) : sz(_sz > MAX_CSTR_LEN ? MAX_CSTR_LEN : _sz) { strncpy(m_pszData, x, sz); m_pszData[sz] = 0; }
-    bool IsEmpty() const { return !sz; }
+    CString() { m_pszData.push_back(0); }
+	CString(const char* x) {
+        int sz = strlen(x);
+        for (int i = 0; i < sz; ++i)
+            m_pszData.push_back(x[i]);
+        m_pszData.push_back(0);
+    }
+    CString(const char* x, int sz) {
+        for (int i = 0; i < sz; ++i)
+            m_pszData.push_back(x[i]);
+        m_pszData.push_back(0);
+    }
+    bool IsEmpty() const { return m_pszData.size() < 2; }
 	void MakeLower() { /*TODO*/ }
-	int GetLength() const { return sz; }
-	char operator[](int iChar) const { return m_pszData[iChar]; } // TODO: assetions/throw
-	int Compare(const CString &psz) const { return strncmp(m_pszData, psz.m_pszData, MAX_CSTR_LEN); } // TODO:
+	int GetLength() const { return (int)m_pszData.size() - 1; }
+	char operator[](int iChar) const { return m_pszData[iChar]; }
+	int Compare(const CString &psz) const {
+        if (m_pszData == psz.m_pszData) return 0;
+        if (m_pszData > psz.m_pszData) return -1;
+        return 1;
+    }
 	int Find(const char* x, int iStart = 0) const {
-		const char* p = strnstr(m_pszData + iStart, x, MAX_CSTR_LEN);
+		const char* p = strnstr(&m_pszData.front() + iStart, x, m_pszData.size());
 		if (!p) return -1;
-		return p - m_pszData;
+		return p - &m_pszData.front();
 	}
 	char GetAt(int x) const { return m_pszData[x]; }
 	bool LoadString(unsigned int nID) { /*TODO*/ return false; }; // A Windows string resource ID.
-	int CollateNoCase(const char* psz) const { return strncmp(m_pszData, psz, MAX_CSTR_LEN); } // TODO: no case
+	int CollateNoCase(const char* psz) const { return strncmp(&m_pszData.front(), psz, m_pszData.size()); } // TODO: no case
 	void Format(const char* f, int i) const { /*TODO*/ }
 	void Format(const char* f, float flt) const { /*TODO*/ }
 	void Format(const char* f, double flt) const { /*TODO*/ }
 	friend CString operator+(const CString& str1, const char * psz2) {
 		CString strResult( str1 );
-		int sz = strlen(psz2);
-		int j = str1.sz;
-        for (int i = 0; i < sz && j < MAX_CSTR_LEN - 1; ++i) {
-			strResult.m_pszData[j++] = psz2[i];
-		}
-		strResult.m_pszData[j] = 0;
-		strResult.sz = j;
+        strResult.m_pszData.resize(strResult.GetLength());
+        while(*psz2) {  strResult.m_pszData.push_back(*psz2++);  }
+        strResult.m_pszData.push_back(0);
 		return( strResult );
 	}
 	friend CString operator+(const CString& str1, const CString& psz2) {
 		CString strResult( str1 );
-		int j = str1.sz;
-        for (int i = 0; i < psz2.sz && j < MAX_CSTR_LEN - 1; ++i) {
-			strResult.m_pszData[j++] = psz2[i];
-		}
-		strResult.m_pszData[j] = 0;
-		strResult.sz = j;
+        strResult.m_pszData.resize(strResult.GetLength());
+        strResult.m_pszData.insert( strResult.m_pszData.end(), psz2.m_pszData.begin(), psz2.m_pszData.end() );
+        strResult.m_pszData.push_back(0);
 		return( strResult );
 	}
     CString& operator+=(PCXSTR psz2) {
-        int sz = strlen(psz2);
-		int j = this->sz;
-        for (int i = 0; i < sz && j < MAX_CSTR_LEN - 1; ++i) {
-			m_pszData[j++] = psz2[i];
-		}
-		m_pszData[j] = 0;
-		this->sz = j;
+        m_pszData.resize(GetLength());
+        while(*psz2) {  m_pszData.push_back(*psz2++); }
+        m_pszData.push_back(0);
         return( *this );
     }
     CString& operator+=(const CString& psz2) {
-		int j = this->sz;
-        for (int i = 0; i < psz2.sz && j < MAX_CSTR_LEN - 1; ++i) {
-			m_pszData[j++] = psz2[i];
-		}
-		m_pszData[j] = 0;
-		this->sz = j;
+        m_pszData.resize(GetLength());
+        m_pszData.insert( m_pszData.end(), psz2.m_pszData.begin(), psz2.m_pszData.end() );
+        m_pszData.push_back(0);
         return( *this );
     }
 	bool operator==(const CString& x) const { return Compare(x) == 0; }
-	void Empty() { m_pszData[0] = 0; sz = 0; }
-    PCXSTR GetString() const throw() { return( m_pszData ); }
-    PXSTR GetBufferSetLength(int nLength) { sz = nLength; return m_pszData; } // TODO if more?
-    PXSTR GetBuffer() { return m_pszData; }
-    void ReleaseBuffer() { sz = strnlen(m_pszData, MAX_CSTR_LEN); } // TODO: ensure
-    CString& Trim() { while(m_pszData[sz - 1] == ' ' || m_pszData[sz - 1] == '\t') { m_pszData[--sz] = 0; } return *this; } // TODO: trimLeft
+	void Empty() { m_pszData.empty(); m_pszData.push_back(0); }
+    PCXSTR GetString() const throw() { return( &m_pszData.front() ); }
+    PXSTR GetBufferSetLength(int nLength) { m_pszData.resize(nLength + 1); return &m_pszData.front(); } // TODO if more?
+    PXSTR GetBuffer() { return &m_pszData.front(); }
+    void ReleaseBuffer() {
+        m_pszData.resize(strnlen(&m_pszData.front(), m_pszData.size()));
+        m_pszData.push_back(0);
+    } // TODO: ensure
+    CString& Trim() {
+        while(m_pszData[0] == ' ' || m_pszData[0] == '\n') m_pszData.erase(m_pszData.begin());
+        while(m_pszData[m_pszData.size() - 2] == ' ' || m_pszData[m_pszData.size() - 2] == '\t') {
+            m_pszData[m_pszData.size() - 2] = 0;
+            m_pszData.resize(m_pszData.size() - 1);
+        }
+        ReleaseBuffer();
+        return *this;
+    }
     // Return the substring starting at index 'iFirst'
-    CString Mid(int iFirst) const {  return CString(m_pszData + iFirst, sz - iFirst); }
+    CString Mid(int iFirst) const {  return CString(&m_pszData[iFirst], m_pszData.size() - 1 - iFirst); }
     // Return the substring starting at index 'iFirst', with length 'nCount'
-    CString Mid(int iFirst, int nCount) const { return CString(m_pszData + iFirst, nCount); }
+    CString Mid(int iFirst, int nCount) const { return CString(&m_pszData[iFirst], nCount); }
     // TODO:
 };
 
@@ -149,12 +158,14 @@ inline static unsigned long _tcstoul(const CString& str, char** p, int x) { retu
 
 namespace fs {
     class path { // TODO:
+        CString m_path;
 	public:
-        bool empty() const { return true; }
+        bool empty() const { return m_path.IsEmpty(); }
         void clear() noexcept { // set *this to the empty path
-           // _Text._Orphan_all();
-           // _Text.clear();
+           m_path.Empty();
         }
+        const char* c_str() const { return m_path.GetString(); }
+        const CString& cstr() const { return m_path; }
 	};
 };
 
@@ -394,3 +405,4 @@ private:
     };
 };
 
+#define ZeroMemory(Destination,Length) memset((Destination),0,(Length))

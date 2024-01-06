@@ -3,8 +3,6 @@
 
 #pragma once
 
-//#include <afxtempl.h>
-
 #include "Device.h"
 #include "CPU.h"
 #include "FDDController.h"
@@ -20,6 +18,10 @@
 #include "MainFrm.h"
 #include "Config.h"
 
+extern "C" {
+#include "pico/time.h"
+}
+
 constexpr auto BRD_10_MON10_BNK = 8;
 constexpr auto BRD_10_BASIC10_1_BNK = 10;
 constexpr auto BRD_10_BASIC10_2_BNK = 12;
@@ -28,6 +30,8 @@ constexpr auto BRD_10_REGISTERS_BNK = 14;
 #include <thread>
 
 class CMainFrame;
+
+#define PAGE_SIZE_BYTES (4 << 10)
 
 class CMotherBoard : public CDevice
 {
@@ -118,7 +122,6 @@ class CMotherBoard : public CDevice
 
 		CFDDController      m_fdd;              // контроллер 1801ВП1-128.
 		CCPU                m_cpu;              // Процессор 1801ВМ1
-		mutable std::vector<uint8_t> m_pMemory; // Основная память БК + дополнительная для контроллеров
 		BKMEMBank_t         m_MemoryMap[16];    // карта памяти 64кбайтного адресного пространства, там помещается 16 банков по 4 кб.
 		ConfBKModel_t       m_ConfBKModel;
 		std::vector<WindowParam_t> m_vWindows;  // вектор окон для дампера.
@@ -137,19 +140,21 @@ class CMotherBoard : public CDevice
 		int                 m_nKeyCleanEvent;   // счётчик для события сброса бита 7 в 177660
 
 		void                MediaTick();
-
+public:
 		// поток с точным таймером
 		void                TimerThreadFunc();  // собственно функция
-		std::thread         m_TimerThread;
-		std::mutex          m_mutLockTimerThread; // флаг работы потока.
-		std::mutex          m_mutRunLock;       // блокировка работы фрейма.
+protected:
+		repeating_timer_t   m_TimerThread;
+		uint16_t            m_PreviousPC;
+///		std::mutex          m_mutLockTimerThread; // флаг работы потока.
+///		std::mutex          m_mutRunLock;       // блокировка работы фрейма.
 		volatile bool       m_bKillTimerEvent;  // флаг для остановки потока.
 
 		void                Make_One_Screen_Cycle();
 
 		// Инициализация памяти
 		virtual bool        InitMemoryModules();
-		virtual void        InitMemoryValues(int nMemSize);
+		virtual void        InitMemoryValues();
 		virtual void        MemoryManager();
 		bool                LoadRomModule(int iniRomNameIndex, int bank);   // загрузка нужного модуля ПЗУ по заданному адресу
 
@@ -309,7 +314,7 @@ class CMotherBoard : public CDevice
 		virtual void        RestoreMemPages() {}
 
 		// функции для карты памяти
-		virtual uint8_t    *GetMainMemory() const;
+	///	virtual uint8_t    *GetMainMemory() const;
 		virtual uint8_t    *GetAddMemory() const;
 
 		void                DrawDebugScreen() const;

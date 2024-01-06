@@ -1,5 +1,8 @@
 ﻿#pragma once
 
+#include "afx.h"
+#include <bits/unique_ptr.h>
+
 constexpr auto FLOPPY_SIDES = 2;            // две стороны у дискеты
 constexpr auto FLOPPY_TRACKS = 80;          // количество дорожек на стороне дискеты
 constexpr auto FLOPPY_SECTOR_TYPE = 2;      // размер сектора в байтах 512

@@ -1,7 +1,12 @@
 // MS AFX replacement
 #pragma once
 
+#include "pch.h"
+#include "CFile.h"
+
 // TODO: some "vision"
+
+#define TRACE0(x)
 
 /*
  * MessageBox() Flags
@@ -93,7 +98,7 @@ class CObject
 public:
 // Object model (types, destruction, allocation)
 //	virtual CRuntimeClass* GetRuntimeClass() const;
-	virtual ~CObject() = 0;  // virtual destructors are necessary
+	virtual ~CObject() {}  // virtual destructors are necessary
 };
 
 #define NULL 0
@@ -104,14 +109,6 @@ typedef struct tagNMHDR
     UINT_PTR  idFrom;
     UINT      code;         // NM_ code
 }   NMHDR;
-
-class CFile : public CObject {
-public:
-    void* m_hFile;
-    CFile(): m_hFile(0) { }
-	virtual ~CFile() { }
-    const static void* hFileNull;
-};
 
 class CPoint : public tagPOINT {
 public:
@@ -526,3 +523,5 @@ typedef struct tagMINMAXINFO {
     POINT ptMaxTrackSize;
 } MINMAXINFO, *PMINMAXINFO, *LPMINMAXINFO;
 
+#define ASSERT(f)
+ //         DEBUG_ONLY((void) ((f) || !::AfxAssertFailedLine(THIS_FILE, __LINE__) || (AfxDebugBreak(), 0)))

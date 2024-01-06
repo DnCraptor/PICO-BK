@@ -1,4 +1,5 @@
 cmake_minimum_required(VERSION 3.22)
+set(PICO_CXX_ENABLE_EXCEPTIONS 1)
 include(pico_sdk_import.cmake)
 
 project(pico-bk C CXX ASM)
@@ -94,9 +95,14 @@ pico_set_program_version(pico-bk "test")
             ${CMAKE_CURRENT_SOURCE_DIR}/drivers/usb/msc_disk.c
             ${CMAKE_CURRENT_SOURCE_DIR}/drivers/usb/usb_descriptors.c
             ${CMAKE_CURRENT_SOURCE_DIR}/BKemu/shared/Ini.cpp
+            ${CMAKE_CURRENT_SOURCE_DIR}/BKemu/shared/CFile.cpp
             ${CMAKE_CURRENT_SOURCE_DIR}/BKemu/shared/HDIStuff.cpp
             ${CMAKE_CURRENT_SOURCE_DIR}/BKemu/BK/devemu/ScreenColors_Shared.cpp
             ${CMAKE_CURRENT_SOURCE_DIR}/BKemu/BK/devemu/CPU.cpp
+            ${CMAKE_CURRENT_SOURCE_DIR}/BKemu/BK/devemu/Board.cpp
+            ${CMAKE_CURRENT_SOURCE_DIR}/BKemu/BK/devemu/Device.cpp
+            ${CMAKE_CURRENT_SOURCE_DIR}/BKemu/BK/devemu/FDDController.cpp
+            ${CMAKE_CURRENT_SOURCE_DIR}/BKemu/BK/devemu/FloppyDrive.cpp
     )
     target_include_directories(${PROJECT_NAME} PRIVATE
             ${CMAKE_CURRENT_SOURCE_DIR}/src

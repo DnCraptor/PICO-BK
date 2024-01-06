@@ -178,9 +178,10 @@ struct BKMEMBank_t
 	uint32_t nBank; // номер банка памяти 4kb
 	uint32_t nPage; // страница памяти БК11 == nBank >> 2 (Этот параметр можно удалить, когда будут сделаны какие-нибудь серьёзные
 	// изменения в msf структуре)
-	uint32_t nOffset; // смещение в массиве == nBank << 12
+	uint32_t nOffset; // смещение в массиве == nBank << 12 (deprecated)
+	uint8_t* addr;    // реальный указатель на адрес в стат. массиве доступной памяти
 	uint32_t nTimingCorrection; // значение корректировки тайминга при обращении к памяти, которая не управляется ВП1-037 (ПЗУ или ОЗУ СМК)
-	BKMEMBank_t(): bReadable(FALSE), bWritable(FALSE), nBank(0), nPage(0), nOffset(0), nTimingCorrection(0) {};
+	BKMEMBank_t(): bReadable(FALSE), bWritable(FALSE), nBank(0), nPage(0), nOffset(0), addr(0), nTimingCorrection(0) {};
 };
 
 struct ConfBKModel_t

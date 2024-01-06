@@ -20,7 +20,9 @@ BKBTL. If not, see <http://www.gnu.org/licenses/>. */
 #include "Config.h"
 #include "FloppyDrive.h"
 
+#if (THREADED_MODEL)
 #include <mutex>
+#endif
 
 constexpr auto A16M_ROM_10 = 16;
 constexpr auto A16M_A0_10 = 18;
@@ -180,7 +182,7 @@ class CFDDController : public CDevice
 		uint16_t        m_nAltproMemBank; // номер банка памяти контроллера Альтпро
 
 		CATA_IDE        m_ATA_IDE;
-		std::mutex      m_mutPeriodicBusy;
+	///	std::mutex      m_mutPeriodicBusy;
 
 	public:
 		CFDDController();

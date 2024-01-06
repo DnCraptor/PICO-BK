@@ -7,7 +7,7 @@ TODO:
 */
 
 // флаг реализации модели с выполнением в потоке
-#define THREADED_MODEL 1
+#define THREADED_MODEL 0
 
 #if (THREADED_MODEL)
 #include <thread>
