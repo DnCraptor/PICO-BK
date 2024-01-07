@@ -1550,7 +1550,7 @@ bool CMotherBoard::RestoreState(CMSFManager &msf, HBITMAP hScreenshot)
 }
 
 bool CMotherBoard::RestoreConfig(CMSFManager &msf)
-{
+{ /***
 	MSF_FRAMEDATA framedata{};
 
 	if (msf.IsLoad())
@@ -1595,12 +1595,12 @@ bool CMotherBoard::RestoreConfig(CMSFManager &msf)
 	framedata.fMediaTicks = m_sTV.fMediaTicks;
 	framedata.fMemoryTicks = m_sTV.fMemoryTicks;
 	framedata.fFDDTicks = m_sTV.fFDDTicks;
-	return  bRet && msf.SetBlockFrameData(&framedata);
+	return  bRet && msf.SetBlockFrameData(&framedata); ***/ return true;
 }
 
 
 bool CMotherBoard::RestoreRegisters(CMSFManager &msf)
-{
+{/***
 	MSF_CPU_REGISTERS cpu_reg{};
 	MSF_PORT_REGS port_regs{};
 
@@ -1687,7 +1687,7 @@ bool CMotherBoard::RestoreRegisters(CMSFManager &msf)
 			return false;
 		}
 	}
-
+***/
 	return true;
 }
 
@@ -1702,13 +1702,13 @@ bool CMotherBoard::RestoreMemory(CMSFManager &msf)
 }
 
 bool CMotherBoard::RestoreMemoryMap(CMSFManager &msf)
-{
+{/***
 	if (msf.IsLoad())
 	{
 		return msf.GetBlockMemMap(m_MemoryMap, &m_ConfBKModel);
 	}
 
-	return msf.SetBlockMemMap(m_MemoryMap, &m_ConfBKModel);
+	return msf.SetBlockMemMap(m_MemoryMap, &m_ConfBKModel);**/
 }
 
 
