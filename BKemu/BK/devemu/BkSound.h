@@ -17,12 +17,24 @@ BKBTL. If not, see <http://www.gnu.org/licenses/>. */
 
 //#include <Mmsystem.h>
 #include "Config.h"
-#include <mutex>
+///#include <mutex>
+#include "CFile.h"
+
+#define MAKELONG(a, b)      ((LONG)(((WORD)(((DWORD_PTR)(a)) & 0xffff)) | ((DWORD)((WORD)(((DWORD_PTR)(b)) & 0xffff))) << 16))
+
+static void waveOutSetVolume(HWAVEOUT i, long l) {
+	/// TODO:
+}
+
+static void waveOutGetVolume(HWAVEOUT i, DWORD* l) {
+	/// TODO:
+	*l = 0;
+}
 
 // способ синхронизации
 // 1 - через семафор (нагрузка на процессор меньше)
 // 0 - через переменную-счётчик
-#define BKSYNCHRO_SEMAPHORE 1
+#define BKSYNCHRO_SEMAPHORE 0
 
 /* wave data block header */
 typedef struct wavehdr_tag {

@@ -5,7 +5,9 @@
 #pragma once
 
 #include "BKSound_Defines.h"
+#include "BKSound.h"
 //#include <mmsystem.h>
+#include "bits/unique_ptr.h"
 
 // "RIFF"
 constexpr DWORD RIFF_TAG = 0x46464952;

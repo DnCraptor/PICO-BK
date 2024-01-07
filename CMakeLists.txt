@@ -107,6 +107,12 @@ pico_set_program_version(pico-bk "test")
             ${CMAKE_CURRENT_SOURCE_DIR}/BKemu/BK/devemu/HDD.cpp
             ${CMAKE_CURRENT_SOURCE_DIR}/BKemu/BK/devemu/BKMessageBox.cpp
             ${CMAKE_CURRENT_SOURCE_DIR}/BKemu/BK/devemu/Config.cpp
+            ${CMAKE_CURRENT_SOURCE_DIR}/BKemu/BK/devemu/AYSnd.cpp
+            ${CMAKE_CURRENT_SOURCE_DIR}/BKemu/BK/devemu/Tape.cpp
+            ${CMAKE_CURRENT_SOURCE_DIR}/BKemu/BK/devemu/Speaker.cpp
+            ${CMAKE_CURRENT_SOURCE_DIR}/BKemu/BK/devemu/BkSound.cpp
+            ${CMAKE_CURRENT_SOURCE_DIR}/BKemu/BK/devemu/Covox.cpp
+            ${CMAKE_CURRENT_SOURCE_DIR}/BKemu/BK/devemu/BKSoundDevice.cpp
     )
     target_include_directories(${PROJECT_NAME} PRIVATE
             ${CMAKE_CURRENT_SOURCE_DIR}/src

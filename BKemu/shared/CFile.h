@@ -15,6 +15,7 @@ public:
 	virtual ~CFile() { }
     bool Open(const char* path, int mode);
     FSIZE_t Seek(FSIZE_t off, int mode);
+    void SeekToBegin() { f_lseek(&fil, 0); }
     FSIZE_t Read(void* buff, FSIZE_t sz);
     FSIZE_t Write(void* buff, FSIZE_t sz);
     FSIZE_t GetLength() { return f_size(&fil); }
@@ -30,5 +31,4 @@ public:
     static const int osRandomAccess = 0;
 };
 
-const void* CFile::hFileNull = 0;
 

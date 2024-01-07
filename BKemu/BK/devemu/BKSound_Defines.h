@@ -28,3 +28,5 @@ constexpr short MIN_SAMPLE = 0; // вот они 16 битные сэмплы
 constexpr short AVG_SAMPLE = 0x4000;
 constexpr short MAX_SAMPLE = 0x7fff;
 
+/* flags for wFormatTag field of WAVEFORMAT */
+#define WAVE_FORMAT_PCM     1

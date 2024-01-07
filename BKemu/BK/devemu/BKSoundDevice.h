@@ -7,7 +7,7 @@
 #include "BKSound_Defines.h"
 //#include "libdspl-2.0.h"
 #include "BKMessageBox.h"
-
+#include "bits/unique_ptr.h"
 
 constexpr auto DCOFFSET_BUFFER_MASK = 0xff; // степень двойки минус 1
 constexpr auto DCOFFSET_BUFFER_LEN = (DCOFFSET_BUFFER_MASK + 1); // степень двойки

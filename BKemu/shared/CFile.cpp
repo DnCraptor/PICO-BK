@@ -1,5 +1,7 @@
 #include "CFile.h"
 
+const void* CFile::hFileNull = 0;
+
 bool CFile :: Open(const char* path, int mode) {
     FRESULT result = f_open(&fil, path, mode);
     if (result != FR_OK) {

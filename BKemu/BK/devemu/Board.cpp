@@ -824,11 +824,9 @@ void CMotherBoard::KeyboardInterrupt(uint16_t interrupt)
 	}
 }
 
-extern "C" {
-volatile bool ctrlPressed;
-volatile bool altPressed;
-volatile bool shiftPressed;
-}
+extern "C" volatile bool ctrlPressed;
+extern "C" volatile bool altPressed;
+extern "C" volatile bool shiftPressed;
 
 int CMotherBoard::CalcStep()
 {
@@ -1272,11 +1270,11 @@ bool CMotherBoard::SetSystemRegister(uint16_t addr, uint16_t src, UINT dwFlags)
 				// данные записанные в выходной порт передаются во входной
 				m_reg177714in = src;
 			}
-			else if (g_Config.m_bMouseMars)
-			{
-				m_pParent->GetScreen()->SetMouseStrobe(src);
-				m_reg177714in = m_pParent->GetScreen()->GetMouseStatus();
-			}
+	///		else if (g_Config.m_bMouseMars)
+	///		{
+	///			m_pParent->GetScreen()->SetMouseStrobe(src);
+	///			m_reg177714in = m_pParent->GetScreen()->GetMouseStatus();
+	///		}
 
 			return true;
 
@@ -1371,7 +1369,7 @@ void CMotherBoard::RunInto()
 void CMotherBoard::RunOut()
 {
 	// Run all commands to function end
-	CDebugger::InitOutMode();
+///	CDebugger::InitOutMode();
 	UnbreakCPU(GO_OUT);
 }
 
@@ -1379,7 +1377,7 @@ void CMotherBoard::RunOut()
 void CMotherBoard::BreakCPU()
 {
 	m_bBreaked = true;      // включаем отладочную приостановку
-	CDebugger::InitOutMode();
+///	CDebugger::InitOutMode();
 ///	m_pParent->PostMessage(WM_CPU_DEBUGBREAK);
 }
 
@@ -1497,7 +1495,7 @@ bool CMotherBoard::InitMemoryModules() { // TODO: redesign
 }
 
 extern "C" {
-unsigned char ROM10[1 << 15];
+#include "ROM10.h"
 }
 
 void CMotherBoard::MemoryManager()
@@ -1523,7 +1521,7 @@ void CMotherBoard::MemoryManager()
 		m_MemoryMap[i].bWritable = (i < BRD_10_MON10_BNK) ? true : false;
 		m_MemoryMap[i].nBank = i;
 		m_MemoryMap[i].nOffset = i << 12;
-		m_MemoryMap[i].addr = &ROM10[i << 12];
+		m_MemoryMap[i].addr = (uint8_t*) &ROM10[i << 12];
 		m_MemoryMap[i].nTimingCorrection = (i < BRD_10_MON10_BNK) ? RAM_TIMING_CORR_VALUE_D : ROM_TIMING_CORR_VALUE;
 	}
 }
@@ -1912,18 +1910,19 @@ void CMotherBoard::TimerThreadFunc()
 	///					break; // Прекращаем выполнять инструкции - завершаем этот поток
 	return;
 					}
-
+/***
 					if (
 					    m_pDebugger->GetDebugPCBreak(nPreviousPC) // Спросим отладчик на счёт условий остановки. Если ВОИСТИНУ останов
 					    || (m_sTV.nGotoAddress == nPreviousPC)	// Если останов на адресе где стоит отладочный курсор
 					    || (m_sTV.nGotoAddress == GO_INTO)		// Отладочный останов если только одиночный шаг
-					    || (m_sTV.nGotoAddress == GO_OUT && CDebugger::IsInstructionOut(m_cpu.GetCurrentInstruction()))  // Отладочный останов если команда выхода из п/п
+					    || (m_sTV.nGotoAddress == GO_OUT && CDebugger::IsInstructionOut(m_cpu.GetCurrentInstruction())
+						    )  // Отладочный останов если команда выхода из п/п
 					)
 					{
 						BreakCPU();
 					}
+***/
 				}
-
 				if (--m_sTV.fMemoryTicks <= 0.0)
 				{
 					do
@@ -1959,7 +1958,7 @@ void CMotherBoard::TimerThreadFunc()
 
 	///		m_mutRunLock.unlock();
 		}
-		else
+	///	else
 		{
 	///		Sleep(20);
 		}
