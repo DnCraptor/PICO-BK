@@ -1,7 +1,7 @@
 ﻿// BK_settings.h : Диалоговое окно CSettingsDlg используется для описания и изменения Настроек приложения
 //
 #pragma once
-
+#include "afx.h"
 #ifndef __AFXWIN_H__
 #error "включить stdafx.h до включения этого файла в PCH"
 #endif

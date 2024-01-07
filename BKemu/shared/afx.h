@@ -6,6 +6,8 @@
 
 // TODO: some "vision"
 
+#define __AFXWIN_H__
+
 /*
  * MessageBox() Flags
  */
@@ -125,7 +127,16 @@ class CEdit : CObject {};
 class CDC : public CObject {
 };
 
-class CRect : public CObject {
+class CRect : public tagRECT {
+public:
+	CRect() {}
+	// from left, top, right, and bottom
+	CRect(int l, int t, int r, int b) {
+        left = l;
+        top = t;
+        right = r;
+        bottom = b;
+	}
 };
 
 class CGdiObject : public CObject {};
@@ -523,3 +534,8 @@ typedef struct tagMINMAXINFO {
 
 #define ASSERT(f)
  //         DEBUG_ONLY((void) ((f) || !::AfxAssertFailedLine(THIS_FILE, __LINE__) || (AfxDebugBreak(), 0)))
+
+#include "hardware/timer.h"
+static inline uint32_t GetTickCount() {
+	return time_us_32();
+}

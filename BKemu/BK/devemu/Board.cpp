@@ -22,8 +22,9 @@ extern uint8_t RAM[RAM_SIZE];
 // Construction/Destruction
 
 CMotherBoard::CMotherBoard(BK_DEV_MPI model)
-	: m_pParent(nullptr)   // Указатель на окно, в которое посылаются оповещающие сообщения
-	, m_pSpeaker(nullptr)
+	:/// m_pParent(nullptr)   // Указатель на окно, в которое посылаются оповещающие сообщения
+///	, 
+	m_pSpeaker(nullptr)
 	, m_pCovox(nullptr)
 	, m_pMenestrel(nullptr)
 	, m_pAYSnd(nullptr)
@@ -74,12 +75,12 @@ bool CMotherBoard::FillWndVectorPtr(int nMemSize) {
 	InitMemoryValues();
 	return true;
 }
-
+/***
 void CMotherBoard::AttachWindow(CMainFrame *pParent)
 {
 	m_pParent = pParent;
 }
-
+**/
 void CMotherBoard::AttachSound(CBkSound *pSnd)
 {
 	m_pSound = pSnd;
@@ -146,8 +147,8 @@ void CMotherBoard::InitMemoryValues() {
 
 void CMotherBoard::OnReset()
 {
-	m_pParent->GetScreen()->SetPalette(0);
-	m_pParent->GetScreen()->SetRegister(m_reg177664);
+///	m_pParent->GetScreen()->SetPalette(0);
+///	m_pParent->GetScreen()->SetRegister(m_reg177664);
 	m_sTV.clear();
 	m_nCPUFreq_prev = 0; // принудительно заставим применить изменения параметров фрейма
 	FrameParam();
@@ -761,7 +762,7 @@ bool CMotherBoard::InitBoard(uint16_t nNewStartAddr)
 	m_reg177716in = nNewStartAddr & 0177400;
 	m_reg177662out = 047400;
 	m_reg177664 = 0330; // начальное значение. на самом деле - оно случайное
-	m_pParent->GetScreen()->SetExtendedMode(!(m_reg177664 & 01000));
+///	m_pParent->GetScreen()->SetExtendedMode(!(m_reg177664 & 01000));
 	m_reg177662in = 0;
 	m_reg177716out_mem = 0;
 
@@ -1995,7 +1996,7 @@ void CMotherBoard::MediaTick()
 	if (m_sTV.nMediaTickCount == 0)
 	{
 		// Получаем сохранённые звуковые данные, это чтобы слышать звучание с кассеты
-		m_pParent->GetTapePtr()->PlayWaveGetBuffer(m_sTV.pSoundBuffer.get(), m_sTV.nMediaTicksPerFrame); // Берём данные с ленты -> m_pSoundBuffer
+	///	m_pParent->GetTapePtr()->PlayWaveGetBuffer(m_sTV.pSoundBuffer.get(), m_sTV.nMediaTicksPerFrame); // Берём данные с ленты -> m_pSoundBuffer
 		// Посылаем данные с ленты в 177716 <- m_sTV.pSoundBuffer
 		m_pSpeaker->ReceiveTapeBuffer(m_sTV.pSoundBuffer.get(), m_sTV.nMediaTicksPerFrame);
 		m_sTV.nBufPos = 0;
@@ -2059,7 +2060,7 @@ void CMotherBoard::MediaTick()
 		// Отображаем копию буфера на осциллографе в фоне
 	///	m_pParent->PostMessage(WM_OSC_DRAW);
 		// Отправляем их на ленту <- m_sTV.pSoundBuffer
-		m_pParent->GetTapePtr()->RecordWaveGetBuffer(m_sTV.pSoundBuffer.get(), m_sTV.nMediaTicksPerFrame);
+	///	m_pParent->GetTapePtr()->RecordWaveGetBuffer(m_sTV.pSoundBuffer.get(), m_sTV.nMediaTicksPerFrame);
 	}
 }
 

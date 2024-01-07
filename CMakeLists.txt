@@ -114,6 +114,7 @@ pico_set_program_version(pico-bk "test")
             ${CMAKE_CURRENT_SOURCE_DIR}/BKemu/BK/devemu/Covox.cpp
             ${CMAKE_CURRENT_SOURCE_DIR}/BKemu/BK/devemu/BKSoundDevice.cpp
             ${CMAKE_CURRENT_SOURCE_DIR}/BKemu/BK/devemu/emu2149.cpp
+        ###    ${CMAKE_CURRENT_SOURCE_DIR}/BKemu/BK/MainFrm.cpp
     )
     target_include_directories(${PROJECT_NAME} PRIVATE
             ${CMAKE_CURRENT_SOURCE_DIR}/src

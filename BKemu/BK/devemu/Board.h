@@ -29,7 +29,7 @@ constexpr auto BRD_10_REGISTERS_BNK = 14;
 
 #include <thread>
 
-class CMainFrame;
+///class CMainFrame;
 
 #define PAGE_SIZE_BYTES (4 << 10)
 
@@ -133,7 +133,7 @@ class CMotherBoard : public CDevice
 		CAYSnd             *m_pAYSnd;           // указатель на объект мульти сопроцессор Ay8910-3
 		CDebugger          *m_pDebugger;        // указатель на отладчик
 
-		CMainFrame         *m_pParent;          // указатель на родительский фрейм, куда всякие сообщения посылаются
+	///	CMainFrame         *m_pParent;          // указатель на родительский фрейм, куда всякие сообщения посылаются
 		volatile bool       m_bBreaked;         // флаг состояния - процессор приостановлен для отладки
 		volatile bool       m_bRunning;         // флаг состояния - процессор работает/стоит
 
@@ -191,7 +191,7 @@ protected:
 		{
 			return &m_vWindows;
 		}
-		void                AttachWindow(CMainFrame *pParent);
+	///	void                AttachWindow(CMainFrame *pParent);
 		void                AttachSound(CBkSound *pSnd);
 		void                AttachSpeaker(CSpeaker *pDevice);
 		void                AttachCovox(CCovox *pDevice);

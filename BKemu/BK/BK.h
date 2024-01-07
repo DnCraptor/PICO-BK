@@ -3,12 +3,14 @@
 //
 #pragma once
 
-#ifndef __AFXWIN_H__
-#error "включить stdafx.h до включения этого файла в PCH"
-#endif
+#include "afx.h"
+
+///#ifndef __AFXWIN_H__
+///#error "включить stdafx.h до включения этого файла в PCH"
+///#endif
 
 #include "resource.h"       // основные символы
-#include "afxwinappex.h"
+///#include "afxwinappex.h"
 #include <clocale>
 
 // CBKApp:
@@ -19,21 +21,21 @@ constexpr auto QUESTION_PRIME_HWND = 0xBE;
 constexpr auto ANSWER_PRIME_HWND = 0xDA;
 // ----------------------------------------------------------------------------
 
-class CBKApp : public CWinAppEx
+class CBKApp /// : public CWinAppEx
 {
-		CMutex              m_mtInstance;           // мутекс, предназначенный для запуска только одной копии программы (пока не функционирует как надо)
+	///	CMutex              m_mtInstance;           // мутекс, предназначенный для запуска только одной копии программы (пока не функционирует как надо)
 		bool                m_bIsCopy;              // признак копии проги
 
 	public:
 		CBKApp();
-		virtual ~CBKApp() override;
+		virtual ~CBKApp(); /// override;
 
 	protected:
 		void    MakeTitleVersion();
 // Переопределение
 	public:
-		virtual BOOL InitInstance() override;
-		virtual int ExitInstance() override;
+		virtual BOOL InitInstance(); /// override;
+		virtual int ExitInstance(); /// override;
 
 // Реализация
 		UINT            m_nInterAppGlobalMsg;   // индекс юзерского сообщения, которое будет зарегистрировано
@@ -46,11 +48,11 @@ class CBKApp : public CWinAppEx
 		CString         m_strCompileVersion;
 
 	protected:
-		virtual void PreLoadState() override;
-		virtual void LoadCustomState() override;
-		virtual void SaveCustomState() override;
-		virtual BOOL PreTranslateMessage(MSG *pMsg) override;
-		virtual int Run() override;
+		virtual void PreLoadState(); /// override;
+		virtual void LoadCustomState(); /// override;
+		virtual void SaveCustomState(); /// override;
+		virtual BOOL PreTranslateMessage(MSG *pMsg); /// override;
+		virtual int Run(); /// override;
 
 		afx_msg void OnAppAbout();
 		DECLARE_MESSAGE_MAP()
