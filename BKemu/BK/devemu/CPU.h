@@ -5,8 +5,8 @@
 #pragma once
 
 #include "Config.h"
-#include <deque>
-#include <bits/unique_ptr.h>
+/////#include <deque>
+//#include <bits/unique_ptr.h>
 
 #define TRACE0(x)
 
@@ -123,7 +123,7 @@ class CCPU
 		};
 	protected: // Statics
 		using ExecuteMethodRef = void (CCPU::*)();
-		std::unique_ptr<ExecuteMethodRef[]> m_pExecuteMethodMap;
+		ExecuteMethodRef m_pExecuteMethodMap[65536];
 		void            RegisterMethodRef(uint16_t start, uint16_t end, ExecuteMethodRef methodref);
 
 		uint16_t        m_RON[static_cast<int>(REGISTER::PSW)];   // PSW не входит в массив
@@ -131,8 +131,8 @@ class CCPU
 		uint16_t        m_Freg;         // копия флагов состояния NZVC (для простоты будет копия PSW целиком, прост использоваться будут только флаги)
 		bool            m_bCBug;        // флаг, когда применять баг бита С
 		bool            m_b177702State; // состояние регистра
-		std::vector<uint16_t> m_vSysRegs;   // массив внутренних системных регистров процессора 1777700..1777712
-		std::vector<uint16_t> m_vSysRegsMask; // массив масок битов, которые доступны по записи
+		uint16_t        m_vSysRegs[012];   // массив внутренних системных регистров процессора 1777700..1777712
+        uint16_t        m_vSysRegsMask[012]; // массив масок битов, которые доступны по записи
 
 		uint16_t        m_instruction;  // текущая инструкция
 		uint16_t        m_nSrcAddr;     // адрес источника
@@ -163,7 +163,7 @@ class CCPU
 		bool            m_bIRQ2rq;      // Прерывание от таймера 50Гц
 		bool            m_bIRQ3rq;      // Прерывание по вектору 270
 		bool            m_bTimerRq;     // Запрос на прерывание от ВЕ-таймера
-		std::deque<uint16_t> m_qVIRQ;   // очередь векторов прерываний VIRQ, это излишество, но всё же, пусть будет
+/////		std::deque<uint16_t> m_qVIRQ;   // очередь векторов прерываний VIRQ, это излишество, но всё же, пусть будет
 
 		int             m_nTVE_Cnt;     // скорость счётчика
 		int             m_nTVE_Divider; // делитель скорости

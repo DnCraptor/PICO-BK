@@ -1829,7 +1829,7 @@ static FSIZE_t min (FSIZE_t a, FSIZE_t b) {
 * strName - имя загружаемого файла
 * bStrict == true - строго бин файл, false - любой файл
 */
-bool Global::LoadBinFile(std::unique_ptr<uint8_t[]> &buf, uint16_t &addr, uint16_t &len, const fs::path &strName, bool bStrict)
+bool Global::LoadBinFile(uint8_t* &buf, uint16_t &addr, uint16_t &len, const fs::path &strName, bool bStrict)
 {
 	CFile file;
 	bool bRet = false;
@@ -1899,11 +1899,11 @@ bool Global::LoadBinFile(std::unique_ptr<uint8_t[]> &buf, uint16_t &addr, uint16
 
 				if (bIsBin || !bStrict)
 				{
-					buf = std::make_unique<uint8_t[]>(nLen);
+					buf = new uint8_t[nLen]; //// TODO: delete
 
 					if (buf)
 					{
-						file.Read(buf.get(), nLen);
+						file.Read(buf, nLen);
 						addr = nAddr;
 						len = nLen;
 						bRet = true;

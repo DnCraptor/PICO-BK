@@ -895,10 +895,11 @@ bool CTape::GetWaveFile(TAPE_FILE_INFO *pTfi, bool bHeaderOnly)
 
 	if (m_pBin)
 	{
-		m_pBin.reset();
+		delete m_pBin;
+		m_pBin = 0;
 	}
 
-	m_pBin = std::make_unique<uint8_t[]>(pTfi->length);
+	m_pBin = new uint8_t[pTfi->length];
 
 	if (!m_pBin)
 	{
@@ -1563,7 +1564,7 @@ bool CTape::SaveBinFile(const fs::path &strPath, TAPE_FILE_INFO *pTfi) const
 				binFile.Write(&pTfi->name, 16);
 			}
 
-			binFile.Write(m_pBin.get(), pTfi->length);
+			binFile.Write(m_pBin, pTfi->length);
 
 			if (g_Config.m_bUseLongBinFormat)
 			{

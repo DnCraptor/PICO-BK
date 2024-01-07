@@ -18,7 +18,7 @@ class CBKOscScr : public CWnd
 
 	protected:
 		HWND                m_hwndScreen;   // Screen View window handle
-		std::unique_ptr<SAMPLE_INT[]> m_inBuf;
+		SAMPLE_INT*        *m_inBuf;
 		int                 m_inLen;        // размер буфера в сэмплах
 		int                 m_inLenByte;    // размер буфера в байтах
 		std::mutex          m_lockBusy;

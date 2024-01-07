@@ -1690,7 +1690,7 @@ bool CMainFrame::ProcessFile(bool bCreate)
 			m_cli.clearScriptFName(); //скрипт надо игнорировать.
 			m_Script.StopScript();
 			// теперь надо загрузить дамп
-			std::unique_ptr<uint8_t[]> buf;
+			uint8_t[] *buf;
 			uint16_t nAddr, nLen;
 			bool bStrict = !(m_cli.nStatus & CLI_KEY_F); //ключ /F == (bStrict == false)
 

@@ -45,7 +45,7 @@ class CBKView : public CView
 		bool                ReCreateSCR();
 		inline CScreen     *GetScreen()
 		{
-			return m_pScreen.get();
+			return m_pScreen;
 		}
 		void                ClearKPRS()
 		{
@@ -74,7 +74,7 @@ class CBKView : public CView
 		// все остальные нажатые - полностью игнорируются, пока не будут отпущены все нажатые.
 
 		CONF_SCREEN_RENDER  m_nRenderType;  // тип рендера, который применён в текущем объекте m_pScreen
-		std::unique_ptr<CScreen> m_pScreen;
+		CScreen*            m_pScreen;
 		CDebugger           m_debugger;     // отладчик
 		// начальные флаги диалога печати
 		bool                m_bPrintScreen;

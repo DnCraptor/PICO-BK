@@ -84,8 +84,10 @@ void inInit(uint gpio) {
 static FATFS fat_fs;
 
 #include "Board.h"
+#include "Board_10.h"
 
-static std::unique_ptr<CMotherBoard> m_pBoard(nullptr);
+static CMotherBoard m_Board;
+static CMotherBoard * m_pBoard = 0;
 
 static inline void StopTimer() {
 	///		KillTimer(BKTIMER_UI_REFRESH);      // остановить таймер для OnMainLoop
@@ -94,6 +96,7 @@ static inline void StopTimer() {
 
 static void StopAll()
 {
+    DBGM_PRINT(("StopAll"));
 	StopTimer();
 	if (m_pBoard)
 	{
@@ -104,6 +107,7 @@ static void StopAll()
 
 static void StartAll()
 {
+    DBGM_PRINT(("StartAll"));
 	if (m_pBoard)
 	{
 		m_pBoard->StartTimerThread();
@@ -161,6 +165,7 @@ static void AttachObjects()
 
 static void InitEmulator()
 {
+    DBGM_PRINT(("InitEmulator"));
 ///	CString str = CString(MAKEINTRESOURCE(g_mstrConfigBKModelParameters[static_cast<int>(g_Config.GetBKModel())].nIDBKModelName));
 ///	UpdateFrameTitleForDocument(str);
 /***
@@ -228,6 +233,7 @@ static void InitEmulator()
 
 static bool ConfigurationConstructor(CONF_BKMODEL nConf, bool bStart = true)
 {
+    DBGM_PRINT(("ConfigurationConstructor(nConf = %d, bStart = %d)", nConf, bStart));
 	bool bReopenMemMap = false;
 
 	if (m_pBoard)
@@ -241,23 +247,24 @@ static bool ConfigurationConstructor(CONF_BKMODEL nConf, bool bStart = true)
 
 		if (m_pBoard)   // удалим конфигурацию
 		{
-			m_pBoard.reset();
+			delete m_pBoard;
+            m_pBoard = 0;
 		}
 	}
 
 	g_Config.SetBKModel(nConf);
-
+    DBGM_PRINT(("ConfigurationConstructor: m_BKBoardModel: %d", g_Config.m_BKBoardModel));
 	// создадим новую конфигурацию
 	switch (g_Config.m_BKBoardModel)
 	{
 		case MSF_CONF::BK1001:
-			m_pBoard = std::make_unique<CMotherBoard>();
-			break;
-            /**
-		case MSF_CONF::BK10:
-			m_pBoard = std::make_unique<CMotherBoard_10>();
+			m_pBoard = new CMotherBoard();
 			break;
 
+		case MSF_CONF::BK10:
+			m_pBoard = new CMotherBoard_10();
+			break;
+/**
 		case MSF_CONF::BK1001_MSTD:
 			m_pBoard = std::make_unique<CMotherBoard_MSTD>();
 			break;
@@ -327,7 +334,8 @@ static bool ConfigurationConstructor(CONF_BKMODEL nConf, bool bStart = true)
 		// значит дальше работать невозможно.
 		if (m_pBoard)
 		{
-			m_pBoard.reset();
+			delete m_pBoard;
+            m_pBoard = 0;
 		}
 	}
 	else
@@ -338,10 +346,11 @@ static bool ConfigurationConstructor(CONF_BKMODEL nConf, bool bStart = true)
 	return false;
 }
 
-static void SetupConfiguration(CONF_BKMODEL nConf)
+static void SetupConfiguration(CONF_BKMODEL nConf = CONF_BKMODEL::BK_0010_01)
 {
+    DBGM_PRINT(("SetupConfiguration(CONF_BKMODEL nConf = %d)", nConf));
 	///m_Script.StopScript();
-
+try {
 	if (ConfigurationConstructor(nConf))
 	{
 	///	SetFocusToBK();
@@ -356,6 +365,9 @@ static void SetupConfiguration(CONF_BKMODEL nConf)
 	///	g_Config.SetBKModel(CONF_BKMODEL::BK_0010_01);
 	///	DestroyWindow(); // не создалось - ничего не можем сделать. выходим.
 	}
+} catch(...) {
+    DBGM_PRINT(("SetupConfiguration(CONF_BKMODEL nConf = %d) failed with exception", nConf));
+}
 }
 
 int main() {

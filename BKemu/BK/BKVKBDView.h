@@ -12,7 +12,7 @@ class CBKVKBDView : public CDockablePane
 
 		CRgn        m_rgnRes;
 		CBrush      m_br;
-		std::unique_ptr<CBKKbdButn> m_pKbdButn;
+		CBKKbdButn* m_pKbdButn;
 		UINT        m_nViewID;
 
 		static const char LatShiftDigitTable[10];

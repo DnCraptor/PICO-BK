@@ -63,7 +63,7 @@ class CDebugger
 			DisassembleInstrRef DisasmInstrRef;
 		};
 
-		std::unique_ptr<InstrFuncRefs[]> m_pInstrRefsMap;
+		InstrFuncRefs* *m_pInstrRefsMap;
 		void RegisterMethodRef(uint16_t start, uint16_t end, const CString *mnemonic, CalcInstrLenRef ilenmref, CalcNextAddrRef nxamref, DisassembleInstrRef dsimref);
 
 		static int          m_outLevel;

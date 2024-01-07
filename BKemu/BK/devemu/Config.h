@@ -546,7 +546,7 @@ namespace Global
 	bool        CheckFFMPEG();
 
 	bool        SaveBinFile(uint8_t *buf, uint16_t addr, uint16_t len, const fs::path &strName);
-	bool        LoadBinFile(std::unique_ptr<uint8_t[]> &buf, uint16_t &addr, uint16_t &len, const fs::path &strName, bool bStrict);
+	bool        LoadBinFile(uint8_t* &buf, uint16_t &addr, uint16_t &len, const fs::path &strName, bool bStrict);
 
 	bool        isEmptyUnit(const CString &s);
 	bool        isEmptyUnit(const fs::path &s);

@@ -57,8 +57,8 @@ class CScreen : public CWnd
 		mutable LockVarType m_lockPrepare;
 		mutable LockVarType m_lockBusy;
 
-		std::unique_ptr<uint32_t[]> m_pColTable32;
-		std::unique_ptr<uint32_t[]> m_pMonoTable32;
+		uint32_t* *m_pColTable32;
+		uint32_t* *m_pMonoTable32;
 
 		BKScreen_t          m_BKScreen;
 		BKScreen_t          m_AZScreen;

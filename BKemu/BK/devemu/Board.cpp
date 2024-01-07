@@ -41,12 +41,13 @@ CMotherBoard::CMotherBoard(BK_DEV_MPI model)
 	, m_nBKPortsIOArea(BK_PURE_PORTSIO_AREA)
 	, m_nKeyCleanEvent(0)
 {
+	DBGM_PRINT(("CMotherBoard::CMotherBoard(BK_DEV_MPI model = %d)", model));
 	m_sTV.init();
 	SetCPUBaseFreq(CPU_SPEED_BK10); // частота задаётся этой константой
 	ZeroMemory(m_MemoryMap, sizeof(m_MemoryMap));
-	m_cpu.AttachBoard(this);
-	m_fdd.AttachParent(this);
-	m_fdd.init_A16M_10(&m_ConfBKModel, ALTPRO_A16M_STD10_MODE);
+	/////m_cpu.AttachBoard(this);
+	////m_fdd.AttachParent(this);
+	////m_fdd.init_A16M_10(&m_ConfBKModel, ALTPRO_A16M_STD10_MODE);
 
 	// Инициализация модуля памяти
 	if (!FillWndVectorPtr(0200000))
@@ -57,7 +58,7 @@ CMotherBoard::CMotherBoard(BK_DEV_MPI model)
 
 CMotherBoard::~CMotherBoard()
 {
-	m_vWindows.clear();
+	//// m_vWindows.clear();
 }
 
 MSF_CONF CMotherBoard::GetConfiguration()
@@ -71,7 +72,7 @@ BK_DEV_MPI CMotherBoard::GetBoardModel()
 }
 
 bool CMotherBoard::FillWndVectorPtr(int nMemSize) {
-	m_vWindows.clear();
+	////m_vWindows.clear();
 	InitMemoryValues();
 	return true;
 }
@@ -596,7 +597,7 @@ uint8_t CMotherBoard::GetByteIndirect(uint16_t addr)
 
 	if ((0177700 <= addr) && (addr < 0177714))
 	{
-		uint16_t w = m_cpu.GetSysRegsIndirect(addr);
+		uint16_t w = 0;/////m_cpu.GetSysRegsIndirect(addr);
 
 		if (addr & 1)
 		{
@@ -630,7 +631,7 @@ uint16_t CMotherBoard::GetWordIndirect(uint16_t addr)
 
 	if ((0177700 <= addr) && (addr < 0177714))
 	{
-		uint16_t w = m_cpu.GetSysRegsIndirect(addr);
+		uint16_t w = 0;/////m_cpu.GetSysRegsIndirect(addr);
 
 		if (GetAltProMode() == ALTPRO_A16M_START_MODE)
 		{
@@ -663,7 +664,7 @@ void CMotherBoard::SetByteIndirect(const uint16_t addr, uint8_t value)
 
 	if ((0177700 <= addr) && (addr < 0177714))
 	{
-		m_cpu.SetSysRegs(addr, value);
+		/////m_cpu.SetSysRegs(addr, value);
 
 		if (Dst && (GetAltProMode() == ALTPRO_A16M_HLT11_MODE || (GetAltProMode() == ALTPRO_SMK_HLT10_MODE && GetFDDType() == BK_DEV_MPI::SMK512)))
 		{
@@ -700,7 +701,7 @@ void CMotherBoard::SetWordIndirect(const uint16_t addr, uint16_t value)
 
 	if ((0177700 <= addr) && (addr < 0177714))
 	{
-		m_cpu.SetSysRegs(addr, value);
+		/////m_cpu.SetSysRegs(addr, value);
 
 		if (Dst && (GetAltProMode() == ALTPRO_A16M_HLT11_MODE || (GetAltProMode() == ALTPRO_SMK_HLT10_MODE && GetFDDType() == BK_DEV_MPI::SMK512)))
 		{
@@ -719,12 +720,12 @@ void CMotherBoard::SetWordIndirect(const uint16_t addr, uint16_t value)
 
 uint16_t CMotherBoard::GetRON(CCPU::REGISTER reg)
 {
-	return m_cpu.GetRON(reg);
+	return 0;/////m_cpu.GetRON(reg);
 }
 
 void CMotherBoard::SetRON(CCPU::REGISTER reg, uint16_t value)
 {
-	m_cpu.SetRON(reg, value);
+	/////m_cpu.SetRON(reg, value);
 }
 
 // это ресет оборудования, выполняемый по команде RESET. вызывается из CPU
@@ -782,7 +783,7 @@ bool CMotherBoard::InitBoard(uint16_t nNewStartAddr)
 		m_pCovox->Reset();
 	}
 
-	m_cpu.InitCPU();
+	/////m_cpu.InitCPU();
 ///	m_pParent->SendMessage(WM_RESET_KBD_MANAGER, 1); // почистим индикацию управляющих клавиш в статусбаре
 	return true;
 }
@@ -796,7 +797,7 @@ void CMotherBoard::ResetCold(uint16_t addrMask)
 	//m_reg177664 = 0330;   ресет не должен затрагивать этот регистр
 	m_reg177662in = 0;
 	m_reg177716in = m_nStartAddr & ~addrMask; // формируем адрес запуска
-	m_cpu.InitCPU(); // здесь делается чтение адреса запуска из регистра 177716in
+	/////m_cpu.InitCPU(); // здесь делается чтение адреса запуска из регистра 177716in
 	m_reg177716in = m_nStartAddr & 0177400; // и восстановим стандартное значение адреса запуска, без сброшенных битов
 ///	m_pParent->SendMessage(WM_RESET_KBD_MANAGER, 1); // почистим индикацию управляющих клавиш в статусбаре
 }
@@ -805,13 +806,13 @@ void CMotherBoard::ResetCold(uint16_t addrMask)
 void CMotherBoard::StopInterrupt()
 {
 	// нажали на кнопку стоп
-	m_cpu.SetIRQ1();
+	/////m_cpu.SetIRQ1();
 }
 
 void CMotherBoard::UnStopInterrupt()
 {
 	// отжали кнопку стоп
-	m_cpu.UnsetIRQ1();
+	////m_cpu.UnsetIRQ1();
 }
 
 
@@ -821,7 +822,7 @@ void CMotherBoard::KeyboardInterrupt(uint16_t interrupt)
 
 	if (!(m_reg177660 & 0100))	// если прерывания разрешены, делаем прерывание
 	{
-		m_cpu.InterruptVIRQ(interrupt); // делаем прерывание
+		/////m_cpu.InterruptVIRQ(interrupt); // делаем прерывание
 	}
 }
 
@@ -1002,12 +1003,13 @@ int CMotherBoard::GetCPUSpeed() const // выдача текущей часто�
 
 CFDDController *CMotherBoard::GetFDD()
 {
-	return &m_fdd;
+	return 0;//// &m_fdd;
 }
 
 void CMotherBoard::SetFDDType(BK_DEV_MPI model, bool bInit /*= true*/)
 {
-	m_fdd.SetFDDType(model);    // не забывать! bool bInit удалять нельзя, оно в других местах нужно.
+	DBGM_PRINT(("CMotherBoard::SetFDDType(BK_DEV_MPI model = %d, bool bInit = %d)", model, bInit));
+	////m_fdd.SetFDDType(model);    // не забывать! bool bInit удалять нельзя, оно в других местах нужно.
 }
 
 BK_DEV_MPI CMotherBoard::GetFDDType()
@@ -1461,9 +1463,44 @@ int CMotherBoard::GetScreenPage() const
 	return 5;
 }
 
+extern "C" {
+#include "ROM10.h"
+#include "Focal.h"
+#include "FDDROM.h"
+}
+
 // выход: true - ПЗУ успешно прочитано
 //       false - ПЗУ не прочитано или не задано
 bool CMotherBoard::LoadRomModule(int iniRomNameIndex, int bank) {
+	DBGM_PRINT(("CMotherBoard::LoadRomModule(%d, %d)", iniRomNameIndex, bank));
+	switch(iniRomNameIndex) {
+		case IDS_INI_BK10_RE2_017_MONITOR:
+		    m_MemoryMap[8].addr = (uint8_t*) &ROM10[0x00000];
+			m_MemoryMap[9].addr = (uint8_t*) &ROM10[0x01000];
+		break;
+		case IDS_INI_BK10_RE2_106_BASIC1:
+		    m_MemoryMap[10].addr = (uint8_t*) &ROM10[0x02000];
+			m_MemoryMap[11].addr = (uint8_t*) &ROM10[0x03000];
+		break;
+		case IDS_INI_BK10_RE2_107_BASIC2:
+		    m_MemoryMap[12].addr = (uint8_t*) &ROM10[0x04000];
+			m_MemoryMap[13].addr = (uint8_t*) &ROM10[0x05000];
+		break;
+		case IDS_INI_BK10_RE2_108_BASIC3:
+		    m_MemoryMap[14].addr = (uint8_t*) &ROM10[0x06000];
+			m_MemoryMap[15].addr = (uint8_t*) &ROM10[0x07000];
+		break;
+		case IDS_INI_BK10_RE2_084_FOCAL:
+		    m_MemoryMap[10].addr = (uint8_t*) &ROM10FOCAL[0x00000];
+			m_MemoryMap[11].addr = (uint8_t*) &ROM10FOCAL[0x01000];
+		case IDS_INI_BK10_RE2_019_MSTD:
+			m_MemoryMap[14].addr = (uint8_t*) &FDDROM[0x00000];
+			m_MemoryMap[15].addr = (uint8_t*) &FDDROM[0x01000];
+		break;
+		default:
+		    DBGM_PRINT(("CMotherBoard::LoadRomModule(%d, %d) not found", iniRomNameIndex, bank));
+		break;
+	}
     return true;
 }
 
@@ -1495,34 +1532,20 @@ bool CMotherBoard::InitMemoryModules() { // TODO: redesign
 	return true;
 }
 
-extern "C" {
-#include "ROM10.h"
-}
-
-void CMotherBoard::MemoryManager()
-{
-	for (int i = 0; i <= 017; ++i)
-	{
-		if (i < BRD_10_MON10_BNK)
-		{
+void CMotherBoard::MemoryManager() {
+	for (int i = 0; i <= 017; ++i) {
+		if (i < BRD_10_MON10_BNK) {
 			m_MemoryMap[i].bReadable = true;
-		}
-		else
-		{
-			if (m_ConfBKModel.nROMPresent & (1 << i))
-			{
+		} else {
+			if (m_ConfBKModel.nROMPresent & (1 << i)) {
 				m_MemoryMap[i].bReadable = true;
-			}
-			else
-			{
+			} else {
 				m_MemoryMap[i].bReadable = false;
 			}
 		}
-
 		m_MemoryMap[i].bWritable = (i < BRD_10_MON10_BNK) ? true : false;
 		m_MemoryMap[i].nBank = i;
 		m_MemoryMap[i].nOffset = i << 12;
-		m_MemoryMap[i].addr = (uint8_t*) &ROM10[i << 12];
 		m_MemoryMap[i].nTimingCorrection = (i < BRD_10_MON10_BNK) ? RAM_TIMING_CORR_VALUE_D : ROM_TIMING_CORR_VALUE;
 	}
 }
@@ -1774,6 +1797,7 @@ void CMotherBoard::StopTimerThread()
 #define SYSTEM_TIMER_US (int64_t)20480
 
 static bool system_timer_50_Hz_cb(repeating_timer_t *rt) {
+	DBGM_PRINT(("system_timer_50_Hz_cb"))
     CMotherBoard *pb = (CMotherBoard*)rt->user_data;
     pb->TimerThreadFunc();
     return true;
@@ -1781,6 +1805,7 @@ static bool system_timer_50_Hz_cb(repeating_timer_t *rt) {
 
 bool CMotherBoard::StartTimerThread()
 {
+	DBGM_PRINT(("CMotherBoard::StartTimerThread()"))
 	m_PreviousPC = ADDRESS_NONE;
 	m_bKillTimerEvent = false;
 	return add_repeating_timer_us (SYSTEM_TIMER_US, system_timer_50_Hz_cb, this, &m_TimerThread);
@@ -1817,6 +1842,7 @@ void CMotherBoard::FrameParam()
 
 void CMotherBoard::TimerThreadFunc()
 {
+	DBGM_PRINT(("CMotherBoard::TimerThreadFunc()"))
 	if (m_bKillTimerEvent) return;
 ///	std::lock_guard<std::mutex> lk(m_mutLockTimerThread);
 	uint16_t nPreviousPC = ADDRESS_NONE;    // предыдущее значение регистра РС
@@ -1849,7 +1875,7 @@ void CMotherBoard::TimerThreadFunc()
 						else // если не был -
 						{
 							// Выполняем одну инструкцию, возвращаем время выполнения одной инструкции в тактах.
-							m_sTV.nCPUTicks = m_cpu.TranslateInstruction();
+							/////m_sTV.nCPUTicks = m_cpu.TranslateInstruction();
 
 							if (m_nKeyCleanEvent)
 							{
@@ -1862,7 +1888,7 @@ void CMotherBoard::TimerThreadFunc()
 						}
 
 						// Сохраняем текущее значение PC для отладки
-						nPreviousPC = m_cpu.GetRON(CCPU::REGISTER::PC);
+						/////nPreviousPC = m_cpu.GetRON(CCPU::REGISTER::PC);
 					}
 					catch (CExceptionHalt &halt)
 					{
@@ -1882,7 +1908,7 @@ void CMotherBoard::TimerThreadFunc()
 								// и выполним всё, что должно выполняться для "повтор"
 		///						case IDRETRY: // если выбрали "повтор" - то просто продолжить выполнение и посмотреть, что будет дальше
 									UnbreakCPU(ADDRESS_NONE); // обратно запускаем CPU
-									m_cpu.ReplyError();  // Делаем прер. по вектору 4(halt) в следующем цикле
+									//////m_cpu.ReplyError();  // Делаем прер. по вектору 4(halt) в следующем цикле
 		///							break;
 		return;
 
@@ -1894,7 +1920,7 @@ void CMotherBoard::TimerThreadFunc()
 						else
 						{
 							m_sTV.nCPUTicks = 64;
-							m_cpu.ReplyError();  // Делаем прер. по вектору 4(halt) в следующем цикле
+							/////m_cpu.ReplyError();  // Делаем прер. по вектору 4(halt) в следующем цикле
 						}
 
 						nPreviousPC = ADDRESS_NONE;
@@ -1950,7 +1976,7 @@ void CMotherBoard::TimerThreadFunc()
 				{
 					do
 					{
-						m_fdd.Periodic();     // Вращаем диск на одно слово на дорожке
+					////	m_fdd.Periodic();     // Вращаем диск на одно слово на дорожке
 						m_sTV.fFDDTicks += m_sTV.fFDD_Mod;
 					}
 					while (m_sTV.fFDDTicks < 1.0);
@@ -1974,16 +2000,16 @@ void CMotherBoard::SetMTC(int mtc)
 	{
 		m_sTV.nMediaTicksPerFrame = mtc; // длина буфера в сэмплах
 
-		if (m_sTV.pSoundBuffer)
+	///	if (m_sTV.pSoundBuffer)
 		{
-			m_sTV.pSoundBuffer.reset();
+	///		m_sTV.pSoundBuffer.reset();
 		}
 
-		m_sTV.pSoundBuffer = std::make_unique<SAMPLE_INT[]>(static_cast<size_t>(m_sTV.nMediaTicksPerFrame) * BUFFER_CHANNELS);
+	///	m_sTV.pSoundBuffer = std::make_unique<SAMPLE_INT[]>(static_cast<size_t>(m_sTV.nMediaTicksPerFrame) * BUFFER_CHANNELS);
 
-		if (!m_sTV.pSoundBuffer)
+	///	if (!m_sTV.pSoundBuffer)
 		{
-			g_BKMsgBox.Show(IDS_BK_ERROR_NOTENMEMR, MB_OK);
+	///		g_BKMsgBox.Show(IDS_BK_ERROR_NOTENMEMR, MB_OK);
 		}
 	}
 }
@@ -1998,7 +2024,7 @@ void CMotherBoard::MediaTick()
 		// Получаем сохранённые звуковые данные, это чтобы слышать звучание с кассеты
 	///	m_pParent->GetTapePtr()->PlayWaveGetBuffer(m_sTV.pSoundBuffer.get(), m_sTV.nMediaTicksPerFrame); // Берём данные с ленты -> m_pSoundBuffer
 		// Посылаем данные с ленты в 177716 <- m_sTV.pSoundBuffer
-		m_pSpeaker->ReceiveTapeBuffer(m_sTV.pSoundBuffer.get(), m_sTV.nMediaTicksPerFrame);
+	///	m_pSpeaker->ReceiveTapeBuffer(m_sTV.pSoundBuffer.get(), m_sTV.nMediaTicksPerFrame);
 		m_sTV.nBufPos = 0;
 	}
 
@@ -2013,7 +2039,7 @@ void CMotherBoard::MediaTick()
 	}
 
 	sOneSample sm{ 0.0, 0.0 };
-	m_pSound->SoundGen_ResetSample(m_sTV.pSoundBuffer[m_sTV.nBufPos], m_sTV.pSoundBuffer[static_cast<size_t>(m_sTV.nBufPos) + 1]); // задаём начальные уровни для микширования
+///	m_pSound->SoundGen_ResetSample(m_sTV.pSoundBuffer[m_sTV.nBufPos], m_sTV.pSoundBuffer[static_cast<size_t>(m_sTV.nBufPos) + 1]); // задаём начальные уровни для микширования
 
 	// Берём звуки со спикера BK
 	if (m_pSpeaker->IsSoundEnabled())
@@ -2049,8 +2075,8 @@ void CMotherBoard::MediaTick()
 	}
 
 	m_pSound->SoundGen_FeedDAC_Mixer(&sm); // получаем сюда смикшированное, а там - осуществляем звучание
-	m_sTV.pSoundBuffer[m_sTV.nBufPos++] = sm.s[OSL]; // это нужно в основном для осциллографа
-	m_sTV.pSoundBuffer[m_sTV.nBufPos++] = sm.s[OSR]; // и для экспорта вывода в WAV(TAP)
+///	m_sTV.pSoundBuffer[m_sTV.nBufPos++] = sm.s[OSL]; // это нужно в основном для осциллографа
+///	m_sTV.pSoundBuffer[m_sTV.nBufPos++] = sm.s[OSR]; // и для экспорта вывода в WAV(TAP)
 
 	if (++m_sTV.nMediaTickCount >= m_sTV.nMediaTicksPerFrame)
 	{

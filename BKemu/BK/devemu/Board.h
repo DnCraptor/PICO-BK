@@ -27,7 +27,7 @@ constexpr auto BRD_10_BASIC10_1_BNK = 10;
 constexpr auto BRD_10_BASIC10_2_BNK = 12;
 constexpr auto BRD_10_REGISTERS_BNK = 14;
 
-#include <thread>
+//#include <thread>
 
 ///class CMainFrame;
 
@@ -71,7 +71,7 @@ class CMotherBoard : public CDevice
 			int     nMediaTicksPerFrame; // количество медиатактов во фрейме (длина звукового буфера в сэмплах).
 			int     nMediaTickCount;    // счётчик медиа тактов (их должно быть не более g_Config.m_nSoundSampleRate/CPU_FRAMES_PER_SECOND в текущем фрейме)
 			int     nBufPos;            // позиция в звуковом буфере
-			std::unique_ptr<SAMPLE_INT[]> pSoundBuffer;   // звуковой буфер
+		///	std::unique_ptr<SAMPLE_INT[]> pSoundBuffer;   // звуковой буфер
 
 			// переменные для эмуляции луча ЭЛТ
 			uint16_t nVideoAddress;     // видео адрес, младшие 6 бит - счётчик строк внутри строки
@@ -91,7 +91,7 @@ class CMotherBoard : public CDevice
 				nMediaTicksPerFrame = 0;
 				nMediaTickCount = 0;
 				nBufPos = 0;
-				pSoundBuffer = nullptr;
+			///	pSoundBuffer = 0;
 			}
 			void clear()
 			{
@@ -120,11 +120,11 @@ class CMotherBoard : public CDevice
 
 		ThreadVars_t        m_sTV;              // блок переменных, используемых в потоке
 
-		CFDDController      m_fdd;              // контроллер 1801ВП1-128.
+	////	CFDDController      m_fdd;              // контроллер 1801ВП1-128.
 		CCPU                m_cpu;              // Процессор 1801ВМ1
 		BKMEMBank_t         m_MemoryMap[16];    // карта памяти 64кбайтного адресного пространства, там помещается 16 банков по 4 кб.
 		ConfBKModel_t       m_ConfBKModel;
-		std::vector<WindowParam_t> m_vWindows;  // вектор окон для дампера.
+	////	std::vector<WindowParam_t> m_vWindows;  // вектор окон для дампера.
 
 		CBkSound           *m_pSound;           // указатель на модуль звуковой подсистемы
 		CSpeaker           *m_pSpeaker;         // указатель на объект пищалка
@@ -187,10 +187,10 @@ protected:
 		virtual MSF_CONF    GetConfiguration();
 		BK_DEV_MPI          GetBoardModel();
 
-		auto                GetWndVectorPtr()
-		{
-			return &m_vWindows;
-		}
+	////	auto                GetWndVectorPtr()
+	////	{
+	////		return &m_vWindows;
+	////	}
 	///	void                AttachWindow(CMainFrame *pParent);
 		void                AttachSound(CBkSound *pSnd);
 		void                AttachSpeaker(CSpeaker *pDevice);
@@ -231,29 +231,29 @@ protected:
 		void                SetRON(CCPU::REGISTER reg, uint16_t value);
 		inline uint16_t     GetPSW()
 		{
-			return m_cpu.GetPSW();
+			return 0;/////m_cpu.GetPSW();
 		}
 		inline void         SetPSW(uint16_t value)
 		{
-			m_cpu.SetPSW(value);
+			/////m_cpu.SetPSW(value);
 		}
 
 		inline bool         GetPSWBit(PSW_BIT pos)
 		{
-			return m_cpu.GetPSWBit(pos);
+			return 0;/////m_cpu.GetPSWBit(pos);
 		}
 		inline void         SetPSWBit(PSW_BIT pos, bool val)
 		{
-			m_cpu.SetPSWBit(pos, val);
+			/////m_cpu.SetPSWBit(pos, val);
 		}
 
 		inline void         Irq2Interrupt()
 		{
-			m_cpu.TickIRQ2();
+			/////m_cpu.TickIRQ2();
 		}
 		inline void         Irq3Interrupt()
 		{
-			m_cpu.TickIRQ3();
+			/////m_cpu.TickIRQ3();
 		}
 		virtual void        StopInterrupt();
 		virtual void        UnStopInterrupt();

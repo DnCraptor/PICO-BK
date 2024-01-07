@@ -127,7 +127,7 @@ const int CCPU::timing_TwoOps_BIS_11[8][8] =
 
 CCPU::CCPU()
 	: m_pBoard(nullptr)
-	, m_pExecuteMethodMap(nullptr)
+	, m_pExecuteMethodMap({ 0 })
 	, timing_Misk(nullptr)
 	, timing_OneOps_TST(nullptr)
 	, timing_OneOps_CLR(nullptr)
@@ -140,13 +140,13 @@ CCPU::CCPU()
 	, timing_TwoOps_BIS(nullptr)
 	, m_bCBug(false)
 	, m_b177702State(true)
+	// инициализируем значения регистров по чтению
+	, m_vSysRegs({ 0177740, 0177777, 0177440, 0000000, 0177777, 0177400 })
+	// инициализируем маски регистров по записи. В нулевые биты ничего записать нельзя, в единичные - можно.
+	, m_vSysRegsMask( {   7,       0,    0377, 0177777,       0,    0377 })
+	, m_PSW(0340)
 {
 	memset(m_RON, 0, sizeof(m_RON));
-	m_PSW = 0340;
-	// инициализируем маски регистров по записи. В нулевые биты ничего записать нельзя, в единичные - можно.
-	m_vSysRegsMask = {   7,       0,    0377, 0177777,       0,    0377 };
-	// инициализируем значения регистров по чтению
-	m_vSysRegs = { 0177740, 0177777, 0177440, 0000000, 0177777, 0177400 };
 	InitVars();
 	PrepareCPU();
 }
@@ -228,7 +228,7 @@ void CCPU::InitVars()
 	m_bVIRQErrrq = false;
 	m_bIRQ2rq = false;
 	m_bIRQ3rq = false;
-	m_qVIRQ.clear();
+	/////m_qVIRQ.clear();
 }
 
 void CCPU::ResetTimer()
@@ -614,13 +614,13 @@ bool CCPU::InterruptDispatch()
 					m_nInternalTick = timing_Misk[TIMING_IDX_INT];
 					nVector = INTERRUPT_270;
 				}
-				else if (!m_qVIRQ.empty())  // VIRQ, priority 7
+	/////			else if (!m_qVIRQ.empty())  // VIRQ, priority 7
 				{
 					// если в очереди есть что-то, достанем и обработаем
-					m_bGetVector = true;
-					nVector = m_qVIRQ.front() | (1 << 16);
-					m_qVIRQ.pop_front();
-					m_nInternalTick = timing_Misk[TIMING_IDX_INT];
+	/////				m_bGetVector = true;
+	/////				nVector = m_qVIRQ.front() | (1 << 16);
+	/////				m_qVIRQ.pop_front();
+	/////				m_nInternalTick = timing_Misk[TIMING_IDX_INT];
 				}
 			}
 		}
@@ -834,16 +834,16 @@ void CCPU::ExecuteTRAP()
 
 void CCPU::InterruptVIRQ(uint16_t interrupt)
 {
-	for (auto &n : m_qVIRQ) // проверим, что там в очереди
+	/////for (auto &n : m_qVIRQ) // проверим, что там в очереди
 	{
-		if (n == interrupt) // если такой вектор уже в очереди
+	/////	if (n == interrupt) // если такой вектор уже в очереди
 		{
 			return; // его не будем добавлять
 		}
 	}
 
 	TRACE0("VIRQ irq\n");
-	m_qVIRQ.push_back(interrupt); // помещаем адрес вектора прерываний в очередь
+	/////m_qVIRQ.push_back(interrupt); // помещаем адрес вектора прерываний в очередь
 	// !!! при этом, если будем очень быстро помещать адреса в очередь, она
 	// начнёт переполняться, потому что тут не так надо делать. надо игнорировать
 	// все запросы на прерывание, пока не будет обработан текущий.
@@ -2379,14 +2379,6 @@ void CCPU::ExecuteFDIV()
 
 void CCPU::PrepareCPU()
 {
-	if (m_pExecuteMethodMap)
-	{
-		return;
-	}
-
-	m_pExecuteMethodMap = std::make_unique<ExecuteMethodRef[]>(65536);
-
-	if (m_pExecuteMethodMap)
 	{
 		// Сначала заполняем таблицу ссылками на метод ExecuteUNKNOWN, выполняющий TRAP 10
 		RegisterMethodRef(0000000, 0177777, &CCPU::ExecuteUNKNOWN);
@@ -2488,10 +2480,6 @@ void CCPU::PrepareCPU()
 		RegisterMethodRef(0140000, 0147777, &CCPU::ExecuteBIC);    // BICB
 		RegisterMethodRef(0150000, 0157777, &CCPU::ExecuteBIS);    // BISB
 		RegisterMethodRef(0160000, 0167777, &CCPU::ExecuteSUB);
-	}
-	else
-	{
-		g_BKMsgBox.Show(IDS_BK_ERROR_NOTENMEMR, MB_OK);
 	}
 }
 

@@ -173,7 +173,7 @@ void CFDDController::InitVariables()
 void CFDDController::SetFDDType(BK_DEV_MPI model)
 {
 	m_FDDModel = model;
-
+//// TODO: delete???
 	if (!m_bFloppyIsInited)
 	{
 		// теперь разберёмся с кнопками дисководов.
@@ -181,25 +181,25 @@ void CFDDController::SetFDDType(BK_DEV_MPI model)
 		{
 			case BK_DEV_MPI::STD_FDD:
 			case BK_DEV_MPI::SAMARA:
-				m_pFloppy[static_cast<int>(FDD_DRIVE::A)] = std::make_unique<CFloppyDrive>();
-				m_pFloppy[static_cast<int>(FDD_DRIVE::B)] = std::make_unique<CFloppyDrive>();
-				m_pFloppy[static_cast<int>(FDD_DRIVE::C)] = std::make_unique<CFloppyDrive>();
-				m_pFloppy[static_cast<int>(FDD_DRIVE::D)] = std::make_unique<CFloppyDrive>();
+				m_pFloppy[static_cast<int>(FDD_DRIVE::A)] = new CFloppyDrive();
+				m_pFloppy[static_cast<int>(FDD_DRIVE::B)] = new CFloppyDrive();
+				m_pFloppy[static_cast<int>(FDD_DRIVE::C)] = new CFloppyDrive();
+				m_pFloppy[static_cast<int>(FDD_DRIVE::D)] = new CFloppyDrive();
 				break;
 
 			case BK_DEV_MPI::A16M:
 			case BK_DEV_MPI::SMK512:
-				m_pFloppy[static_cast<int>(FDD_DRIVE::A)] = std::make_unique<CFloppyDrive>();
-				m_pFloppy[static_cast<int>(FDD_DRIVE::B)] = std::make_unique<CFloppyDrive>();
-				m_pFloppy[static_cast<int>(FDD_DRIVE::C)].reset();
-				m_pFloppy[static_cast<int>(FDD_DRIVE::D)].reset();
+				m_pFloppy[static_cast<int>(FDD_DRIVE::A)] = new CFloppyDrive();
+				m_pFloppy[static_cast<int>(FDD_DRIVE::B)] = new CFloppyDrive();
+				m_pFloppy[static_cast<int>(FDD_DRIVE::C)] = 0;
+				m_pFloppy[static_cast<int>(FDD_DRIVE::D)] = 0;
 				break;
 
 			default:
-				m_pFloppy[static_cast<int>(FDD_DRIVE::A)].reset();
-				m_pFloppy[static_cast<int>(FDD_DRIVE::B)].reset();
-				m_pFloppy[static_cast<int>(FDD_DRIVE::C)].reset();
-				m_pFloppy[static_cast<int>(FDD_DRIVE::D)].reset();
+				m_pFloppy[static_cast<int>(FDD_DRIVE::A)] = 0;
+				m_pFloppy[static_cast<int>(FDD_DRIVE::B)] = 0;
+				m_pFloppy[static_cast<int>(FDD_DRIVE::C)] = 0;
+				m_pFloppy[static_cast<int>(FDD_DRIVE::D)] = 0;
 				break;
 		}
 
@@ -384,7 +384,7 @@ void CFDDController::EmulateFDD(CMotherBoard *pBoard)
 		return;
 	}
 
-	CFloppyDrive *pFD = m_pFloppy[drive].get();
+	CFloppyDrive *pFD = m_pFloppy[drive];
 	// Проверим, примонтирован ли образ в заданный привод
 	bool bRes = pFD && pFD->isAttached();
 
@@ -511,7 +511,7 @@ bool CFDDController::GetDriveState(FDD_DRIVE eDrive)
 bool CFDDController::AttachImage(FDD_DRIVE eDrive, const fs::path &strFileName)
 {
 	const int nDrive = static_cast<int>(eDrive) & 3;
-	CFloppyDrive *pFD = m_pFloppy[nDrive].get();
+	CFloppyDrive *pFD = m_pFloppy[nDrive];
 
 	if (pFD)
 	{
@@ -1750,7 +1750,7 @@ void CFDDController::SetCommand(uint16_t cmd)
 		}
 
 		m_drive = newdrive;
-		m_pDrive = (newdrive == FDD_DRIVE::NONE) ? nullptr : m_pFloppy[static_cast<int>(m_drive)].get();
+		m_pDrive = (newdrive == FDD_DRIVE::NONE) ? nullptr : m_pFloppy[static_cast<int>(m_drive)];
 		okPrepareTrack = true;
 	}
 

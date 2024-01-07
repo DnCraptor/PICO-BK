@@ -145,7 +145,7 @@ class CFDDController : public CDevice
 
 	protected:
 		bool            m_bFloppyIsInited;  // костыль от повторной инициализации
-		std::unique_ptr<CFloppyDrive> m_pFloppy[static_cast<int>(FDD_DRIVE::NUM_FDD)];
+		CFloppyDrive*   m_pFloppy[static_cast<int>(FDD_DRIVE::NUM_FDD)];
 
 		FDD_DRIVE       m_drive;       // Номер привода: от 0 до 3; -1 если не выбран
 		CFloppyDrive   *m_pDrive;      // Текущий привод; nullptr если не выбран

@@ -1,7 +1,7 @@
 ﻿#pragma once
 
 #include "afx.h"
-#include <bits/unique_ptr.h>
+//#include <bits/unique_ptr.h>
 
 constexpr auto FLOPPY_SIDES = 2;            // две стороны у дискеты
 constexpr auto FLOPPY_TRACKS = 80;          // количество дорожек на стороне дискеты
@@ -20,8 +20,8 @@ class CFloppyDrive
 		int         m_nDataTrack;               // Номер трека данных в массиве data
 		int         m_nDataSide;                // Сторона диска данных в массиве data
 		size_t      m_nDataPtr;                 // Смещение данных внутри data - позиция заголовка
-		std::unique_ptr<uint8_t[]> m_pData;     // Raw track image for the current track
-		std::unique_ptr<uint8_t[]> m_pMarker;   // Позиции маркеров
+		uint8_t*    m_pData;     // Raw track image for the current track
+		uint8_t*    m_pMarker;   // Позиции маркеров
 
 		int         m_nTracks;                  // количество дорожек у дискеты
 		int         m_nSides;                   // количество сторон у дискеты
@@ -77,7 +77,7 @@ class CFloppyDrive
 		uint16_t    RdData() const;     // чтение данных по текущей позиции указателя
 		void        setMarker(bool m)   // задание позиции маркера
 		{
-			m_pMarker[m_nDataPtr / 2] = m;
+			m_pMarker[m_nDataPtr / 2] = (uint8_t)m;
 		}
 		bool        getMarker() const   // получение позиции маркера
 		{

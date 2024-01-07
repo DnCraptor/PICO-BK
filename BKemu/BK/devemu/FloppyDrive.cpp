@@ -33,21 +33,23 @@ bool CFloppyDrive::SetArrays()
 
 	if (m_pData)
 	{
-		m_pData.reset();
+		delete m_pData;
+		m_pData = 0;
 	}
 
 	if (m_pMarker)
 	{
-		m_pMarker.reset();
+		delete m_pMarker;
+		m_pMarker = 0;
 	}
 
-	m_pData   = std::make_unique<uint8_t[]>(m_nRawTrackSize);
-	m_pMarker = std::make_unique<uint8_t[]>(m_nRawMarkerSize);
+	m_pData   = new uint8_t[m_nRawTrackSize];
+	m_pMarker = new uint8_t[m_nRawMarkerSize];
 
 	if (m_pData && m_pMarker)
 	{
-		memset(m_pData.get(), 0, m_nRawTrackSize);
-		memset(m_pMarker.get(), 0, m_nRawMarkerSize);
+		memset(m_pData, 0, m_nRawTrackSize);
+		memset(m_pMarker, 0, m_nRawMarkerSize);
 		return true;
 	}
 
@@ -127,23 +129,23 @@ void CFloppyDrive::PrepareTrack(int nTrack, int nSide)
 	m_nDataSide = nSide;
 	// Предполагаем, что дорожка состоит из 10 секторов, 512 байтов каждый; смещение в файле === ((Track<<1)+SIDE)*m_nTrackSize
 	LONGLONG foffset = (static_cast<LONGLONG>(nTrack) * m_nSides + nSide) * m_nTrackSize;
-	auto data = std::make_unique<uint8_t[]>(m_nTrackSize);
+	auto data = new uint8_t[m_nTrackSize];
 
 	if (data)
 	{
-		memset(data.get(), 0, m_nTrackSize);
+		memset(data, 0, m_nTrackSize);
 
 		if (isAttached())
 		{
 			if (foffset == m_File.Seek(foffset, CFile::SeekPosition::begin))
 			{
-				size_t count = m_File.Read(data.get(), UINT(m_nTrackSize));
+				size_t count = m_File.Read(data, UINT(m_nTrackSize));
 				// TODO: Контроль ошибок чтения файла.
 			}
 		}
 
 		// Заполняем массив m_data и массив m_marker промаркированными данными
-		EncodeTrackData(data.get());
+		EncodeTrackData(data);
 	}
 }
 
@@ -155,11 +157,11 @@ void CFloppyDrive::FlushChanges()
 	}
 
 	// Декодируем данные дорожки из m_data
-	auto data = std::make_unique<uint8_t[]>(m_nTrackSize);
+	auto data = new uint8_t[m_nTrackSize];
 
 	if (data)
 	{
-		bool decoded = DecodeTrackData(data.get());
+		bool decoded = DecodeTrackData(data);
 
 		if (decoded)  // Записываем файл только если дорожка корректно декодировалась из raw data
 		{
@@ -189,7 +191,7 @@ void CFloppyDrive::FlushChanges()
 			// Сохраняем данные.
 			m_File.Seek(foffset, CFile::SeekPosition::begin);
 			// size_t dwBytesWritten =
-			m_File.Write(data.get(), static_cast<UINT>(m_nTrackSize));
+			m_File.Write(data, static_cast<UINT>(m_nTrackSize));
 			// TODO: Проверка на ошибки записи
 		}
 		else
@@ -206,7 +208,7 @@ void CFloppyDrive::FlushChanges()
 // Заполняем массив m_data и массив m_marker промаркированными данными
 void CFloppyDrive::EncodeTrackData(uint8_t *pSrc)
 {
-	memset(m_pMarker.get(), 0, m_nRawMarkerSize);
+	memset(m_pMarker, 0, m_nRawMarkerSize);
 	size_t ptr = 0;
 	int gap = 42;  // длина GAP4a + GAP1
 
@@ -261,7 +263,7 @@ void CFloppyDrive::EncodeTrackData(uint8_t *pSrc)
 		m_pData[ptr++] = 0xfb;
 		// данные
 		size_t nSectSize = m_nSectorSizes[m_nSectorSize];
-		memcpy(m_pData.get() + ptr, pSrc, nSectSize);
+		memcpy(m_pData + ptr, pSrc, nSectSize);
 		ptr += nSectSize;
 		pSrc += nSectSize;
 		// crc
@@ -495,7 +497,7 @@ bool CFloppyDrive::DecodeTrackData(uint8_t *pDest) const
 		}
 
 		// копируем
-		memcpy(pDest + destptr, m_pData.get() + ptr, sectorsize);
+		memcpy(pDest + destptr, m_pData + ptr, sectorsize);
 		ptr += sectorsize;
 
 		if (bBrk) // всё, конец дорожки
