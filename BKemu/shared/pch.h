@@ -5,6 +5,10 @@
 #include "stdlib.h"
 #include <vector>
 
+#define TRACE0(x)
+#define TRACE1(...)
+#define TRACE(...)
+
 #define DECLARE_HANDLE(name) struct name##__{int unused;}; typedef struct name##__ *name
 DECLARE_HANDLE            (HWND);
 typedef void * HANDLE;
@@ -81,9 +85,15 @@ public:
             m_pszData.push_back(x[i]);
         m_pszData.push_back(0);
     }
+    void Replace(char f, char r) {
+        for (int i = 0; i < m_pszData.size() && m_pszData[i]; ++i)
+            if (m_pszData[i] == f)
+                m_pszData[i] = r;
+    }
     bool IsEmpty() const { return m_pszData.size() < 2; }
 	void MakeLower() { /*TODO*/ }
 	int GetLength() const { return (int)m_pszData.size() - 1; }
+    void SetAt(int pos, char c) { m_pszData[pos] = c; }
 	char operator[](int iChar) const { return m_pszData[iChar]; }
 	int Compare(const CString &psz) const {
         if (m_pszData == psz.m_pszData) return 0;
@@ -98,9 +108,22 @@ public:
 	char GetAt(int x) const { return m_pszData[x]; }
 	bool LoadString(unsigned int nID) { /*TODO*/ return false; }; // A Windows string resource ID.
 	int CollateNoCase(const char* psz) const { return strncmp(&m_pszData.front(), psz, m_pszData.size()); } // TODO: no case
-	void Format(const char* f, int i) const { /*TODO*/ }
+    int CollateNoCase(const CString& psz) const {
+        return strncmp(&m_pszData.front(), &psz.m_pszData[0], m_pszData.size());
+    } // TODO: no case
+	void Format(const char* f, int i) {
+        char tmp[10];
+        snprintf(tmp, 10, f, i);
+        *this = tmp;
+    }
 	void Format(const char* f, float flt) const { /*TODO*/ }
 	void Format(const char* f, double flt) const { /*TODO*/ }
+	friend CString operator+(const CString& str1, char c) {
+		CString strResult( str1 );
+        strResult.m_pszData[strResult.m_pszData.size() - 1] = c;
+        strResult.m_pszData.push_back(0);
+		return( strResult );
+	}
 	friend CString operator+(const CString& str1, const char * psz2) {
 		CString strResult( str1 );
         strResult.m_pszData.resize(strResult.GetLength());
@@ -132,8 +155,8 @@ public:
     PCXSTR GetString() const throw() { return( &m_pszData.front() ); }
     PXSTR GetBufferSetLength(int nLength) { m_pszData.resize(nLength + 1); return &m_pszData.front(); } // TODO if more?
     PXSTR GetBuffer() { return &m_pszData.front(); }
-    void ReleaseBuffer() {
-        m_pszData.resize(strnlen(&m_pszData.front(), m_pszData.size()));
+    void ReleaseBuffer(int sz = -1) {
+        m_pszData.resize(sz >= 0 ? sz : strnlen(&m_pszData.front(), m_pszData.size()));
         m_pszData.push_back(0);
     } // TODO: ensure
     CString& Trim() {
@@ -155,18 +178,27 @@ public:
 inline static int _ttoi(const CString& str) { return atoi(str.GetString()); }
 inline static float _ttof(const CString& str) { return atof(str.GetString()); }
 inline static unsigned long _tcstoul(const CString& str, char** p, int x) { return strtoul(str.GetString(), p, x); }
+#define _tstoi(x) _ttoi(x)
 
 namespace fs {
     class path { // TODO:
         CString m_path;
 	public:
+        path() {}
+        path(const char* c): m_path(c) {}
+        path(const CString& c): m_path(c) {}
         bool empty() const { return m_path.IsEmpty(); }
         void clear() noexcept { // set *this to the empty path
            m_path.Empty();
         }
         const char* c_str() const { return m_path.GetString(); }
         const CString& cstr() const { return m_path; }
+    	friend path operator/(const path& str1, const char * psz2) {
+		    path strResult( str1.cstr() + "/" + psz2);
+    		return( strResult );
+	    }
 	};
+    bool exists(const path& p);
 };
 
 class COleDateTime {

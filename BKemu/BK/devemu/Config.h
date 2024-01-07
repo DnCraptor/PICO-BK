@@ -8,6 +8,7 @@
 #include "BKSound_Defines.h"
 
 #include "HDIStuff.h"
+#include <bits/unique_ptr.h>
 
 // Timers
 constexpr auto BKTIMER_UI_REFRESH = 1;
@@ -344,8 +345,8 @@ class CConfig
 		DumperParam_t m_arDumper[NUMBER_VIEWS_MEM_DUMP]; // адрес начала дампа в окне дампа памяти
 		uint16_t m_nDisasmAddr;         // адрес начала дизассемблирования в окне дизассемблера
 
-		CONF_SCREEN_RENDER m_nScreenRenderType;    // текущий тип рендера экрана
-		CONF_OSCILLOSCOPE_RENDER m_nOscRenderType; // текущий тип рендера для осциллографа
+	///	CONF_SCREEN_RENDER m_nScreenRenderType;    // текущий тип рендера экрана
+	///	CONF_OSCILLOSCOPE_RENDER m_nOscRenderType; // текущий тип рендера для осциллографа
 		CString m_strFFMPEGLine;        // строка параметров командной строки для FFMPEG
 		// Опции
 		bool    m_bSavesDefault,        // исп. директорию для записи по умолчанию
@@ -545,7 +546,7 @@ namespace Global
 	bool        CheckFFMPEG();
 
 	bool        SaveBinFile(uint8_t *buf, uint16_t addr, uint16_t len, const fs::path &strName);
-//	bool        LoadBinFile(std::unique_ptr<uint8_t[]> &buf, uint16_t &addr, uint16_t &len, const fs::path &strName, bool bStrict);
+	bool        LoadBinFile(std::unique_ptr<uint8_t[]> &buf, uint16_t &addr, uint16_t &len, const fs::path &strName, bool bStrict);
 
 	bool        isEmptyUnit(const CString &s);
 	bool        isEmptyUnit(const fs::path &s);

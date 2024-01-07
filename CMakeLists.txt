@@ -97,12 +97,16 @@ pico_set_program_version(pico-bk "test")
             ${CMAKE_CURRENT_SOURCE_DIR}/BKemu/shared/Ini.cpp
             ${CMAKE_CURRENT_SOURCE_DIR}/BKemu/shared/CFile.cpp
             ${CMAKE_CURRENT_SOURCE_DIR}/BKemu/shared/HDIStuff.cpp
+            ${CMAKE_CURRENT_SOURCE_DIR}/BKemu/BK/emutools/ExceptionHalt.cpp
             ${CMAKE_CURRENT_SOURCE_DIR}/BKemu/BK/devemu/ScreenColors_Shared.cpp
             ${CMAKE_CURRENT_SOURCE_DIR}/BKemu/BK/devemu/CPU.cpp
             ${CMAKE_CURRENT_SOURCE_DIR}/BKemu/BK/devemu/Board.cpp
             ${CMAKE_CURRENT_SOURCE_DIR}/BKemu/BK/devemu/Device.cpp
             ${CMAKE_CURRENT_SOURCE_DIR}/BKemu/BK/devemu/FDDController.cpp
             ${CMAKE_CURRENT_SOURCE_DIR}/BKemu/BK/devemu/FloppyDrive.cpp
+            ${CMAKE_CURRENT_SOURCE_DIR}/BKemu/BK/devemu/HDD.cpp
+            ${CMAKE_CURRENT_SOURCE_DIR}/BKemu/BK/devemu/BKMessageBox.cpp
+            ${CMAKE_CURRENT_SOURCE_DIR}/BKemu/BK/devemu/Config.cpp
     )
     target_include_directories(${PROJECT_NAME} PRIVATE
             ${CMAKE_CURRENT_SOURCE_DIR}/src

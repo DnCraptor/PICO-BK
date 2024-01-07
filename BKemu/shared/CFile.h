@@ -24,7 +24,10 @@ public:
     static const int shareDenyNone = 2;
     static const int modeReadWrite = FA_WRITE | FA_READ;
     static const int modeRead = FA_READ;
-   
+    static const int modeWrite = FA_WRITE;
+    static const int modeCreate = FA_CREATE_ALWAYS;
+    static const int typeBinary = 0;
+    static const int osRandomAccess = 0;
 };
 
 const void* CFile::hFileNull = 0;

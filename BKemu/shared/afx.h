@@ -6,8 +6,6 @@
 
 // TODO: some "vision"
 
-#define TRACE0(x)
-
 /*
  * MessageBox() Flags
  */
