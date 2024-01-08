@@ -106,7 +106,7 @@ public:
 		return p - &m_pszData.front();
 	}
 	char GetAt(int x) const { return m_pszData[x]; }
-	bool LoadString(unsigned int nID) { /*TODO*/ return false; }; // A Windows string resource ID.
+	bool LoadString(unsigned int nID); // A Windows string resource ID.
 	int CollateNoCase(const char* psz) const { return strncmp(&m_pszData.front(), psz, m_pszData.size()); } // TODO: no case
     int CollateNoCase(const CString& psz) const {
         return strncmp(&m_pszData.front(), &psz.m_pszData[0], m_pszData.size());

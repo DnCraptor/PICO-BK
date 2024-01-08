@@ -852,9 +852,23 @@ CString CIni::ConvertStrtoUnicode(UINT type, LPCSTR astr) const
 }
 */
 
+// TODO: .rc into flash
+bool CString :: LoadString(unsigned int nID) { // A Windows string resource ID.
+  ///  DBGM_PRINT(("CString :: LoadString(%d (%Xh))", nID, nID));
+    switch(nID) {
+		case 0:
+		  return true;
+		default:
+		  DBGM_PRINT(("CString :: LoadString(%d (%Xh)) not found", nID, nID));
+		  return false;
+	}
+}
+
 // расширенный функционал. С кастомизацией
 CString CIni::GetValueStringEx(const CString &strCustomName, const int nSection, const int nKey, const CString &strDefault)
 {
+	DBGM_PRINT(("CIni::GetValueStringEx(strCustomName = %s, nSection = %d, nKey = %d, strDefault = %s)",
+                                        strCustomName.GetString(), nSection,    nKey, strDefault.GetString()));
 	CString strSection, strKey, strValue;
 	strSection.LoadString(nSection);
 	strKey.LoadString(nKey);

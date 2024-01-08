@@ -147,6 +147,7 @@ void CMotherBoard::InitMemoryValues() {
 
 void CMotherBoard::OnReset()
 {
+    DBGM_PRINT(("CMotherBoard::OnReset()"));
 ///	m_pParent->GetScreen()->SetPalette(0);
 ///	m_pParent->GetScreen()->SetRegister(m_reg177664);
 	m_sTV.clear();
@@ -1410,6 +1411,7 @@ void CMotherBoard::RunCPU(bool bUnbreak)
 
 void CMotherBoard::StopCPU(bool bUnbreak)
 {
+	DBGM_PRINT(("CMotherBoard::StopCPU(bool bUnbreak = %d)", bUnbreak));
 	if (m_bRunning) // если работает, выполняем, если уже остановлен - то не надо
 	{
 		m_bRunning = false;
@@ -1777,6 +1779,7 @@ bool CMotherBoard::RestorePreview(CMSFManager &msf, HBITMAP hScreenshot)
 
 void CMotherBoard::StopTimerThread()
 {
+	DBGM_PRINT(("CMotherBoard::StopTimerThread()"));
 ///	if (!m_mutLockTimerThread.try_lock())
 	{
 		m_bKillTimerEvent = true;
@@ -1811,7 +1814,7 @@ void CMotherBoard::StopTimerThread()
 #define SYSTEM_TIMER_US (int64_t)20480
 
 static bool system_timer_50_Hz_cb(repeating_timer_t *rt) {
-	DBGM_PRINT(("system_timer_50_Hz_cb"));
+	//DBGM_PRINT(("system_timer_50_Hz_cb"));
     CMotherBoard *pb = (CMotherBoard*)rt->user_data;
     pb->TimerThreadFunc();
     return true;
@@ -1822,7 +1825,7 @@ bool CMotherBoard::StartTimerThread()
 	DBGM_PRINT(("CMotherBoard::StartTimerThread()"));
 	m_PreviousPC = ADDRESS_NONE;
 	m_bKillTimerEvent = false;
-	return add_repeating_timer_us (SYSTEM_TIMER_US, system_timer_50_Hz_cb, this, &m_TimerThread);
+	return true; /////// add_repeating_timer_us (SYSTEM_TIMER_US, system_timer_50_Hz_cb, this, &m_TimerThread);
 /**	m_TimerThread = std::thread(&CMotherBoard::TimerThreadFunc, this);
 	m_bKillTimerEvent = false;
 
@@ -1839,6 +1842,7 @@ bool CMotherBoard::StartTimerThread()
 
 void CMotherBoard::FrameParam()
 {
+	DBGM_PRINT(("CMotherBoard::FrameParam()"));
 	if (m_nCPUFreq_prev != m_nCPUFreq) // если частота не менялась, пересчёта не делать
 	{
 		m_nCPUFreq_prev = m_nCPUFreq;
@@ -1850,13 +1854,16 @@ void CMotherBoard::FrameParam()
 		m_sTV.fMedia_Mod = fCPUfreq / double(g_Config.m_nSoundSampleRate); // коэффициент пересчёта тактов процессора в медиа такты
 		// означает - через сколько тактов процессора надо вставлять 1 медиа такт, т.к. число не целое, то
 		// получается приблизительно.
+		DBGM_PRINT(("m_nCPUFreq_prev: %d, fCPUfreq: %f", m_nCPUFreq_prev, fCPUfreq));
+		DBGM_PRINT(("fCpuTickTime: %f, fMemory_Mod: %f, fFDD_Mod: %f", m_sTV.fCpuTickTime, m_sTV.fMemory_Mod, m_sTV.fFDD_Mod));
+		DBGM_PRINT(("fMedia_Mod: %f", m_sTV.fMedia_Mod));
 	}
 }
 
 
 void CMotherBoard::TimerThreadFunc()
 {
-	DBGM_PRINT(("CMotherBoard::TimerThreadFunc() m_bKillTimerEvent = %d", m_bKillTimerEvent));
+	///DBGM_PRINT(("CMotherBoard::TimerThreadFunc() m_bKillTimerEvent = %d", m_bKillTimerEvent));
 	if (m_bKillTimerEvent) return;
 ///	std::lock_guard<std::mutex> lk(m_mutLockTimerThread);
 	
@@ -1864,9 +1871,10 @@ void CMotherBoard::TimerThreadFunc()
 	// останова, даже если нам этого не надо
 
 ///	do
-	{
+	{   ///DBGM_PRINT(("m_bRunning: %d", m_bRunning));
 		if (m_bRunning) // если процессор работает, выполняем эмуляцию
 		{
+			///DBGM_PRINT(("m_bBreaked: %d", m_bBreaked));
 	///		m_mutRunLock.lock(); // блокируем участок, чтобы при остановке обязательно дождаться, пока фрейм не закончится
 
 			if (m_bBreaked) // если процессор в отладочном останове
@@ -1878,18 +1886,21 @@ void CMotherBoard::TimerThreadFunc()
 			{
 				// Выполняем набор инструкций
 				// Если время пришло, выполняем текущую инструкцию
+		///		DBGM_PRINT(("nCPUTicks: %d", m_sTV.nCPUTicks));
 				if (--m_sTV.nCPUTicks <= 0)
 				{
 					try
 					{
 						if (Interception()) // если был перехват разных подпрограмм монитора, для их эмуляции
 						{
+							DBGM_PRINT(("Interception"));
 							m_sTV.nCPUTicks = 8; // сколько-нибудь
 						}
 						else // если не был -
 						{
 							// Выполняем одну инструкцию, возвращаем время выполнения одной инструкции в тактах.
 							m_sTV.nCPUTicks = m_cpu.TranslateInstruction();
+		///					DBGM_PRINT(("nCPUTicks: %d; m_nKeyCleanEvent: %d", m_sTV.nCPUTicks, m_nKeyCleanEvent));
 
 							if (m_nKeyCleanEvent)
 							{
@@ -1903,6 +1914,7 @@ void CMotherBoard::TimerThreadFunc()
 
 						// Сохраняем текущее значение PC для отладки
 						m_PreviousPC = m_cpu.GetRON(CCPU::REGISTER::PC);
+		///				DBGM_PRINT(("m_PreviousPC: 0%06o", m_PreviousPC));
 					}
 					catch (CExceptionHalt &halt)
 					{
@@ -1941,6 +1953,7 @@ void CMotherBoard::TimerThreadFunc()
 					}
 					catch (...)
 					{
+						DBGM_PRINT(("CMotherBoard::TimerThreadFunc() catch (...)"));
 						// Любое другое исключение. Неизвестное исключение или ошибка доступа к памяти WINDOWS.
 						// Эта ошибка может быть неизвестной ошибкой BK или ошибкой эмулятора
 	///					CString strMessage(MAKEINTRESOURCE(IDS_ERRMSG_INTERNAL));
@@ -1968,28 +1981,31 @@ void CMotherBoard::TimerThreadFunc()
 				{
 					do
 					{
+		///				DBGM_PRINT(("fMemoryTicks: %f (fMemory_Mod: %f)", m_sTV.fMemoryTicks, m_sTV.fMemory_Mod));
 						Make_One_Screen_Cycle();  // тут выполняются циклы экрана
 						m_sTV.fMemoryTicks += m_sTV.fMemory_Mod;
 					}
 					while (m_sTV.fMemoryTicks < 1.0);
 				}
-
+/***
 				m_pSpeaker->RCFilterLF(m_sTV.fCpuTickTime); // эмуляция конденсатора на выходе линейного входа.
 
 				if (--m_sTV.fMediaTicks <= 0.0)
 				{
 					do
 					{
+						DBGM_PRINT(("fMediaTicks: %f (fMedia_Mod: %f)", m_sTV.fMediaTicks, m_sTV.fMedia_Mod));
 						MediaTick();  // тут делается звучание всех устройств и обработка прочих устройств
 						m_sTV.fMediaTicks += m_sTV.fMedia_Mod;
 					}
 					while (m_sTV.fMediaTicks < 1.0);
 				}
-
+**/
 				if (--m_sTV.fFDDTicks <= 0.0)
 				{
 					do
 					{
+		///				DBGM_PRINT(("fFDDTicks: %f (fFDD_Mod: %f)", m_sTV.fFDDTicks, m_sTV.fFDD_Mod));
 						m_fdd.Periodic();     // Вращаем диск на одно слово на дорожке
 						m_sTV.fFDDTicks += m_sTV.fFDD_Mod;
 					}

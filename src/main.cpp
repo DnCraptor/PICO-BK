@@ -95,6 +95,7 @@ static inline void StopTimer() {
 
 static void StopAll()
 {
+    DBGM_PRINT(("StopAll()"));
 	StopTimer();
 	if (m_pBoard)
 	{
@@ -105,6 +106,7 @@ static void StopAll()
 
 static void StartAll()
 {
+    DBGM_PRINT(("StartAll()"));
 	if (m_pBoard)
 	{
 		m_pBoard->StartTimerThread();
@@ -162,6 +164,7 @@ static void AttachObjects()
 
 static void InitEmulator()
 {
+    DBGM_PRINT(("InitEmulator()"));
 ///	CString str = CString(MAKEINTRESOURCE(g_mstrConfigBKModelParameters[static_cast<int>(g_Config.GetBKModel())].nIDBKModelName));
 ///	UpdateFrameTitleForDocument(str);
 /***
@@ -225,10 +228,12 @@ static void InitEmulator()
 	// наглядно отобразим, что и в каком дисководе находится
 	UpdateToolbarDriveIcons();
 ///	UpdateData(FALSE);**/
+    m_pBoard->OnReset();
 }
 
 static bool ConfigurationConstructor(CONF_BKMODEL nConf, bool bStart = true)
 {
+    DBGM_PRINT(("ConfigurationConstructor(CONF_BKMODEL nConf = %d, bool bStart = %d)", nConf, bStart));
 	bool bReopenMemMap = false;
 
 	if (m_pBoard)
@@ -420,6 +425,7 @@ int main() {
 SetupConfiguration(CONF_BKMODEL::BK_0010);
 
     while(1) {
+        m_pBoard->TimerThreadFunc();
         // TODO: remove it
     }
 
