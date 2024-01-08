@@ -749,6 +749,7 @@ void CMotherBoard::ResetDevices()
 
 bool CMotherBoard::InitBoard(uint16_t nNewStartAddr)
 {
+	DBGM_PRINT(("CMotherBoard::InitBoard(uint16_t nNewStartAddr = 0%06o)", nNewStartAddr));
 	if (nNewStartAddr == 0)
 	{
 		nNewStartAddr = m_nStartAddr;    // Используем адрес по умолчанию
@@ -1007,6 +1008,7 @@ CFDDController *CMotherBoard::GetFDD()
 
 void CMotherBoard::SetFDDType(BK_DEV_MPI model, bool bInit /*= true*/)
 {
+	DBGM_PRINT(("CMotherBoard::SetFDDType(BK_DEV_MPI model = %d, bool bInit = %d)", model, bInit));
 	m_fdd.SetFDDType(model);    // не забывать! bool bInit удалять нельзя, оно в других местах нужно.
 }
 
@@ -1377,6 +1379,7 @@ void CMotherBoard::RunOut()
 
 void CMotherBoard::BreakCPU()
 {
+	DBGM_PRINT(("CMotherBoard::BreakCPU()"));
 	m_bBreaked = true;      // включаем отладочную приостановку
 ///	CDebugger::InitOutMode();
 ///	m_pParent->PostMessage(WM_CPU_DEBUGBREAK);
@@ -1384,12 +1387,14 @@ void CMotherBoard::BreakCPU()
 
 void CMotherBoard::UnbreakCPU(int nGoto)
 {
+	DBGM_PRINT(("CMotherBoard::UnbreakCPU(int nGoto = 0%080)", nGoto));
 	m_sTV.nGotoAddress = nGoto;
 	m_bBreaked = false;     // отменяем отладочную приостановку
 }
 
 void CMotherBoard::RunCPU(bool bUnbreak)
 {
+	DBGM_PRINT(("CMotherBoard::RunCPU(bool bUnbreak = %d)", bUnbreak));
 	if (!m_bRunning)
 	{
 		if (bUnbreak)
@@ -1470,6 +1475,7 @@ extern "C" {
 // выход: true - ПЗУ успешно прочитано
 //       false - ПЗУ не прочитано или не задано
 bool CMotherBoard::LoadRomModule(int iniRomNameIndex, int bank) {
+	DBGM_PRINT(("CMotherBoard::LoadRomModule(int iniRomNameIndex = %d, int bank = %d)", iniRomNameIndex, bank));
 	switch(iniRomNameIndex) {
 		case IDS_INI_BK10_RE2_017_MONITOR:
 			m_MemoryMap[bank++].addr = (uint8_t*) &ROM10[0x00000];
@@ -1532,6 +1538,7 @@ bool CMotherBoard::InitMemoryModules() { // TODO: redesign
 
 void CMotherBoard::MemoryManager()
 {
+	DBGM_PRINT(("CMotherBoard::MemoryManager()"));
 	for (int i = 0; i <= 017; ++i)
 	{
 		if (i < BRD_10_MON10_BNK)
@@ -1804,6 +1811,7 @@ void CMotherBoard::StopTimerThread()
 #define SYSTEM_TIMER_US (int64_t)20480
 
 static bool system_timer_50_Hz_cb(repeating_timer_t *rt) {
+	DBGM_PRINT(("system_timer_50_Hz_cb"));
     CMotherBoard *pb = (CMotherBoard*)rt->user_data;
     pb->TimerThreadFunc();
     return true;
@@ -1811,6 +1819,7 @@ static bool system_timer_50_Hz_cb(repeating_timer_t *rt) {
 
 bool CMotherBoard::StartTimerThread()
 {
+	DBGM_PRINT(("CMotherBoard::StartTimerThread()"));
 	m_PreviousPC = ADDRESS_NONE;
 	m_bKillTimerEvent = false;
 	return add_repeating_timer_us (SYSTEM_TIMER_US, system_timer_50_Hz_cb, this, &m_TimerThread);
@@ -1847,9 +1856,10 @@ void CMotherBoard::FrameParam()
 
 void CMotherBoard::TimerThreadFunc()
 {
+	DBGM_PRINT(("CMotherBoard::TimerThreadFunc() m_bKillTimerEvent = %d", m_bKillTimerEvent));
 	if (m_bKillTimerEvent) return;
 ///	std::lock_guard<std::mutex> lk(m_mutLockTimerThread);
-	uint16_t nPreviousPC = ADDRESS_NONE;    // предыдущее значение регистра РС
+	
 	// типы nPreviousPC и m_sTV.nGotoAddress не должны совпадать, иначе будет всегда срабатывать условие отладочного
 	// останова, даже если нам этого не надо
 
@@ -1892,7 +1902,7 @@ void CMotherBoard::TimerThreadFunc()
 						}
 
 						// Сохраняем текущее значение PC для отладки
-						nPreviousPC = m_cpu.GetRON(CCPU::REGISTER::PC);
+						m_PreviousPC = m_cpu.GetRON(CCPU::REGISTER::PC);
 					}
 					catch (CExceptionHalt &halt)
 					{
@@ -1927,7 +1937,7 @@ void CMotherBoard::TimerThreadFunc()
 							m_cpu.ReplyError();  // Делаем прер. по вектору 4(halt) в следующем цикле
 						}
 
-						nPreviousPC = ADDRESS_NONE;
+						m_PreviousPC = ADDRESS_NONE;
 					}
 					catch (...)
 					{

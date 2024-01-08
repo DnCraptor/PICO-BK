@@ -574,6 +574,7 @@ void CConfig::CheckSndChipFreq()
 */
 void CConfig::LoadConfig(bool bLoadMain)
 {
+	DBGM_PRINT(("CConfig::LoadConfig(bool bLoadMain = %d)", bLoadMain));
 	_intLoadConfig(bLoadMain);
 }
 
