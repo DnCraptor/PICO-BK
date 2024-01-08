@@ -363,6 +363,8 @@ static void SetupConfiguration(CONF_BKMODEL nConf)
 	}
 }
 
+extern "C" volatile bool escPressed;
+
 int main() {
 #if (OVERCLOCKING > 270)
     hw_set_bits(&vreg_and_chip_reset_hw->vreg, VREG_AND_CHIP_RESET_VREG_VSEL_BITS);
@@ -422,13 +424,14 @@ int main() {
 
     DIRECT_RAM_BORDER = PSRAM_AVAILABLE ? RAM_SIZE : (SD_CARD_AVAILABLE ? RAM_PAGE_SIZE : RAM_SIZE);
 
-SetupConfiguration(CONF_BKMODEL::BK_0010);
+SetupConfiguration(CONF_BKMODEL::BK_0010_01);
 
     while(1) {
         m_pBoard->TimerThreadFunc();
+        int tormoz = if_manager(escPressed);
         // TODO: remove it
     }
-
+/**
     if (SD_CARD_AVAILABLE) {
         insertdisk(0, fdd0_sz(), fdd0_rom(), "\\BK\\fdd0.img");
         insertdisk(1, fdd1_sz(), fdd1_rom(), "\\BK\\fdd1.img");
@@ -437,7 +440,7 @@ SetupConfiguration(CONF_BKMODEL::BK_0010);
     }
 
     main_init();
-    emu_start();
+    emu_start();**/
     return 0;
 }
 

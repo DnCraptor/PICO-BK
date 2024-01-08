@@ -1879,6 +1879,7 @@ void CMotherBoard::TimerThreadFunc()
 
 			if (m_bBreaked) // если процессор в отладочном останове
 			{
+				DBGM_PRINT(("m_bBreaked: %d", m_bBreaked));
 				DrawDebugScreen();  // продолжаем обновлять экран
 	///			Sleep(20);          // со стандартной частотой примерно 50Гц
 			}
@@ -1900,7 +1901,7 @@ void CMotherBoard::TimerThreadFunc()
 						{
 							// Выполняем одну инструкцию, возвращаем время выполнения одной инструкции в тактах.
 							m_sTV.nCPUTicks = m_cpu.TranslateInstruction();
-		///					DBGM_PRINT(("nCPUTicks: %d; m_nKeyCleanEvent: %d", m_sTV.nCPUTicks, m_nKeyCleanEvent));
+		////					DBGM_PRINT(("nCPUTicks: %d; m_nKeyCleanEvent: %d", m_sTV.nCPUTicks, m_nKeyCleanEvent));
 
 							if (m_nKeyCleanEvent)
 							{
@@ -1914,10 +1915,11 @@ void CMotherBoard::TimerThreadFunc()
 
 						// Сохраняем текущее значение PC для отладки
 						m_PreviousPC = m_cpu.GetRON(CCPU::REGISTER::PC);
-		///				DBGM_PRINT(("m_PreviousPC: 0%06o", m_PreviousPC));
+		////				DBGM_PRINT(("m_PreviousPC: 0%06o", m_PreviousPC));
 					}
 					catch (CExceptionHalt &halt)
 					{
+						DBGM_PRINT(("CExceptionHalt; m_bAskForBreak: %d", g_Config.m_bAskForBreak));
 						// BK Violation exception. Например запись в ПЗУ или чтение из несуществующей памяти
 						if (g_Config.m_bAskForBreak)
 						{
@@ -2217,6 +2219,7 @@ void CMotherBoard::Make_One_Screen_Cycle()
 // при этом новый метод не отключается и поэтому возможны разного рода казусы.
 void CMotherBoard::DrawDebugScreen() const
 {
+	DBGM_PRINT(("CMotherBoard::DrawDebugScreen()"));
 	int nScrAddr = GetScreenPage() << 14;
 ///	m_pParent->PostMessage(WM_SCR_DEBUGDRAW, WPARAM(nScrAddr));
 }
