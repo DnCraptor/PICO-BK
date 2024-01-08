@@ -121,11 +121,9 @@ class CCPU
 			PC,
 			PSW
 		};
-	protected: // Statics
 		using ExecuteMethodRef = void (CCPU::*)();
-		std::unique_ptr<ExecuteMethodRef[]> m_pExecuteMethodMap;
-		void            RegisterMethodRef(uint16_t start, uint16_t end, ExecuteMethodRef methodref);
-
+	protected: // Statics
+		ExecuteMethodRef *m_pExecuteMethodMap;
 		uint16_t        m_RON[static_cast<int>(REGISTER::PSW)];   // PSW не входит в массив
 		uint16_t        m_PSW;          // PSW отдельно
 		uint16_t        m_Freg;         // копия флагов состояния NZVC (для простоты будет копия PSW целиком, прост использоваться будут только флаги)
@@ -228,7 +226,7 @@ class CCPU
 		bool            GetV_br() const;
 		bool            GetZ_br() const;
 		bool            GetN_br() const;
-
+    public:
 		void            ExecuteUNKNOWN();
 		// No fields
 		void            ExecuteHALT();

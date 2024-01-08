@@ -85,6 +85,7 @@ static FATFS fat_fs;
 
 #include "Board.h"
 
+CMotherBoard mb_test;
 static std::unique_ptr<CMotherBoard> m_pBoard(nullptr);
 
 static inline void StopTimer() {

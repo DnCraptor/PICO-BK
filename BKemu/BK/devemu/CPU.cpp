@@ -2375,7 +2375,9 @@ void CCPU::ExecuteFDIV()
 }
 
 /////////////////////////////////////////////////////////////////////////////////
-
+#include "DEFAULT_CPU_MAP.h"
+#include "DEFAULT_CPU_VM1G_MAP.h"
+#include "DEFAULT_CPU_EIS_MAP.h"
 
 void CCPU::PrepareCPU()
 {
@@ -2384,125 +2386,19 @@ void CCPU::PrepareCPU()
 		return;
 	}
 
-	m_pExecuteMethodMap = std::make_unique<ExecuteMethodRef[]>(65536);
-
-	if (m_pExecuteMethodMap)
-	{
-		// Сначала заполняем таблицу ссылками на метод ExecuteUNKNOWN, выполняющий TRAP 10
-		RegisterMethodRef(0000000, 0177777, &CCPU::ExecuteUNKNOWN);
-		RegisterMethodRef(0000000, 0000000, &CCPU::ExecuteHALT);
-		RegisterMethodRef(0000001, 0000001, &CCPU::ExecuteWAIT);
-		RegisterMethodRef(0000002, 0000002, &CCPU::ExecuteRTI);
-		RegisterMethodRef(0000003, 0000003, &CCPU::ExecuteBPT);
-		RegisterMethodRef(0000004, 0000004, &CCPU::ExecuteIOT);
-		RegisterMethodRef(0000005, 0000005, &CCPU::ExecuteRESET);
-		RegisterMethodRef(0000006, 0000006, &CCPU::ExecuteRTT);
-		RegisterMethodRef(0000010, 0000013, &CCPU::ExecuteSTART);
-		RegisterMethodRef(0000014, 0000017, &CCPU::ExecuteSTEP);
-		RegisterMethodRef(0000100, 0000177, &CCPU::ExecuteJMP);
-		RegisterMethodRef(0000200, 0000207, &CCPU::ExecuteRTS);    // RTS / RETURN
-		RegisterMethodRef(0000240, 0000257, &CCPU::ExecuteCLS);
-		RegisterMethodRef(0000260, 0000277, &CCPU::ExecuteSET);
-		RegisterMethodRef(0000300, 0000377, &CCPU::ExecuteSWAB);
-		RegisterMethodRef(0000400, 0000777, &CCPU::ExecuteBR);
-		RegisterMethodRef(0001000, 0001377, &CCPU::ExecuteBNE);
-		RegisterMethodRef(0001400, 0001777, &CCPU::ExecuteBEQ);
-		RegisterMethodRef(0002000, 0002377, &CCPU::ExecuteBGE);
-		RegisterMethodRef(0002400, 0002777, &CCPU::ExecuteBLT);
-		RegisterMethodRef(0003000, 0003377, &CCPU::ExecuteBGT);
-		RegisterMethodRef(0003400, 0003777, &CCPU::ExecuteBLE);
-		RegisterMethodRef(0004000, 0004777, &CCPU::ExecuteJSR);    // JSR / CALL
-		RegisterMethodRef(0005000, 0005077, &CCPU::ExecuteCLR);
-		RegisterMethodRef(0005100, 0005177, &CCPU::ExecuteCOM);
-		RegisterMethodRef(0005200, 0005277, &CCPU::ExecuteINC);
-		RegisterMethodRef(0005300, 0005377, &CCPU::ExecuteDEC);
-		RegisterMethodRef(0005400, 0005477, &CCPU::ExecuteNEG);
-		RegisterMethodRef(0005500, 0005577, &CCPU::ExecuteADC);
-		RegisterMethodRef(0005600, 0005677, &CCPU::ExecuteSBC);
-		RegisterMethodRef(0005700, 0005777, &CCPU::ExecuteTST);
-		RegisterMethodRef(0006000, 0006077, &CCPU::ExecuteROR);
-		RegisterMethodRef(0006100, 0006177, &CCPU::ExecuteROL);
-		RegisterMethodRef(0006200, 0006277, &CCPU::ExecuteASR);
-		RegisterMethodRef(0006300, 0006377, &CCPU::ExecuteASL);
-		RegisterMethodRef(0006400, 0006477, &CCPU::ExecuteMARK);
-		RegisterMethodRef(0006700, 0006777, &CCPU::ExecuteSXT);
-		RegisterMethodRef(0010000, 0017777, &CCPU::ExecuteMOV);
-		RegisterMethodRef(0020000, 0027777, &CCPU::ExecuteCMP);
-		RegisterMethodRef(0030000, 0037777, &CCPU::ExecuteBIT);
-		RegisterMethodRef(0040000, 0047777, &CCPU::ExecuteBIC);
-		RegisterMethodRef(0050000, 0057777, &CCPU::ExecuteBIS);
-		RegisterMethodRef(0060000, 0067777, &CCPU::ExecuteADD);
-
-		/////////////////////////////////////////////////////////////////////////////////
-		if (g_Config.m_bEmulateEIS || g_Config.m_bVM1G)
-		{
-			RegisterMethodRef(0070000, 0070777, &CCPU::ExecuteMUL);
-		}
-
-		if (g_Config.m_bEmulateEIS)
-		{
-			RegisterMethodRef(0071000, 0071777, &CCPU::ExecuteDIV);
-			RegisterMethodRef(0072000, 0072777, &CCPU::ExecuteASH);
-			RegisterMethodRef(0073000, 0073777, &CCPU::ExecuteASHC);
-		}
-
-		/////////////////////////////////////////////////////////////////////////////////
-		RegisterMethodRef(0074000, 0074777, &CCPU::ExecuteXOR);
-
-		if (g_Config.m_bEmulateFIS)
-		{
-			RegisterMethodRef(0075000, 0075007, &CCPU::ExecuteFADD);
-			RegisterMethodRef(0075010, 0075017, &CCPU::ExecuteFSUB);
-			RegisterMethodRef(0075020, 0075027, &CCPU::ExecuteFMUL);
-			RegisterMethodRef(0075030, 0075037, &CCPU::ExecuteFDIV);
-		}
-
-		RegisterMethodRef(0077000, 0077777, &CCPU::ExecuteSOB);
-		RegisterMethodRef(0100000, 0100377, &CCPU::ExecuteBPL);
-		RegisterMethodRef(0100400, 0100777, &CCPU::ExecuteBMI);
-		RegisterMethodRef(0101000, 0101377, &CCPU::ExecuteBHI);
-		RegisterMethodRef(0101400, 0101777, &CCPU::ExecuteBLOS);
-		RegisterMethodRef(0102000, 0102377, &CCPU::ExecuteBVC);
-		RegisterMethodRef(0102400, 0102777, &CCPU::ExecuteBVS);
-		RegisterMethodRef(0103000, 0103377, &CCPU::ExecuteBHIS);    // BCC
-		RegisterMethodRef(0103400, 0103777, &CCPU::ExecuteBLO);     // BCS
-		RegisterMethodRef(0104000, 0104377, &CCPU::ExecuteEMT);
-		RegisterMethodRef(0104400, 0104777, &CCPU::ExecuteTRAP);
-		RegisterMethodRef(0105000, 0105077, &CCPU::ExecuteCLR);    // CLRB
-		RegisterMethodRef(0105100, 0105177, &CCPU::ExecuteCOM);    // COMB
-		RegisterMethodRef(0105200, 0105277, &CCPU::ExecuteINC);    // INCB
-		RegisterMethodRef(0105300, 0105377, &CCPU::ExecuteDEC);    // DECB
-		RegisterMethodRef(0105400, 0105477, &CCPU::ExecuteNEG);    // NEGB
-		RegisterMethodRef(0105500, 0105577, &CCPU::ExecuteADC);    // ADCB
-		RegisterMethodRef(0105600, 0105677, &CCPU::ExecuteSBC);    // SBCB
-		RegisterMethodRef(0105700, 0105777, &CCPU::ExecuteTST);    // TSTB
-		RegisterMethodRef(0106000, 0106077, &CCPU::ExecuteROR);    // RORB
-		RegisterMethodRef(0106100, 0106177, &CCPU::ExecuteROL);    // ROLB
-		RegisterMethodRef(0106200, 0106277, &CCPU::ExecuteASR);    // ASRB
-		RegisterMethodRef(0106300, 0106377, &CCPU::ExecuteASL);    // ASLB
-		RegisterMethodRef(0106400, 0106477, &CCPU::ExecuteMTPS);
-		RegisterMethodRef(0106700, 0106777, &CCPU::ExecuteMFPS);
-		RegisterMethodRef(0110000, 0117777, &CCPU::ExecuteMOV);    // MOVB
-		RegisterMethodRef(0120000, 0127777, &CCPU::ExecuteCMP);    // CMPB
-		RegisterMethodRef(0130000, 0137777, &CCPU::ExecuteBIT);    // BITB
-		RegisterMethodRef(0140000, 0147777, &CCPU::ExecuteBIC);    // BICB
-		RegisterMethodRef(0150000, 0157777, &CCPU::ExecuteBIS);    // BISB
-		RegisterMethodRef(0160000, 0167777, &CCPU::ExecuteSUB);
+	m_pExecuteMethodMap = DEFAULT_CPU_MAP;
+	if (g_Config.m_bVM1G) { // 69 команд: базовый набор +XOR +SOB (+MUL для 1801ВМ1Г);
+		m_pExecuteMethodMap = DEFAULT_CPU_VM1G_MAP;
 	}
-	else
-	{
-		g_BKMsgBox.Show(IDS_BK_ERROR_NOTENMEMR, MB_OK);
+	// Н1806ВМ2 77 команд, наборы команд:
+    // базовый набор инструкций
+    // EIS Extended Instruction Set
+    // FIS Floating Instruction Set if system ROM is able to emulate
+	if (g_Config.m_bEmulateEIS || g_Config.m_bEmulateFIS) {
+		m_pExecuteMethodMap = DEFAULT_CPU_EIS_MAP;
 	}
 }
 
 void CCPU::DoneCPU()
 {
-}
-
-void CCPU::RegisterMethodRef(uint16_t start, uint16_t end, ExecuteMethodRef methodref)
-{
-	for (int opcode = start; opcode <= end; ++opcode)
-	{
-		m_pExecuteMethodMap[opcode] = methodref;
-	}
 }
