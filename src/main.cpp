@@ -84,8 +84,8 @@ void inInit(uint gpio) {
 static FATFS fat_fs;
 
 #include "Board.h"
+#include "Board_10.h"
 
-CMotherBoard mb_test;
 static std::unique_ptr<CMotherBoard> m_pBoard(nullptr);
 
 static inline void StopTimer() {
@@ -251,14 +251,13 @@ static bool ConfigurationConstructor(CONF_BKMODEL nConf, bool bStart = true)
 	// создадим новую конфигурацию
 	switch (g_Config.m_BKBoardModel)
 	{
+		case MSF_CONF::BK10:
+			m_pBoard = std::make_unique<CMotherBoard_10>();
+			break;
 		case MSF_CONF::BK1001:
 			m_pBoard = std::make_unique<CMotherBoard>();
 			break;
             /**
-		case MSF_CONF::BK10:
-			m_pBoard = std::make_unique<CMotherBoard_10>();
-			break;
-
 		case MSF_CONF::BK1001_MSTD:
 			m_pBoard = std::make_unique<CMotherBoard_MSTD>();
 			break;

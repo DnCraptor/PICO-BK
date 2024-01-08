@@ -1461,9 +1461,44 @@ int CMotherBoard::GetScreenPage() const
 	return 5;
 }
 
+extern "C" {
+#include "ROM10.h"
+#include "Focal.h"
+#include "FDDROM.h"
+}
+
 // выход: true - ПЗУ успешно прочитано
 //       false - ПЗУ не прочитано или не задано
 bool CMotherBoard::LoadRomModule(int iniRomNameIndex, int bank) {
+	switch(iniRomNameIndex) {
+		case IDS_INI_BK10_RE2_017_MONITOR:
+			m_MemoryMap[bank++].addr = (uint8_t*) &ROM10[0x00000];
+			m_MemoryMap[bank  ].addr = (uint8_t*) &ROM10[0x01000];
+		break;
+		case IDS_INI_BK10_RE2_106_BASIC1:
+			m_MemoryMap[bank++].addr = (uint8_t*) &ROM10[0x02000];
+			m_MemoryMap[bank  ].addr = (uint8_t*) &ROM10[0x03000];
+		break;
+		case IDS_INI_BK10_RE2_107_BASIC2:
+			m_MemoryMap[bank++].addr = (uint8_t*) &ROM10[0x04000];
+			m_MemoryMap[bank  ].addr = (uint8_t*) &ROM10[0x05000];
+		break;
+		case IDS_INI_BK10_RE2_108_BASIC3:
+			m_MemoryMap[bank++].addr = (uint8_t*) &ROM10[0x06000];
+			m_MemoryMap[bank  ].addr = (uint8_t*) &ROM10[0x07000];
+		break;
+		case IDS_INI_BK10_RE2_084_FOCAL:
+			m_MemoryMap[bank++].addr = (uint8_t*) &ROM10FOCAL[0x00000];
+			m_MemoryMap[bank  ].addr = (uint8_t*) &ROM10FOCAL[0x01000];
+		break;
+		case IDS_INI_BK10_RE2_019_MSTD:
+			m_MemoryMap[bank++].addr = (uint8_t*) &FDDROM[0x00000];
+			m_MemoryMap[bank  ].addr = (uint8_t*) &FDDROM[0x01000];
+		break;
+		default:
+		// log
+		break;
+	}
     return true;
 }
 
@@ -1495,10 +1530,6 @@ bool CMotherBoard::InitMemoryModules() { // TODO: redesign
 	return true;
 }
 
-extern "C" {
-#include "ROM10.h"
-}
-
 void CMotherBoard::MemoryManager()
 {
 	for (int i = 0; i <= 017; ++i)
@@ -1522,7 +1553,6 @@ void CMotherBoard::MemoryManager()
 		m_MemoryMap[i].bWritable = (i < BRD_10_MON10_BNK) ? true : false;
 		m_MemoryMap[i].nBank = i;
 		m_MemoryMap[i].nOffset = i << 12;
-		m_MemoryMap[i].addr = (uint8_t*) &ROM10[i << 12];
 		m_MemoryMap[i].nTimingCorrection = (i < BRD_10_MON10_BNK) ? RAM_TIMING_CORR_VALUE_D : ROM_TIMING_CORR_VALUE;
 	}
 }

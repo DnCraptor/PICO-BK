@@ -101,6 +101,7 @@ pico_set_program_version(pico-bk "test")
             ${CMAKE_CURRENT_SOURCE_DIR}/BKemu/BK/devemu/ScreenColors_Shared.cpp
             ${CMAKE_CURRENT_SOURCE_DIR}/BKemu/BK/devemu/CPU.cpp
             ${CMAKE_CURRENT_SOURCE_DIR}/BKemu/BK/devemu/Board.cpp
+            ${CMAKE_CURRENT_SOURCE_DIR}/BKemu/BK/devemu/Board_10.cpp
             ${CMAKE_CURRENT_SOURCE_DIR}/BKemu/BK/devemu/Device.cpp
             ${CMAKE_CURRENT_SOURCE_DIR}/BKemu/BK/devemu/FDDController.cpp
             ${CMAKE_CURRENT_SOURCE_DIR}/BKemu/BK/devemu/FloppyDrive.cpp
