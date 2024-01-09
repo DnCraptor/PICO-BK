@@ -72,19 +72,19 @@ typedef ULONG_PTR DWORD_PTR, *PDWORD_PTR;
 
 class CString { // string container from MicrosoftFM
     std::vector<char> m_pszData;
+    inline void _in(const char* x, int sz) {
+        for (int i = 0; i < sz; ++i)
+            m_pszData.push_back(x[i]);
+        m_pszData.push_back(0);
+    }
+    inline void _in(const char* x) {
+        int sz = strlen(x);
+        _in(x, sz);
+    }
 public:
     CString() { m_pszData.push_back(0); }
-	CString(const char* x) {
-        int sz = strlen(x);
-        for (int i = 0; i < sz; ++i)
-            m_pszData.push_back(x[i]);
-        m_pszData.push_back(0);
-    }
-    CString(const char* x, int sz) {
-        for (int i = 0; i < sz; ++i)
-            m_pszData.push_back(x[i]);
-        m_pszData.push_back(0);
-    }
+	CString(const char* x) { _in(x); }
+    CString(const char* x, int sz) { _in(x, sz); }
     void Replace(char f, char r) {
         for (int i = 0; i < m_pszData.size() && m_pszData[i]; ++i)
             if (m_pszData[i] == f)

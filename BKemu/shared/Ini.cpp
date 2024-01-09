@@ -853,10 +853,14 @@ CString CIni::ConvertStrtoUnicode(UINT type, LPCSTR astr) const
 */
 
 // TODO: .rc into flash
+#include "resource.h"
 bool CString :: LoadString(unsigned int nID) { // A Windows string resource ID.
   ///  DBGM_PRINT(("CString :: LoadString(%d (%Xh))", nID, nID));
     switch(nID) {
 		case 0:
+		  _in("0100000");
+		  return true;
+		case IDS_INI_CPU_RUN_ADDR:
 		  return true;
 		default:
 		  DBGM_PRINT(("CString :: LoadString(%d (%Xh)) not found", nID, nID));

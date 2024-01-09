@@ -288,6 +288,7 @@ confStringParam CConfig::m_Directories[] =
 
 void CConfig::_intLoadConfig(bool bLoadMain)
 {
+	DBGM_PRINT(("CConfig::_intLoadConfig(bool bLoadMain = %d)", bLoadMain));
 	int id, i = 0;
 
 	// Инициализация директорий
@@ -307,7 +308,7 @@ void CConfig::_intLoadConfig(bool bLoadMain)
 			// иначе - это относительный путь от домашней директории
 	///		*m_Directories[i].pstrValue = GetConfCurrPath() / strDefPath;
 		}
-
+        DBGM_PRINT(("CConfig::_intLoadConfig m_Directories[%d] = %s", i, m_Directories[i].pstrValue->c_str()));
 		i++;
 	}
 
@@ -316,6 +317,7 @@ void CConfig::_intLoadConfig(bool bLoadMain)
 	{
 		//      Основные параметры
 		m_strBKBoardType = iniFile.GetValueString(IDS_INI_SECTIONNAME_MAIN, IDS_INI_BKMODEL, g_mstrConfigBKModelParameters[static_cast<int>(CONF_BKMODEL::BK_0010_01)].strBKModelConfigName);
+		DBGM_PRINT(("CConfig::_intLoadConfig m_strBKBoardType = %s", m_strBKBoardType.GetString()));
 		m_nScreenshotNumber = iniFile.GetValueInt(IDS_INI_SECTIONNAME_MAIN, IDS_INI_SSHOT_NUM, 1);
 		m_nDateInsteadOfScreenshotNumber = iniFile.GetValueBool(IDS_INI_SECTIONNAME_MAIN, IDS_INI_SSHOT_DATENUM, false);
 	///	m_nScreenRenderType = static_cast<CONF_SCREEN_RENDER>(iniFile.GetValueInt(IDS_INI_SECTIONNAME_MAIN, IDS_INI_SCRRENDER_TYPE, static_cast<int>((IsWindowsVistaOrGreater()) ? CONF_SCREEN_RENDER::D2D : CONF_SCREEN_RENDER::VFW)));
@@ -356,7 +358,10 @@ void CConfig::_intLoadConfig(bool bLoadMain)
 
 	while ((id = m_romModules[i].nID) != 0)
 	{
-		*m_romModules[i].pstrValue = iniFile.GetValueStringEx(strCustomize, IDS_INI_SECTIONNAME_ROMMODULES, id, m_romModules[i].defValue.c_str()).GetString();
+		*m_romModules[i].pstrValue = iniFile.GetValueStringEx(
+			strCustomize, IDS_INI_SECTIONNAME_ROMMODULES, id, m_romModules[i].defValue.c_str()
+		).GetString();
+		DBGM_PRINT(("CConfig::_intLoadConfig m_romModules[%d] = %s", i, m_romModules[i].pstrValue->c_str()));
 		i++;
 	}
 
@@ -366,13 +371,19 @@ void CConfig::_intLoadConfig(bool bLoadMain)
 	m_nRegistersDumpInterval = iniFile.GetValueIntEx(strCustomize, IDS_INI_SECTIONNAME_PARAMETERS, IDS_INI_REGSDUMP_INTERVAL, 0);  // если 0, то выключено
 	CString strSoundVal = iniFile.GetValueStringEx(strCustomize, IDS_INI_SECTIONNAME_PARAMETERS, IDS_INI_SOUNDVOLUME, _T("30%"));// Громкость
 	m_nSoundVolume      = 0xffff * _tstoi(strSoundVal) / 100;
+	DBGM_PRINT(("CConfig::_intLoadConfig m_nCPURunAddr = %d", m_nCPURunAddr));
+	DBGM_PRINT(("CConfig::_intLoadConfig m_nCPUFrequency = %d", m_nCPUFrequency));
+	DBGM_PRINT(("CConfig::_intLoadConfig m_nRegistersDumpInterval = %d", m_nRegistersDumpInterval));
 
 	for (int i = 0; i < NUMBER_VIEWS_MEM_DUMP; ++i)
 	{
-		m_arDumper[i].nAddr = Global::OctStringToWord(iniFile.GetValueStringEx(strCustomize, IDS_INI_SECTIONNAME_PARAMETERS, g_arStrDumpAddrID[i], _T("000000")));
-		CString str = iniFile.GetValueStringEx(strCustomize, IDS_INI_SECTIONNAME_PARAMETERS, g_arStrDumpListID[i], _T("0 : 0"));
-		str.Trim();
-		int colon = str.Find(_T(":"), 0); // поищем начало разделителя
+		m_arDumper[i].nAddr = Global::OctStringToWord(
+			iniFile.GetValueStringEx(strCustomize, IDS_INI_SECTIONNAME_PARAMETERS, g_arStrDumpAddrID[i], _T("000000"))
+		);
+		DBGM_PRINT(("CConfig::_intLoadConfig m_arDumper[%d].nAddr = 0%06o", i, m_arDumper[i].nAddr));
+	///	CString str = iniFile.GetValueStringEx(strCustomize, IDS_INI_SECTIONNAME_PARAMETERS, g_arStrDumpListID[i], _T("0 : 0"));
+	///	str.Trim();
+	///	int colon = str.Find(_T(":"), 0); // поищем начало разделителя
 
 	///	if (colon >= 0)
 		{
@@ -428,16 +439,22 @@ void CConfig::_intLoadConfig(bool bLoadMain)
 	m_nVKBDType         = iniFile.GetValueIntEx(strCustomize, IDS_INI_SECTIONNAME_OPTIONS, IDS_INI_VKBD_TYPE, 0);
 	// Инициализация приводов
 	fs::path str = iniFile.GetValueStringEx(strCustomize, IDS_INI_SECTIONNAME_DRIVES, IDS_INI_DRIVEA, g_strEmptyUnit).GetString();
+	DBGM_PRINT(("CConfig::_intLoadConfig m_strFDDrives[0] = %s", str.c_str()));
 	m_strFDDrives[0]    = CheckDriveImgName(str);
 	str = iniFile.GetValueStringEx(strCustomize, IDS_INI_SECTIONNAME_DRIVES, IDS_INI_DRIVEB, g_strEmptyUnit).GetString();
+	DBGM_PRINT(("CConfig::_intLoadConfig m_strFDDrives[1] = %s", str.c_str()));
 	m_strFDDrives[1]    = CheckDriveImgName(str);
 	str = iniFile.GetValueStringEx(strCustomize, IDS_INI_SECTIONNAME_DRIVES, IDS_INI_DRIVEC, g_strEmptyUnit).GetString();
+	DBGM_PRINT(("CConfig::_intLoadConfig m_strFDDrives[2] = %s", str.c_str()));
 	m_strFDDrives[2]    = CheckDriveImgName(str);
 	str = iniFile.GetValueStringEx(strCustomize, IDS_INI_SECTIONNAME_DRIVES, IDS_INI_DRIVED, g_strEmptyUnit).GetString();
+	DBGM_PRINT(("CConfig::_intLoadConfig m_strFDDrives[4] = %s", str.c_str()));
 	m_strFDDrives[3]    = CheckDriveImgName(str);
 	str = iniFile.GetValueStringEx(strCustomize, IDS_INI_SECTIONNAME_DRIVES, IDS_INI_HDD0, g_strEmptyUnit).GetString();
+	DBGM_PRINT(("CConfig::_intLoadConfig m_strHDDrives[0] = %s", str.c_str()));
 	m_strHDDrives[0]    = CheckDriveImgName(str);
 	str = iniFile.GetValueStringEx(strCustomize, IDS_INI_SECTIONNAME_DRIVES, IDS_INI_HDD1, g_strEmptyUnit).GetString();
+	DBGM_PRINT(("CConfig::_intLoadConfig m_strHDDrives[1] = %s", str.c_str()));
 	m_strHDDrives[1]    = CheckDriveImgName(str);
 
 	if (m_bAY8910) // у сопра приоритет перед ковоксом
@@ -471,6 +488,7 @@ void CConfig::_intLoadConfig(bool bLoadMain)
 		m_bJoystick = false;
 		m_bMouseMars = false;
 	}
+	DBGM_PRINT(("CConfig::_intLoadConfig m_bJoystick: %d; m_bMouseMars: %d", m_bJoystick, m_bMouseMars));
 }
 
 void CConfig::CheckRenders()
