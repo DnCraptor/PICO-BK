@@ -58,6 +58,7 @@ static volatile bool uPressed = false;
 static volatile bool hPressed = false;
 
 volatile bool is_covox_on = true;
+volatile bool is_ay_on = true;
 volatile bool is_sound_on = true;
 volatile uint8_t snd_divider = 0;
 volatile int8_t covox_multiplier = 7;
@@ -136,9 +137,15 @@ static void mark_to_exit(uint8_t cmd) {
 
 static inline void fill_panel(file_panel_desc_t* p);
 
+#include "aySoundSoft.h"
+
 static void reset(uint8_t cmd) {
     f12Pressed = false;
     tormoz = 6;
+    true_covox = 0;
+#ifdef AYSOUND
+    AY_reset();
+#endif
     memset(RAM, 0, sizeof RAM);
     graphics_set_page(CPU_PAGE51_MEM_ADR, is_bk0011mode() ? 15 : 0);
     graphics_shift_screen((uint16_t)0330 | 0b01000000000);

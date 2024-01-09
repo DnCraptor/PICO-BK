@@ -81,6 +81,44 @@ void inInit(uint gpio) {
     gpio_pull_up(gpio);
 }
 
+extern "C" {
+#include "aySoundSoft.h"
+}
+extern "C" volatile bool is_covox_on;
+extern "C" volatile bool is_ay_on;
+extern "C" volatile bool is_sound_on;
+extern "C" volatile uint8_t snd_divider;
+extern "C" volatile int8_t covox_multiplier;
+
+#ifdef SOUND_SYSTEM
+bool __not_in_flash_func(AY_timer_callback)(repeating_timer_t *rt) {
+    static int16_t outL = 0;  
+    static int16_t outR = 0;
+    register uint8_t r_divider = snd_divider + 4; // TODO: tume up divider per channel
+    register uint16_t r_v = (uint16_t)((int32_t)outR + 0x8000L) >> r_divider;
+    register uint8_t l_divider = snd_divider + 4;
+    register uint16_t l_v = (uint16_t)((int32_t)outL + 0x8000L) >> l_divider;
+    pwm_set_gpio_level(PWM_PIN0, r_v); // Право
+    pwm_set_gpio_level(PWM_PIN1, l_v); // Лево
+#ifdef AYSOUND
+    if (is_ay_on) {
+        uint8_t* AY_data = get_AY_Out(5);
+        outL = 2 * (AY_data[0] + AY_data[1]);
+        outR = 2 * (AY_data[2] + AY_data[1]);
+    }
+#endif
+#ifdef COVOX
+    if (is_covox_on && true_covox) {
+        register uint32_t d = covox_multiplier;
+        register int32_t v = ((int32_t)true_covox - (int32_t)0x80) << d;
+        outL += (int16_t)v; // 8 unsigned to signed 16
+        outR += (int16_t)v;
+    }
+#endif
+    return true;
+}
+#endif
+
 int main() {
 #if (OVERCLOCKING > 270)
     hw_set_bits(&vreg_and_chip_reset_hw->vreg, VREG_AND_CHIP_RESET_VREG_VSEL_BITS);
@@ -146,6 +184,16 @@ int main() {
         insertdisk(2, 0, 0, "\\BK\\hdd0.img");
         insertdisk(3, 0, 0, "\\BK\\hdd1.img");
     }
+
+#ifdef SOUND_SYSTEM
+    repeating_timer_t timer;
+	int hz = 44100;	//44000 //44100 //96000 //22050
+	// negative timeout means exact delay (rather than delay between callbacks)
+	if (!add_repeating_timer_us(-1000000 / hz, AY_timer_callback, NULL, &timer)) {
+		logMsg("Failed to add timer");
+		return 1;
+	}
+#endif
 
     main_init();
     emu_start();

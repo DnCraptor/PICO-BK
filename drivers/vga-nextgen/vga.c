@@ -144,6 +144,9 @@ inline static void sound_callback() {
         out += (int16_t)v; // 8 unsigned to signed 16
     }
 #endif
+#ifdef AYSOUND
+    
+#endif
 #ifdef TANDY3V
     if (is_tandy3v_on) {
         register uint8_t d = tandy3v_divider;
@@ -372,9 +375,9 @@ inline static void dma_handler_VGA_impl() {
 void __not_in_flash_func(dma_handler_VGA)() {
     dma_handler_VGA_impl();
 #ifdef SOUND_SYSTEM
-    if (is_sound_on) {
-        sound_callback();
-    }
+ ///   if (is_sound_on) {
+ ///       sound_callback();
+ ///   }
 #endif
 }
 

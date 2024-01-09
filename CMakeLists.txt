@@ -165,6 +165,7 @@ target_compile_definitions(${PROJECT_NAME} PRIVATE
 
         SOUND_SYSTEM
         COVOX
+        AYSOUND
 
         # select onr of the folowing:
         #SWAP_BLOCK_1k

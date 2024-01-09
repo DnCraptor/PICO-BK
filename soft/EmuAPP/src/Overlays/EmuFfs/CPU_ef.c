@@ -341,6 +341,7 @@ TCPU_Arg AT_OVL CPU_WriteW (TCPU_Arg Adr, uint_fast16_t Word) {
             {
                 uint_fast32_t Reg = (Word & 0xFF) >> 1;
                 if (Device_Data.SysRegs.WrReg177716 & 0100) Reg += 0x80;
+                // TODO: why?
                 true_covox = Device_Data.SysRegs.WrReg177716;
             }
             break;
