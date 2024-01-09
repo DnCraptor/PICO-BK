@@ -89,12 +89,16 @@ extern "C" volatile bool is_ay_on;
 extern "C" volatile bool is_sound_on;
 extern "C" volatile uint8_t snd_divider;
 extern "C" volatile int8_t covox_multiplier;
+extern "C" volatile uint16_t true_covox;
 
 #ifdef SOUND_SYSTEM
 bool __not_in_flash_func(AY_timer_callback)(repeating_timer_t *rt) {
     static int16_t outL = 0;  
     static int16_t outR = 0;
-    register uint8_t r_divider = snd_divider + 4; // TODO: tume up divider per channel
+    if (!is_sound_on) {
+        return true;
+    }
+    register uint8_t r_divider = snd_divider + 4; // TODO: tune up divider per channel
     register uint16_t r_v = (uint16_t)((int32_t)outR + 0x8000L) >> r_divider;
     register uint8_t l_divider = snd_divider + 4;
     register uint16_t l_v = (uint16_t)((int32_t)outL + 0x8000L) >> l_divider;

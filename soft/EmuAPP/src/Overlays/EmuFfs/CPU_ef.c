@@ -7,6 +7,7 @@
 #include "CPU_ef.h"
 #include "vga.h"
 #include "fdd.h"
+#include "aySoundSoft.h"
 
 #define AT_OVL __attribute__((section(".ovl0_ef.text")))
 
@@ -337,12 +338,21 @@ TCPU_Arg AT_OVL CPU_WriteW (TCPU_Arg Adr, uint_fast16_t Word) {
             Device_Data.Timer.Div   = (~Word >> 4) & 6;
             break;
         case (0177714 >> 1):
+			/*177714
+			Регистр параллельного программируемого порта ввода вывода - два регистра, входной по чтению и выходной по записи.
+			из выходного нельзя ничего прочитать т.к., читается оно из входного,
+			во входной невозможно ничего записать, т.к. записывается оно в выходной.
+			*/
             Device_Data.SysRegs.WrReg177714 = (uint16_t) Word;
             {
                 uint_fast32_t Reg = (Word & 0xFF) >> 1;
                 if (Device_Data.SysRegs.WrReg177716 & 0100) Reg += 0x80;
-                // TODO: why?
+#ifdef COVOX
                 true_covox = Device_Data.SysRegs.WrReg177716;
+#endif
+#ifdef AYSOUND
+                AY_write_address(Device_Data.SysRegs.WrReg177716);
+#endif
             }
             break;
         case (0177716 >> 1):
@@ -354,6 +364,7 @@ TCPU_Arg AT_OVL CPU_WriteW (TCPU_Arg Adr, uint_fast16_t Word) {
                 Device_Data.SysRegs.WrReg177716 = (uint16_t) Word;
                 uint_fast32_t Reg = *(uint8_t *) &Device_Data.SysRegs.WrReg177714 >> 1;
                 if (Word & 0100) Reg += 0x80;
+                // ???
                 true_covox = Device_Data.SysRegs.WrReg177716;
             }
             break;
@@ -445,7 +456,15 @@ TCPU_Arg AT_OVL CPU_WriteB (TCPU_Arg Adr, uint_fast8_t Byte) {
             {
                 uint_fast32_t Reg = (Word & 0xFF) >> 1;
                 if (Device_Data.SysRegs.WrReg177716 & 0100) Reg += 0x80;
+#ifdef COVOX
                 true_covox = Device_Data.SysRegs.WrReg177716;
+#endif
+#ifdef AYSOUND
+				if (Adr & 1) {
+					Word >>= 8; // работаем со старшим байтом
+				}
+                AY_set_reg(Word & 0377);
+#endif
             }
             break;
         case (0177716 >> 1):
@@ -458,6 +477,7 @@ TCPU_Arg AT_OVL CPU_WriteB (TCPU_Arg Adr, uint_fast8_t Byte) {
                 {
                     uint_fast32_t Reg = *(uint8_t *) &Device_Data.SysRegs.WrReg177714 >> 1;
                     if (Word & 0100) Reg += 0x80;
+                    /// ???
                     true_covox = Device_Data.SysRegs.WrReg177716;
                 }
             }

@@ -406,3 +406,25 @@ R7
     
 
 };
+
+/*
+Структура PSG - формата
+Offset Number of byte Description
++ 0 3 Identifier 'PSG'
++ 3 1 Marker “End of Text”(1Ah)
++ 4 1 Version number
++ 5 1 Player frequency(for versions 10 + )
++ 6 10 Data
+
+Data — последовательности пар байтов записи в регистр.
+Первый байт — номер регистра(от 0 до 0x0F), второй — значение.
+Вместо номера регистра могут быть специальные маркеры : 0xFF, 0xFE или 0xFD
+0xFD — конец композиции.
+0xFF — ожидание 20 мс.
+0xFE — следующий байт показывает сколько раз выждать по 80 мс.
+*/
+void AY_write_address(uint16_t word) {
+    uint8_t addr = ~word & 0xff;
+    addr &= 0x0f; // выделяем номер адреса регистра
+    AY_set_reg(addr);
+}
