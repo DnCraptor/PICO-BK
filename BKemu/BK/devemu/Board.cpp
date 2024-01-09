@@ -114,21 +114,14 @@ void CMotherBoard::AttachDebugger(CDebugger *pDevice)
 void CMotherBoard::InitMemoryValues() {
 	uint16_t val = 0;
 	uint8_t flag = 0;
-	for (size_t bank = 0; bank < 4; ++bank) {
+	for (size_t bank = 0; bank < 8; ++bank) {
 		m_MemoryMap[bank].bReadable = true;
 		m_MemoryMap[bank].bWritable = true;
 		m_MemoryMap[bank].nBank = bank;
 		m_MemoryMap[bank].nOffset = bank << 12;
 		m_MemoryMap[bank].nPage = bank >> 2;
 		m_MemoryMap[bank].addr = &RAM[bank << 12];
-	}
-	for (size_t bank = 4; bank < 8; ++bank) {
-		m_MemoryMap[bank].bReadable = true;
-		m_MemoryMap[bank].bWritable = true;
-		m_MemoryMap[bank].nBank = bank;
-		m_MemoryMap[bank].nOffset = bank << 12 + 0x10000;
-		m_MemoryMap[bank].nPage = bank >> 2;
-		m_MemoryMap[bank].addr = &RAM[(bank << 12) + 0x10000];  // Page5 from БК0011М для плавного сопряжения перекл. режимов
+		DBGM_PRINT(("CMotherBoard::InitMemoryValues m_MemoryMap[%d].addr = 0%06o", bank, m_MemoryMap[bank].addr - &RAM[0]));
 	}
 	for (size_t bank = 0; bank < 8; ++bank) {
         BKMEMBank_t& b = m_MemoryMap[bank];
@@ -754,6 +747,7 @@ bool CMotherBoard::InitBoard(uint16_t nNewStartAddr)
 	if (nNewStartAddr == 0)
 	{
 		nNewStartAddr = m_nStartAddr;    // Используем адрес по умолчанию
+		DBGM_PRINT(("CMotherBoard::InitBoard(uint16_t nNewStartAddr = 0%06o)", nNewStartAddr));
 	}
 	else
 	{
