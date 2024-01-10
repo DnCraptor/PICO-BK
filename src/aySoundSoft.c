@@ -1,9 +1,6 @@
 // from https://github.com/UmkaSK/speccy-pico-trd/blob/main/src/zx_emu/aySoundSoft.c
 #include "aySoundSoft.h"
 #include "stdbool.h"
-#include "pico/platform.h"
-
-#define FAST_FUNC __time_critical_func
 
 uint8_t N_sel_reg=0;
 

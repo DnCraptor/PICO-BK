@@ -1,9 +1,12 @@
 #pragma once
 #include "inttypes.h" 
+#include "pico/platform.h"
 
-void AY_select_reg(uint8_t N_reg);
+#define FAST_FUNC __time_critical_func
+
+void FAST_FUNC(AY_select_reg)(uint8_t N_reg);
 uint8_t AY_get_reg();
-void AY_set_reg(uint8_t val);
+void FAST_FUNC(AY_set_reg)(uint8_t val);
 
 uint8_t*  get_AY_Out(uint8_t delta);
 void  AY_reset();

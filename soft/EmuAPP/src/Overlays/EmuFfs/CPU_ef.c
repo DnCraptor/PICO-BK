@@ -460,10 +460,7 @@ TCPU_Arg AT_OVL CPU_WriteB (TCPU_Arg Adr, uint_fast8_t Byte) {
                 true_covox = Device_Data.SysRegs.WrReg177716;
 #endif
 #ifdef AYSOUND
-				if (Adr & 1) {
-					Word >>= 8; // работаем со старшим байтом
-				}
-                AY_set_reg(Word & 0377);
+                AY_set_reg(Adr & 1 ? (Word >> 8) & 0377 : Word & 0377);
 #endif
             }
             break;
