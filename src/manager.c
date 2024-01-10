@@ -144,7 +144,7 @@ static void reset(uint8_t cmd) {
     tormoz = 6;
     true_covox = 0;
 #ifdef AYSOUND
-    AY_reset();
+    AY_reset(2);
 #endif
     memset(RAM, 0, sizeof RAM);
     graphics_set_page(CPU_PAGE51_MEM_ADR, is_bk0011mode() ? 15 : 0);

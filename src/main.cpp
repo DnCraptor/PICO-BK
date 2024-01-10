@@ -101,9 +101,10 @@ bool __not_in_flash_func(AY_timer_callback)(repeating_timer_t *rt) {
    // outL = outR = 0;
 #ifdef AYSOUND
     if (is_ay_on) {
-        uint8_t* AY_data = get_AY_Out(5);
-        outL = (int16_t)2 * (AY_data[0] + AY_data[1]);
-        outR = (int16_t)2 * (AY_data[2] + AY_data[1]);
+        uint8_t* AY_data0 = get_AY_Out(0, 5);
+        uint8_t* AY_data1 = get_AY_Out(1, 5);
+        outL = ((2 * AY_data0[0] + 2 * AY_data0[3] + AY_data0[1] +AY_data0[4]));
+        outR = ((2 * AY_data0[2] + 2 * AY_data0[5] + AY_data0[1] +AY_data0[4]));
     }
 #endif
 #ifdef COVOX

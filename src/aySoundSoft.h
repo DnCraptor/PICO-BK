@@ -4,13 +4,21 @@
 
 #define FAST_FUNC __time_critical_func
 
-void FAST_FUNC(AY_select_reg)(uint8_t N_reg);
+void AY_select_reg(uint8_t N_reg);
 uint8_t AY_get_reg();
-void FAST_FUNC(AY_set_reg)(uint8_t val);
+void AY_set_reg(uint8_t val);
 
-uint8_t*  get_AY_Out(uint8_t delta);
-void  AY_reset();
+
+uint8_t* get_AY_Out(uint8_t g_chip,uint8_t delta);
+/*"-=[Sound OFF]=-", - 0
+  "  Only Beeper  ", - 1
+  " Beeper+SoftAY ", - 2
+  " Beeper+SoftTS ", - 3
+  " HW TurboSound " - 4
+*/
+void  AY_reset(uint8_t s_mode);
 void AY_print_state_debug();
+void AY_to595Beep(bool Beep);
 void AY_write_address(uint16_t addr);
 
 #ifdef MNGR_DEBUG
