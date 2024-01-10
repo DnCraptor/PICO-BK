@@ -84,12 +84,6 @@ void inInit(uint gpio) {
 extern "C" {
 #include "aySoundSoft.h"
 }
-extern "C" volatile bool is_covox_on;
-extern "C" volatile bool is_ay_on;
-extern "C" volatile bool is_sound_on;
-extern "C" volatile uint8_t snd_divider;
-extern "C" volatile int8_t covox_multiplier;
-extern "C" volatile uint16_t true_covox;
 
 #ifdef SOUND_SYSTEM
 bool __not_in_flash_func(AY_timer_callback)(repeating_timer_t *rt) {
@@ -98,27 +92,33 @@ bool __not_in_flash_func(AY_timer_callback)(repeating_timer_t *rt) {
     if (!is_sound_on) {
         return true;
     }
-    register uint8_t r_divider = snd_divider + 4; // TODO: tune up divider per channel
-    register uint16_t r_v = (uint16_t)((int32_t)outR + 0x8000L) >> r_divider;
-    register uint8_t l_divider = snd_divider + 4;
-    register uint16_t l_v = (uint16_t)((int32_t)outL + 0x8000L) >> l_divider;
-    pwm_set_gpio_level(PWM_PIN0, r_v); // Право
-    pwm_set_gpio_level(PWM_PIN1, l_v); // Лево
+  //  register uint8_t r_divider = snd_divider + 4; // TODO: tune up divider per channel
+  //  register uint16_t r_v = (uint16_t)((int32_t)outR + 0x8000L) >> r_divider;
+  //  register uint8_t l_divider = snd_divider + 4;
+  //  register uint16_t l_v = (uint16_t)((int32_t)outL + 0x8000L) >> l_divider;
+    pwm_set_gpio_level(PWM_PIN0, outR); // Право
+    pwm_set_gpio_level(PWM_PIN1, outL); // Лево
+   // outL = outR = 0;
 #ifdef AYSOUND
     if (is_ay_on) {
         uint8_t* AY_data = get_AY_Out(5);
-        outL = 2 * (AY_data[0] + AY_data[1]);
-        outR = 2 * (AY_data[2] + AY_data[1]);
+        outL = (int16_t)2 * (AY_data[0] + AY_data[1]);
+        outR = (int16_t)2 * (AY_data[2] + AY_data[1]);
     }
 #endif
 #ifdef COVOX
-    if (is_covox_on && true_covox) {
-        register uint32_t d = covox_multiplier;
-        register int32_t v = ((int32_t)true_covox - (int32_t)0x80) << d;
-        outL += (int16_t)v; // 8 unsigned to signed 16
-        outR += (int16_t)v;
+    if (!outR && !outL && is_covox_on && true_covox) {
+        outL = true_covox;
+        outR = true_covox;
     }
 #endif
+    if (outR || outL) {
+        register uint32_t d = covox_multiplier;
+        register int32_t v_l = ((int32_t)outL - (int32_t)0x80) << d;
+        register int32_t v_r = ((int32_t)outR - (int32_t)0x80) << d;
+        outL = (int16_t)v_l; // 8 unsigned to signed 16
+        outR = (int16_t)v_r;
+    }
     return true;
 }
 #endif
