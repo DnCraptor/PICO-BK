@@ -164,7 +164,7 @@ target_compile_definitions(${PROJECT_NAME} PRIVATE
         #DSK_DEBUG=1
 
         SOUND_SYSTEM
-        #COVOX
+        COVOX
         AYSOUND
 
         # select onr of the folowing:

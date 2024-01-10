@@ -457,10 +457,14 @@ TCPU_Arg AT_OVL CPU_WriteB (TCPU_Arg Adr, uint_fast8_t Byte) {
                 uint_fast32_t Reg = (Word & 0xFF) >> 1;
                 if (Device_Data.SysRegs.WrReg177716 & 0100) Reg += 0x80;
 #ifdef COVOX
-                true_covox = Device_Data.SysRegs.WrReg177716;
+                if (is_covox_on) {
+                    true_covox = Device_Data.SysRegs.WrReg177716;
+                }
 #endif
 #ifdef AYSOUND
-                AY_set_reg(~(Adr & 1 ? (Word >> 8) : Word & 0xFF));
+                if (is_ay_on) {
+                    AY_set_reg(~(Adr & 1 ? (Word >> 8) : Word & 0xFF));
+                }
 #endif
             }
             break;

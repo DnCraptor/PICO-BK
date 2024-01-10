@@ -20,3 +20,10 @@ extern void logMsg(char* msg);
 #else
 #define DBGM_PRINT( X)
 #endif
+
+extern volatile bool is_covox_on;
+extern volatile bool is_ay_on;
+extern volatile bool is_sound_on;
+extern volatile uint8_t snd_divider;
+extern volatile int8_t covox_multiplier;
+extern volatile uint16_t true_covox;

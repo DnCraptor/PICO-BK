@@ -57,7 +57,7 @@ static volatile bool ePressed = false;
 static volatile bool uPressed = false;
 static volatile bool hPressed = false;
 
-volatile bool is_covox_on = true;
+volatile bool is_covox_on = false;
 volatile bool is_ay_on = true;
 volatile bool is_sound_on = true;
 volatile uint8_t snd_divider = 0;
@@ -1106,6 +1106,10 @@ static inline void if_sound_control() { // core #0
     } else if (ctrlPressed && minusPressed && altPressed) {
         covox_mix = covox_mix >> 1;
         minusPressed = false;
+    } else if (ctrlPressed && tabPressed && cPressed) {
+        is_covox_on = !is_covox_on;
+        is_ay_on = !is_covox_on;
+        cPressed = false;
     }
 }
 

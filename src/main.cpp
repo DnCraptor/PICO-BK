@@ -84,17 +84,11 @@ void inInit(uint gpio) {
 extern "C" {
 #include "aySoundSoft.h"
 }
-extern "C" volatile bool is_covox_on;
-extern "C" volatile bool is_ay_on;
-extern "C" volatile bool is_sound_on;
-extern "C" volatile uint8_t snd_divider;
-extern "C" volatile int8_t covox_multiplier;
-extern "C" volatile uint16_t true_covox;
 
 #ifdef SOUND_SYSTEM
 bool __not_in_flash_func(AY_timer_callback)(repeating_timer_t *rt) {
-    static uint16_t outL = 0;  
-    static uint16_t outR = 0;
+    static int16_t outL = 0;  
+    static int16_t outR = 0;
     if (!is_sound_on) {
         return true;
     }
@@ -108,18 +102,23 @@ bool __not_in_flash_func(AY_timer_callback)(repeating_timer_t *rt) {
 #ifdef AYSOUND
     if (is_ay_on) {
         uint8_t* AY_data = get_AY_Out(5);
-        outL = (uint16_t)2 * (AY_data[0] + AY_data[1]);
-        outR = (uint16_t)2 * (AY_data[2] + AY_data[1]);
+        outL = (int16_t)2 * (AY_data[0] + AY_data[1]);
+        outR = (int16_t)2 * (AY_data[2] + AY_data[1]);
     }
 #endif
 #ifdef COVOX
-    if (is_covox_on && true_covox) {
-        register uint32_t d = covox_multiplier;
-        register int32_t v = ((int32_t)true_covox - (int32_t)0x80) << d;
-        outL += (int16_t)v; // 8 unsigned to signed 16
-        outR += (int16_t)v;
+    if (!outR && !outL && is_covox_on && true_covox) {
+        outL = true_covox;
+        outR = true_covox;
     }
 #endif
+    if (outR || outL) {
+        register uint32_t d = covox_multiplier;
+        register int32_t v_l = ((int32_t)outL - (int32_t)0x80) << d;
+        register int32_t v_r = ((int32_t)outR - (int32_t)0x80) << d;
+        outL = (int16_t)v_l; // 8 unsigned to signed 16
+        outR = (int16_t)v_r;
+    }
     return true;
 }
 #endif
