@@ -364,7 +364,7 @@ TCPU_Arg AT_OVL CPU_WriteW (TCPU_Arg Adr, uint_fast16_t Word) {
                 Device_Data.SysRegs.WrReg177716 = (uint16_t) Word;
                 uint_fast32_t Reg = *(uint8_t *) &Device_Data.SysRegs.WrReg177714 >> 1;
                 if (Word & 0100) Reg += 0x80;
-                // ???
+                AY_to_beep(Word != 0);
                 true_covox = Device_Data.SysRegs.WrReg177716;
             }
             break;
@@ -463,7 +463,7 @@ TCPU_Arg AT_OVL CPU_WriteB (TCPU_Arg Adr, uint_fast8_t Byte) {
 #endif
 #ifdef AYSOUND
                 if (is_ay_on) {
-                    AY_set_reg(~(Adr & 1 ? (Word >> 8) : Word & 0xFF));
+                    AY_write_data(~(Adr & 1 ? (Word >> 8) : Word & 0xFF));
                 }
 #endif
             }
@@ -478,7 +478,7 @@ TCPU_Arg AT_OVL CPU_WriteB (TCPU_Arg Adr, uint_fast8_t Byte) {
                 {
                     uint_fast32_t Reg = *(uint8_t *) &Device_Data.SysRegs.WrReg177714 >> 1;
                     if (Word & 0100) Reg += 0x80;
-                    /// ???
+                    AY_to_beep(Word != 0);
                     true_covox = Device_Data.SysRegs.WrReg177716;
                 }
             }

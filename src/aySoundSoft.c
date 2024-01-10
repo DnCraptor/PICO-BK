@@ -2,20 +2,6 @@
 #include "stdbool.h"
 #include "string.h"
 
-/* send595() 0x4000 -  AY_Enable,Beep - 0x1000,,0x0800 выбор второго чипа АУ, 0x400 выбор первого чипа
-				0x0200	BDIR pin AY, 0x0100 BC1 pin AY */
-
-static const uint8_t cfg_tschip_order=0;
-
-static uint8_t N_sel_reg=0;
-
-static uint8_t c_chip=0;
-static uint8_t sound_mode=0;
-static uint8_t outs[6];
-
-uint16_t Beeper = 0x0000;  //Хранитель состояния бипера
-
-
 typedef struct ay_regs_t {
 	uint16_t ay_R1_R0;
 	uint16_t ay_R3_R2;
@@ -40,38 +26,28 @@ typedef struct ay_regs_t {
 	uint8_t ampl_ENV;
 	bool is_env_inv_enum; //инверсия последовательности огибающей
 	uint32_t envelope_ay_count;
+	uint8_t N_sel_reg;
 } ay_regs_t;
 
-static ay_regs_t chips[2];
+/* send595() 0x4000 -  AY_Enable,Beep - 0x1000,,0x0800 выбор второго чипа АУ, 0x400 выбор первого чипа
+				0x0200	BDIR pin AY, 0x0100 BC1 pin AY */
 
-void __not_in_flash_func(AY_to595Beep)(bool Beep){ 
-	if (Beep) { Beeper = 0x1000;} else {Beeper = 0x0000;};
-	// send595( Beeper | 0x4000 );
-	//send_to_595( Beeper | 0x4000 );
-};
+static const uint8_t cfg_tschip_order = 0;
+static uint16_t m_nChipSel = 0;
+static uint8_t sound_mode = 0;
+static uint8_t outs[6] = { 0 };
 
+static uint16_t Beeper = 0x0000;  //Хранитель состояния бипера
 
-void __not_in_flash_func(AY_select_reg)(uint8_t N_reg){
-	N_sel_reg=N_reg;
-	if(sound_mode>=3){
-		if(cfg_tschip_order==0){
-			if(N_reg==0xFE){c_chip=0;}  
-			if(N_reg==0xFF){c_chip=1;}
-		} else if(cfg_tschip_order==1){
-			if(N_reg==0xFE){c_chip=1;}  
-			if(N_reg==0xFF){c_chip=0;}
-		}
+static ay_regs_t chips[2] = { { 0 }, { 0 } };
 
-	//	if (sound_mode == 4){
-	//		if (c_chip == 0) {send_to_595(Beeper | 0x4700 | N_reg); send_to_595(Beeper | 0x4400 | N_reg);};
-	//		if (c_chip == 1) {send_to_595(Beeper | 0x4B00 | N_reg); send_to_595(Beeper | 0x4800 | N_reg);}
-	//	}   
-		//printf("TS CS %d\n",c_chip);
-		//AY_print_state_debug();
-	} else {
-		c_chip=0;
-	}
-};
+void __not_in_flash_func(AY_to_beep)(bool Beep){ 
+	Beeper = Beep ? 0x1000 : 0x0000;
+}
+
+void __not_in_flash_func(AY_select_reg)(uint8_t g_chip, uint8_t N_reg) {
+	chips[g_chip].N_sel_reg = N_reg;
+}
 
 void  __not_in_flash_func(AY_reset)(uint8_t s_mode){
 	//printf("AY RST\n");
@@ -106,14 +82,9 @@ void  __not_in_flash_func(AY_reset)(uint8_t s_mode){
 	
 	chips[0]=chip;
 	chips[1]=chip;
-
-//	if (sound_mode == 4){
-//		send_to_595(0x0000); sleep_us(500); send_to_595(0x4000);   
-//	}
 };
 
 void AY_print_state_debug(){
-	printf("\n AY SEL %d\n",c_chip);
 	ay_regs_t chip = chips[0];
 	printf("\n AY CHIP 1\n");
 	printf("R1_R0:[%04X]\n",chip.ay_R1_R0);
@@ -142,36 +113,11 @@ void AY_print_state_debug(){
 	printf("R13:[%02X]\n",chip.ay_R13);
 	printf("R14:[%02X]\n",chip.ay_R14);
 	printf("R15:[%02X]\n",chip.ay_R15);
-	
 };
 
-uint8_t __not_in_flash_func(AY_get_reg)(){
-	ay_regs_t chip = chips[c_chip];
-	switch (N_sel_reg){
-		case 0: return (chip.ay_R1_R0)&0xff;
-		case 1: return (chip.ay_R1_R0>>8)&0xff;
-		case 2: return (chip.ay_R3_R2)&0xff;
-		case 3: return (chip.ay_R3_R2>>8)&0xff;
-		case 4: return (chip.ay_R5_R4)&0xff;
-		case 5: return (chip.ay_R5_R4>>8)&0xff;
-		case 6: return chip.ay_R6;
-		case 7: return chip.ay_R7;
-		case 8: return chip.ay_R8;
-		case 9: return chip.ay_R9;
-		case 10: return chip.ay_R10;
-		case 11: return (chip.ay_R12_R11)&0xff;
-		case 12: return (chip.ay_R12_R11>>8)&0xff;
-		case 13: return chip.ay_R13;
-		case 14: return chip.ay_R14;
-		case 15: return chip.ay_R15;
-		default: return 0;
-	}
-	
-};
-
-void __not_in_flash_func(AY_set_reg)(uint8_t val){
-	ay_regs_t chip = chips[c_chip];
-	switch (N_sel_reg){
+void __not_in_flash_func(AY_set_reg)(uint8_t chip_n, uint8_t val){
+	ay_regs_t chip = chips[chip_n];
+	switch (chip.N_sel_reg){
 		case 0:
 		chip.ay_R1_R0=(chip.ay_R1_R0&0xff00)|val;
 		break;
@@ -226,22 +172,7 @@ void __not_in_flash_func(AY_set_reg)(uint8_t val){
 		default:
 		break;
 	}
-	chips[c_chip]=chip;
-	//AY_print_state_debug();
-/*
-	if (sound_mode == 4){
-		if (c_chip == 0) {
-			send_to_595(Beeper | 0x4400 | val);
-			send_to_595(Beeper | 0x4600 | val);
-			send_to_595(Beeper | 0x4400 | val);
-		};
-		if (c_chip == 1) {
-			send_to_595(Beeper | 0x4800 | val);
-			send_to_595(Beeper | 0x4A00 | val);
-			send_to_595(Beeper | 0x4800 | val);
-		};
-	}
-*/
+	chips[chip_n] = chip; // refer?
 };
 
 //------------------------
@@ -254,32 +185,13 @@ bool __not_in_flash_func(get_random)(){
 		S >>= 1;
 		return false;
 	};
-
-	
 }
 
-//uint8_t ampls[]={0,1,2,3,4,5,6,8,10,12,16,19,23,28,34,40};//снятя с китайского чипа
-//uint8_t ampls[]={0,3,5,8,11,13,16,19,21,24,27,29,32,35,37,40};//линейная
-//uint8_t ampls[]={0,10,15,20,23,27,29,31,32,33,35,36,38,39,40,40};//выгнутая
-//uint8_t ampls[]={0,1,2,2,3,3,4,6,7,9,12,15,19,25,32,41};//степенная зависимость
+uint8_t ampls[] = {0,2,4,5,7,8,9,11,12,14,16,19,23,28,34,40};//гибрид линейной и китайского чипа
+uint8_t* ampls0 = ampls;
 
-
-uint8_t ampls[]={0,2,4,5,7,8,9,11,12,14,16,19,23,28,34,40};//гибрид линейной и китайского чипа
-uint8_t* ampls0=ampls;
-uint8_t*  __not_in_flash_func(get_AY_Out)(uint8_t g_chip,uint8_t delta){
-	
+uint8_t*  __not_in_flash_func(get_AY_Out)(uint8_t g_chip,uint8_t delta) {
 	ay_regs_t cchip = chips[g_chip];
-	//AY_print_state_debug();
-	
-	/*
-		cchip.main_ay_count_env=0;
-		//отдельные счётчики
-		cchip.chA_count=0;
-		cchip.chB_count=0;
-		cchip.chC_count=0;
-		cchip.noise_ay_count=0;
-	*/
-	
 	/*
 		N регистра	Назначение или содержание	Значение	
 		0, 2, 4 	Нижние 8 бит частоты голосов А, В, С 	0 - 255
@@ -432,11 +344,7 @@ uint8_t*  __not_in_flash_func(get_AY_Out)(uint8_t g_chip,uint8_t delta){
 		outs[4]=chB_bitOut?((cchip.ay_R9&0xf0)?cchip.ampl_ENV:ampls0[cchip.ay_R9]):0; //outB
 		outs[5]=chC_bitOut?((cchip.ay_R10&0xf0)?cchip.ampl_ENV:ampls0[cchip.ay_R10]):0; //outC
 	}
-	
-	
-	//chips[g_chip]=cchip;
-	
-	
+
 	chips[g_chip].chA_count=cchip.chA_count;
 	chips[g_chip].chB_count=cchip.chB_count;
 	chips[g_chip].chC_count=cchip.chC_count;
@@ -452,8 +360,7 @@ uint8_t*  __not_in_flash_func(get_AY_Out)(uint8_t g_chip,uint8_t delta){
 	chips[g_chip].ampl_ENV=cchip.ampl_ENV;
 	
 	return outs;	
-};
-
+}
 
 /*
 Структура PSG - формата
@@ -471,9 +378,24 @@ Data — последовательности пар байтов записи �
 0xFF — ожидание 20 мс.
 0xFE — следующий байт показывает сколько раз выждать по 80 мс.
 */
-void AY_write_address(uint16_t word) {
+void __not_in_flash_func(AY_write_address)(uint16_t word) {
     DBGM_PRINT(("AY_write_address(%04Xh) ~word = %04X", word, ~word));
+	m_nChipSel = ~word & 0140000;
     uint8_t addr = (~word) & 0xff;
     if (addr >= 0xFD && addr <= 0xFE) return;
-    AY_select_reg(addr & 0x0F);
+	if (m_nChipSel & 0100000) {
+        AY_select_reg(0, addr & 0x0F);
+	}
+	if (m_nChipSel & 040000) {
+		AY_select_reg(1, addr & 0x0F);
+	}
+}
+
+void __not_in_flash_func(AY_write_data)(uint8_t byte) {
+	if (m_nChipSel & 0100000) {
+		AY_set_reg(0, byte);
+	}
+	if (m_nChipSel & 040000) {
+		AY_set_reg(1, byte);
+	}
 }
