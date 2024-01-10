@@ -23,42 +23,43 @@ static bool is_envelope_begin=false;
 
 void FAST_FUNC(AY_select_reg)(uint8_t N_reg)
 {
-        N_sel_reg=N_reg;
+    DBGM_PRINT(("AY_select_reg(%d)", N_reg));
+    N_sel_reg = N_reg;
 };
 
 void AY_reset()
 {
+    DBGM_PRINT(("AY_reset"));
     ay_R1_R0=0;
     ay_R3_R2=0;
     ay_R5_R4=0;
     ay_R6=0;
-    ay_R7=0xff;
+    ay_R7=0xFF;
     ay_R8=0;
     ay_R9=0;
     ay_R10=0;
     ay_R12_R11=0;
     ay_R12_R11_sh=0;
     ay_R13=0;
-    ay_R14=0xff;
+    ay_R14=0xFF;
     ay_R15=0;
 
 };
 void AY_print_state_debug()
 {
-    printf("AY STATE\n");
-    printf("%d\n",ay_R1_R0);
-    printf("%d\n",ay_R3_R2);
-    printf("%d\n",ay_R5_R4);
-    printf("%d\n",ay_R6);
-    printf("%d\n",ay_R7);
-    printf("%d\n",ay_R8);
-    printf("%d\n",ay_R9);
-    printf("%d\n",ay_R10);
-    printf("%d\n",ay_R12_R11);
-    printf("%d\n",ay_R13);
-    printf("%d\n",ay_R14);
-    printf("%d\n",ay_R15);
-   
+    DBGM_PRINT(("AY STATE"));
+    DBGM_PRINT(("%d",ay_R1_R0));
+    DBGM_PRINT(("%d",ay_R3_R2));
+    DBGM_PRINT(("%d",ay_R5_R4));
+    DBGM_PRINT(("%d",ay_R6));
+    DBGM_PRINT(("%d",ay_R7));
+    DBGM_PRINT(("%d",ay_R8));
+    DBGM_PRINT(("%d",ay_R9));
+    DBGM_PRINT(("%d",ay_R10));
+    DBGM_PRINT(("%d",ay_R12_R11));
+    DBGM_PRINT(("%d",ay_R13));
+    DBGM_PRINT(("%d",ay_R14));
+    DBGM_PRINT(("%d",ay_R15));
 };
 uint8_t FAST_FUNC(AY_get_reg)()
     {
@@ -90,7 +91,8 @@ uint8_t FAST_FUNC(AY_get_reg)()
 
 void FAST_FUNC(AY_set_reg)(uint8_t val)
     {
-         switch (N_sel_reg)
+        DBGM_PRINT(("AY_set_reg(%02Xh)", val));
+        switch (N_sel_reg)
         {
         case 0:
             ay_R1_R0=(ay_R1_R0&0xff00)|val;
@@ -421,7 +423,8 @@ Data — последовательности пар байтов записи �
 0xFE — следующий байт показывает сколько раз выждать по 80 мс.
 */
 void AY_write_address(uint16_t word) {
-    uint8_t addr = ~word & 0xff;
-    addr &= 0x0f; // выделяем номер адреса регистра
-    AY_set_reg(addr);
+    DBGM_PRINT(("AY_write_address(%04Xh) ~word = %04X", word, ~word));
+    uint8_t addr = (~word) & 0xff;
+    if (addr >= 0xFD && addr <= 0xFE) return;
+    AY_select_reg(addr & 0x0F);
 }

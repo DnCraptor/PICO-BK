@@ -12,3 +12,11 @@ uint8_t*  get_AY_Out(uint8_t delta);
 void  AY_reset();
 void AY_print_state_debug();
 void AY_write_address(uint16_t addr);
+
+#ifdef MNGR_DEBUG
+extern void logMsg(char* msg);
+#define printf(...) { char tmp[80]; snprintf(tmp, 80, __VA_ARGS__); logMsg(tmp); }
+#define DBGM_PRINT( X) printf X
+#else
+#define DBGM_PRINT( X)
+#endif
