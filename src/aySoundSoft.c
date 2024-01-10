@@ -79,9 +79,11 @@ void  __not_in_flash_func(AY_reset)(uint8_t s_mode){
 	chip.ampl_ENV=0;
 	chip.is_env_inv_enum=true;
 	chip.envelope_ay_count=0;
+	chip.N_sel_reg = 0;
 	
 	chips[0]=chip;
 	chips[1]=chip;
+	m_nChipSel = 0;
 };
 
 void AY_print_state_debug(){
@@ -383,19 +385,28 @@ void __not_in_flash_func(AY_write_address)(uint16_t word) {
 	m_nChipSel = ~word & 0140000;
     uint8_t addr = (~word) & 0xff;
     if (addr >= 0xFD && addr <= 0xFE) return;
-	if (m_nChipSel & 0100000) {
+	if (!is_ay2_on) {
         AY_select_reg(0, addr & 0x0F);
 	}
-	if (m_nChipSel & 040000) {
-		AY_select_reg(1, addr & 0x0F);
+	else {
+		if (m_nChipSel & 0100000) {
+            AY_select_reg(0, addr & 0x0F);
+	    }
+	    if (m_nChipSel & 040000) {
+		    AY_select_reg(1, addr & 0x0F);
+		}
 	}
 }
 
 void __not_in_flash_func(AY_write_data)(uint8_t byte) {
-	if (m_nChipSel & 0100000) {
+	if (!is_ay2_on) {
 		AY_set_reg(0, byte);
-	}
-	if (m_nChipSel & 040000) {
-		AY_set_reg(1, byte);
+	} else {
+		if (m_nChipSel & 0100000) {
+		    AY_set_reg(0, byte);
+	    }
+	    if (m_nChipSel & 040000) {
+		    AY_set_reg(1, byte);
+		}
 	}
 }

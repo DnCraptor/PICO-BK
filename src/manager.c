@@ -40,6 +40,7 @@ static volatile bool f10Pressed = false;
 static volatile bool f11Pressed = false;
 static volatile bool f12Pressed = false;
 static volatile bool tabPressed = false;
+static volatile bool shiftPressed = false;
 volatile bool escPressed = false;
 static volatile bool leftPressed = false;
 static volatile bool rightPressed = false;
@@ -59,6 +60,7 @@ static volatile bool hPressed = false;
 
 volatile bool is_covox_on = false;
 volatile bool is_ay_on = true;
+volatile bool is_ay2_on = false;
 volatile bool is_sound_on = true;
 volatile uint8_t snd_divider = 0;
 volatile int8_t covox_multiplier = 7;
@@ -1091,24 +1093,28 @@ static inline void enter_pressed() {
 }
 
 static inline void if_sound_control() { // core #0
-    if (ctrlPressed && plusPressed && !altPressed) {
+  if (ctrlPressed)
+    if (plusPressed && !altPressed) {
         covox_multiplier++;
         if(covox_multiplier > 8) covox_multiplier = 8;
         plusPressed = false;
-    } else if (ctrlPressed && minusPressed && !altPressed) {
+    } else if (minusPressed && !altPressed) {
         covox_multiplier--;
         if(covox_multiplier < 0) covox_multiplier = 0;
         minusPressed = false;
-    } else if (ctrlPressed && plusPressed && altPressed) {
+    } else if (plusPressed && altPressed) {
         covox_mix = covox_mix << 1 | 01;
         if (covox_mix > 0x3F) covox_mix = 0x3F;
         plusPressed = false;
-    } else if (ctrlPressed && minusPressed && altPressed) {
+    } else if (minusPressed && altPressed) {
         covox_mix = covox_mix >> 1;
         minusPressed = false;
-    } else if (ctrlPressed && tabPressed && cPressed) {
+    } else if (tabPressed && cPressed) {
         is_covox_on = !is_covox_on;
         is_ay_on = !is_covox_on;
+        cPressed = false;
+    } else if (shiftPressed && cPressed) {
+        is_ay2_on = !is_ay2_on;
         cPressed = false;
     }
 }
@@ -1296,6 +1302,14 @@ bool handleScancode(uint32_t ps2scancode) { // core 1
         break;
       case 0xB8:
         altPressed = false;
+        break;
+      case 0x2A:
+      case 0x36:
+        shiftPressed = true;
+        break;
+      case 0xAA:
+      case 0xB6:
+        shiftPressed = false;
         break;
       case 0x0E:
         backspacePressed = true;

@@ -30,6 +30,7 @@ extern void logMsg(char* msg);
 
 extern volatile bool is_covox_on;
 extern volatile bool is_ay_on;
+extern volatile bool is_ay2_on;
 extern volatile bool is_sound_on;
 extern volatile uint8_t snd_divider;
 extern volatile int8_t covox_multiplier;

@@ -93,7 +93,8 @@ Extra PSRAM support on pi pico pins:
 <li>Ctrl + Alt + "-" - уменьшить громкость обратной шипелки (при загрузке с магнитофона)</li>
 <li>Ctrl + Tab + "+" - увеличить частоту микроконтроллера</li>
 <li>Ctrl + Tab + "-" - уменьшить частоту микроконтроллера</li>
-<li>Ctrl + Tab + "C" - переключение между AY-3-8910 и Covox</li>
+<li>Ctrl + Tab + "C" - переключение между AY-3-8910 (default) и Covox</li>
+<li>Ctrl + Shift + "C" - переключение между одним AY-3-8910 (default) и двумя (Грифон)</li>
 <li>Ctrl + Tab + Backspace - перемонтировать fdd0.img и fdd1.img (поменяв их местами)</li>
 <li>Num Lock - переключение клавиш в режим джойстика (не тестировалось)</li>
 </ul>
