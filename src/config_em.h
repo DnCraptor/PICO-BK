@@ -11,6 +11,7 @@ typedef enum BK_MODE {
 
 typedef struct config_em {
     bool is_covox_on;
+    bool is_AY_on;
     bool color_mode;
     bk_mode_t bk0010mode;
     int8_t snd_volume;

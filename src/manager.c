@@ -1116,6 +1116,9 @@ static inline void if_sound_control() { // core #0
     } else if (ctrlPressed && tabPressed && cPressed) {
         g_conf.is_covox_on = !g_conf.is_covox_on;
         cPressed = false;
+    } else if (ctrlPressed && tabPressed && aPressed) {
+        g_conf.is_AY_on = !g_conf.is_AY_on;
+        cPressed = false;
     }
 }
 

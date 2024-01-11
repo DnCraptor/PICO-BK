@@ -26,9 +26,10 @@ extern "C" {
 
 config_em_t g_conf {
    true, // is_covox_on
+   true, // is_AY_on
    true, // color_mode
    BK_0010_01, // bk0010mode
-   7, // snd_volume
+   0, // snd_volume
 };
 
 bool PSRAM_AVAILABLE = false;
@@ -99,32 +100,33 @@ bool __not_in_flash_func(AY_timer_callback)(repeating_timer_t *rt) {
     static uint16_t outR = 0;
     pwm_set_gpio_level(PWM_PIN0, outR); // Право
     pwm_set_gpio_level(PWM_PIN1, outL); // Лево
+    outL = outR = 0;
 #ifdef AYSOUND
-    if (!g_conf.is_covox_on) {
+    if (g_conf.is_AY_on) {
         uint8_t* AY_data = get_AY_Out(5);
-        if (g_conf.snd_volume > 6) {
-            register uint8_t mult = g_conf.snd_volume - 6;
+        if (g_conf.snd_volume >= 0) {
+            register uint8_t mult = g_conf.snd_volume + 1;
             if (mult > 16) mult = 16;
             outL = ((uint16_t)AY_data[0] + AY_data[1]) << mult;
             outR = ((uint16_t)AY_data[2] + AY_data[1]) << mult;
         } else {
-            register int8_t div = 6 - g_conf.snd_volume;
-            if (div < 0) div = 0;
+            register int8_t div = -g_conf.snd_volume;
+            if (div > 16) div = 16;
             outL = ((uint16_t)AY_data[0] + AY_data[1]) >> div;
             outR = ((uint16_t)AY_data[2] + AY_data[1]) >> div;
         }
     }
 #endif
 #ifdef COVOX
-    if (g_conf.is_covox_on && (true_covox || az_covox_L || az_covox_R)) {
-        if (g_conf.snd_volume > 7) {
-            register uint8_t mult = g_conf.snd_volume - 7;
+    if (!outL && !outR && g_conf.is_covox_on && (true_covox || az_covox_L || az_covox_R)) {
+        if (g_conf.snd_volume >= 0) {
+            register uint8_t mult = g_conf.snd_volume;
             if (mult > 16) mult = 16;
-            outL = (az_covox_L + (uint16_t)true_covox) << mult;
-            outR = (az_covox_R + (uint16_t)true_covox) << mult;
+            outL += (az_covox_L + (uint16_t)true_covox) << mult;
+            outR += (az_covox_R + (uint16_t)true_covox) << mult;
         } else {
-            register int8_t div = 7 - g_conf.snd_volume;
-            if (div < 0) div = 0;
+            register int8_t div = -g_conf.snd_volume;
+            if (div > 16) div = 16;
             outL = (az_covox_L + (uint16_t)true_covox) >> div;
             outR = (az_covox_R + (uint16_t)true_covox) >> div;
         }
