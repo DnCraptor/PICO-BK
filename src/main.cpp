@@ -95,8 +95,8 @@ extern "C" {
 
 #ifdef SOUND_SYSTEM
 bool __not_in_flash_func(AY_timer_callback)(repeating_timer_t *rt) {
-    static int16_t outL = 0;  
-    static int16_t outR = 0;
+    static uint16_t outL = 0;  
+    static uint16_t outR = 0;
     pwm_set_gpio_level(PWM_PIN0, outR); // Право
     pwm_set_gpio_level(PWM_PIN1, outL); // Лево
 #ifdef AYSOUND
@@ -105,37 +105,37 @@ bool __not_in_flash_func(AY_timer_callback)(repeating_timer_t *rt) {
         if (g_conf.snd_volume > 6) {
             register uint8_t mult = g_conf.snd_volume - 6;
             if (mult > 16) mult = 16;
-            outL = (int16_t)((AY_data[0] + AY_data[1]) << mult);
-            outR = (int16_t)((AY_data[2] + AY_data[1]) << mult);
+            outL = ((uint16_t)AY_data[0] + AY_data[1]) << mult;
+            outR = ((uint16_t)AY_data[2] + AY_data[1]) << mult;
         } else {
             register int8_t div = 6 - g_conf.snd_volume;
             if (div < 0) div = 0;
-            outL = (int16_t)((AY_data[0] + AY_data[1]) >> div);
-            outR = (int16_t)((AY_data[2] + AY_data[1]) >> div);
+            outL = ((uint16_t)AY_data[0] + AY_data[1]) >> div;
+            outR = ((uint16_t)AY_data[2] + AY_data[1]) >> div;
         }
     }
 #endif
 #ifdef COVOX
-    if (g_conf.is_covox_on && true_covox) {
+    if (g_conf.is_covox_on && (true_covox || az_covox_L || az_covox_R)) {
         if (g_conf.snd_volume > 7) {
             register uint8_t mult = g_conf.snd_volume - 7;
             if (mult > 16) mult = 16;
-            outL = true_covox << mult;
-            outR = true_covox << mult;
+            outL = (az_covox_L + (uint16_t)true_covox) << mult;
+            outR = (az_covox_R + (uint16_t)true_covox) << mult;
         } else {
-            register int8_t div = 6 - g_conf.snd_volume;
+            register int8_t div = 7 - g_conf.snd_volume;
             if (div < 0) div = 0;
-            outL = true_covox >> div;
-            outR = true_covox >> div;
+            outL = (az_covox_L + (uint16_t)true_covox) >> div;
+            outR = (az_covox_R + (uint16_t)true_covox) >> div;
         }
     }
 #endif
-    if (outR || outL) {
-        register int32_t v_l = ((int32_t)outL - (int32_t)0x8000);
-        register int32_t v_r = ((int32_t)outR - (int32_t)0x8000);
-        outL = (int16_t)v_l;
-        outR = (int16_t)v_r;
-    }
+//    if (outR || outL) {
+//        register int32_t v_l = ((int32_t)outL - (int32_t)0x8000);
+//        register int32_t v_r = ((int32_t)outR - (int32_t)0x8000);
+//        outL = (uint16_t)v_l;
+//        outR = (uint16_t)v_r;
+//    }
     return true;
 }
 #endif

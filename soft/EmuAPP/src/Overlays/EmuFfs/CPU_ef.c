@@ -337,6 +337,52 @@ TCPU_Arg AT_OVL CPU_WriteW (TCPU_Arg Adr, uint_fast16_t Word) {
             Device_Data.Timer.T     = 0;
             Device_Data.Timer.Div   = (~Word >> 4) & 6;
             break;
+/*
+10. COVOX
+набор регистров доступных и по чтению и по записи
+177200 - 16bit левый канал
+177202 - 16bit правый канал
+177204 - 16bit моно, иначе говоря запись в этот регистр приводит к фактической одновременной записи в регистры 177200 и 177202
+177206 - 8bit стерео/mono, иначе говоря запись в этот регистр приводит к фактической одновременной записи в
+регистры 177200 и 177202 - в старший байт
+режимы stereo/momo определяются по байтовой записи
+те если писать слово в 177206 то это будет стерео
+а если писать младший байт в 177206 то данные будут трактоваться как моно
+
+запись в 177714 мультирежимная
+ибо у нас есть 2 варианта ковокса
+1. моно 8bit - запись в младший байт
+2. стерео 8bit - МЛБ - левый СТБ-правый
+переключать режимы через регистр 177212
+
+соответственно запись в 177714
+тоже приводит к фактической одновременной записи в 177200 и 177202
+обеспечивая полную совместимость со старым софтом
+
+Регистр управления звуком - 177212
+биты:
+00 - легаси перехват ковокса в 177714: 0=моно 1=стерео
+01 - =0 разрешен легаси перехват 177714 =1 запрещен
+02 - =0 разрешен перехват 177716 =1 запрещен
+перехват спикера сделан 3х битный
+03 - =0 YM2149 =1 AY8910 тип эмуляции PSG
+*/
+        case (0177200 >> 1):
+            az_covox_L = (uint16_t) Word;
+            break;
+        case (0177202 >> 1):
+            az_covox_R = (uint16_t) Word;
+            break;
+        case (0177204 >> 1):
+            az_covox_R = (uint16_t) Word;
+            az_covox_L = (uint16_t) Word;
+            break;
+        case (0177206 >> 1):
+            az_covox_R = (uint16_t) Word & 0xFF00;
+            az_covox_L = (uint16_t) Word << 8;
+            break;
+        case (0177212 >> 1):// mode
+            break;
         case (0177714 >> 1):
 			/*177714
 			Регистр параллельного программируемого порта ввода вывода - два регистра, входной по чтению и выходной по записи.
@@ -348,10 +394,15 @@ TCPU_Arg AT_OVL CPU_WriteW (TCPU_Arg Adr, uint_fast16_t Word) {
                 uint_fast32_t Reg = (Word & 0xFF) >> 1;
                 if (Device_Data.SysRegs.WrReg177716 & 0100) Reg += 0x80;
 #ifdef COVOX
-                true_covox = Device_Data.SysRegs.WrReg177716;
+                if (g_conf.is_covox_on) { // TODO: stereo ?
+                    true_covox = (uint16_t) Word;
+                    Device_Data.SysRegs.RdReg177714 = (uint16_t) Word; // loopback
+                }
 #endif
 #ifdef AYSOUND
-                AY_write_address((uint16_t)Word);
+                if (!g_conf.is_covox_on) {
+                    AY_write_address((uint16_t)Word);
+                }
 #endif
             }
             break;
@@ -364,7 +415,7 @@ TCPU_Arg AT_OVL CPU_WriteW (TCPU_Arg Adr, uint_fast16_t Word) {
                 Device_Data.SysRegs.WrReg177716 = (uint16_t) Word;
                 uint_fast32_t Reg = *(uint8_t *) &Device_Data.SysRegs.WrReg177714 >> 1;
                 if (Word & 0100) Reg += 0x80;
-                // ???
+                // пищалка?
                 true_covox = Device_Data.SysRegs.WrReg177716;
             }
             break;
@@ -451,6 +502,22 @@ TCPU_Arg AT_OVL CPU_WriteB (TCPU_Arg Adr, uint_fast8_t Byte) {
             Device_Data.Timer.T     = 0;
             Device_Data.Timer.Div   = (~Word >> 4) & 6;
             break;
+        case (0177212 >> 1):// mode
+            break;
+        case (0177200 >> 1):
+            az_covox_L = (uint16_t) Word << 8;
+            break;
+        case (0177202 >> 1):
+            az_covox_R = (uint16_t) Word << 8;
+            break;
+        case (0177204 >> 1):
+            az_covox_R = (uint16_t) Word << 8;
+            az_covox_L = (uint16_t) Word << 8;
+            break;
+        case (0177206 >> 1):
+            az_covox_R = (uint16_t) Word << 8;
+            az_covox_L = (uint16_t) Word << 8;
+            break;
         case (0177714 >> 1):
             Device_Data.SysRegs.WrReg177714 = (uint16_t) Word;
             {
@@ -458,7 +525,8 @@ TCPU_Arg AT_OVL CPU_WriteB (TCPU_Arg Adr, uint_fast8_t Byte) {
                 if (Device_Data.SysRegs.WrReg177716 & 0100) Reg += 0x80;
 #ifdef COVOX
                 if (g_conf.is_covox_on) {
-                    true_covox = Device_Data.SysRegs.WrReg177716;
+                    true_covox = (uint16_t) Word;
+                    Device_Data.SysRegs.RdReg177714 = (uint16_t) Word; // loopback (byte?)
                 }
 #endif
 #ifdef AYSOUND
@@ -478,7 +546,7 @@ TCPU_Arg AT_OVL CPU_WriteB (TCPU_Arg Adr, uint_fast8_t Byte) {
                 {
                     uint_fast32_t Reg = *(uint8_t *) &Device_Data.SysRegs.WrReg177714 >> 1;
                     if (Word & 0100) Reg += 0x80;
-                    /// ???
+                    /// пищалка
                     true_covox = Device_Data.SysRegs.WrReg177716;
                 }
             }

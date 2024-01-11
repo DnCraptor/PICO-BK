@@ -23,3 +23,5 @@ extern void logMsg(char* msg);
 #endif
 
 extern volatile uint16_t true_covox;
+extern volatile uint16_t az_covox_R;
+extern volatile uint16_t az_covox_L;

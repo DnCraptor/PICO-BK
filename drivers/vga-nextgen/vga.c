@@ -84,6 +84,8 @@ extern volatile bool manager_started;
 
 // регистр "защёлка" для примитивного ковокса без буфера
 volatile uint16_t true_covox = 0;
+volatile uint16_t az_covox_L = 0;
+volatile uint16_t az_covox_R = 0;
 volatile uint16_t covox_mix = 0x0F;
 
 void graphics_inc_palleter_offset() {

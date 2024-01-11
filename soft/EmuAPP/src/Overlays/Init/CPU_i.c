@@ -63,6 +63,8 @@ void init_rom() {
 }
 
 extern volatile uint16_t true_covox; // vga.h
+extern volatile uint16_t az_covox_R;
+extern volatile uint16_t az_covox_L;
 
 void AT_OVL CPU_Init (void) {
     memset (&Device_Data, 0, sizeof (Device_Data));
@@ -73,11 +75,13 @@ void AT_OVL CPU_Init (void) {
 //  Device_Data.SysRegs.Reg177706   = 0;
 //  Device_Data.SysRegs.Reg177710   = 0177777;
 //  Device_Data.SysRegs.Reg177712   = 0177400;
-//  Device_Data.SysRegs.RdReg177714 = 0;
+    Device_Data.SysRegs.RdReg177714 = 0;
     Device_Data.SysRegs.RdReg177716 = ((!is_bk0011mode() ? 0100000 : 0140000) & 0177400) | 0300;
     Device_Data.SysRegs.WrReg177662  = 047400;
     Device_Data.SysRegs.Wr1Reg177716 = (1 << 12) | 1;
     true_covox = 0;
+    az_covox_R = 0;
+    az_covox_L = 0;
 
 /*
  * бит 0: признак 0-ой дорожки

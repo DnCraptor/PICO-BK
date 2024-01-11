@@ -137,6 +137,8 @@ static void reset(uint8_t cmd) {
     f12Pressed = false;
     tormoz = 6;
     true_covox = 0;
+    az_covox_R = 0;
+    az_covox_L = 0;
 #ifdef AYSOUND
     AY_reset();
 #endif
@@ -1527,6 +1529,9 @@ int if_manager(bool force) {
         return tormoz;
     }
     if (force) {
+        true_covox = 0;
+        az_covox_R = 0;
+        az_covox_L = 0;
         escPressed = false;
         ps2cleanup();
         manager_started = true;
