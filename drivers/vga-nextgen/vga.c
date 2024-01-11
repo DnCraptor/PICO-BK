@@ -13,8 +13,8 @@
 #include "stdlib.h"
 #include "fnt8x16.h"
 #include "pico-vision.h"
+#include "config_em.h"
 
-bool color_mode = true;
 int pallete_mask = 3; // 11 - 2 bits
 
 uint16_t pio_program_VGA_instructions[] = {
@@ -81,93 +81,10 @@ enum graphics_mode_t graphics_mode;
 extern volatile bool manager_started;
 
 // TODO: separate header for sound mixer
-#ifdef SOUND_SYSTEM
-#include <hardware/pwm.h>
-#define PWM_PIN0 (26)
-#define PWM_PIN1 (27)
+
 // регистр "защёлка" для примитивного ковокса без буфера
 volatile uint16_t true_covox = 0;
 volatile uint16_t covox_mix = 0x0F;
-extern volatile int8_t covox_multiplier;
-
-extern volatile bool is_adlib_on;
-extern volatile bool is_covox_on;
-extern volatile bool is_game_balaster_on;
-extern volatile bool is_tandy3v_on;
-extern volatile bool is_dss_on;
-extern volatile bool is_sound_on;
-extern volatile uint8_t snd_divider;
-extern volatile uint8_t dss_divider;
-extern volatile uint8_t adlib_divider;
-extern volatile uint8_t tandy3v_divider;
-
-inline static void sound_callback() {
-    static uint32_t dss_cycles_per_vga = 0;
-    static uint8_t last_dss_sample = 0;
-    static uint32_t adlib_cycles_per_vga = 0;
-    static int sum_adlib_samples = 0;
-
-    dss_cycles_per_vga += 10;
-    adlib_cycles_per_vga += 1;
-    int16_t out_l, out_r, out = 0;
-#if SOUND_BLASTER || ADLIB
-    if (is_adlib_on) {
-        if (adlib_cycles_per_vga > 9) { // TODO: adjust rate
-            adlib_cycles_per_vga = 0;
-        }
-        sum_adlib_samples += adlibgensample_ch(adlib_cycles_per_vga);
-        register uint8_t d = adlib_divider;
-        out += (int16_t)(sum_adlib_samples >> d);
-        if (adlib_cycles_per_vga == 0) {
-            sum_adlib_samples = 0;
-        }
-    }
-#endif
-#if SOUND_BLASTER
-    tickBlaster();
-    out += getBlasterSample();
-#endif
-#if DSS
-    if (is_dss_on) {
-        if (dss_cycles_per_vga >= 50) { // about 7-8kHz, TODO: divide by 4.5
-            last_dss_sample = dss_sample();
-            dss_cycles_per_vga = 0;
-        }
-        register uint8_t d = dss_divider;
-        out += (int16_t)((((int32_t)last_dss_sample - (int32_t)0x0080) << 7) >> d); // 8 unsigned on LPT1 mix to signed 16
-    }
-#endif
-#ifdef COVOX
-    if (is_covox_on && true_covox) {
-        register uint32_t d = covox_multiplier;
-        register int32_t v = ((int32_t)true_covox - (int32_t)0x80) << d;
-        out += (int16_t)v; // 8 unsigned to signed 16
-    }
-#endif
-#ifdef AYSOUND
-    
-#endif
-#ifdef TANDY3V
-    if (is_tandy3v_on) {
-        register uint8_t d = tandy3v_divider;
-        out += d > 8 ? (sn76489_sample() >> (d - 8)) : (sn76489_sample() << (8 - d)); // already signed 16
-    }
-#endif
-    out_l = out;
-    out_r = out;
-#ifdef CMS
-    if (is_game_balaster_on) {
-        cms_samples(&out_l, &out_r);
-    }
-#endif
-    register uint8_t r_divider = snd_divider + 4; // TODO: tume up divider per channel
-    register uint16_t r_v = (uint16_t)((int32_t)out_r + 0x8000L) >> r_divider;
-    register uint8_t l_divider = snd_divider + 4;
-    register uint16_t l_v = (uint16_t)((int32_t)out_l + 0x8000L) >> l_divider;
-    pwm_set_gpio_level(PWM_PIN0, l_v);
-    pwm_set_gpio_level(PWM_PIN1, r_v);
-}
-#endif
 
 void graphics_inc_palleter_offset() {
     graphics_pallette_idx++;
@@ -374,11 +291,6 @@ inline static void dma_handler_VGA_impl() {
 // to start sound later
 void __not_in_flash_func(dma_handler_VGA)() {
     dma_handler_VGA_impl();
-#ifdef SOUND_SYSTEM
- ///   if (is_sound_on) {
- ///       sound_callback();
- ///   }
-#endif
 }
 
 enum graphics_mode_t graphics_set_mode(enum graphics_mode_t mode) {

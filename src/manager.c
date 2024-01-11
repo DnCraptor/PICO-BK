@@ -57,12 +57,6 @@ static volatile bool ePressed = false;
 static volatile bool uPressed = false;
 static volatile bool hPressed = false;
 
-volatile bool is_covox_on = false;
-volatile bool is_ay_on = true;
-volatile bool is_sound_on = true;
-volatile uint8_t snd_divider = 0;
-volatile int8_t covox_multiplier = 7;
-
 bool already_swapped_fdds = false;
 volatile bool manager_started = false;
 volatile bool usb_started = false;
@@ -271,8 +265,8 @@ inline static void if_video_mode() {
   if (!ctrlPressed && !altPressed) {
     if (f12Pressed) {
       f12Pressed = false;
-      color_mode = !color_mode;
-      graphics_set_mode(color_mode ? BK_256x256x2 : BK_512x256x1);
+      g_conf.color_mode = !g_conf.color_mode;
+      graphics_set_mode(g_conf.color_mode ? BK_256x256x2 : BK_512x256x1);
     }
     if (f11Pressed) {
       f11Pressed = false;
@@ -614,9 +608,19 @@ static void m_info(uint8_t cmd) {
     redraw_window();
 }
 
+static void save_snap(uint8_t cmd) {
+  // TODO:
+    redraw_window();
+}
+
+static void restore_snap(uint8_t cmd) {
+  // TODO:
+    redraw_window();
+}
+
 static fn_1_12_tbl_t fn_1_12_tbl = {
     ' ', '1', " Help ", m_info,
-    ' ', '2', " Menu ", do_nothing,
+    ' ', '2', " Snap ", save_snap,
     ' ', '3', " View ", do_nothing,
     ' ', '4', " Edit ", do_nothing,
     ' ', '5', " Copy ", m_copy_file,
@@ -624,7 +628,7 @@ static fn_1_12_tbl_t fn_1_12_tbl = {
     ' ', '7', "MkDir ", do_nothing,
     ' ', '8', " Del  ", m_delete_file,
     ' ', '9', " Swap ", swap_drives,
-    '1', '0', " USB  ", turn_usb_on,
+    '1', '0', " Exit ", mark_to_exit,
     '1', '1', "EmMODE", switch_mode,
     '1', '2', "Reset ", reset
 };
@@ -645,8 +649,8 @@ static fn_1_12_tbl_t fn_1_12_tbl_alt = {
 };
 
 static fn_1_12_tbl_t fn_1_12_tbl_ctrl = {
-    ' ', '1', " EjtL ", do_nothing,
-    ' ', '2', " EjtR ", do_nothing,
+    ' ', '1', "Eject ", do_nothing,
+    ' ', '2', "ReSnap", restore_snap,
     ' ', '3', "Debug ", do_nothing,
     ' ', '4', " Edit ", do_nothing,
     ' ', '5', " Copy ", m_copy_file,
@@ -683,7 +687,7 @@ static void bottom_line() {
         draw_fn_btn(rec, i * BTN_WIDTH, F_BTN_Y_POS);
     }
     draw_text( // TODO: move to pico-vision
-        bk_mode_lns[get_bk0010mode()].txt,
+        bk_mode_lns[g_conf.bk0010mode].txt,
         BTN_WIDTH * 13 + 3,
         F_BTN_Y_POS,
         get_color_schema()->FOREGROUND_FIELD_COLOR,
@@ -698,7 +702,9 @@ static inline void turn_usb_off(uint8_t cmd) { // TODO: support multiple enter f
     // Alt + F10 no more actions
     memset(fn_1_12_tbl_alt[9].name, ' ', BTN_WIDTH);
     fn_1_12_tbl_alt[9].action = do_nothing;
-    // Ctrl + F10 - Exit
+    // F10 / Ctrl + F10 - Exit
+    sprintf(fn_1_12_tbl[9].name, " Exit ");
+    fn_1_12_tbl[9].action = mark_to_exit;
     sprintf(fn_1_12_tbl_ctrl[9].name, " Exit ");
     fn_1_12_tbl_ctrl[9].action = mark_to_exit;
     redraw_window();
@@ -707,10 +713,9 @@ static inline void turn_usb_off(uint8_t cmd) { // TODO: support multiple enter f
 static void turn_usb_on(uint8_t cmd) {
     init_pico_usb_drive();
     usb_started = true;
-    // do not USB after it was turned on
+    // do not Exit in usb mode
     memset(fn_1_12_tbl[9].name, ' ', BTN_WIDTH);
     fn_1_12_tbl[9].action = do_nothing;
-    // do not Exit in usb mode
     memset(fn_1_12_tbl_ctrl[9].name, ' ', BTN_WIDTH);
     fn_1_12_tbl_ctrl[9].action = do_nothing;
     // Alt + F10 - force unmount usb
@@ -720,7 +725,7 @@ static void turn_usb_on(uint8_t cmd) {
 }
 
 static void switch_mode(uint8_t cmd) {
-    bk_mode_t bk0010mode = get_bk0010mode();
+    bk_mode_t bk0010mode = g_conf.bk0010mode;
     const lines_t lines = { 5, 1, bk_mode_lns };
     bk0010mode = draw_selector(50, 10, 30, 8, "BK Emulation Mode", &lines, bk0010mode);
     set_bk0010mode(bk0010mode);
@@ -729,8 +734,8 @@ static void switch_mode(uint8_t cmd) {
 }
 
 static void switch_color(uint8_t cmd) {
-    color_mode = !color_mode;
-    snprintf(fn_1_12_tbl_ctrl[10].name, BTN_WIDTH, color_mode ? " B/W  " : " Color");
+    g_conf.color_mode = !g_conf.color_mode;
+    snprintf(fn_1_12_tbl_ctrl[10].name, BTN_WIDTH, g_conf.color_mode ? " B/W  " : " Color");
     bottom_line();
 }
 
@@ -947,7 +952,7 @@ static inline bool run_bin(char* path) {
     Device_Data.MemPages [5] = CPU_PAGE52_MEM_ADR; /* RAM Page 4.2 video 0 */
     Device_Data.MemPages [6] = CPU_PAGE53_MEM_ADR; /* RAM Page 4.3 video 0 */
     Device_Data.MemPages [7] = CPU_PAGE54_MEM_ADR; /* RAM Page 4.4 video 0 */
-    graphics_set_page(CPU_PAGE51_MEM_ADR, get_bk0010mode() == BK_0011M ? 15 : 0);
+    graphics_set_page(CPU_PAGE51_MEM_ADR, is_bk0011mode() == BK_0011M ? 15 : 0);
     graphics_shift_screen((uint16_t)0330 | 0b01000000000);
     snprintf(line, MAX_WIDTH, "offset = 0%o; len = %d", offset, len);
     const line_t lns[3] = {
@@ -1092,12 +1097,12 @@ static inline void enter_pressed() {
 
 static inline void if_sound_control() { // core #0
     if (ctrlPressed && plusPressed && !altPressed) {
-        covox_multiplier++;
-        if(covox_multiplier > 8) covox_multiplier = 8;
+        g_conf.snd_volume++;
+        if(g_conf.snd_volume > 16) g_conf.snd_volume = 16;
         plusPressed = false;
     } else if (ctrlPressed && minusPressed && !altPressed) {
-        covox_multiplier--;
-        if(covox_multiplier < 0) covox_multiplier = 0;
+        g_conf.snd_volume--;
+        if(g_conf.snd_volume < -16) g_conf.snd_volume = -16;
         minusPressed = false;
     } else if (ctrlPressed && plusPressed && altPressed) {
         covox_mix = covox_mix << 1 | 01;
@@ -1107,8 +1112,7 @@ static inline void if_sound_control() { // core #0
         covox_mix = covox_mix >> 1;
         minusPressed = false;
     } else if (ctrlPressed && tabPressed && cPressed) {
-        is_covox_on = !is_covox_on;
-        is_ay_on = !is_covox_on;
+        g_conf.is_covox_on = !g_conf.is_covox_on;
         cPressed = false;
     }
 }
@@ -1253,13 +1257,13 @@ inline static void start_manager() {
     draw_window();
     select_left_panel();
 
-    snprintf(fn_1_12_tbl_ctrl[10].name, BTN_WIDTH, color_mode ? " B/W  " : " Color");
+    snprintf(fn_1_12_tbl_ctrl[10].name, BTN_WIDTH, g_conf.color_mode ? " B/W  " : " Color");
     bottom_line();
 
     work_cycle();
     
     set_start_debug_line(25); // ?? to be removed
-    graphics_set_mode(color_mode ? BK_256x256x2 : BK_512x256x1);
+    graphics_set_mode(g_conf.color_mode ? BK_256x256x2 : BK_512x256x1);
     restore_video_ram();
 }
 

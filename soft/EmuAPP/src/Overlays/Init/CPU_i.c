@@ -5,7 +5,7 @@
 #define AT_OVL __attribute__((section(".ovl3_i.text")))
 
 void init_rom() {
-    switch (get_bk0010mode()) {
+    switch (g_conf.bk0010mode) {
         case BK_FDD:
             Device_Data.MemPages [8]  = CPU_PAGE161_MEM_ADR; // monitor 8k
             Device_Data.MemPages [9]  = CPU_PAGE162_MEM_ADR; // monitor 8k
@@ -59,7 +59,7 @@ void init_rom() {
     }
 
     // ensure initialized mode
-    set_bk0010mode(get_bk0010mode());
+    set_bk0010mode(g_conf.bk0010mode);
 }
 
 extern volatile uint16_t true_covox; // vga.h

@@ -1,6 +1,7 @@
 #pragma once
 #include "inttypes.h" 
 #include "pico/platform.h"
+#include "config_em.h"
 
 #define FAST_FUNC __time_critical_func
 
@@ -21,9 +22,4 @@ extern void logMsg(char* msg);
 #define DBGM_PRINT( X)
 #endif
 
-extern volatile bool is_covox_on;
-extern volatile bool is_ay_on;
-extern volatile bool is_sound_on;
-extern volatile uint8_t snd_divider;
-extern volatile int8_t covox_multiplier;
 extern volatile uint16_t true_covox;

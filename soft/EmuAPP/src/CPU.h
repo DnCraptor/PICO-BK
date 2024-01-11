@@ -3,6 +3,7 @@
 
 #include <stdint.h>
 #include "ram_page.h"
+#include "config_em.h"
 #include "ROM10.h"
 #include "ROM11.h"
 #include "FDDROM.h"
@@ -41,21 +42,12 @@ extern void logMsg(char* msg);
 #define KBD_PRINT( X)
 #endif
 
-typedef enum BK_MODE {
-    BK_FDD,
-    BK_0010,
-    BK_0010_01,
-    BK_0011M_FDD,
-    BK_0011M
-} bk_mode_t;
-
-bk_mode_t get_bk0010mode();
 void set_bk0010mode(bk_mode_t mode);
 bool is_fdd_suppored();
 void init_rom();
 
 static inline bool is_bk0011mode() {
-    return get_bk0010mode() >= BK_0011M_FDD;
+    return g_conf.bk0010mode >= BK_0011M_FDD;
 }
 
 #define RAM_PAGES_SIZE (sizeof RAM)

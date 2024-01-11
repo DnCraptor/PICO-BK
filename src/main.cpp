@@ -1,4 +1,5 @@
 extern "C" {
+#include "config_em.h"
 #include "emulator.h"
 #include "manager.h"
 }
@@ -22,6 +23,13 @@ extern "C" {
 #include "main_i.h"
 #include "emu_e.h"
 }
+
+config_em_t g_conf {
+   true, // is_covox_on
+   true, // color_mode
+   BK_0010_01, // bk0010mode
+   7, // snd_volume
+};
 
 bool PSRAM_AVAILABLE = false;
 bool SD_CARD_AVAILABLE = false;
@@ -89,34 +97,43 @@ extern "C" {
 bool __not_in_flash_func(AY_timer_callback)(repeating_timer_t *rt) {
     static int16_t outL = 0;  
     static int16_t outR = 0;
-    if (!is_sound_on) {
-        return true;
-    }
-  //  register uint8_t r_divider = snd_divider + 4; // TODO: tune up divider per channel
-  //  register uint16_t r_v = (uint16_t)((int32_t)outR + 0x8000L) >> r_divider;
-  //  register uint8_t l_divider = snd_divider + 4;
-  //  register uint16_t l_v = (uint16_t)((int32_t)outL + 0x8000L) >> l_divider;
     pwm_set_gpio_level(PWM_PIN0, outR); // Право
     pwm_set_gpio_level(PWM_PIN1, outL); // Лево
-   // outL = outR = 0;
 #ifdef AYSOUND
-    if (is_ay_on) {
+    if (!g_conf.is_covox_on) {
         uint8_t* AY_data = get_AY_Out(5);
-        outL = (int16_t)2 * (AY_data[0] + AY_data[1]);
-        outR = (int16_t)2 * (AY_data[2] + AY_data[1]);
+        if (g_conf.snd_volume > 6) {
+            register uint8_t mult = g_conf.snd_volume - 6;
+            if (mult > 16) mult = 16;
+            outL = (int16_t)((AY_data[0] + AY_data[1]) << mult);
+            outR = (int16_t)((AY_data[2] + AY_data[1]) << mult);
+        } else {
+            register int8_t div = 6 - g_conf.snd_volume;
+            if (div < 0) div = 0;
+            outL = (int16_t)((AY_data[0] + AY_data[1]) >> div);
+            outR = (int16_t)((AY_data[2] + AY_data[1]) >> div);
+        }
     }
 #endif
 #ifdef COVOX
-    if (!outR && !outL && is_covox_on && true_covox) {
-        outL = true_covox;
-        outR = true_covox;
+    if (g_conf.is_covox_on && true_covox) {
+        if (g_conf.snd_volume > 7) {
+            register uint8_t mult = g_conf.snd_volume - 7;
+            if (mult > 16) mult = 16;
+            outL = true_covox << mult;
+            outR = true_covox << mult;
+        } else {
+            register int8_t div = 6 - g_conf.snd_volume;
+            if (div < 0) div = 0;
+            outL = true_covox >> div;
+            outR = true_covox >> div;
+        }
     }
 #endif
     if (outR || outL) {
-        register uint32_t d = covox_multiplier;
-        register int32_t v_l = ((int32_t)outL - (int32_t)0x80) << d;
-        register int32_t v_r = ((int32_t)outR - (int32_t)0x80) << d;
-        outL = (int16_t)v_l; // 8 unsigned to signed 16
+        register int32_t v_l = ((int32_t)outL - (int32_t)0x8000);
+        register int32_t v_r = ((int32_t)outR - (int32_t)0x8000);
+        outL = (int16_t)v_l;
         outR = (int16_t)v_r;
     }
     return true;
@@ -167,7 +184,7 @@ int main() {
 
     memset(RAM, 0, sizeof RAM);
     memset(TEXT_VIDEO_RAM, 0, sizeof TEXT_VIDEO_RAM);
-    graphics_set_mode(color_mode ? BK_256x256x2 : BK_512x256x1);
+    graphics_set_mode(g_conf.color_mode ? BK_256x256x2 : BK_512x256x1);
 
     init_psram();
 

@@ -630,18 +630,8 @@ void AT_OVL CPU_Stop (void)
 #include "CPU_i.h"
 static uint16_t m_nFDDCatchAddr, m_nFDDExitCatchAddr = -1;
 
-#if DSK_DEBUG
-static bk_mode_t _bk0010mode = BK_FDD;
-#else
-static bk_mode_t _bk0010mode = BK_0010_01;
-#endif
-
-bk_mode_t get_bk0010mode() {
-    return _bk0010mode;
-}
-
 bool is_fdd_suppored() {
-    return _bk0010mode == BK_FDD || _bk0010mode == BK_0011M_FDD;
+    return g_conf.bk0010mode == BK_FDD || g_conf.bk0010mode == BK_0011M_FDD;
 }
 
 static inline uint16_t GetWordIndirect(uint16_t addr) {
@@ -649,7 +639,7 @@ static inline uint16_t GetWordIndirect(uint16_t addr) {
 }
 
 void set_bk0010mode(bk_mode_t mode) {
-    _bk0010mode = mode;
+    g_conf.bk0010mode = mode;
     switch (mode)
     {
     case BK_0011M_FDD:

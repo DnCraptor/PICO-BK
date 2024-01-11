@@ -93,6 +93,7 @@ pico_set_program_version(pico-bk "test")
             ${CMAKE_CURRENT_SOURCE_DIR}/drivers/usb/usb.c
             ${CMAKE_CURRENT_SOURCE_DIR}/drivers/usb/msc_disk.c
             ${CMAKE_CURRENT_SOURCE_DIR}/drivers/usb/usb_descriptors.c
+            ${CMAKE_CURRENT_SOURCE_DIR}/soft/EmuAPP/src/Overlays/Init/CPU_i.c
     )
     target_include_directories(${PROJECT_NAME} PRIVATE
             ${CMAKE_CURRENT_SOURCE_DIR}/src
