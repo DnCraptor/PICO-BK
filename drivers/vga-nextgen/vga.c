@@ -14,6 +14,7 @@
 #include "fnt8x16.h"
 #include "pico-vision.h"
 #include "config_em.h"
+#include "ram_page.h"
 
 int pallete_mask = 3; // 11 - 2 bits
 
@@ -49,10 +50,7 @@ static int dma_chan_ctrl;
 static int dma_chan;
 
 static uint8_t* graphics_buffer;
-static uint8_t graphics_pallette_idx = 0; // 0b1111;
-static uint8_t shift_y = 0330;
 static uint graphics_buffer_width = 0;
-static uint graphics_buffer_height = 0;
 static int graphics_buffer_shift_x = 0;
 static int graphics_buffer_shift_y = 0;
 
@@ -89,8 +87,8 @@ volatile uint16_t az_covox_R = 0;
 volatile uint16_t covox_mix = 0x0F;
 
 void graphics_inc_palleter_offset() {
-    graphics_pallette_idx++;
-    if (graphics_pallette_idx > 0b1111) graphics_pallette_idx = 0;
+    g_conf.graphics_pallette_idx++;
+    if (g_conf.graphics_pallette_idx > 0b1111) g_conf.graphics_pallette_idx = 0;
 }
 
 inline static void dma_handler_VGA_impl() {
@@ -207,6 +205,7 @@ inline static void dma_handler_VGA_impl() {
         dma_channel_set_read_addr(dma_chan_ctrl, &lines_pattern[0], false); // TODO: ensue it is required
         return;
     }
+    uint graphics_buffer_height = g_conf.graphics_buffer_height;
     if (y >= graphics_buffer_height) {
         // заполнение линии цветом фона
         if ((y == graphics_buffer_height) | (y == (graphics_buffer_height + 1)) |
@@ -222,7 +221,7 @@ inline static void dma_handler_VGA_impl() {
         dma_channel_set_read_addr(dma_chan_ctrl, output_buffer, false);
         return;
     };
-    int addr_in_buf = 64 * (y + shift_y - 0330);
+    int addr_in_buf = 64 * (y + g_conf.shift_y - 0330);
     while (addr_in_buf < 0) addr_in_buf += 16 << 10;
     while (addr_in_buf >= 16 << 10) addr_in_buf -= 16 << 10;
     uint8_t* input_buffer_8bit = input_buffer + addr_in_buf;
@@ -268,7 +267,7 @@ inline static void dma_handler_VGA_impl() {
             break;
         }
         case BK_256x256x2: {
-            current_palette += graphics_pallette_idx * 4;
+            current_palette += g_conf.graphics_pallette_idx * 4;
             register uint16_t m = (3 << 6) | (pallete_mask << 4) | (pallete_mask << 2) | pallete_mask; // TODO: outside
             m |= m << 8;
             //2bit buf
@@ -415,25 +414,26 @@ enum graphics_mode_t graphics_set_mode(enum graphics_mode_t mode) {
 
 void graphics_set_page(uint8_t* buffer, uint8_t pallette_idx) {
     graphics_buffer = buffer;
-    graphics_pallette_idx = pallette_idx;
+    g_conf.graphics_pallette_idx = pallette_idx;
 };
 
 void graphics_set_pallette_idx(uint8_t pallette_idx) {
-    graphics_pallette_idx = pallette_idx;
+    g_conf.graphics_pallette_idx = pallette_idx;
 };
 
 void graphics_shift_screen(uint16_t Word) {
-    shift_y = Word & 0b11111111;
+    g_conf.shift_y = Word & 0b11111111;
     // Разряд 9 - при записи “1” в этот разряд на экране отображается весь буфер экрана (256 телевизионных строк).
     // При нулевом значении в верхней части растра отображается 1/4 часть (старшие адреса) экранного ОЗУ,
     // нижняя часть экрана не отображается. Данный режим не используется базовой операционной системой.
-    graphics_buffer_height = (Word & 0b01000000000) ? 256 : 256 / 4; // TODO: support it
+    g_conf.graphics_buffer_height = (Word & 0b01000000000) ? 256 : 256 / 4;
 }
 
 void graphics_set_buffer(uint8_t* buffer, uint16_t width, uint16_t height) {
+    g_conf.v_buff_offset = buffer - RAM;
     graphics_buffer = buffer;
     graphics_buffer_width = width;
-    graphics_buffer_height = height;
+    g_conf.graphics_buffer_height = height;
 };
 
 void graphics_set_offset(int x, int y) {
@@ -470,10 +470,6 @@ void draw_text(char* string, int x, int y, uint8_t color, uint8_t bgcolor) {
         *t_buf++ = *string++;
         *t_buf++ = c;
     }
-}
-
-char* get_free_vram_ptr() {
-    return text_buffer + text_buffer_width * 2 * text_buffer_height;
 }
 
 void set_start_debug_line(int _start_debug_line) {
@@ -728,6 +724,7 @@ void graphics_init() {
     dma_start_channel_mask((1u << dma_chan));
 };
 
+#ifdef SAVE_VIDEO_RAM_ON_MANAGER
 #include "emulator.h"
 static FATFS fs;
 static FIL file;
@@ -769,3 +766,7 @@ bool restore_video_ram() {
     gpio_put(PICO_DEFAULT_LED_PIN, false);
     return true;
 }
+#else
+bool save_video_ram() {}
+bool restore_video_ram() {}
+#endif

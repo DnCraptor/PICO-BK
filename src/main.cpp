@@ -30,6 +30,10 @@ config_em_t g_conf {
    true, // color_mode
    BK_0010_01, // bk0010mode
    0, // snd_volume
+   0, // graphics_pallette_idx
+   0330, // shift_y
+   256, // graphics_buffer_height
+   0, // v_buff_offset
 };
 
 bool PSRAM_AVAILABLE = false;

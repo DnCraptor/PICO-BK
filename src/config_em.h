@@ -1,5 +1,6 @@
 #pragma once
 #include <stdint.h>
+#include <stddef.h>
 
 typedef enum BK_MODE {
     BK_FDD,
@@ -15,6 +16,10 @@ typedef struct config_em {
     bool color_mode;
     bk_mode_t bk0010mode;
     int8_t snd_volume;
+    uint8_t graphics_pallette_idx;
+    uint8_t shift_y;
+    uint16_t graphics_buffer_height;
+    size_t v_buff_offset;
 } config_em_t;
 
 extern config_em_t g_conf;

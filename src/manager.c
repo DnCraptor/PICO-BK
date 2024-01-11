@@ -611,13 +611,61 @@ static void m_info(uint8_t cmd) {
 }
 
 static void save_snap(uint8_t cmd) {
-  // TODO:
+    f2Pressed = false;
+    FIL file;
+    gpio_put(PICO_DEFAULT_LED_PIN, true);
+    char path[16];
+    sprintf(path, "\\BK\\SNAP.BKE");
+    FRESULT result = f_open(&file, path, FA_WRITE | FA_CREATE_ALWAYS);
+    if (result != FR_OK) {
+        return;
+    }
+    UINT bw;
+    result = f_write(&file, &Device_Data, sizeof(Device_Data), &bw); // TODO: error handling
+    result = f_write(&file, &g_conf, sizeof(g_conf), &bw);
+    result = f_write(&file, RAM, sizeof(RAM), &bw);
+    for (int i = 0; i < 4; ++i) {
+        result = f_write(&file, drives_states[i].path, sizeof(drives_states[i].path), &bw);
+    }
+    // TODO: graphics_set_page
+    if (result != FR_OK) {
+  //      return;
+    }
+    f_close(&file);
+    gpio_put(PICO_DEFAULT_LED_PIN, false);
     redraw_window();
 }
 
 static void restore_snap(uint8_t cmd) {
-  // TODO:
-    redraw_window();
+    f2Pressed = false;
+    FIL file;
+    gpio_put(PICO_DEFAULT_LED_PIN, true);
+    char path[256];
+    sprintf(path, "\\BK\\SNAP.BKE");
+    FRESULT result = f_open(&file, path, FA_READ);
+    UINT bw;
+    if (result == FR_OK) {
+      result = f_read(&file, &Device_Data, sizeof(Device_Data), &bw);  // TODO: error handling
+      result = f_read(&file, &g_conf, sizeof(g_conf), &bw);
+      set_bk0010mode(g_conf.bk0010mode);
+      init_rom();
+      result = f_read(&file, RAM, sizeof(RAM), &bw);
+      if (result != FR_OK) {
+    //    return;
+      }
+    }
+    f_close(&file);
+    for (int i = 0; i < 4; ++i) {
+          result = f_read(&file, drives_states[i].path, sizeof(drives_states[i].path), &bw);
+          if (drives_states[i].path[0]) {
+              snprintf(path, 256, drives_states[i].path);
+              insertdisk(i, 819200, 0, path); // TODO: size? removed?
+          }
+    }
+    graphics_set_buffer(RAM + g_conf.v_buff_offset, 512, 256);
+   // f_unlink(path);
+    gpio_put(PICO_DEFAULT_LED_PIN, false);
+    mark_to_exit(cmd);
 }
 
 static fn_1_12_tbl_t fn_1_12_tbl = {
