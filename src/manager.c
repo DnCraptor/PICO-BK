@@ -638,18 +638,16 @@ static void save_snap(uint8_t cmd) {
 
 static void restore_snap(uint8_t cmd) {
     f2Pressed = false;
+    main_init();
     FIL file;
     gpio_put(PICO_DEFAULT_LED_PIN, true);
-    char path[256] = { 0};
-    sprintf(path, "\\BK\\SNAP.BKE");
-    FRESULT result = f_open(&file, path, FA_READ);
+    FRESULT result = f_open(&file, "\\BK\\SNAP.BKE", FA_READ);
     UINT bw;
     if (result == FR_OK) {
       result = f_read(&file, &Device_Data, sizeof(Device_Data), &bw);  // TODO: error handling
       result = f_read(&file, &g_conf, sizeof(g_conf), &bw);
-      set_bk0010mode(g_conf.bk0010mode);
-      init_rom();
       result = f_read(&file, RAM, sizeof(RAM), &bw);
+      char path[256] = { 0 };
       for (int i = 0; i < 4; ++i) {
           result = f_read(&file, drives_states[i].path, sizeof(drives_states[i].path), &bw);
           if (drives_states[i].path[0]) {
@@ -662,7 +660,9 @@ static void restore_snap(uint8_t cmd) {
       }
     }
     f_close(&file);
-    graphics_set_buffer(RAM + g_conf.v_buff_offset, 512, 256);
+    set_bk0010mode(g_conf.bk0010mode);
+    init_rom();
+    graphics_set_page(CPU_PAGE51_MEM_ADR, g_conf.graphics_pallette_idx);
     gpio_put(PICO_DEFAULT_LED_PIN, false);
     mark_to_exit(cmd);
 }

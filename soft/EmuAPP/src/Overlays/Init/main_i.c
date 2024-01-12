@@ -5,8 +5,6 @@
 
 #define AT_OVL __attribute__((section(".ovl3_i.text")))
 
-extern uint32_t VecBase;
-
 void AT_OVL main_init (void) {
     // Инитим процессор
     CPU_Init ();

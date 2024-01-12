@@ -413,6 +413,7 @@ enum graphics_mode_t graphics_set_mode(enum graphics_mode_t mode) {
 };
 
 void graphics_set_page(uint8_t* buffer, uint8_t pallette_idx) {
+    g_conf.v_buff_offset = buffer - RAM;
     graphics_buffer = buffer;
     g_conf.graphics_pallette_idx = pallette_idx;
 };
