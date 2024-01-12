@@ -265,6 +265,65 @@ inline static void if_swap_drives() {
     }
 }
 
+
+static void save_snap(uint8_t cmd) {
+    f2Pressed = false;
+    FIL file;
+    gpio_put(PICO_DEFAULT_LED_PIN, true);
+    char buf[64];
+    snprintf(buf, 64, "\\BK\\SNAPSHOT%d.BKE", cmd);
+    FRESULT result = f_open(&file, buf, FA_WRITE | FA_CREATE_ALWAYS);
+    if (result != FR_OK) {
+        return;
+    }
+    UINT bw;
+    result = f_write(&file, &Device_Data, sizeof(Device_Data), &bw); // TODO: error handling
+    result = f_write(&file, &g_conf, sizeof(g_conf), &bw);
+    result = f_write(&file, RAM, sizeof(RAM), &bw);
+    for (int i = 0; i < 4; ++i) {
+        result = f_write(&file, drives_states[i].path, sizeof(drives_states[i].path), &bw);
+    }
+    // TODO: graphics_set_page
+    if (result != FR_OK) {
+  //      return;
+    }
+    f_close(&file);
+    gpio_put(PICO_DEFAULT_LED_PIN, false);
+    redraw_window();
+}
+
+static void restore_snap(uint8_t cmd) {
+    f2Pressed = false;
+    main_init();
+    FIL file;
+    gpio_put(PICO_DEFAULT_LED_PIN, true);
+    char path[256] = { 0 };
+    snprintf(path, 64, "\\BK\\SNAPSHOT%d.BKE", cmd);
+    FRESULT result = f_open(&file, path, FA_READ);
+    UINT bw;
+    if (result == FR_OK) {
+      result = f_read(&file, &Device_Data, sizeof(Device_Data), &bw);  // TODO: error handling
+      result = f_read(&file, &g_conf, sizeof(g_conf), &bw);
+      result = f_read(&file, RAM, sizeof(RAM), &bw);
+      for (int i = 0; i < 4; ++i) {
+          result = f_read(&file, drives_states[i].path, sizeof(drives_states[i].path), &bw);
+          if (drives_states[i].path[0]) {
+              stpncpy(path, drives_states[i].path, 256);
+              insertdisk(i, 819200, 0, path); // TODO: size? removed?
+          }
+      }
+      if (result != FR_OK) {
+    //    return;
+      }
+    }
+    f_close(&file);
+    set_bk0010mode(g_conf.bk0010mode);
+    init_rom();
+    graphics_set_page(CPU_PAGE51_MEM_ADR, g_conf.graphics_pallette_idx);
+    gpio_put(PICO_DEFAULT_LED_PIN, false);
+    mark_to_exit(cmd);
+}
+
 inline static void if_video_mode() {
   if (!ctrlPressed && !altPressed) {
     if (f12Pressed) {
@@ -288,40 +347,45 @@ inline static void if_video_mode() {
   }
   if (ctrlPressed || altPressed)
     if(f1Pressed) {
-        graphics_set_buffer(CPU_PAGE01_MEM_ADR, 512, 256);
-        if (altPressed) graphics_set_mode(BK_256x256x2);
-        else graphics_set_mode(BK_512x256x1);
+        if (altPressed) save_snap(0);
+        else restore_snap(0);
+        f1Pressed = false;
     } else if (f2Pressed) {
-        graphics_set_buffer(CPU_PAGE11_MEM_ADR, 512, 256);
-        if (altPressed) graphics_set_mode(BK_256x256x2);
-        else graphics_set_mode(BK_512x256x1);
+        if (altPressed) save_snap(1);
+        else restore_snap(1);
+        f2Pressed = false;
     } else if (f3Pressed) {
-        graphics_set_buffer(CPU_PAGE21_MEM_ADR, 512, 256);
-        if (altPressed) graphics_set_mode(BK_256x256x2);
-        else graphics_set_mode(BK_512x256x1);
+        if (altPressed) save_snap(2);
+        else restore_snap(2);
+        f3Pressed = false;
     } else if (f4Pressed) {
-        graphics_set_buffer(CPU_PAGE31_MEM_ADR, 512, 256);
-        if (altPressed) graphics_set_mode(BK_256x256x2);
-        else graphics_set_mode(BK_512x256x1);
+        if (altPressed) save_snap(3);
+        else restore_snap(3);
+        f4Pressed = false;
     } else if (f5Pressed) {
-        graphics_set_buffer(CPU_PAGE41_MEM_ADR, 512, 256);
-        if (altPressed) graphics_set_mode(BK_256x256x2);
-        else graphics_set_mode(BK_512x256x1);
+        f5Pressed = false;
+        if (altPressed) save_snap(4);
+        else restore_snap(4);
     } else if (f6Pressed) {
-        graphics_set_buffer(CPU_PAGE51_MEM_ADR, 512, 256);
-        if (altPressed) graphics_set_mode(BK_256x256x2);
-        else graphics_set_mode(BK_512x256x1);
+        if (altPressed) save_snap(5);
+        else restore_snap(5);
+        f6Pressed = false;
     } else if (f7Pressed) {
-        graphics_set_buffer(CPU_PAGE61_MEM_ADR, 512, 256);
-        if (altPressed) graphics_set_mode(BK_256x256x2);
-        else graphics_set_mode(BK_512x256x1);
+        if (altPressed) save_snap(6);
+        else restore_snap(6);
+        f7Pressed = false;
     } else if (f8Pressed) {
-        graphics_set_buffer(CPU_PAGE71_MEM_ADR, 512, 256);
-        if (altPressed) graphics_set_mode(BK_256x256x2);
-        else graphics_set_mode(BK_512x256x1);
+        if (altPressed) save_snap(7);
+        else restore_snap(7);
+        f8Pressed = false;
+    } else if (f9Pressed) {
+        if (altPressed) save_snap(8);
+        else restore_snap(8);
+        f9Pressed = false;
     } else if (f10Pressed) {
-        if (altPressed) graphics_set_pallette_idx(0);
-        else graphics_set_pallette_idx(15);
+        if (altPressed) save_snap(9);
+        else restore_snap(9);
+        f10Pressed = false;
     }
 }
 
@@ -591,8 +655,8 @@ static void m_info(uint8_t cmd) {
         { 1, " - Ctrl + F10   - default BK-0011 pallete" },
         { 1, " - F11          - adjust brightness" },
         { 1, " - F12          - Switch B/W 512x256 to Color 256x256 and back" },
-        { 1, " - Alt + F1..F8 - fast review BK RAM pages in color representation" },
-        { 1, " - Ctrl+ F1..F8 - fast review BK RAM pages in B/W representation" },
+        { 1, " - Alt + F1..F10 - fast save snapshot" },
+        { 1, " - Ctrl + F1..F10 - fast restore from snapshot" },
         { 1, " - Ctrl + F11   - slower emulation (default emulation is about to BK on 3 MHz)" },
         { 1, " - Ctrl + F12   - faster emulation" },
         { 1, " - Ctrl + \"+\"   - increase volume" },
@@ -610,61 +674,6 @@ static void m_info(uint8_t cmd) {
     int t = lastCleanableScanCode;
     while(t == lastCleanableScanCode) { }
     redraw_window();
-}
-
-static void save_snap(uint8_t cmd) {
-    f2Pressed = false;
-    FIL file;
-    gpio_put(PICO_DEFAULT_LED_PIN, true);
-    FRESULT result = f_open(&file, "\\BK\\SNAP.BKE", FA_WRITE | FA_CREATE_ALWAYS);
-    if (result != FR_OK) {
-        return;
-    }
-    UINT bw;
-    result = f_write(&file, &Device_Data, sizeof(Device_Data), &bw); // TODO: error handling
-    result = f_write(&file, &g_conf, sizeof(g_conf), &bw);
-    result = f_write(&file, RAM, sizeof(RAM), &bw);
-    for (int i = 0; i < 4; ++i) {
-        result = f_write(&file, drives_states[i].path, sizeof(drives_states[i].path), &bw);
-    }
-    // TODO: graphics_set_page
-    if (result != FR_OK) {
-  //      return;
-    }
-    f_close(&file);
-    gpio_put(PICO_DEFAULT_LED_PIN, false);
-    redraw_window();
-}
-
-static void restore_snap(uint8_t cmd) {
-    f2Pressed = false;
-    main_init();
-    FIL file;
-    gpio_put(PICO_DEFAULT_LED_PIN, true);
-    FRESULT result = f_open(&file, "\\BK\\SNAP.BKE", FA_READ);
-    UINT bw;
-    if (result == FR_OK) {
-      result = f_read(&file, &Device_Data, sizeof(Device_Data), &bw);  // TODO: error handling
-      result = f_read(&file, &g_conf, sizeof(g_conf), &bw);
-      result = f_read(&file, RAM, sizeof(RAM), &bw);
-      char path[256] = { 0 };
-      for (int i = 0; i < 4; ++i) {
-          result = f_read(&file, drives_states[i].path, sizeof(drives_states[i].path), &bw);
-          if (drives_states[i].path[0]) {
-              stpncpy(path, drives_states[i].path, 256);
-              insertdisk(i, 819200, 0, path); // TODO: size? removed?
-          }
-      }
-      if (result != FR_OK) {
-    //    return;
-      }
-    }
-    f_close(&file);
-    set_bk0010mode(g_conf.bk0010mode);
-    init_rom();
-    graphics_set_page(CPU_PAGE51_MEM_ADR, g_conf.graphics_pallette_idx);
-    gpio_put(PICO_DEFAULT_LED_PIN, false);
-    mark_to_exit(cmd);
 }
 
 static fn_1_12_tbl_t fn_1_12_tbl = {
