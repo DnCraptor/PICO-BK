@@ -243,7 +243,9 @@ static drive_state_t drives_states[4] = {
 };
 
 void notify_image_insert_action(uint8_t drivenum, char *pathname) {
-    strncpy(drives_states[drivenum].path, pathname, 256);
+    if (pathname) {
+        strncpy(drives_states[drivenum].path, pathname, 256);
+    }
 }
 
 static void swap_drives(uint8_t cmd) {
@@ -614,9 +616,7 @@ static void save_snap(uint8_t cmd) {
     f2Pressed = false;
     FIL file;
     gpio_put(PICO_DEFAULT_LED_PIN, true);
-    char path[16];
-    sprintf(path, "\\BK\\SNAP.BKE");
-    FRESULT result = f_open(&file, path, FA_WRITE | FA_CREATE_ALWAYS);
+    FRESULT result = f_open(&file, "\\BK\\SNAP.BKE", FA_WRITE | FA_CREATE_ALWAYS);
     if (result != FR_OK) {
         return;
     }
@@ -640,7 +640,7 @@ static void restore_snap(uint8_t cmd) {
     f2Pressed = false;
     FIL file;
     gpio_put(PICO_DEFAULT_LED_PIN, true);
-    char path[256];
+    char path[256] = { 0};
     sprintf(path, "\\BK\\SNAP.BKE");
     FRESULT result = f_open(&file, path, FA_READ);
     UINT bw;
@@ -650,20 +650,19 @@ static void restore_snap(uint8_t cmd) {
       set_bk0010mode(g_conf.bk0010mode);
       init_rom();
       result = f_read(&file, RAM, sizeof(RAM), &bw);
+      for (int i = 0; i < 4; ++i) {
+          result = f_read(&file, drives_states[i].path, sizeof(drives_states[i].path), &bw);
+          if (drives_states[i].path[0]) {
+              stpncpy(path, drives_states[i].path, 256);
+              insertdisk(i, 819200, 0, path); // TODO: size? removed?
+          }
+      }
       if (result != FR_OK) {
     //    return;
       }
     }
     f_close(&file);
-    for (int i = 0; i < 4; ++i) {
-          result = f_read(&file, drives_states[i].path, sizeof(drives_states[i].path), &bw);
-          if (drives_states[i].path[0]) {
-              snprintf(path, 256, drives_states[i].path);
-              insertdisk(i, 819200, 0, path); // TODO: size? removed?
-          }
-    }
     graphics_set_buffer(RAM + g_conf.v_buff_offset, 512, 256);
-   // f_unlink(path);
     gpio_put(PICO_DEFAULT_LED_PIN, false);
     mark_to_exit(cmd);
 }

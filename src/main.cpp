@@ -208,8 +208,8 @@ int main() {
     if (SD_CARD_AVAILABLE) {
         insertdisk(0, fdd0_sz(), fdd0_rom(), "\\BK\\fdd0.img");
         insertdisk(1, fdd1_sz(), fdd1_rom(), "\\BK\\fdd1.img");
-        insertdisk(2, 0, 0, "\\BK\\hdd0.img");
-        insertdisk(3, 0, 0, "\\BK\\hdd1.img");
+        insertdisk(2, 819200, 0, "\\BK\\hdd0.img");
+        insertdisk(3, 819200, 0, "\\BK\\hdd1.img");
     }
 
 #ifdef SOUND_SYSTEM
