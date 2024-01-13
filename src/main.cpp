@@ -5,8 +5,6 @@ extern "C" {
 }
 
 #include "BKImage.h"
-static CBKImage m_BKImage;
-
 #include <pico/time.h>
 #include <pico/multicore.h>
 #include <hardware/pwm.h>
@@ -150,6 +148,14 @@ bool __not_in_flash_func(AY_timer_callback)(repeating_timer_t *rt) {
 #endif
 
 static FATFS fatfs;
+static CBKImage BKImage;
+static CBKParseImage ParserImage;
+
+void detect_os_type(const char* path, char* os_type) {
+    PARSE_RESULT pr = ParserImage.ParseImage(path, 0);
+    auto s = CBKParseImage::GetOSName(pr.imageOSType);
+    strcpy(os_type, s.c_str());
+}
 
 int main() {
 #if (OVERCLOCKING > 270)

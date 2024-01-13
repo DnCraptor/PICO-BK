@@ -1053,12 +1053,28 @@ static const line_t drive_num_lns[] = {
 
 static inline bool run_img(char* path) {
     enterPressed = false;
+    if (ctrlPressed) {
+        ctrlPressed = false;
+        char os_type[20] = { 0 };
+        detect_os_type(path, os_type);
+        const line_t lns[3] = {
+            { -1, "OS Type Detection Result" },
+            { -1, path },
+            { -1, os_type }
+        };
+        const lines_t lines = { 3, 2, lns };
+        draw_box((MAX_WIDTH - 60) / 2, 7, 60, 10, "Info", &lines);
+        sleep_ms(2500);
+        redraw_window();
+        return true;
+    }
     const lines_t lines = { 4, 1, drive_num_lns };
     int mount_as = draw_selector(50, 10, 30, 8, "Device to mount", &lines, 2);
     insertdisk(mount_as, 819200, 0, path);
     if ( !is_fdd_suppored() ) {
         set_bk0010mode(BK_0011M_FDD);
     }
+    // TODO: altPressed (just mount)
     reset(0);
     mark_to_exit_flag = true;
     return true;
