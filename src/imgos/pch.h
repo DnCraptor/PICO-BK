@@ -4,6 +4,11 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <errno.h>
+#include <filesystem>
+#include <vector>
+
+typedef char char_t;
+namespace fs = std::filesystem;
 
 #define ASSERT(x)
 

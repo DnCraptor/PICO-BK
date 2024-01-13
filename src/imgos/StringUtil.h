@@ -4,15 +4,15 @@
 namespace strUtil
 {
 	// удаление заданного символа с обоих концов строки
-	std::string trim(const std::string &str, const char_t trim_char = ' ');
+	std::string trim(const std::string &str, const char trim_char = ' ');
 	// удаление заданного символа в начале строки
-	std::string trimLeft(const std::string &str, const char_t trim_char = ' ');
+	std::string trimLeft(const std::string &str, const char trim_char = ' ');
 	// удаление заданного символа в конце строки
-	std::string trimRight(const std::string &str, const char_t trim_char = ' ');
+	std::string trimRight(const std::string &str, const char trim_char = ' ');
 	// замена всех символов src в строке на символы dst
-	std::string replaceChar(const std::string &str, const char_t src, const char_t dst);
+	std::string replaceChar(const std::string &str, const char src, const char dst);
 	// замена всех символов, входящих в src в строке на символы dst
-	std::string replaceChars(const std::string &str, const std::string &src, const char_t dst);
+	std::string replaceChars(const std::string &str, const std::string &src, const char dst);
 	// преорбазование регистра, сделать все буквы большими
 	std::string strToUpper(const std::string &str);
 	// преорбазование регистра, сделать все буквы маленькими

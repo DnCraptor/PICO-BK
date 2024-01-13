@@ -4,7 +4,7 @@
 #include <string>
 #include <filesystem>
 namespace fs = std::filesystem;
-typedef unsigned char char_t;
+typedef char char_t;
 
 enum FR_ATTR : uint32_t
 {

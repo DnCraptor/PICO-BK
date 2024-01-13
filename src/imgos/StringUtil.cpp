@@ -85,41 +85,33 @@ std::string strUtil::replaceChars(const std::string &str, const std::string &src
 	return str;
 }
 
+#include <locale>
+
 std::string strUtil::strToUpper(const std::string &str)
 {
 	std::string res;
-
 	if (!str.empty())
 	{
-		_locale_t loc = _create_locale(LC_ALL, "Russian");
-
+		std::locale loc ("uk_UA.UTF-8") ; // TODO:
 		for (auto n : str)
 		{
-			res.push_back(_toupper_l(n, loc));
+			res.push_back(toupper(n, loc));
 		}
-
-		_free_locale(loc);
 	}
-
 	return res;
 }
 
 std::string strUtil::strToLower(const std::string &str)
 {
 	std::string res;
-
 	if (!str.empty())
 	{
-		_locale_t loc = _create_locale(LC_ALL, "Russian");
-
+		std::locale loc ("uk_UA.UTF-8") ; // TODO:
 		for (auto n : str)
 		{
-			res.push_back(_tolower_l(n, loc));
+			res.push_back(tolower(n, loc));
 		}
-
-		_free_locale(loc);
 	}
-
 	return res;
 }
 

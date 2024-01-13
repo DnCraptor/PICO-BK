@@ -2,28 +2,28 @@
 Based on:
 
 # БК-0011М https://github.com/konst-st/BK8266/tree/BK0011M
-Эмулятор БК-0011М на ESP8266<br/>
-Сделан на основе эмулятора БК-0010-01 на ESP8266 https://github.com/konst-st/BK8266
+Эмулятор БК-0011М на Raspberry Pi Pico (RP2040)<br/>
+Сделан на основе эмулятора для ESP8266 https://github.com/konst-st/BK8266
 
 # Hardware needed
 To get it working you should have an Murmulator (development) board with VGA output. Schematics available here at https://github.com/AlexEkb4ever/MURMULATOR_classical_scheme
 ![Murmulator Schematics](https://github.com/javavi/pico-infonesPlus/blob/main/assets/Murmulator-1_BSchem.JPG)
 
-Extra PSRAM support on pi pico pins:
+Extra PSRAM support (для ещё незаконченной СМК-512) on pi pico pins:
 * PSRAM_PIN_CS=18
 * PSRAM_PIN_SCK=19
 * PSRAM_PIN_MOSI=20
 * PSRAM_PIN_MISO=21
-Поддержка PSRAM планируется в варианте SMK-512 и т.п. (т.е. оно "на будущее")
 ![RAM extention](/psram.jpg)
 
 # Эмулятор К1801ВМ1
 Эмулятор цельнотянутый с https://github.com/konst-st/BK8266/tree/BK0011M.<br/>
 Кое чего подсмотрено из эмулятора Юрия Калмыкова http://gid.pdp-11.ru<br/>
 
-Эмулятор использует только ОЗУ RP2040 (Raspberry Pi Pico) (из которых 128 кБ выделено под ОЗУ БК0011М).<br/>
+Эмулятор пока использует только ОЗУ RP2040 (из которых 128 кБ выделено под ОЗУ БК0011М).<br/>
 ПЗУ БК11М содержится во флэш (используется встроеннное кэширование пики).<br/>
 Эмулятор звукового сопроцессора AY-3-8910 в варианте TurboSound на одном чипе.<br/>
+Эмулятор Covox гибридный - основная часть (моно) на старндартном регистре параллельного порта с loopback. Также реализован стерео вариант на наборе регистров от AZБК, но без ПДП.<br/>
 
 Пока не реализовано:
 <ul>
