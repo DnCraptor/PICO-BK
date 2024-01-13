@@ -265,13 +265,12 @@ inline static void if_swap_drives() {
     }
 }
 
-
 static void save_snap(uint8_t cmd) {
     f2Pressed = false;
     FIL file;
     gpio_put(PICO_DEFAULT_LED_PIN, true);
     char buf[64];
-    snprintf(buf, 64, "\\BK\\SNAPSHOT%d.BKE", cmd);
+    snprintf(buf, 64, "\\BK\\SNAP%d.BKE", cmd + 1);
     FRESULT result = f_open(&file, buf, FA_WRITE | FA_CREATE_ALWAYS);
     if (result != FR_OK) {
         return;
@@ -298,7 +297,7 @@ static void restore_snap(uint8_t cmd) {
     FIL file;
     gpio_put(PICO_DEFAULT_LED_PIN, true);
     char path[256] = { 0 };
-    snprintf(path, 64, "\\BK\\SNAPSHOT%d.BKE", cmd);
+    snprintf(path, 64, "\\BK\\SNAP%d.BKE", cmd + 1);
     FRESULT result = f_open(&file, path, FA_READ);
     UINT bw;
     if (result == FR_OK) {
@@ -378,14 +377,6 @@ inline static void if_video_mode() {
         if (altPressed) save_snap(7);
         else restore_snap(7);
         f8Pressed = false;
-    } else if (f9Pressed) {
-        if (altPressed) save_snap(8);
-        else restore_snap(8);
-        f9Pressed = false;
-    } else if (f10Pressed) {
-        if (altPressed) save_snap(9);
-        else restore_snap(9);
-        f10Pressed = false;
     }
 }
 
@@ -1156,7 +1147,7 @@ static inline void enter_pressed() {
 static inline void if_sound_control() { // core #0
     if (ctrlPressed && plusPressed && !altPressed) {
         g_conf.snd_volume++;
-        if(g_conf.snd_volume > 16) g_conf.snd_volume = 16;
+        if(g_conf.snd_volume > 5) g_conf.snd_volume = 5;
         plusPressed = false;
     } else if (ctrlPressed && minusPressed && !altPressed) {
         g_conf.snd_volume--;

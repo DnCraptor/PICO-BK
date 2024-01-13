@@ -40,17 +40,20 @@ bool hw_get_bit_LOAD() {
 static bool covox_plus = 0;
 #endif
 
+inline static void cleanup_emu_state() {
+    g_conf.cycles_cnt1  = getCycleCount ();
+    g_conf.Time         = (int32_t)g_conf.cycles_cnt1;
+    g_conf.T            = 0;
+    g_conf.CodeAndFlags = 0;
+    g_conf.Key          = 0;
+    g_conf.LastKey      = 0xC00;
+    g_conf.RunState     = 0;
+}
+
 void AT_OVL emu_start () {
-    uint64_t      cycles_cnt1  = getCycleCount ();
-    int_fast32_t  Time         = (int32_t)cycles_cnt1;
-    uint_fast32_t T            = 0;
-    uint_fast16_t CodeAndFlags = 0;
-    uint_fast16_t Key          = 0;
-    uint_fast32_t LastKey      = 0xC00;
-    uint_fast8_t  RunState     = 0;
     DEBUG_PRINT(("Init Time: %d", Time));
     KBD_PRINT(("Initial state: CodeAndFlags: %Xh Key: %Xh LastKey: %Xh CPU_State.Flags: %Xh",
-                               CodeAndFlags,     Key,     LastKey, Device_Data.CPU_State.Flags));
+                               g_conf.CodeAndFlags, g_conf.Key, g_conf.LastKey, Device_Data.CPU_State.Flags));
     // Запускаем эмуляцию
     while (1) {
         int tormoz = if_manager(false);
@@ -71,40 +74,40 @@ void AT_OVL emu_start () {
                 DEBUG_PRINT(("Count: %d", Count));
                 CPU_RunInstruction ();
             }
-            Time = getCycleCount ();
-            T    = Device_Data.CPU_State.Time;
+            g_conf.Time = getCycleCount ();
+            g_conf.T    = Device_Data.CPU_State.Time;
             DEBUG_PRINT(("Time: %d; T: %d", Time, T));
         }
         else {
             for (Count = 0; Count < 16; Count++) {
                 uint64_t cycles_cnt2 = getCycleCount ();
-                if (cycles_cnt2 - cycles_cnt1 < tormoz) { // чем выше константа, тем медленнее БК
+                if (cycles_cnt2 - g_conf.cycles_cnt1 < tormoz) { // чем выше константа, тем медленнее БК
                     DEBUG_PRINT(("break"));
                     break;
                 }
                 CPU_RunInstruction ();
-                Time = getCycleCount ();
-                T    = Device_Data.CPU_State.Time;
+                g_conf.Time = getCycleCount ();
+                g_conf.T    = Device_Data.CPU_State.Time;
                 DEBUG_PRINT(("Time: %d; T: %d", Time, T));
-                cycles_cnt1 = cycles_cnt2;
+                g_conf.cycles_cnt1 = cycles_cnt2;
             }
         }
         // Вся периодика
         DEBUG_PRINT(("RunState: %d", RunState));
-        switch (RunState++)
+        switch (g_conf.RunState++)
         {
             default:
             case 0:
                 DEBUG_PRINT(("CPU_TimerRun"));
                 CPU_TimerRun ();
-                RunState = 1;
+                g_conf.RunState = 1;
                 break;
             case 1:
                 //ps2_periodic ();
                 break;
             case 2:
-                CodeAndFlags = (uint_fast16_t)(ps2get_raw_code() & 0xFFFF); // ps2_read ();
-                if (CodeAndFlags == 0) RunState = 5;
+                g_conf.CodeAndFlags = (uint_fast16_t)(ps2get_raw_code() & 0xFFFF); // ps2_read ();
+                if (g_conf.CodeAndFlags == 0) g_conf.RunState = 5;
 /*   Адрес регистра - 177716.
    Старший байт регистра (разряды  8-15) используются для задания адреса, с которого запускается процессор при включении питания (при
 этом младший байт регистра принимается равным 0). Адрес начального пуска процессора равен 100000.
@@ -130,12 +133,12 @@ void AT_OVL emu_start () {
                 }
                 break;
             case 3:
-                if (CodeAndFlags == PS2_PAUSE) {
-                    RunState = 5;
+                if (g_conf.CodeAndFlags == PS2_PAUSE) {
+                    g_conf.RunState = 5;
                     CPU_Stop ();
                 }
                 else {
-                    Key = Key_Translate (CodeAndFlags);
+                    g_conf.Key = Key_Translate (g_conf.CodeAndFlags);
                     KBD_PRINT(("3. CodeAndFlags: %04Xh RdReg177716: %oo Key: %d (%Xh / %oo)",
                                    CodeAndFlags, Device_Data.SysRegs.RdReg177716, Key, Key, Key));
                 }
@@ -145,22 +148,22 @@ void AT_OVL emu_start () {
                 // джойстик
                 if (Key_Flags & KEY_FLAGS_NUMLOCK) Device_Data.SysRegs.RdReg177714 = (uint16_t) (Key_Flags >> KEY_FLAGS_UP_POS);
                 else                               Device_Data.SysRegs.RdReg177714 = 0;
-                if (CodeAndFlags & 0x8000U) {
-                    if (((LastKey ^ CodeAndFlags) & 0x7FF) == 0) {
+                if (g_conf.CodeAndFlags & 0x8000U) {
+                    if (((g_conf.LastKey ^ g_conf.CodeAndFlags) & 0x7FF) == 0) {
                         Device_Data.SysRegs.RdReg177716 |= 0100;
                         KBD_PRINT(("4. RdReg177716: %oo", Device_Data.SysRegs.RdReg177716));
-                        LastKey = 0xC00;
+                        g_conf.LastKey = 0xC00;
                     }
-                } else if (Key != KEY_UNKNOWN) {
-                    if (Key == KEY_MENU_ESC) {
+                } else if (g_conf.Key != KEY_UNKNOWN) {
+                    if (g_conf.Key == KEY_MENU_ESC) {
                         tormoz = if_manager(true);
-                        Time = getCycleCount ();
-                        T    = Device_Data.CPU_State.Time;
+                        g_conf.Time = getCycleCount ();
+                        g_conf.T    = Device_Data.CPU_State.Time;
                     }
                     else {
-                        LastKey  = ((uint_fast32_t) Key << 16) | CodeAndFlags;
-                        KBD_PRINT(("4. LastKey: %Xh", LastKey));
-                        RunState = 6;
+                        g_conf.LastKey  = ((uint_fast32_t) g_conf.Key << 16) | g_conf.CodeAndFlags;
+                        KBD_PRINT(("4. LastKey: %Xh", g_conf.LastKey));
+                        g_conf.RunState = 6;
                     }
                 }
                 break;
@@ -178,17 +181,17 @@ void AT_OVL emu_start () {
 клавиатуры нового кода) производится прерывание от клавиатуры - читается код нажатой клавиши из регистра данных клавиатуры, выдается
 звуковой сигнал и производятся действия, соответствующие нажатой клавише. При чтении регистра данных разряд 7 регистра состояния
 сбрасывается в "0".*/
-                if ((LastKey & 0x800) == 0) {
+                if ((g_conf.LastKey & 0x800) == 0) {
                     if ((Device_Data.SysRegs.Reg177660 & 0200) == 0) {
-                        Key = (uint_fast16_t) (LastKey >> 16);
+                        g_conf.Key = (uint_fast16_t) (g_conf.LastKey >> 16);
                         KBD_PRINT(("5. Key: %d", Key));
-                        if (Key == 14) {
+                        if (g_conf.Key == 14) {
                             Key_SetRusLat ();
-                        } else if (Key == 15) {
+                        } else if (g_conf.Key == 15) {
                             Key_ClrRusLat ();
                         }
                         if ((Device_Data.SysRegs.Reg177660 & 0100) == 0) {
-                            if (Key & KEY_AR2_PRESSED) {
+                            if (g_conf.Key & KEY_AR2_PRESSED) {
                                 Device_Data.CPU_State.Flags &= ~CPU_FLAG_KEY_VECTOR_60;
                                 Device_Data.CPU_State.Flags |=  CPU_FLAG_KEY_VECTOR_274;
                             }
@@ -201,16 +204,16 @@ void AT_OVL emu_start () {
                         Device_Data.SysRegs.Reg177660 |= 0200;
                         KBD_PRINT(("5. Reg177660: %oo", Device_Data.SysRegs.Reg177660));
                     }
-                    LastKey |= 0x800;
+                    g_conf.LastKey |= 0x800;
                     KBD_PRINT(("5. LastKey: %Xh", LastKey));
 /*   Регистр данных клавиатуры имеет адрес 177662.
    При нажатии на определенную клавишу в разрядах 0-6 этого регистра формируется соответствующий нажатой клавише семиразрядный код. Запись
 нового кода в регистр не производится до тех пор, пока не будет прочитан предыдущий код.
    Разряды 7-15 не используются.*/
-                    Device_Data.SysRegs.RdReg177662 = (uint16_t) (LastKey >> 16) & 0177;
+                    Device_Data.SysRegs.RdReg177662 = (uint16_t) (g_conf.LastKey >> 16) & 0177;
                     KBD_PRINT(("5. RdReg177662: %oo", Device_Data.SysRegs.RdReg177662));
                 }
-                RunState = 0;
+                g_conf.RunState = 0;
                 break;
         }
     }
