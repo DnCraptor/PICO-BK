@@ -3,7 +3,9 @@
 #include <string.h>
 #include <string>
 #include <filesystem>
+#ifndef fs
 namespace fs = std::filesystem;
+#endif
 typedef char char_t;
 
 enum FR_ATTR : uint32_t

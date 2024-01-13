@@ -51,7 +51,8 @@ inline static void cleanup_emu_state() {
 }
 
 void AT_OVL emu_start () {
-    DEBUG_PRINT(("Init Time: %d", Time));
+    cleanup_emu_state();
+    DEBUG_PRINT(("Init Time: %d", g_conf.Time));
     KBD_PRINT(("Initial state: CodeAndFlags: %Xh Key: %Xh LastKey: %Xh CPU_State.Flags: %Xh",
                                g_conf.CodeAndFlags, g_conf.Key, g_conf.LastKey, Device_Data.CPU_State.Flags));
     // Запускаем эмуляцию

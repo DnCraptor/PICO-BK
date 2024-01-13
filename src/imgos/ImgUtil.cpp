@@ -365,7 +365,8 @@ bool imgUtil::AnalyseImportFile(AnalyseFileStruct *a)
 	int nOffset = 0;
 
 	// проверим, а не бин формат ли подсунули?
-	if (sizeof(mBinHeader) == fread(mBinHeader, 1, sizeof(mBinHeader), a->file))
+	UINT wr;
+	if (FR_OK == f_read(&a->fil, mBinHeader, sizeof(mBinHeader), &wr))
 	{
 		a->bIsCRC = false;
 
@@ -395,7 +396,7 @@ bool imgUtil::AnalyseImportFile(AnalyseFileStruct *a)
 
 			if (nOffset == 20) // прочитаем оригинальное имя
 			{
-				fread(a->OrigName, 1, 16, a->file);
+				f_read(&a->fil, a->OrigName, sizeof(mBinHeader), &wr);
 			}
 
 			// тут можно ещё попробовать убрать расширение .bin
@@ -424,7 +425,7 @@ bool imgUtil::AnalyseImportFile(AnalyseFileStruct *a)
 		}
 	}
 
-	fseek(a->file, nOffset, SEEK_SET); // пропустить заголовок
+	f_lseek(&a->fil, nOffset); // пропустить заголовок
 	return bRet;
 }
 

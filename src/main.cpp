@@ -4,6 +4,9 @@ extern "C" {
 #include "manager.h"
 }
 
+#include "BKImage.h"
+static CBKImage m_BKImage;
+
 #include <pico/time.h>
 #include <pico/multicore.h>
 #include <hardware/pwm.h>
@@ -146,6 +149,8 @@ bool __not_in_flash_func(AY_timer_callback)(repeating_timer_t *rt) {
 }
 #endif
 
+static FATFS fatfs;
+
 int main() {
 #if (OVERCLOCKING > 270)
     hw_set_bits(&vreg_and_chip_reset_hw->vreg, VREG_AND_CHIP_RESET_VREG_VSEL_BITS);
@@ -194,7 +199,7 @@ int main() {
 
     init_psram();
 
-    FRESULT result = f_mount(&fs, "", 1);
+    FRESULT result = f_mount(&fatfs, "", 1);
     if (FR_OK != result) {
         char tmp[80];
         sprintf(tmp, "Unable to mount SD-card: %s (%d)", FRESULT_str(result), result);

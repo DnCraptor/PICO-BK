@@ -18,7 +18,6 @@
 
 #include "f_util.h"
 #include "ff.h"
-static FATFS fs;
 
 #define BEEPER_PIN 28
 

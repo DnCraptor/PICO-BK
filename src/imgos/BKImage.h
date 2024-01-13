@@ -106,6 +106,15 @@ public:
 	void SetItemData(int, DWORD_PTR) {
 
 	}
+	DWORD_PTR GetItemData(int) {
+		return 0;
+	}
+	void DeleteAllItems() {
+
+	}
+	size_t GetSelectedCount() {
+		return 0;
+	}
 };
 
 class CBKImage

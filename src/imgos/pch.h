@@ -8,7 +8,9 @@
 #include <vector>
 
 typedef char char_t;
+#ifndef fs
 namespace fs = std::filesystem;
+#endif
 
 #define ASSERT(x)
 

@@ -2,6 +2,7 @@
 #include "pch.h"
 #include "BKDirDataItem.h"
 #include <vector>
+#include "ff.h"
 
 extern const std::string g_strDir;
 extern const std::string g_strUp;
@@ -112,15 +113,16 @@ struct DiskCatalog
 // структура для передачи параметров анализатору файлов
 struct AnalyseFileStruct
 {
-	FILE           *file;       // обрабатываемый файл
-	std::string    strName;    // имя файла
-	std::string    strExt;     // расширение файла
+	FIL             fil;        // обрабатываемый файл
+	bool            open;
+	std::string     strName;    // имя файла
+	std::string     strExt;     // расширение файла
 	int             nAddr;      // адрес загрузки
 	int             nLen;       // размер
 	uint8_t         OrigName[16]; // оригинальное БКшное имя из бин файла
 	bool            bIsCRC;     // флаг наличия КС в бин файле
 	uint16_t        nCRC;       // КС файла
-	AnalyseFileStruct() : file(nullptr), nAddr(0), nLen(0), OrigName{ 0 }, bIsCRC(false), nCRC(0) {};
+	AnalyseFileStruct() : open(false), nAddr(0), nLen(0), OrigName{ 0 }, bIsCRC(false), nCRC(0) {};
 };
 
 namespace imgUtil

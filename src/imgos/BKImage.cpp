@@ -357,11 +357,11 @@ bool CBKImage::ReadCurrentDir(CBKImage::ItemPanePos pp)
 			m_ListCtrl.SetItemData(item, reinterpret_cast<DWORD_PTR>(nfr));
 		}
 
-		m_ListCtrl.SortItems(CBKListCtrl::MyCompareProc, reinterpret_cast<DWORD_PTR>(m_pListCtrl));
-		m_ListCtrl.SetFocus();
-		m_ListCtrl.SetItemState(pp.nFocusedItem, LVIS_FOCUSED | LVIS_SELECTED, LVIS_FOCUSED | LVIS_SELECTED);
-		m_ListCtrl.SetHotItem(pp.nFocusedItem);
-
+	////TODO:	m_ListCtrl.SortItems(CBKListCtrl::MyCompareProc, reinterpret_cast<DWORD_PTR>(m_pListCtrl));
+	////	m_ListCtrl.SetFocus();
+	////	m_ListCtrl.SetItemState(pp.nFocusedItem, LVIS_FOCUSED | LVIS_SELECTED, LVIS_FOCUSED | LVIS_SELECTED);
+	////	m_ListCtrl.SetHotItem(pp.nFocusedItem);
+/***
 		// и делаем верхний элемент обратно верхним
 		if (pp.nTopItem > 0)
 		{
@@ -381,12 +381,12 @@ bool CBKImage::ReadCurrentDir(CBKImage::ItemPanePos pp)
 		OutCurrFilePath();
 		std::string str = m_pFloppyImage->GetImageInfo();
 		AfxGetMainWnd()->SendMessage(WM_OUT_CURR_IMG_INFO, 0, reinterpret_cast<LPARAM>(&str));
+		**/
 	}
 	else
 	{
-		AfxGetMainWnd()->SendMessage(WM_SEND_ERRORNUM, static_cast<WPARAM>(0), static_cast<LPARAM>(m_pFloppyImage->GetErrorNumber()));
+////		AfxGetMainWnd()->SendMessage(WM_SEND_ERRORNUM, static_cast<WPARAM>(0), static_cast<LPARAM>(m_pFloppyImage->GetErrorNumber()));
 	}
-
 	return false;
 }
 
@@ -409,7 +409,7 @@ void CBKImage::ItemProcessing(int nItem, BKDirDataItem *fr)
 			if (!StepUptoDir(fr)) // если после выхода текущая директория стала -1, то это выход ТОЛЬКО из образа
 			{
 				// .. на корневой директории вызывает закрытие текущего открытого образа
-				if (S_OK != AfxGetMainWnd()->SendMessage(WM_OUT_OF_IMAGE, WPARAM(0), LPARAM(0)))
+	////			if (S_OK != AfxGetMainWnd()->SendMessage(WM_OUT_OF_IMAGE, WPARAM(0), LPARAM(0)))
 				{
 					return;
 				}
@@ -428,7 +428,7 @@ void CBKImage::ItemProcessing(int nItem, BKDirDataItem *fr)
 	else if (fr->nAttr & FR_ATTR::LOGDISK)
 	{
 		StepIntoDir(fr); // нужно, чтобы имя логдиска отображалось в пути, при входе в него.
-		AfxGetMainWnd()->SendMessage(WM_PUT_INTO_LD, static_cast<WPARAM>(m_pFloppyImage->GetBaseOffset() + fr->nStartBlock * BLOCK_SIZE), static_cast<LPARAM>(fr->nSize));
+	////	AfxGetMainWnd()->SendMessage(WM_PUT_INTO_LD, static_cast<WPARAM>(m_pFloppyImage->GetBaseOffset() + fr->nStartBlock * BLOCK_SIZE), static_cast<LPARAM>(fr->nSize));
 	}
 	else
 	{
@@ -492,7 +492,7 @@ void CBKImage::StepIntoDir(BKDirDataItem *fr)
 	}
 	else
 	{
-		AfxGetMainWnd()->SendMessage(WM_SEND_ERRORNUM, WPARAM(0), static_cast<LPARAM>(m_pFloppyImage->GetErrorNumber()));
+////		AfxGetMainWnd()->SendMessage(WM_SEND_ERRORNUM, WPARAM(0), static_cast<LPARAM>(m_pFloppyImage->GetErrorNumber()));
 	}
 }
 
@@ -527,7 +527,7 @@ bool CBKImage::StepUptoDir(BKDirDataItem *fr)
 	}
 	else
 	{
-		AfxGetMainWnd()->SendMessage(WM_SEND_ERRORNUM, WPARAM(0), static_cast<LPARAM>(m_pFloppyImage->GetErrorNumber()));
+	////	AfxGetMainWnd()->SendMessage(WM_SEND_ERRORNUM, WPARAM(0), static_cast<LPARAM>(m_pFloppyImage->GetErrorNumber()));
 	}
 
 	return bRet;
@@ -535,7 +535,7 @@ bool CBKImage::StepUptoDir(BKDirDataItem *fr)
 
 void CBKImage::OutCurrFilePath()
 {
-	AfxGetMainWnd()->SendMessage(WM_OUT_CURR_FILE_PATH, 0, reinterpret_cast<LPARAM>(&m_PaneInfo.strCurrPath));
+////	AfxGetMainWnd()->SendMessage(WM_OUT_CURR_FILE_PATH, 0, reinterpret_cast<LPARAM>(&m_PaneInfo.strCurrPath));
 }
 
 void CBKImage::ExtractSelected(const fs::path &strOutPath)
@@ -562,7 +562,7 @@ void CBKImage::ExtractSelected(const fs::path &strOutPath)
 			{
 				if (!ExtractObject(fr)) // тут либо директория. либо файл. директорию надо рекурсивно извлечь целиком
 				{
-					AfxGetMainWnd()->SendMessage(WM_SEND_ERRORNUM, WPARAM(0), static_cast<LPARAM>(m_pFloppyImage->GetErrorNumber()));
+				////	AfxGetMainWnd()->SendMessage(WM_SEND_ERRORNUM, WPARAM(0), static_cast<LPARAM>(m_pFloppyImage->GetErrorNumber()));
 				}
 			}
 		}
@@ -578,7 +578,7 @@ void CBKImage::RenameRecord(BKDirDataItem *fr)
 	// 3. Перечитываем каталог заново.
 	m_ListCtrl.DeleteAllItems();
 	ReadCurrentDir(pp);
-	m_ListCtrl.SetFocus();
+	////m_ListCtrl.SetFocus();
 }
 
 void CBKImage::DeleteSelected()
@@ -610,11 +610,11 @@ l_fatal:            // если фатальная - то просто выве�
 
 					if (res.nError == ADD_ERROR::IMAGE_ERROR)
 					{
-						AfxGetMainWnd()->SendMessage(WM_SEND_ERRORNUM, WPARAM(MB_ICONERROR), static_cast<LPARAM>(res.nImageErrorNumber));
+				////		AfxGetMainWnd()->SendMessage(WM_SEND_ERRORNUM, WPARAM(MB_ICONERROR), static_cast<LPARAM>(res.nImageErrorNumber));
 					}
 					else
 					{
-						AfxGetMainWnd()->SendMessage(WM_SEND_ERRORNUM, WPARAM(MB_ICONERROR), static_cast<LPARAM>(0x10000 | static_cast<int>(res.nError)));
+				////		AfxGetMainWnd()->SendMessage(WM_SEND_ERRORNUM, WPARAM(MB_ICONERROR), static_cast<LPARAM>(0x10000 | static_cast<int>(res.nError)));
 					}
 
 					break;
@@ -627,7 +627,7 @@ l_fatal:            // если фатальная - то просто выве�
 						// обрабатываем ситуацию с директорией
 						if (res.nImageErrorNumber == IMAGE_ERROR::FS_DIR_NOT_EMPTY) // если удалить не получается потому что не пустая
 						{
-							LRESULT definite = AfxGetMainWnd()->SendMessage(WM_SEND_MESSAGEBOX, WPARAM(MB_YESNO | MB_ICONINFORMATION), reinterpret_cast<LPARAM>(_T("Директория не пуста. Удалить рекурсивно всё её содержимое?")));
+						/****	LRESULT definite = AfxGetMainWnd()->SendMessage(WM_SEND_MESSAGEBOX, WPARAM(MB_YESNO | MB_ICONINFORMATION), reinterpret_cast<LPARAM>(_T("Директория не пуста. Удалить рекурсивно всё её содержимое?")));
 
 							switch (definite)
 							{
@@ -638,7 +638,7 @@ l_fatal:            // если фатальная - то просто выве�
 								default:
 								case IDNO:
 									break;
-							}
+							}***/
 						}
 						else
 						{
@@ -650,7 +650,7 @@ l_fatal:            // если фатальная - то просто выве�
 						// обрабатываем ситуацию с файлом
 						if (res.nImageErrorNumber == IMAGE_ERROR::FS_FILE_PROTECTED) // если удалить не получается из-за атрибутов
 						{
-							LRESULT definite = AfxGetMainWnd()->SendMessage(WM_SEND_MESSAGEBOX, WPARAM(MB_YESNO | MB_ICONINFORMATION), reinterpret_cast<LPARAM>(_T("Файл защищён. Всё равно удалить?")));
+						/***	LRESULT definite = AfxGetMainWnd()->SendMessage(WM_SEND_MESSAGEBOX, WPARAM(MB_YESNO | MB_ICONINFORMATION), reinterpret_cast<LPARAM>(_T("Файл защищён. Всё равно удалить?")));
 
 							switch (definite)
 							{
@@ -669,7 +669,7 @@ l_fatal:            // если фатальная - то просто выве�
 								default:
 								case IDNO:
 									break;
-							}
+							}**/
 						}
 						else
 						{
@@ -682,7 +682,7 @@ l_fatal:            // если фатальная - то просто выве�
 
 		m_ListCtrl.DeleteAllItems();
 		ReadCurrentDir(pp);
-		m_ListCtrl.SetFocus();
+	////	m_ListCtrl.SetFocus();
 	}
 }
 
@@ -760,7 +760,7 @@ bool CBKImage::ExtractObject(BKDirDataItem *fr)
 
 		if (!fs::create_directory(m_strStorePath, ec))
 		{
-			AfxGetMainWnd()->SendMessage(WM_SEND_ERRORNUM, WPARAM(0), static_cast<LPARAM>(IMAGE_ERROR::FS_CANNOT_CREATE_DIR));
+	////		AfxGetMainWnd()->SendMessage(WM_SEND_ERRORNUM, WPARAM(0), static_cast<LPARAM>(IMAGE_ERROR::FS_CANNOT_CREATE_DIR));
 			// bRet = false;
 		}
 
@@ -860,8 +860,8 @@ bool CBKImage::ExtractFile(BKDirDataItem *fr)
 			}
 		}
 	}
-
-	if ((AFS.file = _tfopen((m_strStorePath / AFS.strName).c_str(), _T("w+b"))) != nullptr)
+    UINT wr;
+	if (f_open(&AFS.fil, (m_strStorePath / AFS.strName).c_str(), FA_WRITE | FA_OPEN_APPEND) == FR_OK)
 	{
 		const int nLen = fr->nSize;
 		auto Buffer = std::vector<uint8_t>(m_pFloppyImage->EvenSizeByBlock(nLen));
@@ -879,23 +879,23 @@ bool CBKImage::ExtractFile(BKDirDataItem *fr)
 					// с адресом всё ясно, а вот длина больших файлов урезается
 					BinHeader[0] = static_cast<uint16_t>(fr->nAddress);
 					BinHeader[1] = static_cast<uint16_t>(nLen);
-					fwrite(BinHeader, 1, sizeof(BinHeader), AFS.file);
+					f_write(&AFS.fil, BinHeader, sizeof(BinHeader), &wr);
 
 					if (m_bCheckUseLongBinStatus)
 					{
-						fwrite(AFS.OrigName, 1, 16, AFS.file);
+						f_write(&AFS.fil, AFS.OrigName, 16, &wr);
 					}
 				}
 
 				AFS.nCRC = imgUtil::CalcCRC(pBuffer, fr->nSize);
-				size_t ret = fwrite(pBuffer, 1, fr->nSize, AFS.file);
+				f_write(&AFS.fil, pBuffer, fr->nSize, &wr);
 
 				if (bUseBinFile && m_bCheckUseLongBinStatus)
 				{
-					fwrite(&AFS.nCRC, 1, sizeof(uint16_t), AFS.file);
+					f_write(&AFS.fil, &AFS.nCRC, sizeof(uint16_t), &wr);
 				}
 
-				fflush(AFS.file);
+				f_sync(&AFS.fil);
 
 				if (m_bCheckLogExtractStatus)
 				{
@@ -918,7 +918,7 @@ bool CBKImage::ExtractFile(BKDirDataItem *fr)
 			bRet = false;
 		}
 
-		fclose(AFS.file);
+		f_close(&AFS.fil);
 	}
 	else
 	{
@@ -928,7 +928,7 @@ bool CBKImage::ExtractFile(BKDirDataItem *fr)
 
 	if (!bRet)
 	{
-		AfxGetMainWnd()->SendMessage(WM_SEND_ERRORNUM, WPARAM(0), static_cast<LPARAM>(nErrorNumber));
+	////	AfxGetMainWnd()->SendMessage(WM_SEND_ERRORNUM, WPARAM(0), static_cast<LPARAM>(nErrorNumber));
 	}
 
 	return bRet;
@@ -961,7 +961,7 @@ bool CBKImage::AnalyseExportFile(AnalyseFileStruct *a)
 	autorun sAuto = { 0, 0, 0 };
 	// сделаем защиту. формат бин для больших файлов не будем использовать
 	const bool bUseBinFile = m_bCheckUseBinStatus && (a->nLen < 65536);
-
+    UINT wr;
 	if (0300 <= a->nAddr && a->nAddr < 01000)  // если есть блок автозапуска, или что-то похожее
 	{
 		if ((a->nAddr <= 0770) && (a->nAddr + a->nLen >= 0776)) // если файл перекрывает область, откуда брать адрес запуска
@@ -985,9 +985,9 @@ bool CBKImage::AnalyseExportFile(AnalyseFileStruct *a)
 				}
 			}
 
-			if (0 == fseek(a->file, nOffset, SEEK_SET))
+			if (FR_OK == f_lseek(&a->fil, nOffset))
 			{
-				if (sizeof(sAuto) == fread(&sAuto, 1, sizeof(sAuto), a->file))
+				if (FR_OK == f_read(&a->fil, &sAuto, sizeof(sAuto), &wr))
 				{
 					if ((sAuto.nWord770 == sAuto.nWord772) && (sAuto.nWord770 == sAuto.nWord774))
 					{
@@ -1010,16 +1010,15 @@ bool CBKImage::AnalyseExportFile(AnalyseFileStruct *a)
 	{
 		nStartAddr = 0;
 	}
-
-	FILE *f = _wfopen((m_strStorePath / "extractlog.txt").c_str(), "at");
-
-	if (f)
+/***
+	FIL f;
+	if (f_open(&f, (m_strStorePath / "extractlog.txt").c_str(), "at") == FR_OK)
 	{
 		std::string origName = imgUtil::BKToUNICODE(a->OrigName, 16, m_pFloppyImage->m_pKoi8tbl);
-		fwprintf(f, "%-20s:\t%s\tload:%06o\tlen:%06o\tstart:%06o\n", a->strName.c_str(), origName.c_str(), a->nAddr, a->nLen, nStartAddr);
-		fclose(f);
+		fprintf(f, "%-20s:\t%s\tload:%06o\tlen:%06o\tstart:%06o\n", a->strName.c_str(), origName.c_str(), a->nAddr, a->nLen, nStartAddr);
+		f_close(&f);
 	}
-
+***/
 	return bRet;
 }
 
@@ -1043,6 +1042,7 @@ ADDOP_RESULT CBKImage::AddObject(const fs::path &findFile, bool bExistDir)
 
 	BKDirDataItem AFR;
 	AFR.strName = findFile.filename().string();
+/*** TODO:
 	// в <filesystem> нет функционала для получения виндозных атрибутов файла
 	// поэтому сделаем так:
 	CFileStatus fst;
@@ -1264,7 +1264,7 @@ l_sque_retries:
 			}
 		}
 	}
-
+***/
 	ret.afr = AFR;
 	return ret;
 }
