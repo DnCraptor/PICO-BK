@@ -97,6 +97,7 @@ pico_set_program_version(pico-bk "test")
     )
     target_include_directories(${PROJECT_NAME} PRIVATE
             ${CMAKE_CURRENT_SOURCE_DIR}/src
+            ${CMAKE_CURRENT_SOURCE_DIR}/src/imgos
             ${CMAKE_CURRENT_SOURCE_DIR}/disks
             ${CMAKE_CURRENT_SOURCE_DIR}/drivers/usb
             ${CMAKE_CURRENT_SOURCE_DIR}/soft/EmuAPP/src
