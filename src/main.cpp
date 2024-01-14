@@ -149,12 +149,14 @@ bool __not_in_flash_func(AY_timer_callback)(repeating_timer_t *rt) {
 #endif
 
 static FATFS fatfs;
-static CBKParseImage ParserImage;
+static PARSE_RESULT parse_result;
 
 void detect_os_type(const char* path, char* os_type, size_t sz) {
-    PARSE_RESULT pr = ParserImage.ParseImage(path, 0);
-    auto s = std::to_string(pr.nImageSize >> 10) + " KB " + CBKParseImage::GetOSName(pr.imageOSType);
-    if (pr.bImageBootable) {
+    CBKParseImage* parserImage = new CBKParseImage();
+    parse_result = parserImage->ParseImage(path, 0);
+    delete parserImage;
+    auto s = std::to_string(parse_result.nImageSize >> 10) + " KB " + CBKParseImage::GetOSName(parse_result.imageOSType);
+    if (parse_result.bImageBootable) {
         s += " [bootable]";
     }
     DBGM_PRINT(("detect_os_type: %s %s", path, s.c_str()));
@@ -166,9 +168,9 @@ static CBKImage BKImage;
 
 void mount_img(const char* path) {
     DBGM_PRINT(("mount_img: %s", path));
-    PARSE_RESULT pr = ParserImage.ParseImage(path, 0);
-    BKImage.Open(pr);
+    BKImage.Open(parse_result);
     BKImage.ReadCurrentDir(BKImage.GetTopItemIndex());
+    BKImage.Close();
     DBGM_PRINT(("mount_img: %s done", path));
 }
 #endif
