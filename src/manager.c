@@ -860,12 +860,14 @@ static inline void fill_panel(file_panel_desc_t* p) {
             }
             bool selected = p == psp && p->selected_file_idx == y;
             draw_label(p->left + 1, y, p->width - 2, filename, selected, fp->fattrib & AM_DIR);
-            if (selected) {
+            if (selected && !(fp->fattrib & AM_DIR)) {
                 char os_type[160];
                 char path[260];
                 construct_full_name(path, p->path, fp->name);
                 detect_os_type(path, os_type, 160);
                 draw_cmd_line(0, CMD_Y_POS, os_type);
+            } else {
+                draw_cmd_line(0, CMD_Y_POS, 0);
             }
             y++;
         }

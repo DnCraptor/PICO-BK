@@ -47,7 +47,7 @@ const std::string CBKParseImage::GetOSName(const IMAGE_TYPE t)
 	switch (t)
 	{
 		case IMAGE_TYPE::ERROR_NOIMAGE:
-			return { "Read error" };
+			return { "" };
 
 		case IMAGE_TYPE::ANDOS:
 			return { "ANDOS" };
@@ -89,7 +89,7 @@ const std::string CBKParseImage::GetOSName(const IMAGE_TYPE t)
 			return { "MS-DOS" };
 
 		default:
-			return { "Unknown" };
+			return { "" };
 	}
 }
 

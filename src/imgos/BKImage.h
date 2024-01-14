@@ -83,6 +83,12 @@ typedef unsigned int ULONG_PTR, *PULONG_PTR;
 typedef ULONG_PTR DWORD_PTR, *PDWORD_PTR;
 
 class CBKListCtrl {
+    typedef struct {
+       DWORD_PTR p_data;
+       std::string fname;
+       std::string fsize;
+    } row_t;
+	std::vector<row_t> m_rows;
 public:
 	// номера колонок для основного режима
 	enum { LC_FNAME_POS = 0, LC_TYPE_POS, LC_BLK_SIZE_POS, LC_ADDRESS_POS, LC_SIZE_POS, LC_ATTR_POS, LC_SPECIFIC_POS };
@@ -97,20 +103,36 @@ public:
 		//// TODO:
 		return 1;
 	}
-	void InsertItem(int, const char*) {
-		//// TODO:
+	void InsertItem(int i, const char* str) {
+		row_t row = {};
+		while (m_rows.size() <= i) {
+            m_rows.push_back(row);
+		}
+		m_rows[i].fname = str;
 	}
-	void SetItemText(int, int, const char*) {
-
+	void SetItemText(int i, int c, const char* str) {
+        row_t& row = m_rows[i];
+		switch (c)
+		{
+		case LC_FNAME_POS:
+			row.fname = str;
+			break;
+		case LC_SIZE_POS:
+		    row.fsize = str;
+			break;
+			// TODO:
+		default:
+			break;
+		}
 	}
-	void SetItemData(int, DWORD_PTR) {
-
+	void SetItemData(int i, DWORD_PTR pdata) {
+        m_rows[i].p_data = pdata;
 	}
-	DWORD_PTR GetItemData(int) {
-		return 0;
+	DWORD_PTR GetItemData(int i) {
+		return m_rows[i].p_data;
 	}
 	void DeleteAllItems() {
-
+        m_rows.clear();
 	}
 	size_t GetSelectedCount() {
 		return 0;

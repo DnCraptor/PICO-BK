@@ -44,6 +44,9 @@ CBKImage::~CBKImage()
 
 uint32_t CBKImage::Open(PARSE_RESULT &pr, const bool bLogDisk)
 {
+	// Open new, so remove prev. list contents
+	m_ListCtrl.DeleteAllItems();
+
 	if (bLogDisk)
 	{
 		PushCurrentImg();

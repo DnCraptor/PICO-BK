@@ -154,10 +154,9 @@ static CBKParseImage ParserImage;
 
 void detect_os_type(const char* path, char* os_type, size_t sz) {
     PARSE_RESULT pr = ParserImage.ParseImage(path, 0);
-    auto s = CBKParseImage::GetOSName(pr.imageOSType);
-    s += " " + std::to_string(pr.nImageSize >> 10) + " KB";
+    auto s = std::to_string(pr.nImageSize >> 10) + " KB " + CBKParseImage::GetOSName(pr.imageOSType);
     if (pr.bImageBootable) {
-        s += " bootable";
+        s += " [bootable]";
     }
     DBGM_PRINT(("detect_os_type: %s %s", path, s.c_str()));
     strncpy(os_type, s.c_str(), sz);
