@@ -1055,8 +1055,8 @@ static inline bool run_img(char* path) {
     enterPressed = false;
     if (ctrlPressed) {
         ctrlPressed = false;
-        char os_type[20] = { 0 };
-        detect_os_type(path, os_type);
+        char os_type[60] = { 0 };
+        detect_os_type(path, os_type, 60);
         const line_t lns[3] = {
             { -1, "OS Type Detection Result" },
             { -1, path },

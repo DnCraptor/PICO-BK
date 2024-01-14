@@ -151,10 +151,14 @@ static FATFS fatfs;
 static CBKImage BKImage;
 static CBKParseImage ParserImage;
 
-void detect_os_type(const char* path, char* os_type) {
+void detect_os_type(const char* path, char* os_type, size_t sz) {
     PARSE_RESULT pr = ParserImage.ParseImage(path, 0);
     auto s = CBKParseImage::GetOSName(pr.imageOSType);
-    strcpy(os_type, s.c_str());
+    s += " " + std::to_string(pr.nImageSize >> 10) + " KB";
+    if (pr.bImageBootable) {
+        s += " bootable";
+    }
+    strncpy(os_type, s.c_str(), sz);
 }
 
 int main() {

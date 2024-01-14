@@ -1,7 +1,5 @@
 ﻿#include "pch.h"
-//#include "resource.h"
 #include "BKImage.h"
-//#include "BKListCtrl.h"
 #include "StringUtil.h"
 #include "BKFloppyImage_ANDos.h"
 #include "BKFloppyImage_MKDos.h"
