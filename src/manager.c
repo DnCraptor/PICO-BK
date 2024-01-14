@@ -381,13 +381,14 @@ static void draw_window() {
 }
 
 static char os_type[160] = { 0 }; 
+inline static void update_menu_color();
 
 static void redraw_window() {
     draw_window();
     fill_panel(&left_panel);
     fill_panel(&right_panel);
     draw_cmd_line(0, CMD_Y_POS, os_type);
-    bottom_line();
+    update_menu_color();
 }
 
 static void turn_usb_on(uint8_t cmd);
@@ -620,7 +621,7 @@ static void m_info(uint8_t cmd) {
         { 1, " - Shift + \"key\"  - register up/down" },
         { 1, " - Ctrl  + \"key\"  - CU" },
         { 1, " - Caps Lock      - lock up/down register" },
-        { 1, " - left  Win      - RUS" },
+        { 1, " - left  Win      - RUS" }, // TODO: rus
         { 1, " - right Win      - LAT" },
         { 1, " - Pause          - STOP" },
         { 1, " - F1             - POVTOR" },
@@ -634,31 +635,31 @@ static void m_info(uint8_t cmd) {
         { 1, " - F9             - SBROS" },
         { 1, " " },
         { 1, "Emulation hot keys:" },
-        { 1, " - Ctrl+Alt+Del  - Reset BM1 CPU, RAM clenup, set default pages, deafult speed, init system registers" },
-        { 1, " - Print Screen  - Reset RP2040 CPU" },
-        { 1, " - F10           - cyclic change pallete" },
-        { 1, " - Alt  + F10    - default BK-0010 pallete" },
-        { 1, " - Ctrl + F10    - default BK-0011 pallete" },
-        { 1, " - F11           - adjust brightness" },
-        { 1, " - F12           - Switch B/W 512x256 to Color 256x256 and back" },
-        { 1, " - Alt + F1..F8  - fast save a snapshot (BK\\SNAP[1..8].BKE)" },
-        { 1, " - Ctrl + F1..F8 - fast restore from related snapshot" },
-        { 1, " - Ctrl + F11    - slower emulation (default emulation is about to BK on 3 MHz)" },
-        { 1, " - Ctrl + F12    - faster emulation" },
-        { 1, " - Ctrl + \"+\"    - increase volume" },
-        { 1, " - Ctrl + \"-\"    - decrease volume" },
-        { 1, " - Esc           - go to File Manager" },
+        { 1, " - Ctrl + Alt + Del - Reset BM1 CPU, RAM clenup, set default pages, deafult speed, init system registers" },
+        { 1, " - Print Screen     - Reset RP2040 CPU" },
+        { 1, " - F10              - cyclic change pallete" },
+        { 1, " - Alt  + F10       - default BK-0010 pallete" },
+        { 1, " - Ctrl + F10       - default BK-0011 pallete" },
+        { 1, " - F11              - adjust brightness" },
+        { 1, " - F12              - Switch B/W 512x256 to Color 256x256 and back" },
+        { 1, " - Alt  + F1..F8    - fast save a snapshot (BK\\SNAP[1..8].BKE)" },
+        { 1, " - Ctrl + F1..F8    - fast restore from related snapshot" },
+        { 1, " - Ctrl + F11       - slower emulation (default emulation is about to BK on 3 MHz)" },
+        { 1, " - Ctrl + F12       - faster emulation" },
+        { 1, " - Ctrl + \"+\"       - increase volume" },
+        { 1, " - Ctrl + \"-\"       - decrease volume" },
+        { 1, " - Esc              - go to the File Manager" },
         { 1, " " },
         { 1, "File Manager hot keys:" },
-        { 1, " - F10           - mount SD-card as USB-drive" },
+        { 1, " - F10           - exit from the File Manager" },
         { 1, " - F11           - change emulation mode BK-0010-01, BK-0011M..." },
-        { 1, " - F12           - Reset BM1 CPU and go to BK for selected mode" },
-        { 1, " - Ctrl + F10    - exit from the File Manager" },
+        { 1, " - F12           - Switch B/W 512x256 to Color 256x256 and back" },
+        { 1, " - Alt + F10     - mount SD-card as USB-drive" },
     };
     lines_t lines = { 40, 0, plns };
     draw_box(5, 2, MAX_WIDTH - 15, MAX_HEIGHT - 6, "Help", &lines);
-    int t = lastCleanableScanCode;
-    while(t == lastCleanableScanCode) { }
+    enterPressed = escPressed = false;
+    while(!escPressed && !enterPressed) { }
     redraw_window();
 }
 
@@ -674,7 +675,7 @@ static fn_1_12_tbl_t fn_1_12_tbl = {
     ' ', '9', " Swap ", swap_drives,
     '1', '0', " Exit ", mark_to_exit,
     '1', '1', "EmMODE", switch_mode,
-    '1', '2', "Reset ", reset
+    '1', '2', " B/W  ", switch_color
 };
 
 static fn_1_12_tbl_t fn_1_12_tbl_alt = {
@@ -689,7 +690,7 @@ static fn_1_12_tbl_t fn_1_12_tbl_alt = {
     ' ', '9', " UpMn ", do_nothing,
     '1', '0', " USB  ", turn_usb_on,
     '1', '1', "EmMODE", switch_mode,
-    '1', '2', "Reset ", reset
+    '1', '2', " B/W  ", switch_color
 };
 
 static fn_1_12_tbl_t fn_1_12_tbl_ctrl = {
@@ -703,8 +704,8 @@ static fn_1_12_tbl_t fn_1_12_tbl_ctrl = {
     ' ', '8', " Del  ", m_delete_file,
     ' ', '9', " Swap ", swap_drives,
     '1', '0', " Exit ", mark_to_exit,
-    '1', '1', " B/W  ", switch_color,
-    '1', '2', "Reset ", reset
+    '1', '1', "EmMODE", switch_mode,
+    '1', '2', " B/W  ", switch_color
 };
 
 static inline fn_1_12_tbl_t* actual_fn_1_12_tbl() {
@@ -777,10 +778,17 @@ static void switch_mode(uint8_t cmd) {
     redraw_window();
 }
 
+inline static void update_menu_color() {
+    const char * m = g_conf.color_mode ? " B/W  " : " Color";
+    snprintf(fn_1_12_tbl[11].name, BTN_WIDTH, m);
+    snprintf(fn_1_12_tbl_alt[11].name, BTN_WIDTH, m);
+    snprintf(fn_1_12_tbl_ctrl[11].name, BTN_WIDTH, m);
+    bottom_line();
+}
+
 static void switch_color(uint8_t cmd) {
     g_conf.color_mode = !g_conf.color_mode;
-    snprintf(fn_1_12_tbl_ctrl[10].name, BTN_WIDTH, g_conf.color_mode ? " B/W  " : " Color");
-    bottom_line();
+    update_menu_color();
 }
 
 inline static void m_cleanup() {
@@ -1194,6 +1202,11 @@ static uint8_t repeat_cnt = 0;
 
 static inline void work_cycle() {
     while(1) {
+        if (ctrlPressed && altPressed && delPressed) {
+            ctrlPressed = altPressed = delPressed = false;
+            reset(0);
+            return;
+        }
         if_swap_drives();
         if_overclock();
         if_sound_control();
@@ -1329,9 +1342,8 @@ inline static void start_manager() {
     set_start_debug_line(MAX_HEIGHT);
     draw_window();
     select_left_panel();
-
-    snprintf(fn_1_12_tbl_ctrl[10].name, BTN_WIDTH, g_conf.color_mode ? " B/W  " : " Color");
-    bottom_line();
+    update_menu_color();
+    m_info(0); // TODO: ensure it is not too aggressive
 
     work_cycle();
     
