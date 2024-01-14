@@ -29,4 +29,4 @@ typedef struct config_em {
     uint_fast8_t  RunState;
 } config_em_t;
 
-extern config_em_t g_conf;
+extern volatile config_em_t g_conf;

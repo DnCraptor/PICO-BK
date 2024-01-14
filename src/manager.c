@@ -380,11 +380,13 @@ static void draw_window() {
     draw_panel(MAX_WIDTH / 2, PANEL_TOP_Y, MAX_WIDTH / 2, PANEL_LAST_Y + 1, line, 0);
 }
 
+static char os_type[160] = { 0 }; 
+
 static void redraw_window() {
     draw_window();
     fill_panel(&left_panel);
     fill_panel(&right_panel);
-    draw_cmd_line(0, CMD_Y_POS, 0);
+    draw_cmd_line(0, CMD_Y_POS, os_type);
     bottom_line();
 }
 
@@ -735,7 +737,7 @@ static void bottom_line() {
         get_color_schema()->FOREGROUND_FIELD_COLOR,
         get_color_schema()->BACKGROUND_FIELD_COLOR
     );
-    draw_cmd_line(0, CMD_Y_POS, 0);
+    draw_cmd_line(0, CMD_Y_POS, os_type);
 }
 
 static inline void turn_usb_off(uint8_t cmd) { // TODO: support multiple enter for USB mount
@@ -833,6 +835,8 @@ inline static void collect_files(file_panel_desc_t* p) {
     qsort (files_info, files_count, sizeof(file_info_t), m_comp);
 }
 
+static char selected_file_path[260];
+
 static inline void fill_panel(file_panel_desc_t* p) {
     collect_files(p);
     int y = 1;
@@ -860,13 +864,16 @@ static inline void fill_panel(file_panel_desc_t* p) {
             }
             bool selected = p == psp && p->selected_file_idx == y;
             draw_label(p->left + 1, y, p->width - 2, filename, selected, fp->fattrib & AM_DIR);
-            if (selected && !(fp->fattrib & AM_DIR)) {
-                char os_type[160];
+            if (selected && (fp->fattrib & AM_DIR) == 0) {
                 char path[260];
                 construct_full_name(path, p->path, fp->name);
-                detect_os_type(path, os_type, 160);
+                if (strncmp(selected_file_path, path, 260) != 0) {
+                    detect_os_type(path, os_type, 160);
+                    strncpy(selected_file_path, path, 260);
+                }
                 draw_cmd_line(0, CMD_Y_POS, os_type);
-            } else {
+            } else if (selected) {
+                os_type[0] = 0;
                 draw_cmd_line(0, CMD_Y_POS, 0);
             }
             y++;
@@ -959,7 +966,7 @@ static inline void redraw_current_panel() {
     sprintf(line, "SD:%s", psp->path);
     draw_panel(psp->left, PANEL_TOP_Y, psp->width, PANEL_LAST_Y + 1, line, 0);
     fill_panel(psp);
-    draw_cmd_line(0, CMD_Y_POS, 0);
+    draw_cmd_line(0, CMD_Y_POS, os_type);
 }
 
 static inline bool run_bin(char* path) {

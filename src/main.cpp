@@ -26,7 +26,7 @@ extern "C" {
 #include "emu_e.h"
 }
 
-config_em_t g_conf {
+volatile config_em_t g_conf {
    true, // is_covox_on
    true, // is_AY_on
    true, // color_mode
