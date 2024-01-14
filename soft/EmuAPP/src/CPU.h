@@ -11,16 +11,12 @@
 #include "Focal.h"
 #include "Tests.h"
 #include "bk11m_330_mstd.h"
+#include "debug.h"
 
 #if BOOT_DEBUG || DSK_DEBUG || MNGR_DEBUG || KBD_DEBUG
 #include "stdio.h"
 extern void logMsg(char* msg);
 #define printf(...) { char tmp[80]; snprintf(tmp, 80, __VA_ARGS__); logMsg(tmp); }
-#if MNGR_DEBUG
-#define DBGM_PRINT( X) printf X
-#else
-#define DBGM_PRINT( X)
-#endif
 #if BOOT_DEBUG
 #define DEBUG_PRINT( X) printf X
 #else

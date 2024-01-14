@@ -1,6 +1,7 @@
 // from https://github.com/UmkaSK/speccy-pico-trd/blob/main/src/zx_emu/aySoundSoft.c
 #include "aySoundSoft.h"
 #include "stdbool.h"
+#include "debug.h"
 
 uint8_t N_sel_reg=0;
 

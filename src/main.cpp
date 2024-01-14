@@ -2,6 +2,7 @@ extern "C" {
 #include "config_em.h"
 #include "emulator.h"
 #include "manager.h"
+#include "debug.h"
 }
 
 #include "BKImage.h"
@@ -158,6 +159,7 @@ void detect_os_type(const char* path, char* os_type, size_t sz) {
     if (pr.bImageBootable) {
         s += " bootable";
     }
+    DBGM_PRINT(("detect_os_type: %s %s", path, s.c_str()));
     strncpy(os_type, s.c_str(), sz);
 }
 

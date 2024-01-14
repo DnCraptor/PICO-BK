@@ -7,14 +7,7 @@
 #include "CPU.h"
 #include "CPU_i.h"
 #include "stdlib.h"
-
-#ifdef MNGR_DEBUG
-extern void logMsg(char* msg);
-#define printf(...) { char tmp[80]; snprintf(tmp, 80, __VA_ARGS__); logMsg(tmp); }
-#define DBGM_PRINT( X) printf X
-#else
-#define DBGM_PRINT( X)
-#endif
+#include "debug.h"
 
 static void bottom_line();
 static void redraw_window();
@@ -865,7 +858,15 @@ static inline void fill_panel(file_panel_desc_t* p) {
                     break;
                 }
             }
-            draw_label(p->left + 1, y, p->width - 2, filename, p == psp && p->selected_file_idx == y, fp->fattrib & AM_DIR);
+            bool selected = p == psp && p->selected_file_idx == y;
+            draw_label(p->left + 1, y, p->width - 2, filename, selected, fp->fattrib & AM_DIR);
+            if (selected) {
+                char os_type[160];
+                char path[260];
+                construct_full_name(path, p->path, fp->name);
+                detect_os_type(path, os_type, 160);
+                draw_cmd_line(0, CMD_Y_POS, os_type);
+            }
             y++;
         }
         p->files_number++;
@@ -1053,6 +1054,7 @@ static const line_t drive_num_lns[] = {
 
 static inline bool run_img(char* path) {
     enterPressed = false;
+    /****
     if (ctrlPressed) {
         ctrlPressed = false;
         char os_type[60] = { 0 };
@@ -1068,8 +1070,9 @@ static inline bool run_img(char* path) {
         redraw_window();
         return true;
     }
+    ***/
     const lines_t lines = { 4, 1, drive_num_lns };
-    int mount_as = draw_selector(50, 10, 30, 8, "Device to mount", &lines, 2);
+    int mount_as = draw_selector(50, 10, 30, 9, "Device to mount", &lines, 2);
     insertdisk(mount_as, 819200, 0, path);
     if ( !is_fdd_suppored() ) {
         set_bk0010mode(BK_0011M_FDD);

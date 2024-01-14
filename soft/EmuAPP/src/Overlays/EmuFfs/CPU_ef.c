@@ -8,6 +8,7 @@
 #include "vga.h"
 #include "fdd.h"
 #include "aySoundSoft.h"
+#include "debug.h"
 
 #define AT_OVL __attribute__((section(".ovl0_ef.text")))
 
