@@ -1,6 +1,8 @@
 ﻿#include "pch.h"
 #include "BKImgFile.h"
-//#include <cchar>
+extern "C" {
+	#include "debug.h"
+}
 
 #pragma warning(disable:4996)
 
@@ -31,6 +33,7 @@ CBKImgFile::~CBKImgFile()
 
 bool CBKImgFile::Open(const fs::path &pathName, const bool bWrite)
 {
+	DBGM_PRINT(("CBKImgFile::Open(%s, %d)", pathName.c_str(), bWrite));
 	bool bNeedFDRaw = false;
 	bool bFDRaw = false;
 	DWORD dwRet;
@@ -47,6 +50,7 @@ bool CBKImgFile::Open(const fs::path &pathName, const bool bWrite)
 
 void CBKImgFile::Close()
 {
+	DBGM_PRINT(("CBKImgFile::Close() m_open: %d", m_open));
 	if (m_open)
 	{
 		f_close(&m_f);

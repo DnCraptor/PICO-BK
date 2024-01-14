@@ -57,7 +57,7 @@ uint32_t CBKImage::Open(PARSE_RESULT &pr, const bool bLogDisk)
 	{
 		Close();
 	}
-
+    DBGM_PRINT(("CBKImage::Open imageOSType: %d", pr.imageOSType));
 	switch (pr.imageOSType)
 	{
 		case IMAGE_TYPE::ANDOS:
@@ -118,7 +118,7 @@ uint32_t CBKImage::Open(PARSE_RESULT &pr, const bool bLogDisk)
 		default:
 			ASSERT(false);
 	}
-
+    DBGM_PRINT(("CBKImage::Open m_pFloppyImage: %d", m_pFloppyImage.get()));
 	if (m_pFloppyImage)
 	{
 		m_pFloppyImage->OpenFloppyImage();
@@ -212,7 +212,7 @@ CBKImage::ItemPanePos CBKImage::GetTopItemIndex()
 bool CBKImage::ReadCurrentDir(CBKImage::ItemPanePos pp)
 {
 	ASSERT(m_pListCtrl);
-
+    DBGM_PRINT(("CBKImage::ReadCurrentDir(CBKImage::ItemPanePos pp = %d)", pp));
 	if (m_pFloppyImage->ReadCurrentDir())
 	{
 		std::vector<BKDirDataItem> *pLS = m_pFloppyImage->CurrDirectory();
@@ -221,7 +221,7 @@ bool CBKImage::ReadCurrentDir(CBKImage::ItemPanePos pp)
 		for (auto &fr : *pLS)
 		{
 			std::string str;
-			m_ListCtrl.InsertItem(item, fr.strName.c_str());  // сюда можно добавить иконку
+			item = m_ListCtrl.InsertItem(item, fr.strName.c_str());  // сюда можно добавить иконку
 
 			if (fr.nAttr & FR_ATTR::DIRECTORY)
 			{
@@ -360,6 +360,7 @@ bool CBKImage::ReadCurrentDir(CBKImage::ItemPanePos pp)
 			}
 			m_ListCtrl.SetItemData(item, reinterpret_cast<DWORD_PTR>(nfr));
 		}
+		DBGM_PRINT(("CBKImage::ReadCurrentDir TODO: sort"));
 
 	////TODO:	m_ListCtrl.SortItems(CBKListCtrl::MyCompareProc, reinterpret_cast<DWORD_PTR>(m_pListCtrl));
 	////	m_ListCtrl.SetFocus();
@@ -389,6 +390,7 @@ bool CBKImage::ReadCurrentDir(CBKImage::ItemPanePos pp)
 	}
 	else
 	{
+		DBGM_PRINT(("m_pFloppyImage->GetErrorNumber() = %d", m_pFloppyImage->GetErrorNumber()));
 ////		AfxGetMainWnd()->SendMessage(WM_SEND_ERRORNUM, static_cast<WPARAM>(0), static_cast<LPARAM>(m_pFloppyImage->GetErrorNumber()));
 	}
 	return false;

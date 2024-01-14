@@ -3,7 +3,7 @@
 #include "ImgUtil.h"
 #include "StringUtil.h"
 
-const std::string g_strDir = "<Folter>";
+const std::string g_strDir = "<Folder>";
 const std::string g_strUp = "<Up>";
 const std::string g_strLink = "<Link>";
 

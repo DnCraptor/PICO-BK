@@ -163,10 +163,11 @@ void detect_os_type(const char* path, char* os_type, size_t sz) {
 }
 
 void mount_img(const char* path) {
+    DBGM_PRINT(("mount_img: %s", path));
     PARSE_RESULT pr = ParserImage.ParseImage(path, 0);
     BKImage.Open(pr);
     BKImage.ReadCurrentDir(BKImage.GetTopItemIndex());
-    // TODO:
+    DBGM_PRINT(("mount_img: %s done", path));
 }
 
 int main() {

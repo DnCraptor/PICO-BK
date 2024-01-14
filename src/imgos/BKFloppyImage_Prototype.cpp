@@ -1,5 +1,8 @@
 ﻿#include "pch.h"
 #include "BKFloppyImage_Prototype.h"
+extern "C" {
+	#include "debug.h"
+}
 
 #pragma warning(disable:4996)
 
@@ -18,6 +21,7 @@ CBKFloppyImage_Prototype::CBKFloppyImage_Prototype(const PARSE_RESULT &image)
 	, m_nSeekOffset(0)
 	, m_nCatPos(0)
 {
+	DBGM_PRINT(("CBKFloppyImage_Prototype::CBKFloppyImage_Prototype"));
 }
 
 
@@ -28,6 +32,7 @@ CBKFloppyImage_Prototype::~CBKFloppyImage_Prototype()
 
 bool CBKFloppyImage_Prototype::OpenFloppyImage()
 {
+	DBGM_PRINT(("CBKFloppyImage_Prototype::OpenFloppyImage()"));
 	m_nLastErrorNumber = IMAGE_ERROR::OK_NOERRORS;
 	CloseFloppyImage();
 	m_sDiskCat.init();
@@ -51,6 +56,7 @@ bool CBKFloppyImage_Prototype::OpenFloppyImage()
 
 void CBKFloppyImage_Prototype::CloseFloppyImage()
 {
+	DBGM_PRINT(("CBKFloppyImage_Prototype::CloseFloppyImage()"));
 	m_pFoppyImgFile.Close();
 }
 

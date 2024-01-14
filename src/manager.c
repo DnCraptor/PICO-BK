@@ -1055,10 +1055,13 @@ static const line_t drive_num_lns[] = {
 };
 
 static inline bool run_img(char* path) {
+    DBGM_PRINT(("run_img: %s, ctrlPressed: %d", path, ctrlPressed));
     enterPressed = false;
     if (ctrlPressed) {
         mount_img(path);
+        scan_code_cleanup();
         redraw_window();
+        DBGM_PRINT(("run_img: %s done", path));
         return true;
     }
     const lines_t lines = { 4, 1, drive_num_lns };

@@ -15,7 +15,7 @@ constexpr auto IMG_EXT_IDX = 2; // индекс расширения .img в м�
 constexpr auto BKD_EXT_IDX = 3; // индекс расширения .bkd в массиве g_pstrExts
 extern const std::string g_pstrExts[KNOWN_EXTS]; // массив часто используемых расширений
 
-constexpr auto COPY_BLOCK_SIZE = 65536;
+constexpr auto COPY_BLOCK_SIZE = 512;// 65536; // TODO: >= cluster size
 
 enum class IMAGE_ERROR : int
 {

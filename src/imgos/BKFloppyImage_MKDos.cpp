@@ -1,11 +1,15 @@
 ﻿#include "pch.h"
 #include "BKFloppyImage_MKDos.h"
 #include "StringUtil.h"
+extern "C" {
+	#include "debug.h"
+}
 
 CBKFloppyImage_MKDos::CBKFloppyImage_MKDos(const PARSE_RESULT &image)
 	: CBKFloppyImage_Prototype(image)
 	, m_pDiskCat(nullptr)
 {
+	DBGM_PRINT(("CBKFloppyImage_MKDos::CBKFloppyImage_MKDos"));
 	m_nCatSize = 20 * m_nBlockSize; // всю нулевую дорожку будем считать каталогом. // *(uint16_t*)&m_mSector[FMT_MKDOS_FIRST_FILE_BLOCK] * m_nSectorSize;
 	// хотя размер каталога в мкдосе почти 9 секторов, чуть-чуть до конца сектора не добивает.
 	m_pCatBuffer = std::make_unique<uint8_t[]>(m_nCatSize); // необязательно выделять массив во время чтения каталога, размер-то его известен

@@ -89,35 +89,54 @@ class CBKListCtrl {
        DWORD_PTR p_data;
        std::string fname;
        std::string fsize;
+	   std::string fattr;
     } row_t;
 	std::vector<row_t> m_rows;
+///	UINT m_nID;
 public:
 	// номера колонок для основного режима
 	enum { LC_FNAME_POS = 0, LC_TYPE_POS, LC_BLK_SIZE_POS, LC_ADDRESS_POS, LC_SIZE_POS, LC_ATTR_POS, LC_SPECIFIC_POS };
     void SetSpecificColumn(UINT nID) {
 		DBGM_PRINT(("SetSpecificColumn(%d)", nID));
-		//// TODO:
+		///m_nID = nID;
 	}
 	int GetTopIndex() {
 		DBGM_PRINT(("GetTopIndex"));
-		//// TODO:
+		//// Извлекает индекс самого видимого элемента в представлении списка или представлении отчета.
 		return 0;
 	}
-	int GetNextItem(int i, int c) {
-		DBGM_PRINT(("GetNextItem(%d, %d)", i, c));
-		//// TODO:
-		return 1;
-	}
-	void InsertItem(int i, const char* str) {
-		DBGM_PRINT(("InsertItem(%d, %s)", i, str));
-		row_t row = {};
-		while (m_rows.size() <= i) {
-            m_rows.push_back(row);
+	int GetNextItem(int nItem, int nFlags) {
+		/* TODO:
+Геометрическое отношение запрошенного элемента к указанному элементу и состоянию запрошенного элемента. Геометрическое отношение может быть одним из следующих значений:
+LVNI_ABOVE Выполняет поиск элемента, превышающего указанный элемент.
+LVNI_ALL Выполняет поиск последующего элемента по индексу (значение по умолчанию).
+LVNI_BELOW Ищет элемент, который находится под указанным элементом.
+LVNI_TOLEFT Выполняет поиск элемента слева от указанного элемента.
+LVNI_TORIGHT Выполняет поиск элемента справа от указанного элемента.
+Состояние может быть равно нулю или может быть одним или несколькими из следующих значений:
+LVNI_DROPHILITED Элемент имеет набор флага LVIS_DROPHILITED состояния.
+LVNI_FOCUSED Элемент имеет набор флага LVIS_FOCUSED состояния.
+LVNI_SELECTED Элемент имеет набор флага LVIS_SELECTED состояния.
+		*/
+		DBGM_PRINT(("GetNextItem(%d, %d)", nItem, nFlags));
+		if (nFlags & LVNI_SELECTED) { // TODO:
+			return -1;
 		}
-		m_rows[i].fname = str;
+		for (int i = nItem + 1; i < m_rows.size(); ++ i) {
+// TODO:
+            return i;
+		}
+		return -1;
+	}
+	int InsertItem(int i, const char* str) {
+		DBGM_PRINT(("InsertItem(%d, '%s')", i, str));
+		row_t row = { 0, str };
+        m_rows.push_back(row);
+		return m_rows.size() - 1;
 	}
 	void SetItemText(int i, int c, const char* str) {
-		DBGM_PRINT(("SetItemText(%d, %d, %s)", i, c, str));
+		DBGM_PRINT(("SetItemText(%d, %d, '%s')", i, c, str));
+		if (i >= m_rows.size()) return;
         row_t& row = m_rows[i];
 		switch (c)
 		{
@@ -127,17 +146,22 @@ public:
 		case LC_SIZE_POS:
 		    row.fsize = str;
 			break;
+		case LC_ATTR_POS:
+		    row.fattr = str;
+		    break;
 			// TODO:
 		default:
 			break;
 		}
 	}
 	void SetItemData(int i, DWORD_PTR pdata) {
-		DBGM_PRINT(("SetItemData(%d, %s)", i, pdata));
+		DBGM_PRINT(("SetItemData(%d, %08Xh)", i, pdata));
+		if (i >= m_rows.size()) return;
         m_rows[i].p_data = pdata;
 	}
 	DWORD_PTR GetItemData(int i) {
 		DBGM_PRINT(("GetItemData(%d)", i));
+		if (i >= m_rows.size()) return 0;
 		return m_rows[i].p_data;
 	}
 	void DeleteAllItems() {
