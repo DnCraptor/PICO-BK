@@ -1,4 +1,4 @@
-#if PICO_ON_DEVICE
+#if RAM_PAGES
 #include "ram_page.h"
 #include "f_util.h"
 #include "ff.h"

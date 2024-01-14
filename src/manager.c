@@ -1057,6 +1057,7 @@ static const line_t drive_num_lns[] = {
 static inline bool run_img(char* path) {
     DBGM_PRINT(("run_img: %s, ctrlPressed: %d", path, ctrlPressed));
     enterPressed = false;
+#if EXT_DRIVES_MOUNT
     if (ctrlPressed) {
         mount_img(path);
         scan_code_cleanup();
@@ -1064,6 +1065,7 @@ static inline bool run_img(char* path) {
         DBGM_PRINT(("run_img: %s done", path));
         return true;
     }
+#endif
     const lines_t lines = { 4, 1, drive_num_lns };
     int mount_as = draw_selector(50, 10, 30, 9, "Device to mount", &lines, 2);
     insertdisk(mount_as, 819200, 0, path);

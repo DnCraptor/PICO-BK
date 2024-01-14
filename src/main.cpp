@@ -149,7 +149,6 @@ bool __not_in_flash_func(AY_timer_callback)(repeating_timer_t *rt) {
 #endif
 
 static FATFS fatfs;
-static CBKImage BKImage;
 static CBKParseImage ParserImage;
 
 void detect_os_type(const char* path, char* os_type, size_t sz) {
@@ -162,6 +161,9 @@ void detect_os_type(const char* path, char* os_type, size_t sz) {
     strncpy(os_type, s.c_str(), sz);
 }
 
+#if EXT_DRIVES_MOUNT
+static CBKImage BKImage;
+
 void mount_img(const char* path) {
     DBGM_PRINT(("mount_img: %s", path));
     PARSE_RESULT pr = ParserImage.ParseImage(path, 0);
@@ -169,6 +171,7 @@ void mount_img(const char* path) {
     BKImage.ReadCurrentDir(BKImage.GetTopItemIndex());
     DBGM_PRINT(("mount_img: %s done", path));
 }
+#endif
 
 int main() {
 #if (OVERCLOCKING > 270)

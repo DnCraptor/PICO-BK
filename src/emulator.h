@@ -102,4 +102,7 @@ extern struct i8253_s {
 #define rgb1(b, g, r) r | (g<<8) | (b<<16);
 
 void detect_os_type(const char* path, char* os_type, size_t sz);
+
+#if EXT_DRIVES_MOUNT
 void mount_img(const char* path);
+#endif
