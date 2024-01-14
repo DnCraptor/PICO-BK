@@ -13,6 +13,7 @@
 #include "BKFloppyImage_Holography.h"
 #include "BKFloppyImage_DaleOS.h"
 #include "BKFloppyImage_MSDOS.h"
+#include "debug.h"
 
 #pragma warning(disable:4996)
 
@@ -44,6 +45,7 @@ CBKImage::~CBKImage()
 
 uint32_t CBKImage::Open(PARSE_RESULT &pr, const bool bLogDisk)
 {
+	DBGM_PRINT(("CBKImage::Open(PARSE_RESULT &pr, const bool bLogDisk = %d)", bLogDisk));
 	// Open new, so remove prev. list contents
 	m_ListCtrl.DeleteAllItems();
 
@@ -140,6 +142,7 @@ uint32_t CBKImage::ReOpen()
 
 void CBKImage::Close()
 {
+	DBGM_PRINT(("CBKImage::Close m_pFloppyImage: %d", m_pFloppyImage.get()));
 	if (m_pFloppyImage)
 	{
 		m_pFloppyImage->CloseFloppyImage();

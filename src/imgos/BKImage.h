@@ -1,5 +1,7 @@
 ﻿#pragma once
-
+extern "C" {
+#include "debug.h"
+}
 #include "BKFloppyImage_Prototype.h"
 
 /*
@@ -93,17 +95,21 @@ public:
 	// номера колонок для основного режима
 	enum { LC_FNAME_POS = 0, LC_TYPE_POS, LC_BLK_SIZE_POS, LC_ADDRESS_POS, LC_SIZE_POS, LC_ATTR_POS, LC_SPECIFIC_POS };
     void SetSpecificColumn(UINT nID) {
+		DBGM_PRINT(("SetSpecificColumn(%d)", nID));
 		//// TODO:
 	}
 	int GetTopIndex() {
+		DBGM_PRINT(("GetTopIndex"));
 		//// TODO:
 		return 0;
 	}
-	int GetNextItem(int, int) {
+	int GetNextItem(int i, int c) {
+		DBGM_PRINT(("GetNextItem(%d, %d)", i, c));
 		//// TODO:
 		return 1;
 	}
 	void InsertItem(int i, const char* str) {
+		DBGM_PRINT(("InsertItem(%d, %s)", i, str));
 		row_t row = {};
 		while (m_rows.size() <= i) {
             m_rows.push_back(row);
@@ -111,6 +117,7 @@ public:
 		m_rows[i].fname = str;
 	}
 	void SetItemText(int i, int c, const char* str) {
+		DBGM_PRINT(("SetItemText(%d, %d, %s)", i, c, str));
         row_t& row = m_rows[i];
 		switch (c)
 		{
@@ -126,15 +133,19 @@ public:
 		}
 	}
 	void SetItemData(int i, DWORD_PTR pdata) {
+		DBGM_PRINT(("SetItemData(%d, %s)", i, pdata));
         m_rows[i].p_data = pdata;
 	}
 	DWORD_PTR GetItemData(int i) {
+		DBGM_PRINT(("GetItemData(%d)", i));
 		return m_rows[i].p_data;
 	}
 	void DeleteAllItems() {
+		DBGM_PRINT(("DeleteAllItems"));
         m_rows.clear();
 	}
 	size_t GetSelectedCount() {
+		DBGM_PRINT(("GetSelectedCount"));
 		return 0;
 	}
 };

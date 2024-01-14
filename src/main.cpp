@@ -162,6 +162,13 @@ void detect_os_type(const char* path, char* os_type, size_t sz) {
     strncpy(os_type, s.c_str(), sz);
 }
 
+void mount_img(const char* path) {
+    PARSE_RESULT pr = ParserImage.ParseImage(path, 0);
+    BKImage.Open(pr);
+    BKImage.ReadCurrentDir(BKImage.GetTopItemIndex());
+    // TODO:
+}
+
 int main() {
 #if (OVERCLOCKING > 270)
     hw_set_bits(&vreg_and_chip_reset_hw->vreg, VREG_AND_CHIP_RESET_VREG_VSEL_BITS);
