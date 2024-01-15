@@ -186,6 +186,32 @@ bool mount_img(const char* path) {
 }
 #endif
 
+static void init_fs() {
+    FRESULT result = f_mount(&fatfs, "", 1);
+    if (FR_OK != result) {
+        char tmp[80];
+        sprintf(tmp, "Unable to mount SD-card: %s (%d)", FRESULT_str(result), result);
+        logMsg(tmp);
+    } else {
+        SD_CARD_AVAILABLE = true;
+    }
+
+    DIRECT_RAM_BORDER = PSRAM_AVAILABLE ? RAM_SIZE : (SD_CARD_AVAILABLE ? RAM_PAGE_SIZE : RAM_SIZE);
+
+    if (SD_CARD_AVAILABLE) {
+        DIR dir;
+        if (f_opendir(&dir, "\\BK") != FR_OK) {
+            f_mkdir("\\BK");
+        } else {
+            f_closedir(&dir);
+        }
+        insertdisk(0, fdd0_sz(), fdd0_rom(), "\\BK\\fdd0.img");
+        insertdisk(1, fdd1_sz(), fdd1_rom(), "\\BK\\fdd1.img"); // TODO: why not attached?
+        insertdisk(2, 819200, 0, "\\BK\\hdd0.img");
+        insertdisk(3, 819200, 0, "\\BK\\hdd1.img"); // TODO: why not attached?
+    }
+}
+
 int main() {
 #if (OVERCLOCKING > 270)
     hw_set_bits(&vreg_and_chip_reset_hw->vreg, VREG_AND_CHIP_RESET_VREG_VSEL_BITS);
@@ -232,25 +258,8 @@ int main() {
     memset(TEXT_VIDEO_RAM, 0, sizeof TEXT_VIDEO_RAM);
     graphics_set_mode(g_conf.color_mode ? BK_256x256x2 : BK_512x256x1);
 
-    init_psram();
-
-    FRESULT result = f_mount(&fatfs, "", 1);
-    if (FR_OK != result) {
-        char tmp[80];
-        sprintf(tmp, "Unable to mount SD-card: %s (%d)", FRESULT_str(result), result);
-        logMsg(tmp);
-    } else {
-        SD_CARD_AVAILABLE = true;
-    }
-
-    DIRECT_RAM_BORDER = PSRAM_AVAILABLE ? RAM_SIZE : (SD_CARD_AVAILABLE ? RAM_PAGE_SIZE : RAM_SIZE);
-
-    if (SD_CARD_AVAILABLE) {
-        insertdisk(0, fdd0_sz(), fdd0_rom(), "\\BK\\fdd0.img");
-        insertdisk(1, fdd1_sz(), fdd1_rom(), "\\BK\\fdd1.img"); // TODO: why not attached?
-        insertdisk(2, 819200, 0, "\\BK\\hdd0.img");
-        insertdisk(3, 819200, 0, "\\BK\\hdd1.img"); // TODO: why not attached?
-    }
+//    init_psram();
+    init_fs();
 
 #ifdef SOUND_SYSTEM
     repeating_timer_t timer;
