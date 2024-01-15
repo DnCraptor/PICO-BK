@@ -152,15 +152,20 @@ static FATFS fatfs;
 static PARSE_RESULT parse_result;
 
 void detect_os_type(const char* path, char* os_type, size_t sz) {
-    CBKParseImage* parserImage = new CBKParseImage();
-    parse_result = parserImage->ParseImage(path, 0);
-    delete parserImage;
-    auto s = std::to_string(parse_result.nImageSize >> 10) + " KB " + CBKParseImage::GetOSName(parse_result.imageOSType);
-    if (parse_result.bImageBootable) {
-        s += " [bootable]";
+    try {
+        CBKParseImage* parserImage = new CBKParseImage();
+        parse_result = parserImage->ParseImage(path, 0);
+        delete parserImage;
+        auto s = std::to_string(parse_result.nImageSize >> 10) + " KB " + CBKParseImage::GetOSName(parse_result.imageOSType);
+        if (parse_result.bImageBootable) {
+            s += " [bootable]";
+        }
+        DBGM_PRINT(("detect_os_type: %s %s", path, s.c_str()));
+        strncpy(os_type, s.c_str(), sz);
+    } catch(...) {
+        DBGM_PRINT(("detect_os_type: %s FAILED", path));
+        strncpy(os_type, "DETECT OS TYPE FAILED", sz);
     }
-    DBGM_PRINT(("detect_os_type: %s %s", path, s.c_str()));
-    strncpy(os_type, s.c_str(), sz);
 }
 
 #if EXT_DRIVES_MOUNT
@@ -176,10 +181,15 @@ bool mount_img(const char* path) {
         return false;
     }
     m_cleanup_ext();
-    BKImage.Open(parse_result);
-    BKImage.ReadCurrentDir(BKImage.GetTopItemIndex());
-    BKImage.Close();
-    DBGM_PRINT(("mount_img: %s done", path));
+    try {
+        BKImage.Open(parse_result);
+        BKImage.ReadCurrentDir(BKImage.GetTopItemIndex());
+        BKImage.Close();
+        DBGM_PRINT(("mount_img: %s done", path));
+    } catch(...) {
+        DBGM_PRINT(("mount_img: %s FAILED", path));
+        return false;
+    }
     return true;
 }
 #endif

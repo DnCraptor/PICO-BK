@@ -167,7 +167,7 @@ int draw_selector(int left, int top, int width, int height, const char* title, c
             downPressed = false;
         }
         if (escPressed) {
-            escPressed = false;
+          //  escPressed = false;
             break;
         }
     }

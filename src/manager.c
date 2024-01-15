@@ -777,7 +777,12 @@ static void turn_usb_on(uint8_t cmd) {
 static void switch_mode(uint8_t cmd) {
     bk_mode_t bk0010mode = g_conf.bk0010mode;
     const lines_t lines = { 5, 1, bk_mode_lns };
-    bk0010mode = draw_selector(50, 10, 30, 8, "BK Emulation Mode", &lines, bk0010mode);
+    bk0010mode = draw_selector(50, 10, 30, 9, "BK Emulation Mode", &lines, bk0010mode);
+    if (escPressed) {
+        escPressed = false;
+        redraw_window();
+        return;
+    }
     set_bk0010mode(bk0010mode);
     init_rom();
     redraw_window();
@@ -1144,7 +1149,12 @@ static inline bool run_img(char* path) {
     }
 #endif
     const lines_t lines = { 4, 1, drive_num_lns };
-    int mount_as = draw_selector(50, 10, 30, 9, "Device to mount", &lines, 2);
+    int mount_as = draw_selector(50, 10, 30, 8, "Device to mount", &lines, 1);
+    if (escPressed) {
+        escPressed = false;
+        redraw_window();
+        return;
+    }
     insertdisk(mount_as, 819200, 0, path);
     if ( !is_fdd_suppored() ) {
         set_bk0010mode(BK_0011M_FDD);

@@ -166,7 +166,7 @@ target_compile_definitions(${PROJECT_NAME} PRIVATE
         #MNGR_DEBUG=1
         #DSK_DEBUG=1
 
-        EXT_DRIVES_MOUNT=1
+        #EXT_DRIVES_MOUNT=1
 
         SOUND_SYSTEM
         COVOX
