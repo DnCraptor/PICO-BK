@@ -143,7 +143,7 @@ LVNI_SELECTED Элемент имеет набор флага LVIS_SELECTED со
 	}
 	void DeleteAllItems() {
 		DBGM_PRINT(("DeleteAllItems"));
-        m_cleanup();
+        m_cleanup_ext();
 	}
 	size_t GetSelectedCount() {
 		DBGM_PRINT(("GetSelectedCount"));

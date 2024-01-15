@@ -175,7 +175,7 @@ bool mount_img(const char* path) {
         DBGM_PRINT(("mount_img: %s unsupported file type (resources)", path));
         return false;
     }
-    m_cleanup();
+    m_cleanup_ext();
     BKImage.Open(parse_result);
     BKImage.ReadCurrentDir(BKImage.GetTopItemIndex());
     BKImage.Close();

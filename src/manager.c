@@ -792,19 +792,28 @@ static void switch_color(uint8_t cmd) {
     update_menu_color();
 }
 
-void m_cleanup() {
+void m_cleanup_ext() {
+    DBGM_PRINT(("m_cleanup"));
+    files_count = 0;
+}
+
+static bool lock_collection = false; // TODO: by drive
+
+inline static void m_cleanup() {
+    if (lock_collection) return;
+    DBGM_PRINT(("m_cleanup"));
     files_count = 0;
 }
 
 int m_add_file_ext(size_t i, const char* fname) {
-    if (i >= files_count) {
+    if (i >= MAX_FILES) {
         return -1;
     }
     file_info_t* fp = &files_info[i];
     fp->fattrib = 0;
     fp->fdata = 0;
     strncpy(fp->name, fname, MAX_WIDTH >> 1);
-    return ++files_count; // TODO: ensure
+    return files_count++; // TODO: ensure
 }
 
 const char* m_get_file_data(size_t i) {
@@ -876,8 +885,6 @@ static int m_comp(const file_info_t * e1, const file_info_t * e2) {
     if (!(e1->fattrib & AM_DIR) && (e2->fattrib & AM_DIR)) return 1;
     return strncmp(e1->name, e2->name, MAX_WIDTH >> 1);
 }
-
-static bool lock_collection = false; // TODO: by drive
 
 inline static void collect_files(file_panel_desc_t* p) {
     if (lock_collection) return;
