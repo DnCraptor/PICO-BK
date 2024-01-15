@@ -390,8 +390,10 @@ inline static void update_menu_color();
 
 static void redraw_window() {
     draw_window();
-    fill_panel(&left_panel);
-    fill_panel(&right_panel);
+    if (SD_CARD_AVAILABLE) {
+        fill_panel(&left_panel);
+        fill_panel(&right_panel);
+    }
     draw_cmd_line(0, CMD_Y_POS, os_type);
     update_menu_color();
 }
@@ -896,6 +898,7 @@ static int m_comp(const file_info_t * e1, const file_info_t * e2) {
 }
 
 inline static void collect_files(file_panel_desc_t* p) {
+    if (!SD_CARD_AVAILABLE) return;
     if (lock_collection) return;
     m_cleanup();
     DIR dir;
@@ -911,6 +914,7 @@ inline static void collect_files(file_panel_desc_t* p) {
 static char selected_file_path[260];
 
 static inline void fill_panel(file_panel_desc_t* p) {
+    if (!SD_CARD_AVAILABLE) return;
     collect_files(p);
     int y = 1;
     p->files_number = 0;
