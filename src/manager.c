@@ -284,13 +284,8 @@ static void save_snap(uint8_t cmd) {
     redraw_window();
 }
 
-static void restore_snap(uint8_t cmd) {
-    f2Pressed = false;
-    main_init();
+inline static void restore_snap_by_filename(const char* path) {
     FIL file;
-    gpio_put(PICO_DEFAULT_LED_PIN, true);
-    char path[256] = { 0 };
-    snprintf(path, 64, "\\BK\\SNAP%d.BKE", cmd + 1);
     FRESULT result = f_open(&file, path, FA_READ);
     UINT bw;
     if (result == FR_OK) {
@@ -313,7 +308,16 @@ static void restore_snap(uint8_t cmd) {
     init_rom();
     graphics_set_page(CPU_PAGE51_MEM_ADR, g_conf.graphics_pallette_idx);
     gpio_put(PICO_DEFAULT_LED_PIN, false);
-    mark_to_exit(cmd);
+    mark_to_exit(0);
+}
+
+static void restore_snap(uint8_t cmd) {
+    f2Pressed = false;
+    main_init();
+    gpio_put(PICO_DEFAULT_LED_PIN, true);
+    char path[256] = { 0 };
+    snprintf(path, 256, "\\BK\\SNAP%d.BKE", cmd + 1);
+    restore_snap_by_filename(path);
 }
 
 inline static void if_video_mode() {
@@ -1168,6 +1172,15 @@ static inline void enter_pressed() {
             char path[256];
             construct_full_name(path, psp->path, fp->name);
             run_img(path); // TODO: separate support for .BKD
+            return;
+        } else if (
+            (fp->name[slen - 1] == 'E' || fp->name[slen - 1] == 'e') &&
+            (fp->name[slen - 2] == 'K' || fp->name[slen - 2] == 'k') &&
+            (fp->name[slen - 3] == 'B' || fp->name[slen - 3] == 'b')
+        ) {
+            char path[256];
+            construct_full_name(path, psp->path, fp->name);
+            restore_snap_by_filename(path);
             return;
         }
     }
