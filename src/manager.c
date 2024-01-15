@@ -84,6 +84,7 @@ typedef struct {
 	  WORD    fdate;   /* Modified date */
 	  WORD    ftime;   /* Modified time */
 	  BYTE    fattrib; /* File attribute */
+    DWORD*  fdata;
     char    name[MAX_WIDTH >> 1];
 } file_info_t;
 
@@ -791,8 +792,53 @@ static void switch_color(uint8_t cmd) {
     update_menu_color();
 }
 
-inline static void m_cleanup() {
+void m_cleanup() {
     files_count = 0;
+}
+
+int m_add_file_ext(size_t i, const char* fname) {
+    if (i >= files_count) {
+        return -1;
+    }
+    file_info_t* fp = &files_info[i];
+    fp->fattrib = 0;
+    fp->fdata = 0;
+    strncpy(fp->name, fname, MAX_WIDTH >> 1);
+    return ++files_count; // TODO: ensure
+}
+
+const char* m_get_file_data(size_t i) {
+    if (i >= files_count) {
+        return 0;
+    }
+    return files_info[i].fdate;
+}
+
+void m_set_file_attr(size_t i, int c, const char* str) {
+    if (i >= files_count) {
+        return;
+    }
+    file_info_t* fp = &files_info[i];
+		switch (c)
+		{
+    case -1:
+        fp->fdata = str;
+        break;
+		case 0: // LC_FNAME_POS:
+        strncpy(fp->name, str, MAX_WIDTH >> 1);
+        break;
+		case 4: // LC_SIZE_POS:
+		    fp->fsize = 1; // TODO:
+        break;
+		case 5: // LC_ATTR_POS:
+		    if(strstr("D", str)) {
+           fp->fattrib |= AM_DIR;
+        }
+		    break;
+			// TODO:
+		default:
+			break;
+		}
 }
 
 inline static void m_add_file(FILINFO* fi) {
@@ -831,7 +877,10 @@ static int m_comp(const file_info_t * e1, const file_info_t * e2) {
     return strncmp(e1->name, e2->name, MAX_WIDTH >> 1);
 }
 
+static bool lock_collection = false; // TODO: by drive
+
 inline static void collect_files(file_panel_desc_t* p) {
+    if (lock_collection) return;
     m_cleanup();
     DIR dir;
     if (!m_opendir(&dir, p->path)) return;
@@ -1074,7 +1123,9 @@ static inline bool run_img(char* path) {
     enterPressed = false;
 #if EXT_DRIVES_MOUNT
     if (ctrlPressed) {
-        mount_img(path);
+        if(!mount_img(path)) return false;
+        qsort (files_info, files_count, sizeof(file_info_t), m_comp);
+        lock_collection = true;
         scan_code_cleanup();
         redraw_window();
         DBGM_PRINT(("run_img: %s done", path));

@@ -166,12 +166,21 @@ void detect_os_type(const char* path, char* os_type, size_t sz) {
 #if EXT_DRIVES_MOUNT
 static CBKImage BKImage;
 
-void mount_img(const char* path) {
+bool mount_img(const char* path) {
     DBGM_PRINT(("mount_img: %s", path));
+    if (parse_result.imageOSType == IMAGE_TYPE::ANDOS ||
+        parse_result.imageOSType == IMAGE_TYPE::MSDOS ||
+        parse_result.imageOSType == IMAGE_TYPE::NCDOS
+    ) {
+        DBGM_PRINT(("mount_img: %s unsupported file type (resources)", path));
+        return false;
+    }
+    m_cleanup();
     BKImage.Open(parse_result);
     BKImage.ReadCurrentDir(BKImage.GetTopItemIndex());
     BKImage.Close();
     DBGM_PRINT(("mount_img: %s done", path));
+    return true;
 }
 #endif
 

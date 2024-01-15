@@ -1,6 +1,7 @@
 ﻿#pragma once
 extern "C" {
 #include "debug.h"
+#include "emulator.h"
 }
 #include "BKFloppyImage_Prototype.h"
 
@@ -85,6 +86,7 @@ typedef unsigned int ULONG_PTR, *PULONG_PTR;
 typedef ULONG_PTR DWORD_PTR, *PDWORD_PTR;
 
 class CBKListCtrl {
+	/**
     typedef struct {
        DWORD_PTR p_data;
        std::string fname;
@@ -92,13 +94,12 @@ class CBKListCtrl {
 	   std::string fattr;
     } row_t;
 	std::vector<row_t> m_rows;
-///	UINT m_nID;
+	*/
 public:
 	// номера колонок для основного режима
 	enum { LC_FNAME_POS = 0, LC_TYPE_POS, LC_BLK_SIZE_POS, LC_ADDRESS_POS, LC_SIZE_POS, LC_ATTR_POS, LC_SPECIFIC_POS };
     void SetSpecificColumn(UINT nID) {
 		DBGM_PRINT(("SetSpecificColumn(%d)", nID));
-		///m_nID = nID;
 	}
 	int GetTopIndex() {
 		DBGM_PRINT(("GetTopIndex"));
@@ -122,51 +123,27 @@ LVNI_SELECTED Элемент имеет набор флага LVIS_SELECTED со
 		if (nFlags & LVNI_SELECTED) { // TODO:
 			return -1;
 		}
-		for (int i = nItem + 1; i < m_rows.size(); ++ i) {
-// TODO:
-            return i;
-		}
-		return -1;
+		return nItem + 1;
 	}
 	int InsertItem(int i, const char* str) {
 		DBGM_PRINT(("InsertItem(%d, '%s')", i, str));
-		row_t row = { 0, str };
-        m_rows.push_back(row);
-		return m_rows.size() - 1;
+		return m_add_file_ext(i, str);
 	}
 	void SetItemText(int i, int c, const char* str) {
 		DBGM_PRINT(("SetItemText(%d, %d, '%s')", i, c, str));
-		if (i >= m_rows.size()) return;
-        row_t& row = m_rows[i];
-		switch (c)
-		{
-		case LC_FNAME_POS:
-			row.fname = str;
-			break;
-		case LC_SIZE_POS:
-		    row.fsize = str;
-			break;
-		case LC_ATTR_POS:
-		    row.fattr = str;
-		    break;
-			// TODO:
-		default:
-			break;
-		}
+		m_set_file_attr(i, c, str);
 	}
 	void SetItemData(int i, DWORD_PTR pdata) {
 		DBGM_PRINT(("SetItemData(%d, %08Xh)", i, pdata));
-		if (i >= m_rows.size()) return;
-        m_rows[i].p_data = pdata;
+		m_set_file_attr(i, -1, (const char*)pdata);
 	}
 	DWORD_PTR GetItemData(int i) {
 		DBGM_PRINT(("GetItemData(%d)", i));
-		if (i >= m_rows.size()) return 0;
-		return m_rows[i].p_data;
+		return (DWORD_PTR)m_get_file_data(i);
 	}
 	void DeleteAllItems() {
 		DBGM_PRINT(("DeleteAllItems"));
-        m_rows.clear();
+        m_cleanup();
 	}
 	size_t GetSelectedCount() {
 		DBGM_PRINT(("GetSelectedCount"));

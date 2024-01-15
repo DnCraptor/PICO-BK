@@ -104,5 +104,10 @@ extern struct i8253_s {
 void detect_os_type(const char* path, char* os_type, size_t sz);
 
 #if EXT_DRIVES_MOUNT
-void mount_img(const char* path);
+bool mount_img(const char* path);
 #endif
+void m_cleanup();
+int m_add_file_ext(size_t i, const char* fname);
+void m_set_file_attr(size_t i, int c, const char* str);
+const char* m_get_file_data(size_t i);
+
