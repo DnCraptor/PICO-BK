@@ -76,7 +76,6 @@ static uint16_t* txt_palette_fast = NULL;
 //static uint16_t txt_palette_fast[256*4];
 
 enum graphics_mode_t graphics_mode;
-extern volatile bool manager_started;
 
 // TODO: separate header for sound mixer
 
@@ -481,7 +480,6 @@ void set_start_debug_line(int _start_debug_line) {
 void logFile(char* msg);
 #endif
 
-extern volatile bool manager_started;
 void logMsg(char* msg) {
 #if BOOT_DEBUG || KBD_DEBUG || MNGR_DEBUG || DSK_DEBUG
     { char tmp[85]; sprintf(tmp, "%s\n", msg); logFile(tmp); }

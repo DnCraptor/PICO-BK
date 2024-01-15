@@ -107,43 +107,35 @@ bool __not_in_flash_func(AY_timer_callback)(repeating_timer_t *rt) {
     pwm_set_gpio_level(PWM_PIN0, outR); // Право
     pwm_set_gpio_level(PWM_PIN1, outL); // Лево
     outL = outR = 0;
+    if (manager_started) {
+        return true;
+    }
 #ifdef AYSOUND
     if (g_conf.is_AY_on) {
         uint8_t* AY_data = get_AY_Out(5);
-        if (g_conf.snd_volume >= 0) {
-            register uint8_t mult = g_conf.snd_volume + 1;
-            if (mult > 16) mult = 16;
-            outL = ((uint16_t)AY_data[0] + AY_data[1]) << mult;
-            outR = ((uint16_t)AY_data[2] + AY_data[1]) << mult;
-        } else {
-            register int8_t div = -g_conf.snd_volume;
-            if (div > 16) div = 16;
-            outL = ((uint16_t)AY_data[0] + AY_data[1]) >> div;
-            outR = ((uint16_t)AY_data[2] + AY_data[1]) >> div;
-        }
+        outL = ((uint16_t)AY_data[0] + AY_data[1]) << 1;
+        outR = ((uint16_t)AY_data[2] + AY_data[1]) << 1;
     }
 #endif
 #ifdef COVOX
     if (!outL && !outR && g_conf.is_covox_on && (true_covox || az_covox_L || az_covox_R)) {
-        if (g_conf.snd_volume >= 0) {
-            register uint8_t mult = g_conf.snd_volume;
-            if (mult > 16) mult = 16;
-            outL += (az_covox_L + (uint16_t)true_covox) << mult;
-            outR += (az_covox_R + (uint16_t)true_covox) << mult;
-        } else {
-            register int8_t div = -g_conf.snd_volume;
-            if (div > 16) div = 16;
-            outL = (az_covox_L + (uint16_t)true_covox) >> div;
-            outR = (az_covox_R + (uint16_t)true_covox) >> div;
-        }
+        outL = (az_covox_L + (uint16_t)true_covox);
+        outR = (az_covox_R + (uint16_t)true_covox);
     }
 #endif
-//    if (outR || outL) {
-//        register int32_t v_l = ((int32_t)outL - (int32_t)0x8000);
-//        register int32_t v_r = ((int32_t)outR - (int32_t)0x8000);
-//        outL = (uint16_t)v_l;
-//        outR = (uint16_t)v_r;
-//    }
+    if (outR || outL) {
+        register uint8_t mult = g_conf.snd_volume;
+        if (mult >= 0) {
+            if (mult > 5) mult = 5;
+            outL <<= mult;
+            outR <<= mult;
+        } else {
+            register int8_t div = -mult;
+            if (div > 16) div = 16;
+            outL >>= div;
+            outR >>= div;
+        }
+    }
     return true;
 }
 #endif

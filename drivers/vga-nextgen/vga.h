@@ -14,6 +14,7 @@ enum graphics_mode_t {
     BK_512x256x1,
 };
 
+extern volatile bool manager_started;
 extern volatile uint16_t true_covox;
 extern volatile uint16_t az_covox_L;
 extern volatile uint16_t az_covox_R;
