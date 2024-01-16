@@ -842,11 +842,12 @@ int m_add_file_ext(size_t i, const char* fname) {
     if (i >= MAX_FILES) {
         return -1;
     }
-    file_info_t* fp = &files_info[i];
+    file_info_t* fp = &files_info[files_count++];
     fp->fattrib = 0;
     fp->fdata = 0;
+    fp->fsize = 0;
     strncpy(fp->name, fname, MAX_WIDTH >> 1);
-    return files_count++; // TODO: ensure
+    return files_count; // TODO: ensure
 }
 
 const char* m_get_file_data(size_t i) {
@@ -921,14 +922,16 @@ static int m_comp(const file_info_t * e1, const file_info_t * e2) {
 
 inline static void collect_files(file_panel_desc_t* p) {
     if (!SD_CARD_AVAILABLE) return;
+    m_cleanup();
 #if EXT_DRIVES_MOUNT
     if (p->in_dos) {
-        if(!mount_img(p->path)) return;
+        if(!mount_img(p->path)) {
+           return;
+        }
         qsort (files_info, files_count, sizeof(file_info_t), m_comp);
         return;
     }
 #endif
-    m_cleanup();
     DIR dir;
     if (!m_opendir(&dir, p->path)) return;
     FILINFO fileInfo;
@@ -956,7 +959,7 @@ static inline void fill_panel(file_panel_desc_t* p) {
         if (p->start_file_offset <= p->files_number && y <= LAST_FILE_LINE_ON_PANEL_Y) {
             char* filename = fp->name;
             snprintf(line, MAX_WIDTH, "%s\\%s", p->path, fp->name);
-            for (int i = 0; i < 4; ++i) { // mark mounted drived by labels FDD0,FDD1,HDD0...
+            if (!p->in_dos) for (int i = 0; i < 4; ++i) { // mark mounted drived by labels FDD0,FDD1,HDD0...
                 if (drives_states[i].path && strncmp(drives_states[i].path, line, MAX_WIDTH) == 0) {
                     snprintf(line, p->width, "%s", fp->name);
                     for (int j = strlen(fp->name); j < p->width - 6; ++j) {

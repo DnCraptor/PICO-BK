@@ -86,15 +86,6 @@ typedef unsigned int ULONG_PTR, *PULONG_PTR;
 typedef ULONG_PTR DWORD_PTR, *PDWORD_PTR;
 
 class CBKListCtrl {
-	/**
-    typedef struct {
-       DWORD_PTR p_data;
-       std::string fname;
-       std::string fsize;
-	   std::string fattr;
-    } row_t;
-	std::vector<row_t> m_rows;
-	*/
 public:
 	// номера колонок для основного режима
 	enum { LC_FNAME_POS = 0, LC_TYPE_POS, LC_BLK_SIZE_POS, LC_ADDRESS_POS, LC_SIZE_POS, LC_ATTR_POS, LC_SPECIFIC_POS };

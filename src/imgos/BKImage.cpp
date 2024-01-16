@@ -220,6 +220,7 @@ bool CBKImage::ReadCurrentDir(CBKImage::ItemPanePos pp)
 
 		for (auto &fr : *pLS)
 		{
+			if (fr.nRecType == BKDirDataItem::RECORD_TYPE::UP) continue;
 			std::string str;
 			item = m_ListCtrl.InsertItem(item, fr.strName.c_str());  // сюда можно добавить иконку
 
@@ -228,9 +229,9 @@ bool CBKImage::ReadCurrentDir(CBKImage::ItemPanePos pp)
 				// теперь выведем тип записи
 				switch (fr.nRecType)
 				{
-					case BKDirDataItem::RECORD_TYPE::UP:
-						str = g_strUp;
-						break;
+			///		case BKDirDataItem::RECORD_TYPE::UP:
+			///			str = g_strUp;
+			///			break;
 
 					case BKDirDataItem::RECORD_TYPE::DIRECTORY:
 						str = g_strDir;
