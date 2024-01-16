@@ -100,6 +100,10 @@ typedef struct file_panel_desc {
     int start_file_offset;
     int files_number;
     char path[256];
+#if EXT_DRIVES_MOUNT
+    bool in_dos;
+    char in_path[256];
+#endif
 } file_panel_desc_t;
 
 static file_panel_desc_t left_panel = {
@@ -479,6 +483,13 @@ static FRESULT m_unlink_recursive(char * path) {
 }
 
 static void m_delete_file(uint8_t cmd) {
+#if EXT_DRIVES_MOUNT
+    if (psp->in_dos) {
+        // TODO:
+        do_nothing(cmd);
+        return;
+    }
+#endif
     gpio_put(PICO_DEFAULT_LED_PIN, true);
     file_info_t* fp = selected_file();
     if (!fp) {
@@ -560,6 +571,13 @@ inline static FRESULT m_copy_recursive(char* path, char* dest) {
 }
 
 static void m_copy_file(uint8_t cmd) {
+#if EXT_DRIVES_MOUNT
+    if (psp->in_dos) {
+        // TODO:
+        do_nothing(cmd);
+        return;
+    }
+#endif
     gpio_put(PICO_DEFAULT_LED_PIN, true);
     file_info_t* fp = selected_file();
     if (!fp) {
@@ -591,6 +609,13 @@ static void m_copy_file(uint8_t cmd) {
 }
 
 static void m_move_file(uint8_t cmd) {
+#if EXT_DRIVES_MOUNT
+    if (psp->in_dos) {
+        // TODO:
+        do_nothing(cmd);
+        return;
+    }
+#endif
     gpio_put(PICO_DEFAULT_LED_PIN, true);
     file_info_t* fp = selected_file();
     if (!fp) {
@@ -808,10 +833,7 @@ void m_cleanup_ext() {
     files_count = 0;
 }
 
-static bool lock_collection = false; // TODO: by drive
-
 inline static void m_cleanup() {
-    if (lock_collection) return;
     DBGM_PRINT(("m_cleanup"));
     files_count = 0;
 }
@@ -899,7 +921,13 @@ static int m_comp(const file_info_t * e1, const file_info_t * e2) {
 
 inline static void collect_files(file_panel_desc_t* p) {
     if (!SD_CARD_AVAILABLE) return;
-    if (lock_collection) return;
+#if EXT_DRIVES_MOUNT
+    if (p->in_dos) {
+        if(!mount_img(p->path)) return;
+        qsort (files_info, files_count, sizeof(file_info_t), m_comp);
+        return;
+    }
+#endif
     m_cleanup();
     DIR dir;
     if (!m_opendir(&dir, p->path)) return;
@@ -1047,6 +1075,13 @@ static inline void redraw_current_panel() {
 }
 
 static inline bool run_bin(char* path) {
+#if EXT_DRIVES_MOUNT
+    if (psp->in_dos) {
+        // TODO:
+        do_nothing(0);
+        return false;
+    }
+#endif
     gpio_put(PICO_DEFAULT_LED_PIN, true);
     FIL file;
     FRESULT result = f_open(&file, path, FA_READ);
@@ -1143,10 +1178,15 @@ static inline bool run_img(char* path) {
     enterPressed = false;
 #if EXT_DRIVES_MOUNT
     if (ctrlPressed) {
-        if(!mount_img(path)) return false;
-        qsort (files_info, files_count, sizeof(file_info_t), m_comp);
-        lock_collection = true;
-        scan_code_cleanup();
+        if (psp->in_dos || !is_browse_os_supported()) {
+            // TODO:
+            do_nothing(0);
+            return;
+        }
+        strncpy(psp->path, path, 256);
+        psp->in_dos = true;
+        psp->selected_file_idx = FIRST_FILE_LINE_ON_PANEL_Y;
+        psp->start_file_offset = 0;
         redraw_window();
         DBGM_PRINT(("run_img: %s done", path));
         return true;
@@ -1206,6 +1246,9 @@ static inline void enter_pressed() {
         }
         psp->path[0] = '\\';
         psp->path[1] = 0;
+        psp->in_dos = false; // TODO:
+        psp->in_path[0] = 0;
+        // TODO: position
         redraw_current_panel();
         return;
     }

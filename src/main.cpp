@@ -143,6 +143,10 @@ bool __not_in_flash_func(AY_timer_callback)(repeating_timer_t *rt) {
 static FATFS fatfs;
 static PARSE_RESULT parse_result;
 
+bool is_browse_os_supported() {
+   return parse_result.imageOSType == IMAGE_TYPE::MKDOS;
+}
+
 void detect_os_type(const char* path, char* os_type, size_t sz) {
     try {
         CBKParseImage* parserImage = new CBKParseImage();
@@ -161,22 +165,18 @@ void detect_os_type(const char* path, char* os_type, size_t sz) {
 }
 
 #if EXT_DRIVES_MOUNT
-static CBKImage BKImage;
-
 bool mount_img(const char* path) {
     DBGM_PRINT(("mount_img: %s", path));
-    if (parse_result.imageOSType == IMAGE_TYPE::ANDOS ||
-        parse_result.imageOSType == IMAGE_TYPE::MSDOS ||
-        parse_result.imageOSType == IMAGE_TYPE::NCDOS
-    ) {
+    if ( !is_browse_os_supported() ) {
         DBGM_PRINT(("mount_img: %s unsupported file type (resources)", path));
         return false;
     }
     m_cleanup_ext();
     try {
-        BKImage.Open(parse_result);
-        BKImage.ReadCurrentDir(BKImage.GetTopItemIndex());
-        BKImage.Close();
+        CBKImage* BKImage = new CBKImage();
+        BKImage->Open(parse_result);
+        BKImage->ReadCurrentDir(BKImage->GetTopItemIndex());
+        BKImage->Close();
         DBGM_PRINT(("mount_img: %s done", path));
     } catch(...) {
         DBGM_PRINT(("mount_img: %s FAILED", path));

@@ -110,4 +110,5 @@ void m_cleanup_ext();
 int m_add_file_ext(size_t i, const char* fname);
 void m_set_file_attr(size_t i, int c, const char* str);
 const char* m_get_file_data(size_t i);
+bool is_browse_os_supported();
 

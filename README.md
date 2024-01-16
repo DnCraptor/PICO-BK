@@ -104,7 +104,8 @@ Extra PSRAM support (для ещё незаконченной СМК-512) on pi 
 <li>Ctrl + Alt + Del - Reset ВМ1 CPU, RAM clenup, set default pages, deafult speed, init system registers</li>
 <li>Up / PageUp - Вверх</li>
 <li>Down / PageDown - Вниз</li>
-<li>Enter - запустить BIN файл, зайти в папку или смонтировать IMG/BKD файл, и выйти из манагера с ресетом (если не выбрано "BK-0010 + КНГМД 16k", то автоматически выбирается "BK-0011М + КНГМД").</li>
+<li>Enter - запустить BIN файл, зайти в папку или смонтировать IMG/BKD файл, и выйти из манагера с ресетом (если не выбрано "BK-0010 + КНГМД 16k", то автоматически выбирается "BK-0011М + КНГМД"), запуск BKE-snapshots.</li>
+<li>Ctrl + Enter - просмотр содержимого images формата МКДОС.</li>
 <li>F1 - Краткая справка</li>
 <li>F2 - Сохранить состояние БК в файл SNAP2.BKE</li>
 <li>Ctrl + F2 - Восстановить состояние БК из файла SNAP2.BKE и выйти в режим эмуляции</li>
