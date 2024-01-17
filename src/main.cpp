@@ -49,10 +49,10 @@ pwm_config config = pwm_get_default_config();
 #define PWM_PIN0 (26)
 #define PWM_PIN1 (27)
 
-void PWM_init_pin(uint8_t pinN) {
+void PWM_init_pin(uint8_t pinN, uint16_t max_lvl) {
     gpio_set_function(pinN, GPIO_FUNC_PWM);
     pwm_config_set_clkdiv(&config, 1.0);
-    pwm_config_set_wrap(&config, (1 << 12) - 1); // MAX PWM value
+    pwm_config_set_wrap(&config, max_lvl); // MAX PWM value
     pwm_init(pwm_gpio_to_slice_num(pinN), &config, true);
 }
 #if NESPAD_ENABLED
@@ -223,12 +223,10 @@ int main() {
     sleep_ms(33);
     set_sys_clock_khz(270000, true);
 #endif
-    gpio_set_function(BEEPER_PIN, GPIO_FUNC_PWM);
-    pwm_init(pwm_gpio_to_slice_num(BEEPER_PIN), &config, true);
-
+    PWM_init_pin(BEEPER_PIN, (1 << 12) - 1);
 #ifdef SOUND_SYSTEM
-    PWM_init_pin(PWM_PIN0);
-    PWM_init_pin(PWM_PIN1);
+    PWM_init_pin(PWM_PIN0, (1 << 12) - 1);
+    PWM_init_pin(PWM_PIN1, (1 << 12) - 1);
 #endif
 
 #if LOAD_WAV_PIO
