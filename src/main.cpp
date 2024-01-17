@@ -30,7 +30,7 @@ volatile config_em_t g_conf {
    true, // is_covox_on
    true, // is_AY_on
    true, // color_mode
-   BK_0010_01, // bk0010mode
+   BK_0011M_FDD, // bk0010mode
    4, // snd_volume
    0, // graphics_pallette_idx
    0330, // shift_y

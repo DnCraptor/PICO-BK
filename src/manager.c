@@ -752,7 +752,7 @@ static inline fn_1_12_tbl_t* actual_fn_1_12_tbl() {
 
 static const line_t bk_mode_lns[] = {
     { 1, " BK 0010 + KNGMD 16k " },
-    { 1, " BK 0010 Focal       " },
+    { 1, " BK 0010 Focal [bugs]" },
     { 1, " BK 0010-01 Basic 86 " },
     { 1, " BK 0011M + KNGMD    " },
     { 1, " BK 0011M + MSTD     " }
