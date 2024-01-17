@@ -9,6 +9,7 @@
 #include "fdd.h"
 #include "aySoundSoft.h"
 #include "debug.h"
+#include "hardware/pwm.h"
 
 #define AT_OVL __attribute__((section(".ovl0_ef.text")))
 
@@ -414,10 +415,13 @@ TCPU_Arg AT_OVL CPU_WriteW (TCPU_Arg Adr, uint_fast16_t Word) {
             }
             else {
                 Device_Data.SysRegs.WrReg177716 = (uint16_t) Word;
-                uint_fast32_t Reg = *(uint8_t *) &Device_Data.SysRegs.WrReg177714 >> 1;
-                if (Word & 0100) Reg += 0x80;
-                // пищалка?
-                true_covox = Device_Data.SysRegs.WrReg177716;
+                // пищалка
+                int vol = g_conf.snd_volume + 9;
+                if (vol > 1) {
+                    pwm_set_gpio_level(BEEPER_PIN, Word & 0100 ? (1 << vol) - 1 : 0);
+                } else {
+                    pwm_set_gpio_level(BEEPER_PIN, 0);
+                }
             }
             break;
         default:
@@ -506,24 +510,24 @@ TCPU_Arg AT_OVL CPU_WriteB (TCPU_Arg Adr, uint_fast8_t Byte) {
         case (0177212 >> 1):// mode
             break;
         case (0177200 >> 1):
-            az_covox_L = (uint16_t) Word << 8;
+            az_covox_L = (uint16_t) Word;
             break;
         case (0177202 >> 1):
-            az_covox_R = (uint16_t) Word << 8;
+            az_covox_R = (uint16_t) Word;
             break;
         case (0177204 >> 1):
-            az_covox_R = (uint16_t) Word << 8;
-            az_covox_L = (uint16_t) Word << 8;
+            az_covox_R = (uint16_t) Word;
+            az_covox_L = (uint16_t) Word;
             break;
         case (0177206 >> 1):
-            az_covox_R = (uint16_t) Word << 8;
-            az_covox_L = (uint16_t) Word << 8;
+            az_covox_R = (uint16_t) Word;
+            az_covox_L = (uint16_t) Word;
             break;
         case (0177714 >> 1):
             Device_Data.SysRegs.WrReg177714 = (uint16_t) Word;
-            {
-                uint_fast32_t Reg = (Word & 0xFF) >> 1;
-                if (Device_Data.SysRegs.WrReg177716 & 0100) Reg += 0x80;
+            { //????
+            //    uint_fast32_t Reg = (Word & 0xFF) >> 1;
+            //    if (Device_Data.SysRegs.WrReg177716 & 0100) Reg += 0x80;
 #ifdef COVOX
                 if (g_conf.is_covox_on) {
                     true_covox = (uint16_t) Word;
@@ -543,12 +547,15 @@ TCPU_Arg AT_OVL CPU_WriteB (TCPU_Arg Adr, uint_fast8_t Byte) {
                 select_11_page((uint16_t) Word);
             }
             else {
-                Device_Data.SysRegs.WrReg177716 = (uint16_t) Word;
-                {
-                    uint_fast32_t Reg = *(uint8_t *) &Device_Data.SysRegs.WrReg177714 >> 1;
-                    if (Word & 0100) Reg += 0x80;
-                    /// пищалка
-                    true_covox = Device_Data.SysRegs.WrReg177716;
+                Device_Data.SysRegs.WrReg177716 = (uint16_t) Word; // ?? LO byte missed
+                // пищалка
+                if (!(Adr & 1)) { // LO byte only
+                    int vol = g_conf.snd_volume + 9;
+                    if (vol > 1) {
+                        pwm_set_gpio_level(BEEPER_PIN, Byte & 0100 ? (1 << vol) - 1 : 0);
+                    } else {
+                        pwm_set_gpio_level(BEEPER_PIN, 0);
+                    }
                 }
             }
             break;

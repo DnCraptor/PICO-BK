@@ -1747,6 +1747,7 @@ int if_manager(bool force) {
         az_covox_R = 0;
         az_covox_L = 0;
         escPressed = false;
+        pwm_set_gpio_level(BEEPER_PIN, 0);
         ps2cleanup();
         manager_started = true;
         start_manager();

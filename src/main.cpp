@@ -27,7 +27,7 @@ extern "C" {
 }
 
 volatile config_em_t g_conf {
-   true, // is_covox_on
+   false, // is_covox_on
    true, // is_AY_on
    true, // color_mode
    BK_0011M_FDD, // bk0010mode
@@ -135,6 +135,7 @@ bool __not_in_flash_func(AY_timer_callback)(repeating_timer_t *rt) {
             outL >>= div;
             outR >>= div;
         }
+        pwm_set_gpio_level(BEEPER_PIN, 0);
     }
     return true;
 }

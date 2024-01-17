@@ -19,8 +19,6 @@
 #include "f_util.h"
 #include "ff.h"
 
-#define BEEPER_PIN 28
-
 extern uint8_t RAM[RAM_SIZE];
 extern uint8_t TEXT_VIDEO_RAM[VIDEORAM_SIZE];
 extern bool PSRAM_AVAILABLE;
