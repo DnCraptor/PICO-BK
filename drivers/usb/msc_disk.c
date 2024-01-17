@@ -27,10 +27,11 @@
 #include "tusb.h"
 #include "usb.h"
 #include "emulator.h"
+#include "FDD0.h"
 #include "MKDOS318B.h"
 
 char* fdd0_rom() {
-  return MKDOS318B;
+  return FDD0;
 }
 
 char* fdd1_rom() {
@@ -38,7 +39,7 @@ char* fdd1_rom() {
 }
 
 size_t fdd0_sz() {
-  return sizeof MKDOS318B;
+  return sizeof FDD0;
 }
 
 size_t fdd1_sz() {
