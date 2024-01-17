@@ -157,6 +157,9 @@ target_compile_definitions(${PROJECT_NAME} PRIVATE
         LOAD_WAV_PIO=22
         LOAD_WAV_2_COVOX=1
 
+        #BUILD_IN_FDD0
+        #BUILD_IN_FDD1
+
         # supports only for pico with 4 or more MB flashes
         #PICO_FLASH_SIZE_BYTES=4194304
 
