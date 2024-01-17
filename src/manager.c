@@ -959,7 +959,10 @@ static inline void fill_panel(file_panel_desc_t* p) {
         if (p->start_file_offset <= p->files_number && y <= LAST_FILE_LINE_ON_PANEL_Y) {
             char* filename = fp->name;
             snprintf(line, MAX_WIDTH, "%s\\%s", p->path, fp->name);
-            if (!p->in_dos) for (int i = 0; i < 4; ++i) { // mark mounted drived by labels FDD0,FDD1,HDD0...
+#if EXT_DRIVES_MOUNT
+            if (!p->in_dos)
+#endif
+            for (int i = 0; i < 4; ++i) { // mark mounted drived by labels FDD0,FDD1,HDD0...
                 if (drives_states[i].path && strncmp(drives_states[i].path, line, MAX_WIDTH) == 0) {
                     snprintf(line, p->width, "%s", fp->name);
                     for (int j = strlen(fp->name); j < p->width - 6; ++j) {
@@ -972,7 +975,12 @@ static inline void fill_panel(file_panel_desc_t* p) {
             }
             bool selected = p == psp && p->selected_file_idx == y;
             draw_label(p->left + 1, y, p->width - 2, filename, selected, fp->fattrib & AM_DIR);
-            if (!p->in_dos && selected && (fp->fattrib & AM_DIR) == 0) {
+            if (
+#if EXT_DRIVES_MOUNT
+                !p->in_dos &&
+#endif
+                selected && (fp->fattrib & AM_DIR) == 0
+            ) {
                 char path[260];
                 construct_full_name(path, p->path, fp->name);
                 if (strncmp(selected_file_path, path, 260) != 0) {
@@ -980,7 +988,12 @@ static inline void fill_panel(file_panel_desc_t* p) {
                     strncpy(selected_file_path, path, 260);
                 }
                 draw_cmd_line(0, CMD_Y_POS, os_type);
-            } else if (p->in_dos || selected) {
+            } else if (
+#if EXT_DRIVES_MOUNT
+              p->in_dos ||
+#endif
+              selected
+            ) {
                 os_type[0] = 0;
                 draw_cmd_line(0, CMD_Y_POS, 0);
             }
@@ -1249,8 +1262,10 @@ static inline void enter_pressed() {
         }
         psp->path[0] = '\\';
         psp->path[1] = 0;
+#if EXT_DRIVES_MOUNT
         psp->in_dos = false; // TODO:
         psp->in_path[0] = 0;
+#endif
         // TODO: position
         redraw_current_panel();
         return;
