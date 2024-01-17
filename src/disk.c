@@ -10,12 +10,12 @@ _FILE fileA;
 _FILE fileB;
 _FILE fileC;
 _FILE fileD;
-_FILE * getFileA() { return &fileA; }
-_FILE * getFileB() { return &fileB; }
-_FILE * getFileC() { return &fileC; }
-_FILE * getFileD() { return &fileD; }
-size_t getFileA_sz() { return fileA.obj.fs ? f_size(&fileA) : 0; }
-size_t getFileB_sz() { return fileB.obj.fs ? f_size(&fileB) : 0; }
+_FILE * getFileA() { return fileA.obj.fs ? &fileA : 0; }
+_FILE * getFileB() { return fileB.obj.fs ? &fileB : 0; }
+_FILE * getFileC() { return fileC.obj.fs ? &fileC : 0; }
+_FILE * getFileD() { return fileD.obj.fs ? &fileD : 0; }
+size_t getFileA_sz() { return fileA.obj.fs ? f_size(&fileA) : fdd0_sz(); }
+size_t getFileB_sz() { return fileB.obj.fs ? f_size(&fileB) : fdd1_sz(); }
 size_t getFileC_sz() { return fileC.obj.fs ? f_size(&fileC) : 0; }
 size_t getFileD_sz() { return fileD.obj.fs ? f_size(&fileD) : 0; }
 #if BOOT_DEBUG || KBD_DEBUG || MNGR_DEBUG || DSK_DEBUG
@@ -55,7 +55,11 @@ inline static _FILE* actualDrive(uint8_t drivenum) {
 uint16_t word_of_drive(uint8_t drive, size_t pos) {
     gpio_put(PICO_DEFAULT_LED_PIN, true);
     _FILE * f = actualDrive(drive);
-    if (!f) return 0;
+    if (!f) {
+        uint8_t * p = (drive > 0 ? fdd0_rom() : fdd0_rom()) + pos;
+        gpio_put(PICO_DEFAULT_LED_PIN, false);
+        return *(uint16_t*)p;
+    }
     FRESULT r = f_lseek(f, pos);
     if (r != FR_OK) return 0;
     uint16_t res;
