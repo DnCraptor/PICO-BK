@@ -801,17 +801,22 @@ static void turn_usb_on(uint8_t cmd) {
     bottom_line();
 }
 
-static void switch_mode(uint8_t cmd) {
-    bk_mode_t bk0010mode = g_conf.bk0010mode;
+inline static bool switch_mode_dialog(bk_mode_t* pbk0010mode) {
+    bk_mode_t bk0010mode = *pbk0010mode;
     const lines_t lines = { 5, 1, bk_mode_lns };
     bk0010mode = draw_selector(50, 10, 30, 9, "BK Emulation Mode", &lines, bk0010mode);
     if (escPressed) {
-        escPressed = false;
-        redraw_window();
-        return;
+        return false;
     }
-    set_bk0010mode(bk0010mode);
-    init_rom();
+    *pbk0010mode = bk0010mode;
+    return true;
+}
+
+static void switch_mode(uint8_t cmd) {
+    if (switch_mode_dialog(&g_conf.bk0010mode)) {
+        set_bk0010mode(g_conf.bk0010mode);
+        init_rom();
+    }
     redraw_window();
 }
 
@@ -1090,7 +1095,10 @@ static inline void redraw_current_panel() {
     draw_cmd_line(0, CMD_Y_POS, os_type);
 }
 
+#include "SNAP001001.h"
+
 static inline bool run_bin(char* path) {
+    enterPressed = false;
 #if EXT_DRIVES_MOUNT
     if (psp->in_dos) {
         // TODO:
@@ -1098,7 +1106,20 @@ static inline bool run_bin(char* path) {
         return false;
     }
 #endif
+    bk_mode_t m = BK_0010_01;
+    if (!switch_mode_dialog(&m)) {
+        redraw_window();
+        return false;
+    }
     gpio_put(PICO_DEFAULT_LED_PIN, true);
+    set_bk0010mode(m);
+    main_init();
+    size_t off = sizeof(Device_Data);
+    memcpy(&Device_Data, SNAP001001, off);
+    memcpy(&g_conf, SNAP001001 + off, sizeof(g_conf));
+    off += sizeof(g_conf);
+    memcpy(RAM, SNAP001001 + off, sizeof(RAM));
+    set_bk0010mode(m);
     FIL file;
     FRESULT result = f_open(&file, path, FA_READ);
     if (result != FR_OK) {
@@ -1131,16 +1152,18 @@ static inline bool run_bin(char* path) {
         return false;
     }
     // TODO: ensue it is ok for ever game
-    Device_Data.MemPages [0] = CPU_PAGE01_MEM_ADR; /* RAM Page 0.1 */
-    Device_Data.MemPages [1] = CPU_PAGE02_MEM_ADR; /* RAM Page 0.2 */
-    Device_Data.MemPages [2] = CPU_PAGE03_MEM_ADR; /* RAM Page 0.3 */
-    Device_Data.MemPages [3] = CPU_PAGE04_MEM_ADR; /* RAM Page 0.4 */
-    Device_Data.MemPages [4] = CPU_PAGE51_MEM_ADR; /* RAM Page 4.1 video 0 */
-    Device_Data.MemPages [5] = CPU_PAGE52_MEM_ADR; /* RAM Page 4.2 video 0 */
-    Device_Data.MemPages [6] = CPU_PAGE53_MEM_ADR; /* RAM Page 4.3 video 0 */
-    Device_Data.MemPages [7] = CPU_PAGE54_MEM_ADR; /* RAM Page 4.4 video 0 */
-    graphics_set_page(CPU_PAGE51_MEM_ADR, is_bk0011mode() == BK_0011M ? 15 : 0);
-    graphics_shift_screen((uint16_t)0330 | 0b01000000000);
+//    Device_Data.MemPages [0] = CPU_PAGE01_MEM_ADR; /* RAM Page 0.1 */
+//    Device_Data.MemPages [1] = CPU_PAGE02_MEM_ADR; /* RAM Page 0.2 */
+//    Device_Data.MemPages [2] = CPU_PAGE03_MEM_ADR; /* RAM Page 0.3 */
+//    Device_Data.MemPages [3] = CPU_PAGE04_MEM_ADR; /* RAM Page 0.4 */
+//    Device_Data.MemPages [4] = CPU_PAGE51_MEM_ADR; /* RAM Page 4.1 video 0 */
+//    Device_Data.MemPages [5] = CPU_PAGE52_MEM_ADR; /* RAM Page 4.2 video 0 */
+//    Device_Data.MemPages [6] = CPU_PAGE53_MEM_ADR; /* RAM Page 4.3 video 0 */
+//    Device_Data.MemPages [7] = CPU_PAGE54_MEM_ADR; /* RAM Page 4.4 video 0 */
+//    graphics_set_page(CPU_PAGE51_MEM_ADR, is_bk0011mode() == BK_0011M ? 15 : 0);
+//    graphics_shift_screen((uint16_t)0330 | 0b01000000000);
+
+/* TODO: in status
     snprintf(line, MAX_WIDTH, "offset = 0%o; len = %d", offset, len);
     const line_t lns[3] = {
         { -1, "Selected file header info:" },
@@ -1150,6 +1173,7 @@ static inline bool run_bin(char* path) {
     const lines_t lines = { 3, 2, lns };
     draw_box((MAX_WIDTH - 60) / 2, 7, 60, 10, "Info", &lines);
     sleep_ms(2500);
+*/
     uint16_t len2 = (len > (16 << 10) - offset) ? (16 << 10) - offset : len;
     result = f_read(&file, RAM + offset, len2, &bw);
     if (result != FR_OK) {
@@ -1486,13 +1510,18 @@ inline static void start_manager() {
     save_video_ram();
     graphics_set_mode(TEXTMODE_);
     set_start_debug_line(MAX_HEIGHT);
-    draw_window();
-    select_left_panel();
-    update_menu_color();
-    m_info(0); // TODO: ensure it is not too aggressive
+    if (SD_CARD_AVAILABLE) {
+        draw_window();
+        select_left_panel();
+        update_menu_color();
+        m_info(0); // F1 TODO: ensure it is not too aggressive
 
-    work_cycle();
-    
+        work_cycle();
+    } else {
+        if (switch_mode_dialog(&g_conf.bk0010mode) ) {
+            reset(0);
+        }
+    }
     set_start_debug_line(25); // ?? to be removed
     graphics_set_mode(g_conf.color_mode ? BK_256x256x2 : BK_512x256x1);
     restore_video_ram();

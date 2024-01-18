@@ -162,7 +162,7 @@ target_compile_definitions(${PROJECT_NAME} PRIVATE
         BUILD_IN_FDD1
 
         # supports only for pico with 4 or more MB flashes
-        #PICO_FLASH_SIZE_BYTES=4194304
+        PICO_FLASH_SIZE_BYTES=4194304
 
         #BOOT_DEBUG=1
         #BOOT_DEBUG_ACC=0xA0000
@@ -170,7 +170,7 @@ target_compile_definitions(${PROJECT_NAME} PRIVATE
         #MNGR_DEBUG=1
         #DSK_DEBUG=1
 
-        #EXT_DRIVES_MOUNT=1
+        EXT_DRIVES_MOUNT=1
 
         SOUND_SYSTEM
         COVOX
