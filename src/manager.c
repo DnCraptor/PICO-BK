@@ -1114,12 +1114,13 @@ static inline bool run_bin(char* path) {
     gpio_put(PICO_DEFAULT_LED_PIN, true);
     set_bk0010mode(m);
     main_init();
-    size_t off = sizeof(Device_Data);
-    memcpy(&Device_Data, SNAP001001, off);
-    memcpy(&g_conf, SNAP001001 + off, sizeof(g_conf));
-    off += sizeof(g_conf);
-    memcpy(RAM, SNAP001001 + off, sizeof(RAM));
-    set_bk0010mode(m);
+    if (m == BK_0010_01) {
+        size_t off = sizeof(Device_Data);
+        memcpy(&Device_Data, SNAP001001, off);
+        memcpy(&g_conf, SNAP001001 + off, sizeof(g_conf));
+        off += sizeof(g_conf);
+        memcpy(RAM, SNAP001001 + off, sizeof(SNAP001001) - off);
+    }
     FIL file;
     FRESULT result = f_open(&file, path, FA_READ);
     if (result != FR_OK) {
