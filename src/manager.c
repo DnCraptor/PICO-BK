@@ -379,6 +379,10 @@ inline static void if_video_mode() {
         if (altPressed) save_snap(7);
         else restore_snap(7);
         f8Pressed = false;
+    } else if (f10Pressed) {
+        f10Pressed = false;
+        if (altPressed) g_conf.graphics_pallette_idx = 0;
+        else g_conf.graphics_pallette_idx = 15;
     }
 }
 
