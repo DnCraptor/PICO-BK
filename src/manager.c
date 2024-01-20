@@ -262,6 +262,14 @@ static void do_nothing(uint8_t cmd) {
     redraw_window();
 }
 
+static void conf_it(uint8_t cmd) {
+    draw_panel(10, 10, MAX_WIDTH - 20, MAX_HEIGHT - 20, "Stratup configuration", 0);
+    while(1) {
+        if (escPressed) break;
+    }
+    redraw_window();
+}
+
 typedef struct drive_state {
     char path[256];
     const char* lbl;
@@ -750,7 +758,7 @@ static fn_1_12_tbl_t fn_1_12_tbl = {
 
 static fn_1_12_tbl_t fn_1_12_tbl_alt = {
     ' ', '1', "Right ", do_nothing,
-    ' ', '2', " Left ", do_nothing,
+    ' ', '2', " Conf ", conf_it,
     ' ', '3', " View ", do_nothing,
     ' ', '4', " Edit ", do_nothing,
     ' ', '5', " Copy ", m_copy_file,
