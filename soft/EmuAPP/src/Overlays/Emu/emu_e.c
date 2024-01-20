@@ -4,17 +4,16 @@
 #include "ps2_codes.h"
 #include "CPU.h"
 #include "Key.h"
-
 #include "emu_e.h"
 #include "CPU_e.h"
-
 #include "../EmuUi/Key_eu.h"
-
 #include "Debug.h"
+#include "ps2.h"
+#include "hardware/gpio.h"
+#include "vga.h"
+#include "manager.h"
 
 #define AT_OVL __attribute__((section(".ovl3_e.text")))
-
-uint32_t ps2get_raw_code(); // TODO:
 
 static int_fast16_t pressed_count = 0;
 inline static bool any_down(uint_fast16_t CodeAndFlags) {
@@ -22,11 +21,6 @@ inline static bool any_down(uint_fast16_t CodeAndFlags) {
     else pressed_count--;
     return pressed_count > 0;
 }
-
-int if_manager(bool force); // TODO:
-
-#include "hardware/gpio.h"
-#include "vga.h"
 
 bool hw_get_bit_LOAD() {
     uint8_t out = 0;
@@ -128,6 +122,7 @@ void AT_OVL emu_start () {
    Разряд 7 используется для чтения сигнала готовности с линии.
 */
                 else { // TODO:
+                    DBGM_PRINT(("    0x%04X,", g_conf.CodeAndFlags));
                 //    if (any_down(CodeAndFlags)) Device_Data.SysRegs.RdReg177716 &= ~0100;
                 //    else Device_Data.SysRegs.RdReg177716 |= 0100;
                 //    KBD_PRINT(("2. CodeAndFlags: %04Xh RdReg177716: %oo", CodeAndFlags, Device_Data.SysRegs.RdReg177716));

@@ -18,6 +18,8 @@ extern uint8_t kbloop;
 void KeyboardHandler();//uint /*gpio*/, uint32_t /*event_mask*/
 uint32_t ps2getcode(void);
 void ps2cleanup();
+uint32_t ps2get_raw_code();
+void push_script_scan_code(uint16_t sc);
 
 void keyboard_init(void);
 

@@ -209,8 +209,15 @@ uint8_t ps2_to_xt_2(uint32_t val) {
     return 0;
 }
 
+static uint16_t kbd_script_sc = 0;
+
 uint32_t ps2get_raw_code() {
     uint32_t retval, i, len;
+    if (kbd_script_sc) {
+        retval = kbd_script_sc;
+        kbd_script_sc = 0;
+        return retval;
+    }
     if (!ps2bufsize) return 0;
     switch (ps2buffer[0]) {
         case 0xF0:
@@ -245,7 +252,7 @@ uint32_t ps2get_raw_code() {
     return retval;
 }
 
-extern volatile bool manager_started;
+extern volatile bool manager_started; // TODO:
 
 void ps2cleanup() {
     ps2bufsize = 0;
@@ -301,6 +308,10 @@ uint32_t ps2getcode() {
             break;
     }
     return retval;
+}
+
+void push_script_scan_code(uint16_t sc) {
+   kbd_script_sc = sc;
 }
 
 void KeyboardHandler(void) {

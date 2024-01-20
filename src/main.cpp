@@ -101,7 +101,8 @@ extern "C" {
 }
 
 #ifdef SOUND_SYSTEM
-bool __not_in_flash_func(AY_timer_callback)(repeating_timer_t *rt) {
+static repeating_timer_t timer;
+static bool __not_in_flash_func(AY_timer_callback)(repeating_timer_t *rt) {
     static uint16_t outL = 0;  
     static uint16_t outR = 0;
     pwm_set_gpio_level(PWM_PIN0, outR); // Право
@@ -253,7 +254,7 @@ int main() {
 
     sleep_ms(50);
 
-    memset(RAM, 0, sizeof RAM);
+    reset(11);
     memset(TEXT_VIDEO_RAM, 0, sizeof TEXT_VIDEO_RAM);
     graphics_set_mode(g_conf.color_mode ? BK_256x256x2 : BK_512x256x1);
 
@@ -261,7 +262,6 @@ int main() {
     init_fs();
 
 #ifdef SOUND_SYSTEM
-    repeating_timer_t timer;
 	int hz = 44100;	//44000 //44100 //96000 //22050
 	// negative timeout means exact delay (rather than delay between callbacks)
 	if (!add_repeating_timer_us(-1000000 / hz, AY_timer_callback, NULL, &timer)) {
@@ -270,7 +270,6 @@ int main() {
 	}
 #endif
 
-    main_init();
     emu_start();
     return 0;
 }

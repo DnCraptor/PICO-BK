@@ -8,6 +8,8 @@
 #include "CPU_i.h"
 #include "stdlib.h"
 #include "debug.h"
+#include "aySoundSoft.h"
+#include "ps2.h"
 
 static void bottom_line();
 static void redraw_window();
@@ -129,9 +131,37 @@ static void mark_to_exit(uint8_t cmd) {
 
 static inline void fill_panel(file_panel_desc_t* p);
 
-#include "aySoundSoft.h"
+static uint16_t kbd_script[] = { // S160000 Enter
+    0x001B,
+    0xF01B,
+    0x0016,
+    0xF016,
+    0x0036,
+    0xF036,
+    0x0045,
+    0xF045,
+    0x0045,
+    0xF045,
+    0x0045,
+    0xF045,
+    0x0045,
+    0xF045,
+    0x005A,
+    0xF05A
+};
+static int kbd_script_idx = 0;
+static repeating_timer_t timer;
+static bool __not_in_flash_func(timer_callback)(repeating_timer_t *rt) {
+    push_script_scan_code(kbd_script[kbd_script_idx++]);
+    bool res = kbd_script_idx < sizeof(kbd_script);
+    if (!res) {
+        kbd_script_idx = 0;
+        cancel_repeating_timer(&timer);
+    }
+    return true;
+}
 
-static void reset(uint8_t cmd) {
+void reset(uint8_t cmd) {
     f12Pressed = false;
     tormoz = 6;
     true_covox = 0;
@@ -145,6 +175,10 @@ static void reset(uint8_t cmd) {
     graphics_shift_screen((uint16_t)0330 | 0b01000000000);
     main_init();
     mark_to_exit_flag = true;
+    if (g_conf.bk0010mode == BK_FDD) {
+        kbd_script_idx = 0;
+        add_repeating_timer_ms(150, timer_callback, NULL, &timer);
+    }
 }
 
 inline static void swap_drive_message() {
@@ -819,7 +853,7 @@ inline static bool switch_mode_dialog(bk_mode_t* pbk0010mode) {
 static void switch_mode(uint8_t cmd) {
     if (switch_mode_dialog(&g_conf.bk0010mode)) {
         set_bk0010mode(g_conf.bk0010mode);
-        init_rom();
+        reset(11);
     }
     redraw_window();
 }
