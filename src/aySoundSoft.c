@@ -24,7 +24,7 @@ static bool is_envelope_begin=false;
 
 void FAST_FUNC(AY_select_reg)(uint8_t N_reg)
 {
-    DBGM_PRINT(("AY_select_reg(%d)", N_reg));
+//    DBGM_PRINT(("AY_select_reg(%d)", N_reg));
     N_sel_reg = N_reg;
 };
 
@@ -424,7 +424,7 @@ Data — последовательности пар байтов записи �
 0xFE — следующий байт показывает сколько раз выждать по 80 мс.
 */
 void AY_write_address(uint16_t word) {
-    DBGM_PRINT(("AY_write_address(%04Xh) ~word = %04X", word, ~word));
+//    DBGM_PRINT(("AY_write_address(%04Xh) ~word = %04X", word, ~word));
     uint8_t addr = (~word) & 0xff;
     if (addr >= 0xFD && addr <= 0xFE) return;
     AY_select_reg(addr & 0x0F);

@@ -188,6 +188,33 @@ bool mount_img(const char* path) {
 }
 #endif
 
+inline static void read_config(const char* path) {
+    FIL fil;
+    if (f_open(&fil, path, FA_READ) != FR_OK) {
+        DBGM_PRINT(("f_open %s failed", path));
+        return;
+    }
+    char buf[256] = { 0 };
+    UINT br;
+    if (f_read(&fil, buf, 256, &br) != FR_OK) {
+        DBGM_PRINT(("f_read %s failed. br: %d", br));
+        f_close(&fil);
+        return;
+    }
+    DBGM_PRINT(("f_read %s passed. br: %d", br));
+    const char* pc = strnstr(buf, "mode:", br);
+    if (pc) {
+        char* pc2 = strnstr(pc, "\n", br - (pc - buf));
+        if (pc2) {
+            *pc2 = 0;
+        }
+        DBGM_PRINT(("mode: %s", pc));
+        g_conf.bk0010mode = (bk_mode_t)atoi(pc + 5);
+        DBGM_PRINT(("bk0010mode: %d", bk0010mode));
+    }
+    f_close(&fil);
+}
+
 static void init_fs() {
     FRESULT result = f_mount(&fatfs, "", 1);
     if (FR_OK != result) {
@@ -211,6 +238,7 @@ static void init_fs() {
         insertdisk(1, fdd1_sz(), fdd1_rom(), "\\BK\\fdd1.img"); // TODO: why not attached?
         insertdisk(2, 819200, 0, "\\BK\\hdd0.img");
         insertdisk(3, 819200, 0, "\\BK\\hdd1.img"); // TODO: why not attached?
+        read_config("\\BK\\bk.conf");
     }
 }
 
@@ -254,12 +282,12 @@ int main() {
 
     sleep_ms(50);
 
-    reset(11);
     memset(TEXT_VIDEO_RAM, 0, sizeof TEXT_VIDEO_RAM);
-    graphics_set_mode(g_conf.color_mode ? BK_256x256x2 : BK_512x256x1);
 
 //    init_psram();
     init_fs();
+    reset(11);
+    graphics_set_mode(g_conf.color_mode ? BK_256x256x2 : BK_512x256x1);
 
 #ifdef SOUND_SYSTEM
 	int hz = 44100;	//44000 //44100 //96000 //22050

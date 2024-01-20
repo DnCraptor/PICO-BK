@@ -1804,8 +1804,6 @@ inline void if_overclock() {
     }
 }
 
-void ps2cleanup(); // TODO:
-
 int if_manager(bool force) {
     if (ctrlPressed) {
         if (f11Pressed) {
