@@ -188,6 +188,42 @@ bool mount_img(const char* path) {
 }
 #endif
 
+inline static int parse_conf_word(const char* buf, const char* param, size_t plen, size_t lim) {
+    char b[16];
+    const char* pc = strnstr(buf, param, lim);
+    DBGM_PRINT(("param %s pc: %08Xh", param, pc));
+    if (pc) {
+        pc += plen - 1;
+        const char* pc2 = strnstr(pc, "\r\n", lim - (pc - buf));
+        DBGM_PRINT(("param %s \\r\\n pc: %08Xh pc2: %08Xh", param, pc, pc2));
+        if (pc2) {
+            memcpy(b, pc, pc2 - pc);
+            b[pc2 - pc] = 0;
+            DBGM_PRINT(("param %s b: %s atoi(b): %d", param, b, atoi(b)));
+            return atoi(b);
+        }
+        pc2 = strnstr(pc, ";", lim - (pc - buf));
+        DBGM_PRINT(("param %s ; pc2: %08Xh", param, pc2));
+        if (pc2) {
+            memcpy(b, pc, pc2 - pc);
+            b[pc2 - pc] = 0;
+            DBGM_PRINT(("param %s b: %s atoi(b): %d", param, b, atoi(b)));
+            return atoi(b);
+        }
+        pc2 = strnstr(pc, "\n", lim - (pc - buf));
+        DBGM_PRINT(("param %s \\n pc2: %08Xh", param, pc2));
+        if (pc2) {
+            memcpy(b, pc, pc2 - pc);
+            b[pc2 - pc] = 0;
+            DBGM_PRINT(("param %s b: %s atoi(b): %d", param, b, atoi(b)));
+            return atoi(b);
+        }
+        DBGM_PRINT(("param %s pc + plen: %d atoi(pc + plen): ", param, pc, atoi(pc)));
+        return atoi(pc);
+    }
+    return -100;
+}
+
 inline static void read_config(const char* path) {
     FIL fil;
     if (f_open(&fil, path, FA_READ) != FR_OK) {
@@ -202,15 +238,35 @@ inline static void read_config(const char* path) {
         return;
     }
     DBGM_PRINT(("f_read %s passed. br: %d", br));
-    const char* pc = strnstr(buf, "mode:", br);
-    if (pc) {
-        char* pc2 = strnstr(pc, "\n", br - (pc - buf));
-        if (pc2) {
-            *pc2 = 0;
-        }
-        DBGM_PRINT(("mode: %s", pc));
-        g_conf.bk0010mode = (bk_mode_t)atoi(pc + 5);
-        DBGM_PRINT(("bk0010mode: %d", bk0010mode));
+    const char p0[] = "mode:";
+    int mode = parse_conf_word(buf, p0, sizeof(p0), 256);
+    if (mode >= 0 && mode <= BK_0011M) {
+        g_conf.bk0010mode = (bk_mode_t)mode;
+    }
+    const char p1[] = "is_covox_on:";
+    mode = parse_conf_word(buf, p1, sizeof(p1), 256);
+    if (mode >= 0 && mode <= 1) {
+        g_conf.is_covox_on = (bool)mode;
+    }
+    const char p2[] = "is_AY_on:";
+    mode = parse_conf_word(buf, p2, sizeof(p2), 256);
+    if (mode >= 0 && mode <= 1) {
+        g_conf.is_AY_on = (bool)mode;
+    }
+    const char p3[] = "color_mode:";
+    mode = parse_conf_word(buf, p3, sizeof(p3), 256);
+    if (mode >= 0 && mode <= 1) {
+        g_conf.color_mode = (bool)mode;
+    }
+    const char p4[] = "snd_volume:";
+    mode = parse_conf_word(buf, p4, sizeof(p4), 256);
+    if (mode >= -16 && mode <= 5) {
+        g_conf.snd_volume = mode;
+    }
+    const char p5[] = "graphics_pallette_idx:";
+    mode = parse_conf_word(buf, p5, sizeof(p5), 256);
+    if (mode >= 0 && mode <= 15) {
+        g_conf.graphics_pallette_idx = mode;
     }
     f_close(&fil);
 }
