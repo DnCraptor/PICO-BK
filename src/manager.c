@@ -262,8 +262,25 @@ static void do_nothing(uint8_t cmd) {
     redraw_window();
 }
 
+static const line_t bk_mode_lns[] = {
+    { 1, " BK 0010 + KNGMD 16k " },
+    { 1, " BK 0010 Focal [bugs]" },
+    { 1, " BK 0010-01 Basic 86 " },
+    { 1, " BK 0011M + KNGMD    " },
+    { 1, " BK 0011M + MSTD     " }
+};
+
 static void conf_it(uint8_t cmd) {
-    draw_panel(10, 10, MAX_WIDTH - 20, MAX_HEIGHT - 20, "Stratup configuration", 0);
+    draw_panel(10, 10, MAX_WIDTH - 20, MAX_HEIGHT - 20, "Startup configuration", 0);
+    draw_panel(15, 13, 23, 7, "mode:", 0);
+    for (int i = 0; i < 5; ++i) {
+        draw_label(16, 14 + i, 21, bk_mode_lns[i].txt, g_conf.bk0010mode == i, false);
+    }
+    draw_label(15, 20, 23, "          is_covox_on:", false, false);
+    draw_label(15, 21, 23, "             is_AY_on:", false, false);
+    draw_label(15, 22, 23, "           color_mode:", false, false);
+    draw_label(15, 23, 23, "           snd_volume:", false, false);
+    draw_label(15, 24, 23, "graphics_pallette_idx:", false, false);
     while(1) {
         if (escPressed) break;
     }
@@ -694,7 +711,7 @@ static void m_move_file(uint8_t cmd) {
 
 static void m_info(uint8_t cmd) {
     line_t plns[40] = {
-        { 1, "Key mapping BK-0011M:" },
+        { 1, "Key mapping emulation mode:" },
         { 1, " - Alt   + \"key\"  - AP2" },
         { 1, " - Shift + \"key\"  - register up/down" },
         { 1, " - Ctrl  + \"key\"  - CU" },
@@ -795,14 +812,6 @@ static inline fn_1_12_tbl_t* actual_fn_1_12_tbl() {
     }
     return ptbl;
 }
-
-static const line_t bk_mode_lns[] = {
-    { 1, " BK 0010 + KNGMD 16k " },
-    { 1, " BK 0010 Focal [bugs]" },
-    { 1, " BK 0010-01 Basic 86 " },
-    { 1, " BK 0011M + KNGMD    " },
-    { 1, " BK 0011M + MSTD     " }
-};
 
 static void bottom_line() {
     for (int i = 0; i < BTNS_COUNT; ++i) {
