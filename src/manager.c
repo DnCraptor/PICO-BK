@@ -35,6 +35,7 @@ static volatile bool f10Pressed = false;
 static volatile bool f11Pressed = false;
 static volatile bool f12Pressed = false;
 static volatile bool tabPressed = false;
+static volatile bool spacePressed = false;
 volatile bool escPressed = false;
 static volatile bool leftPressed = false;
 static volatile bool rightPressed = false;
@@ -270,19 +271,101 @@ static const line_t bk_mode_lns[] = {
     { 1, " BK 0011M + MSTD     " }
 };
 
+static int z_idx = 0;
+static void in_conf() {
+    draw_panel(15, 13, 24, 7, "mode:", 0);
+    for (int i = 0; i < 5; ++i) {
+        bool selected = g_conf.bk0010mode == i;
+        draw_label(16, 14 + i, 21, bk_mode_lns[i].txt, selected, selected && z_idx == 0);
+    }
+    draw_label(15, 20, 23, "          is_covox_on:", false, z_idx == 1);
+    draw_label(15, 21, 23, "             is_AY_on:", false, z_idx == 2);
+    draw_label(15, 22, 23, "           color_mode:", false, z_idx == 3);
+    draw_label(15, 23, 23, "           snd_volume:", false, z_idx == 4);
+    draw_label(15, 24, 23, "graphics_pallette_idx:", false, z_idx == 5);
+    const static char b_on [2] = { 0xFB, 0 };
+    const static char b_off[2] = { 0xB0, 0 };
+    draw_label(38, 20, 1, g_conf.is_covox_on ? b_on : b_off, z_idx == 1, z_idx == 1);
+    draw_label(38, 21, 1, g_conf.is_AY_on ? b_on : b_off, z_idx == 2, z_idx == 2);
+    draw_label(38, 22, 1, g_conf.color_mode ? b_on : b_off, z_idx == 3, z_idx == 3);
+    char b[4] = { 0 };
+    snprintf(b, 4, "%d", g_conf.snd_volume);
+    draw_label(38, 23, 2, b, z_idx == 4, z_idx == 4);
+    snprintf(b, 4, "%d", g_conf.graphics_pallette_idx);
+    draw_label(38, 24, 3, b, z_idx == 5, z_idx == 5);
+}
+
 static void conf_it(uint8_t cmd) {
     draw_panel(10, 10, MAX_WIDTH - 20, MAX_HEIGHT - 20, "Startup configuration", 0);
-    draw_panel(15, 13, 23, 7, "mode:", 0);
-    for (int i = 0; i < 5; ++i) {
-        draw_label(16, 14 + i, 21, bk_mode_lns[i].txt, g_conf.bk0010mode == i, false);
-    }
-    draw_label(15, 20, 23, "          is_covox_on:", false, false);
-    draw_label(15, 21, 23, "             is_AY_on:", false, false);
-    draw_label(15, 22, 23, "           color_mode:", false, false);
-    draw_label(15, 23, 23, "           snd_volume:", false, false);
-    draw_label(15, 24, 23, "graphics_pallette_idx:", false, false);
+    in_conf();
     while(1) {
         if (escPressed) break;
+        if (enterPressed) {
+            enterPressed = false;
+            FIL fil;
+            f_open(&fil, "\\BK\\bk.conf", FA_CREATE_ALWAYS | FA_WRITE);
+            char buf[256];
+            snprintf(buf, 256, "mode:%d\r\nis_covox_on:%d\r\nis_AY_on:%d\r\ncolor_mode:%d\r\nsnd_volume:%d\r\ngraphics_pallette_idx:%d",
+                g_conf.bk0010mode,
+                g_conf.is_covox_on,
+                g_conf.is_AY_on,
+                g_conf.color_mode,
+                g_conf.snd_volume,
+                g_conf.graphics_pallette_idx
+            );
+            UINT bw;
+            f_write(&fil, buf, strlen(buf), &bw);
+            f_close(&fil);
+            break;
+        }
+        if (upPressed) {
+            upPressed = false;
+            if (z_idx == 0) {
+                if (g_conf.bk0010mode > 0) g_conf.bk0010mode--;
+            } else {
+                if (--z_idx < 0) z_idx = 0;
+            }
+            in_conf();
+        }
+        if (downPressed) {
+            downPressed = false;
+            if (z_idx == 0) {
+                if (g_conf.bk0010mode < 5) g_conf.bk0010mode++;
+            } else {
+                if (++z_idx > 5) z_idx = 5;
+            }
+            in_conf();
+        }
+        if (tabPressed) {
+            tabPressed = false;
+            z_idx++;
+            if (z_idx > 5) z_idx = 0;
+            in_conf();
+        }
+        if (spacePressed) {
+            spacePressed = false;
+            switch (z_idx)
+            {
+            case 1:
+              g_conf.is_covox_on = !g_conf.is_covox_on;
+              break;
+            case 2:
+              g_conf.is_AY_on = !g_conf.is_AY_on;
+              break;
+            case 3:
+              g_conf.color_mode = !g_conf.color_mode;
+              break;
+            case 4:
+              g_conf.snd_volume++;
+              if (g_conf.snd_volume == 6) g_conf.snd_volume = -16;
+              break;
+            case 5:
+              g_conf.graphics_pallette_idx++;
+              if (g_conf.graphics_pallette_idx == 16) g_conf.graphics_pallette_idx = 0;
+              break;
+            }
+            in_conf();
+        }
     }
     redraw_window();
 }
@@ -823,6 +906,15 @@ static void bottom_line() {
         BTN_WIDTH * 13 + 3,
         F_BTN_Y_POS,
         get_color_schema()->FOREGROUND_FIELD_COLOR,
+        get_color_schema()->BACKGROUND_FIELD_COLOR
+    );
+    char buf[4];
+    snprintf(buf, 4, "%s%s", g_conf.is_AY_on ? "A" : " ", g_conf.is_covox_on ? "C" : " ");
+    draw_text( // TODO: move to pico-vision
+        buf,
+        BTN_WIDTH * 13,
+        F_BTN_Y_POS,
+        5, // red?
         get_color_schema()->BACKGROUND_FIELD_COLOR
     );
     draw_cmd_line(0, CMD_Y_POS, os_type);
@@ -1763,6 +1855,10 @@ bool handleScancode(uint32_t ps2scancode) { // core 1
         delPressed = true; break;
       case 0xD3: // Del up
         delPressed = false; break;
+      case 0x39:
+        spacePressed = true; break;
+      case 0xB9:
+        spacePressed = false; break;
       case 0x0F:
         tabPressed = true;
         break;
