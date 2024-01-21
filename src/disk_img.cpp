@@ -1,4 +1,5 @@
 #include "disk_img.h"
+#include "mkdos.h"
 extern "C" {
 #include "debug.h"
 #include "stdint.h"
@@ -653,6 +654,9 @@ extern "C" bool mount_img(const char* path) {
         return false;
     }
     m_cleanup_ext();
+	mkdos_review(parse_result); // TODO: pass callback
+	return true;
+
     try {
         CBKImage* BKImage = new CBKImage();
 		PARSE_RESULT pr = parse_result;
