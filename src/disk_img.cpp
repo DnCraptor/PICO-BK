@@ -4,8 +4,11 @@ extern "C" {
 #include "stdint.h"
 #include "string.h"
 #include "ff.h"
+#include "stdio.h"
+#include "emulator.h"
 }
-static PARSE_RESULT parse_result;
+#include "BKImage.h"
+static PARSE_RESULT_C parse_result;
 
 const char *strID_Andos = "ANDOS ";
 const char *strID_DXDOS = "DX-DOS";
@@ -23,7 +26,7 @@ const char *strID_RT11Q = "?QUBOOT-";
 0 - Microdos
 -1 - ошибка чтения файла
 */
-inline static int AnalyseMicrodos(FIL *f, unsigned long nBaseOffsetLBA, uint8_t *buf)
+inline static int AnalyseMicrodos(FIL *f, uint8_t *buf)
 {
 #pragma pack(push)
 #pragma pack(1)
@@ -36,17 +39,14 @@ inline static int AnalyseMicrodos(FIL *f, unsigned long nBaseOffsetLBA, uint8_t 
 		uint16_t len_blk;   // длина в блоках, если len_blk == 0 то это тоже с большой долей вероятности каталог
 		uint16_t address;   // стартовый адрес
 		uint16_t length;    // длина, или остаток длины от длины в блоках, если размер файла > 64кб
-		MikrodosFileRecord()
-		{
+		MikrodosFileRecord() {
 			memset(this, 0, sizeof(MikrodosFileRecord));
 		}
-		MikrodosFileRecord &operator = (const MikrodosFileRecord &src)
-		{
+		MikrodosFileRecord &operator = (const MikrodosFileRecord &src) {
 			memcpy(this, &src, sizeof(MikrodosFileRecord));
 			return *this;
 		}
-		MikrodosFileRecord &operator = (const MikrodosFileRecord *src)
-		{
+		MikrodosFileRecord &operator = (const MikrodosFileRecord *src) {
 			memcpy(this, src, sizeof(MikrodosFileRecord));
 			return *this;
 		}
@@ -54,9 +54,9 @@ inline static int AnalyseMicrodos(FIL *f, unsigned long nBaseOffsetLBA, uint8_t 
 #pragma pack(pop)
 	int nRet = -1;
 	constexpr int nCatSize = 10; // размер каталога - одна сторона нулевой дорожки.
-	char pCatBuffer[nCatSize * BLOCK_SIZE] = { 0 };
-	if (f_lseek(f, nBaseOffsetLBA) == FR_OK) {
-		// перемещаемся к нулевому сектору, + 0 - для наглядности
+	char pCatBuffer[nCatSize * BLOCK_SIZE] = { 0 }; // TODO: read one by one
+	if (f_lseek(f, 0) == FR_OK) {
+		// перемещаемся к нулевому сектору
 		UINT br;
 		if (f_read(f, pCatBuffer, sizeof pCatBuffer, &br) == FR_OK)
 		{
@@ -65,31 +65,20 @@ inline static int AnalyseMicrodos(FIL *f, unsigned long nBaseOffsetLBA, uint8_t 
 			int nMKDirFlag = 0;
 			int nAODirFlag = 0;
 			// сканируем каталог и ищем там директории
-			for (int i = 0; i < nRecNum; ++i)
-			{
-				if (pDiskCat[i].name[0] == 0177)
-				{
+			for (int i = 0; i < nRecNum; ++i) {
+				if (pDiskCat[i].name[0] == 0177) {
 					nMKDirFlag++;
-				}
-				else if (pDiskCat[i].name[0] != 0 && pDiskCat[i].len_blk == 0)
-				{
+				} else if (pDiskCat[i].name[0] != 0 && pDiskCat[i].len_blk == 0) {
 					nAODirFlag++;
 				}
 			}
-			if (nMKDirFlag && nAODirFlag)
-			{
+			if (nMKDirFlag && nAODirFlag) {
 				nRet = 0;
-			}
-			else if (nMKDirFlag)
-			{
+			} else if (nMKDirFlag) {
 				nRet = 2;
-			}
-			else if (nAODirFlag)
-			{
+			} else if (nAODirFlag) {
 				nRet = 1;
-			}
-			else
-			{
+			} else {
 				nRet = 0;
 			}
 		}
@@ -154,7 +143,7 @@ inline static bool substrfind(uint8_t *bufs, size_t len_bufs, uint8_t *buff, siz
 0 - не rt11
 -1 - ошибка чтения файла
 */
-inline static int IsRT11_old(unsigned long nBaseOffsetLBA, uint8_t *buf) {
+inline static int IsRT11_old(uint8_t *buf) {
 	int nRet = 0;
 	// надо найти строку strID_RT11 где-то в нулевом секторе.
 	size_t s_len = strlen(strID_RT11);
@@ -174,150 +163,241 @@ inline static int IsRT11_old(unsigned long nBaseOffsetLBA, uint8_t *buf) {
 	return nRet;
 }
 
+#pragma pack(push)
+#pragma pack(1)
+struct RT11SegmentHdr {
+	uint16_t segments_num;          // число сегментов, отведённых под каталог
+	uint16_t next_segment;          // номер следующего сегмента каталога, если 0 - то этот сегмент последний
+	uint16_t used_segments;         // счётчик сегментов, имеющих записи, есть только в первом сегменте
+	uint16_t filerecord_add_bytes;  // число дополнительных БАЙТОВ! в записи о файле в каталоге
+	uint16_t file_block;            // номер блока, с которого начинается самый первый файл, описанный в данном сегменте
+	RT11SegmentHdr() {
+		memset(this, 0, sizeof(RT11SegmentHdr));
+	}
+	RT11SegmentHdr &operator = (const RT11SegmentHdr &src) {
+		memcpy(this, &src, sizeof(RT11SegmentHdr));
+		return *this;
+	}
+	RT11SegmentHdr &operator = (const RT11SegmentHdr *src) {
+		memcpy(this, src, sizeof(RT11SegmentHdr));
+		return *this;
+	}
+};
+#pragma pack(pop)
+
 /*
 Проверим, а не rt11 ли это. выход:
 1 - rt11
 0 - не rt11
 -1 - ошибка чтения файла
 */
-inline static int IsRT11(FIL *f, unsigned long nBaseOffsetLBA, uint8_t *buf)
-{
+inline static int IsRT11(FIL *f, uint8_t *buf) {
 	int nRet = 0;
 	auto pwBuf = reinterpret_cast<uint16_t *>(buf);
-	uint8_t bufsh[BLOCK_SIZE];
 	// проверку будем осуществлять методом эмуляции чтения каталога.
-	const unsigned int nImgSize = f->GetFileSize() / BLOCK_SIZE; // размер образа в блоках.
-
+	const unsigned int nImgSize = f_size(f) / BLOCK_SIZE; // размер образа в блоках.
+    UINT br;
 	// перемещаемся к первому сектору
-	if (!f->ReadLBA(buf, nBaseOffsetLBA + 1, 1))
-	{
+	if (f_lseek(f, BLOCK_SIZE) != FR_OK && f_read(f, buf, BLOCK_SIZE, &br) != FR_OK) {
 		return -1;
 	}
-
 	unsigned int nBeginBlock = pwBuf[0724 / 2]; // получим блок, с которого начинается сектор.
 	unsigned int nCurrentSegment = 1;   // номер текущего сегмента
 	unsigned int nTotalSegments = 0;    // всего возможных сегментов в каталоге
 	unsigned int nUsedSegments = -1;    // число занятых сегментов, не должно совпадать с nCount
 	unsigned int nAddBytes = 0;
 	unsigned int nCount = 0;            // счётчик пройденных сегментов
-
 	// !!! фикс для АДОС
-	if ((nBeginBlock == 0) || (nBeginBlock > 255))
-	{
+	if ((nBeginBlock == 0) || (nBeginBlock > 255)) {
 		nBeginBlock = 6;
 	}
-
-	if (nBeginBlock < nImgSize)
-	{
-		while (nCurrentSegment > 0)
-		{
+	if (nBeginBlock < nImgSize) {
+		while (nCurrentSegment > 0)	{
 			int offs = ((nCurrentSegment - 1) * 2 + nBeginBlock);
-
-			if (!f->ReadLBA(bufsh, nBaseOffsetLBA + offs, 1)) // перемещаемся к началу текущего сегмента каталога и читаем
-			{
+            if (f_lseek(f, offs / BLOCK_SIZE) != FR_OK || f_read(f, buf, BLOCK_SIZE, &br) != FR_OK) {
+                // перемещаемся к началу текущего сегмента каталога и читаем
 				return -1;
 			}
-
-			auto CurrentSegmentHeader = reinterpret_cast<RT11SegmentHdr *>(bufsh);
-
-			if (nTotalSegments == 0)
-			{
+			auto CurrentSegmentHeader = reinterpret_cast<RT11SegmentHdr *>(buf);
+			if (nTotalSegments == 0) {
 				nTotalSegments = CurrentSegmentHeader->segments_num; // если в первый раз, запомним число сегментов.
-
 				if (nTotalSegments > 31) // если число сегментов больше 31, то не RT-11
 				{
 					break;
 				}
-
 				nUsedSegments = CurrentSegmentHeader->used_segments;
-
 				// если в первом сегменте счётчик использованных сегментов больше общего числа сегментов
-				if (nUsedSegments > nTotalSegments)
-				{
+				if (nUsedSegments > nTotalSegments) {
 					break;
 				}
-
 				nAddBytes = CurrentSegmentHeader->filerecord_add_bytes;
-
 				if (nAddBytes > 252) // если число доп слов больше размера сегмента - то это не RT-11
 				{
 					// т.к. в сегменте обязательно должен быть маркер конца сегмента, то в нём должны умещаться как минимум 2 записи.
 					// поэтому 72*7 делим пополам
 					break;
 				}
-			}
-			else
-			{
+			} else {
 				// если не в первый - сравним старое кол-во с новым, если не равно - значит не RT-11
-				if (nTotalSegments != CurrentSegmentHeader->segments_num)
-				{
+				if (nTotalSegments != CurrentSegmentHeader->segments_num) {
 					break;
 				}
-
-				if (nAddBytes != CurrentSegmentHeader->filerecord_add_bytes)
-				{
+				if (nAddBytes != CurrentSegmentHeader->filerecord_add_bytes) {
 					break;
 				}
 			}
-
 			// если начальный блок в сегменте выходит за пределы образа - то это не RT-11
-			if (CurrentSegmentHeader->file_block > nImgSize)
-			{
+			if (CurrentSegmentHeader->file_block > nImgSize) {
 				break;
 			}
-
 			nCurrentSegment = CurrentSegmentHeader->next_segment;
-
 			if (nCurrentSegment > 31) // если номер следующего сегмента больше 31, то не RT-11
 			{
 				break;
 			}
-
 			if (nCurrentSegment > nTotalSegments) // если номер следующего сегмента больше общего кол-ва сегментов, то не RT-11
 			{
 				break;
 			}
-
 			nCount++; // чтобы не зациклиться, считаем пройденные сегменты
-
 			if (nCount > nTotalSegments) // если их было больше, чем общее число сегментов - то это не RT-11
 			{
 				break;
 			}
 		}
-
 		// когда выходим из цикла
 		// если соблюдаются следующие условия, то очень вероятно, что это всё-таки RT-11
 		// третье условие - избыточно
-		if ((nCurrentSegment == 0) && (nCount == nUsedSegments) && (nCount <= nTotalSegments))
-		{
+		if ((nCurrentSegment == 0) && (nCount == nUsedSegments) && (nCount <= nTotalSegments)) {
 			nRet = 1;
 		}
 	}
-
 	return nRet;
+}
+
+/*
+Проверим, а не ксидос ли это. выход:
+1 - ксидос
+0 - не ксидос
+-1 - ошибка чтения
+*/
+inline static int IsCSIDOS3(FIL *f, uint8_t *buf) {
+	auto pwBuf = reinterpret_cast<uint16_t *>(buf);
+	// проверим, а не ксидос ли у нас
+    UINT br;
+	// перемещаемся ко второму сектору
+	if (f_lseek(f, 2 * BLOCK_SIZE) != FR_OK || f_read(f, buf, BLOCK_SIZE, &br) != FR_OK) {
+		if ((pwBuf[8 / 2] == 0123123) || (pwBuf[8 / 2] == 0123124)) {
+			// если ксидос или особый ксидос
+			if ((pwBuf[4 / 2] == 0123123) && (pwBuf[6 / 2] == 0123123)) // если ксидос3
+			{
+				return 1;
+			}
+		}
+		// про ксидос других версий ничего неизвестно
+		return 0; // вообще не ксидос
+	}
+	return -1;
+}
+
+/*
+Проверим, вдруг это ОПТОК. выход:
+1 - Опток
+0 - не Опток
+-1 - ошибка чтения
+*/
+inline static int IsOPTOK(FIL *f, uint8_t *buf) {
+	auto pwBuf = reinterpret_cast<uint16_t *>(buf);
+    UINT br;
+	// перемещаемся ко второму сектору
+	if (f_lseek(f, 2 * BLOCK_SIZE) != FR_OK || f_read(f, buf, BLOCK_SIZE, &br) != FR_OK) {
+		return -1;
+	}
+	// первое слово - сигнатура "**", затем 13 нулевых слов.
+	uint16_t s = 0;
+	for (int i = 0; i < 14; ++i) {
+		s += pwBuf[i]; // проверяем
+	}
+	if (s == 0x2a2a) // если всё так и есть
+	{
+		return 1;   // то это скорее всего Опток
+	}
+	return 0;
+}
+
+inline static uint16_t CalcCRC(uint8_t *buffer, size_t len) {
+	uint32_t crc = 0;
+	for (size_t i = 0; i < len; ++i) {
+		crc += buffer[i];
+		if (crc & 0xFFFF0000) {
+			// если случился перенос в 17 разряд (т.е. бит С для word)
+			crc &= 0x0000FFFF; // его обнулим
+			crc++; // но прибавим к сумме
+		}
+	}
+	return static_cast<uint16_t>(crc & 0xffff);
+}
+
+inline static int IsHolography(FIL *f, uint8_t *buf) {
+	auto pwBuf = reinterpret_cast<uint16_t *>(buf);
+    UINT br;
+	// читаем бут сектор
+	if (f_lseek(f, 0) != FR_OK || f_read(f, buf, BLOCK_SIZE, &br) != FR_OK) {
+		return -1;
+	}
+	// будем проверять по КС, потому что существует всего 2 дискеты с этой, так сказать, ОС
+	uint16_t crc = CalcCRC(buf, 0162);
+	return (crc == 8384);
+}
+
+inline static int IsDaleOS(FIL *f, uint8_t *buf) {
+	auto pwBuf = reinterpret_cast<uint16_t *>(buf);
+	static uint8_t OSSignature[3] = "Da";
+    UINT br;
+	// читаем бут сектор
+	if (f_lseek(f, 0) != FR_OK || f_read(f, buf, BLOCK_SIZE, &br) != FR_OK) {
+		return -1;
+	}
+	if (pwBuf[1] == 0240) {
+		// если второе слово у звгрузчика тоже NOP
+		// читаем блок 1
+		if (f_lseek(f, BLOCK_SIZE) != FR_OK || f_read(f, buf, BLOCK_SIZE, &br) != FR_OK) {
+			return -1;
+		}
+		if (pwBuf[0] == *(reinterpret_cast<uint16_t *>(&OSSignature[0]))) {
+			// если первое слово второго блока - сигнатура ОС
+			// читаем блок 2
+			if (f_lseek(f, 2* BLOCK_SIZE) != FR_OK || f_read(f, buf, BLOCK_SIZE, &br) != FR_OK) {
+				return -1;
+			}
+			// если последнее слово второго блока - сигнатура каталога
+			if (pwBuf[0776 / 2] == 041125) {
+				return 1; // то это оно
+			}
+		}
+	}
+	return 0; // иначе - это не оно
 }
 
 /* определение типа образа, на выходе номер, соответствующий определённой ОС
     0 - образ не опознан, -1 - ошибка
 */
-static PARSE_RESULT ParseImage(const char* fname, unsigned long nBaseOffset) {
+static void ParseImage(const char* fname, PARSE_RESULT_C& ret) {
 	union {
 		uint8_t pSector[BLOCK_SIZE];
 		uint16_t wSector[BLOCK_SIZE / 2];
 	};
-	PARSE_RESULT ret;
+	;
 	strncpy(ret.strName, fname, 256);
-	ret.nBaseOffset = nBaseOffset;
+	ret.nBaseOffset = 0;
 	ret.imageOSType = IMAGE_TYPE::ERROR_NOIMAGE; // предполагаем изначально такое
     FIL fil;
 	if (f_open(&fil, fname, FA_READ) != FR_OK) {
 		DBGM_PRINT(("Unable to open %s", fname));
-		return ret;
+		return;
 	}
 	ret.nImageSize = f_size(&fil); // получим размер файла
-	nBaseOffset /= BLOCK_SIZE; // смещение в LBA
-    DBGM_PRINT(("%s nImageSize: %d nBaseOffset: %d", fname, ret.nImageSize, nBaseOffset));
+    DBGM_PRINT(("%s nImageSize: %d", fname, ret.nImageSize));
 	UINT br;
 	if (f_read(&fil, pSector, BLOCK_SIZE, &br) == FR_OK) {
 		bool bAC1 = false; // условие андос 1 (метка диска)
@@ -369,7 +449,7 @@ static PARSE_RESULT ParseImage(const char* fname, unsigned long nBaseOffset) {
 			}
 			// тут надо найти способ как определить прочую экзотику
 			else {
-				int nRet = AnalyseMicrodos(&fil, nBaseOffset, pSector);
+				int nRet = AnalyseMicrodos(&fil, pSector);
 				switch (nRet) {
 					case 0:
 						ret.nPartLen = *(reinterpret_cast<uint16_t *>(pSector + 0466));
@@ -397,7 +477,7 @@ static PARSE_RESULT ParseImage(const char* fname, unsigned long nBaseOffset) {
 			uint8_t nMediaDescriptor = pSector[025];
 			int nBootSize = *(reinterpret_cast<uint16_t *>(pSector + 016)) * (*(reinterpret_cast<uint16_t *>(pSector + 013)));
 			uint8_t b[BLOCK_SIZE];
-			f_lseek(&fil, nBaseOffset + nBootSize);
+			f_lseek(&fil, nBootSize);
 			f_read(&fil, b, BLOCK_SIZE, &br);
 			if (b[1] == 0xff && b[0] == nMediaDescriptor) // если медиадескриптор в BPB и фат совпадают, то это точно FAT12
 			{
@@ -431,40 +511,38 @@ static PARSE_RESULT ParseImage(const char* fname, unsigned long nBaseOffset) {
 			//                   0 - нет, это какая-то другая ОС
 			//                  -1 - ошибка ввода вывода
 			// проверим, а не рт11 ли у нас
-			int t = IsRT11_old(nBaseOffset, pSector);
+			int t = IsRT11_old(pSector);
             DBGM_PRINT(("IsRT11_old: %d", t));
 			switch (t) {
 				case 0:
-					t = IsRT11(&fil, nBaseOffset, pSector);
+					t = IsRT11(&fil, pSector);
                     DBGM_PRINT(("IsRT11: %d", t));
-					switch (t)
-					{
-						case 0:
-						{
+					switch (t) {
+						case 0:	{
 							// нет, не рт11
 							// проверим, а не ксидос ли у нас
-							t = IsCSIDOS3(&BKFloppyImgFile, nBaseOffset, pSector);
+							t = IsCSIDOS3(&fil, pSector);
                             DBGM_PRINT(("IsCSIDOS3: %d", t));
 							switch (t)
 							{
 								case 0:
 									// нет, не ксидос
 									// проверим на ОПТОК
-									t = IsOPTOK(&BKFloppyImgFile, nBaseOffset, pSector);
+									t = IsOPTOK(&fil, pSector);
 									DBGM_PRINT(("IsOPTOK: %d", t));
 									switch (t)
 									{
 										case 0:
 											// нет, не опток
 											// проверим на Holography
-											t = IsHolography(&BKFloppyImgFile, nBaseOffset, pSector);
+											t = IsHolography(&fil, pSector);
 											DBGM_PRINT(("IsHolography: %d", t));
 											switch (t)
 											{
 												case 0:
 													// нет, не Holography
 													// проверим на Dale OS
-													t = IsDaleOS(&BKFloppyImgFile, nBaseOffset, pSector);
+													t = IsDaleOS(&fil, pSector);
 													DBGM_PRINT(("IsDaleOS: %d", t));
 													switch (t)
 													{
@@ -511,31 +589,64 @@ static PARSE_RESULT ParseImage(const char* fname, unsigned long nBaseOffset) {
 	}
 	DBGM_PRINT(("nPartLen: %d imageOSType: %d", ret.nPartLen, ret.imageOSType))
 	f_close(&fil);
-	return ret;
+	return;
 }
 
-bool is_browse_os_supported() {
+extern "C" bool is_browse_os_supported() {
    return parse_result.imageOSType == IMAGE_TYPE::MKDOS;
 }
 
-void detect_os_type(const char* path, char* os_type, size_t sz) {
+inline static const char* GetOSName(const IMAGE_TYPE t) {
+	switch (t) {
+		case IMAGE_TYPE::ERROR_NOIMAGE:
+			return { "" };
+		case IMAGE_TYPE::ANDOS:
+			return { "ANDOS" };
+		case IMAGE_TYPE::MKDOS:
+			return { "MKDOS" };
+		case IMAGE_TYPE::AODOS:
+			return { "AODOS" };
+		case IMAGE_TYPE::NORD:
+			return { "NORD" };
+		case IMAGE_TYPE::MIKRODOS:
+			return { "MicroDOS" };
+		case IMAGE_TYPE::CSIDOS3:
+			return { "CSIDOS3" };
+		case IMAGE_TYPE::RT11:
+			return { "RT-11" };
+		case IMAGE_TYPE::NCDOS:
+			return { "HCDOS" };
+		case IMAGE_TYPE::DXDOS:
+			return { "DXDOS" };
+		case IMAGE_TYPE::OPTOK:
+			return { "OPTOK" };
+		case IMAGE_TYPE::HOLOGRAPHY:
+			return { "Holografy OS" };
+		case IMAGE_TYPE::DALE:
+			return { "Dale OS" };
+		case IMAGE_TYPE::MSDOS:
+			return { "MS-DOS" };
+    	default:
+			return { "" };
+	}
+}
+
+extern "C" void detect_os_type(const char* path, char* os_type, size_t sz) {
     try {
-        parse_result = ParseImage(path, 0);
-        auto s = std::to_string(parse_result.nImageSize >> 10) + " KB " + CBKParseImage::GetOSName(parse_result.imageOSType);
-        if (parse_result.bImageBootable) {
-            s += " [bootable]";
-        }
-        DBGM_PRINT(("detect_os_type: %s %s", path, s.c_str()));
-        strncpy(os_type, s.c_str(), sz);
+        ParseImage(path, parse_result);
+		snprintf(os_type, sz, "%d KB %s%s",
+		         parse_result.nImageSize >> 10,
+				 GetOSName(parse_result.imageOSType),
+				 parse_result.bImageBootable ? " [bootable]" : "");
+        DBGM_PRINT(("detect_os_type: %s %s", path, b));
     } catch(...) {
         DBGM_PRINT(("detect_os_type: %s FAILED", path));
         strncpy(os_type, "DETECT OS TYPE FAILED", sz);
     }
 }
 
-
 #if EXT_DRIVES_MOUNT
-bool mount_img(const char* path) {
+extern "C" bool mount_img(const char* path) {
     DBGM_PRINT(("mount_img: %s", path));
     if ( !is_browse_os_supported() ) {
         DBGM_PRINT(("mount_img: %s unsupported file type (resources)", path));
@@ -544,7 +655,8 @@ bool mount_img(const char* path) {
     m_cleanup_ext();
     try {
         CBKImage* BKImage = new CBKImage();
-        BKImage->Open(parse_result);
+		PARSE_RESULT pr = parse_result;
+        BKImage->Open((pr));
         BKImage->ReadCurrentDir(BKImage->GetTopItemIndex());
         BKImage->Close();
         DBGM_PRINT(("mount_img: %s done", path));

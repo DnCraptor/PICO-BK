@@ -1,4 +1,5 @@
 ﻿#pragma once
+
 extern "C" {
 #include "debug.h"
 #include "emulator.h"

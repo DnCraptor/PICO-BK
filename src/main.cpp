@@ -24,6 +24,8 @@ extern "C" {
 #include "CPU.h"
 #include "main_i.h"
 #include "emu_e.h"
+#include "aySoundSoft.h"
+#include <stdlib.h>
 }
 
 volatile config_em_t g_conf {
@@ -94,10 +96,6 @@ void inInit(uint gpio) {
     gpio_init(gpio);
     gpio_set_dir(gpio, GPIO_IN);
     gpio_pull_up(gpio);
-}
-
-extern "C" {
-#include "aySoundSoft.h"
 }
 
 #ifdef SOUND_SYSTEM

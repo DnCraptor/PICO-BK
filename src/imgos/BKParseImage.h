@@ -1,28 +1,6 @@
 ﻿#pragma once
 #include "BKImgFile.h"
-
-enum class IMAGE_TYPE : int
-{
-	ERROR_NOIMAGE = -1,
-	UNKNOWN = 0,
-	ANDOS,
-	MKDOS,
-	AODOS,
-	NORD,
-	MIKRODOS,
-	CSIDOS3,
-	RT11,
-	NCDOS,
-	DXDOS,
-	OPTOK,
-	HOLOGRAPHY,
-	DALE,
-	MSDOS
-};
-
-// размер блока по умолчанию. == размер сектора
-constexpr auto BLOCK_SIZE = 512;
-
+#include "disk_img.h"
 
 struct PARSE_RESULT
 {
@@ -59,6 +37,16 @@ struct PARSE_RESULT
 		imageOSType = src->imageOSType;
 		bImageBootable = src->bImageBootable;
 		strName = src->strName;
+	}
+
+	PARSE_RESULT(const PARSE_RESULT_C &src)
+	{
+		nImageSize = src.nImageSize;
+		nBaseOffset = src.nBaseOffset;
+		nPartLen = src.nPartLen;
+		imageOSType = src.imageOSType;
+		bImageBootable = src.bImageBootable;
+		strName = src.strName;
 	}
 
 	PARSE_RESULT &operator = (const PARSE_RESULT &src)

@@ -704,13 +704,7 @@ void AT_OVL CPU_RunInstruction (void) {
     TCPU_Arg ArgD;
     TCPU_Arg Res;
     TCPU_Psw Psw = PSW;
-/*   Регистр состояния клавиатуры имеет адрес 177660.
-   В нем используются только два бита.
-   Разряд 6 - это бит разрешения прерывания. Если в нем содержится логический ноль "0", то прерывание от клавиатуры разрешено; если нужно
-запретить прерывание от клавиатуры, то в 6 разряд надо записать "1".*/
-if ((Device_Data.SysRegs.Reg177660 & 0200) == 0)
-    if ((Psw & 0200) == 0 && (Device_Data.CPU_State.Flags & (CPU_FLAG_KEY_VECTOR_60 | CPU_FLAG_KEY_VECTOR_274)))
-    {
+    if ((Psw & 0200) == 0 && (Device_Data.CPU_State.Flags & (CPU_FLAG_KEY_VECTOR_60 | CPU_FLAG_KEY_VECTOR_274))) {
         if (Device_Data.CPU_State.Flags & CPU_FLAG_KEY_VECTOR_60)
         {
             Device_Data.CPU_State.Flags &= ~CPU_FLAG_KEY_VECTOR_60;
