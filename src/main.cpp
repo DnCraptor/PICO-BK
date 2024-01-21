@@ -5,7 +5,7 @@ extern "C" {
 #include "debug.h"
 }
 
-#include "BKImage.h"
+#include "disk_img.h"
 #include <pico/time.h>
 #include <pico/multicore.h>
 #include <hardware/pwm.h>
@@ -143,50 +143,6 @@ static bool __not_in_flash_func(AY_timer_callback)(repeating_timer_t *rt) {
 #endif
 
 static FATFS fatfs;
-static PARSE_RESULT parse_result;
-
-bool is_browse_os_supported() {
-   return parse_result.imageOSType == IMAGE_TYPE::MKDOS;
-}
-
-void detect_os_type(const char* path, char* os_type, size_t sz) {
-    try {
-        CBKParseImage* parserImage = new CBKParseImage();
-        parse_result = parserImage->ParseImage(path, 0);
-        delete parserImage;
-        auto s = std::to_string(parse_result.nImageSize >> 10) + " KB " + CBKParseImage::GetOSName(parse_result.imageOSType);
-        if (parse_result.bImageBootable) {
-            s += " [bootable]";
-        }
-        DBGM_PRINT(("detect_os_type: %s %s", path, s.c_str()));
-        strncpy(os_type, s.c_str(), sz);
-    } catch(...) {
-        DBGM_PRINT(("detect_os_type: %s FAILED", path));
-        strncpy(os_type, "DETECT OS TYPE FAILED", sz);
-    }
-}
-
-#if EXT_DRIVES_MOUNT
-bool mount_img(const char* path) {
-    DBGM_PRINT(("mount_img: %s", path));
-    if ( !is_browse_os_supported() ) {
-        DBGM_PRINT(("mount_img: %s unsupported file type (resources)", path));
-        return false;
-    }
-    m_cleanup_ext();
-    try {
-        CBKImage* BKImage = new CBKImage();
-        BKImage->Open(parse_result);
-        BKImage->ReadCurrentDir(BKImage->GetTopItemIndex());
-        BKImage->Close();
-        DBGM_PRINT(("mount_img: %s done", path));
-    } catch(...) {
-        DBGM_PRINT(("mount_img: %s FAILED", path));
-        return false;
-    }
-    return true;
-}
-#endif
 
 inline static int parse_conf_word(const char* buf, const char* param, size_t plen, size_t lim) {
     char b[16];
