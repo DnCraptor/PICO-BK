@@ -218,7 +218,7 @@ inline static int parse_conf_word(const char* buf, const char* param, size_t ple
             DBGM_PRINT(("param %s b: %s atoi(b): %d", param, b, atoi(b)));
             return atoi(b);
         }
-        DBGM_PRINT(("param %s pc + plen: %d atoi(pc + plen): ", param, pc, atoi(pc)));
+        DBGM_PRINT(("param %s pc: %d atoi(pc): %d", param, pc, atoi(pc)));
         return atoi(pc);
     }
     return -100;
