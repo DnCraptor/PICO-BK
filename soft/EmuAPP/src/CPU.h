@@ -8,7 +8,7 @@
 #include "ROM11.h"
 #include "FDDROM.h"
 #include "BOS_N_DISK_327.h"
-#include "Focal.h"
+#include "bk10_084_focal.h"
 #include "Tests.h"
 #include "bk11m_330_mstd.h"
 #include "debug.h"
@@ -129,8 +129,8 @@ static inline bool is_bk0011mode() {
 
 #define CPU_PAGE161_MEM_ADR &ROM10[0x00000] /* monitor 0010 */
 #define CPU_PAGE162_MEM_ADR &ROM10[0x01000] /* monitor 0010 */
-#define CPU_PAGE163_MEM_ADR &ROM10FOCAL[0x00000] /* Focal 0010 */
-#define CPU_PAGE164_MEM_ADR &ROM10FOCAL[0x01000] /* Focal 0010 */
+#define CPU_PAGE163_MEM_ADR &bk10_084_focal[0x00000] /* Focal 0010 */
+#define CPU_PAGE164_MEM_ADR &bk10_084_focal[0x01000] /* Focal 0010 */
 
 #define CPU_PAGE171_MEM_ADR 0 // &BK0010_ROM[0x04000] /* not used 8k */
 #define CPU_PAGE172_MEM_ADR 0 // &BK0010_ROM[0x05000] /* not used 8k */
