@@ -8,7 +8,6 @@ extern "C" {
 #include "stdio.h"
 #include "emulator.h"
 }
-#include "BKImage.h"
 static PARSE_RESULT_C parse_result;
 
 const char *strID_Andos = "ANDOS ";
@@ -388,7 +387,7 @@ static void ParseImage(const char* fname, PARSE_RESULT_C& ret) {
 		uint8_t pSector[BLOCK_SIZE];
 		uint16_t wSector[BLOCK_SIZE / 2];
 	};
-	;
+	ret.bImageBootable = false;
 	strncpy(ret.strName, fname, 256);
 	ret.nBaseOffset = 0;
 	ret.imageOSType = IMAGE_TYPE::ERROR_NOIMAGE; // предполагаем изначально такое
@@ -656,18 +655,5 @@ extern "C" bool mount_img(const char* path) {
     m_cleanup_ext();
 	mkdos_review(parse_result); // TODO: pass callback
 	return true;
-
-    try {
-        CBKImage* BKImage = new CBKImage();
-		PARSE_RESULT pr = parse_result;
-        BKImage->Open((pr));
-        BKImage->ReadCurrentDir(BKImage->GetTopItemIndex());
-        BKImage->Close();
-        DBGM_PRINT(("mount_img: %s done", path));
-    } catch(...) {
-        DBGM_PRINT(("mount_img: %s FAILED", path));
-        return false;
-    }
-    return true;
 }
 #endif

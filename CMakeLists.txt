@@ -85,8 +85,8 @@ pico_set_program_version(pico-bk "test")
             hardware_pwm
             hardware_flash
     )
-    target_link_options(${PROJECT_NAME} PRIVATE "LINKER:--script=${CMAKE_CURRENT_LIST_DIR}/memmap.ld")
-    set_target_properties(${PROJECT_NAME} PROPERTIES LINK_DEPENDS ${CMAKE_CURRENT_LIST_DIR}/memmap.ld)
+#    target_link_options(${PROJECT_NAME} PRIVATE "LINKER:--script=${CMAKE_CURRENT_LIST_DIR}/memmap.ld")
+#    set_target_properties(${PROJECT_NAME} PROPERTIES LINK_DEPENDS ${CMAKE_CURRENT_LIST_DIR}/memmap.ld)
 
     family_configure_device_example(${PROJECT_NAME} noos)
 
@@ -98,7 +98,7 @@ pico_set_program_version(pico-bk "test")
     )
     target_include_directories(${PROJECT_NAME} PRIVATE
             ${CMAKE_CURRENT_SOURCE_DIR}/src
-            ${CMAKE_CURRENT_SOURCE_DIR}/src/imgos
+#            ${CMAKE_CURRENT_SOURCE_DIR}/src/imgos
             ${CMAKE_CURRENT_SOURCE_DIR}/disks
             ${CMAKE_CURRENT_SOURCE_DIR}/drivers/usb
             ${CMAKE_CURRENT_SOURCE_DIR}/soft/EmuAPP/src
@@ -162,7 +162,7 @@ target_compile_definitions(${PROJECT_NAME} PRIVATE
         BUILD_IN_FDD1
 
         # supports only for pico with 4 or more MB flashes
-        PICO_FLASH_SIZE_BYTES=4194304
+#        PICO_FLASH_SIZE_BYTES=4194304
 
         #BOOT_DEBUG=1
         #BOOT_DEBUG_ACC=0xA0000

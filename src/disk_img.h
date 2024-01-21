@@ -4,7 +4,24 @@
 
 extern "C" {
 #include "string.h"
+#include "stdint.h"
+int m_add_file_ext(const char* fname);
 }
+
+enum FR_ATTR : uint32_t {
+	READONLY    = 0x001,
+	HIDDEN      = 0x002,
+	PROTECTED   = 0x004,    // везде, имеет смысл как RO, но в RT-11 есть оба атрибута, и RO, и P
+	SYSTEM      = 0x008,
+	ARCHIVE     = 0x010,
+	DIRECTORY   = 0x020,
+	VOLUMEID    = 0x040,
+	TEMPORARY   = 0x080,
+	LOGDISK     = 0x100,
+	LINK        = 0x200,
+	BAD         = 0x400,
+	DELETED     = 0x800
+};
 
 enum class IMAGE_TYPE : int
 {

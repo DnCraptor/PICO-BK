@@ -990,10 +990,7 @@ inline static void m_cleanup() {
     files_count = 0;
 }
 
-int m_add_file_ext(size_t i, const char* fname) {
-    if (i >= MAX_FILES) {
-        return -1;
-    }
+int m_add_file_ext(const char* fname) {
     file_info_t* fp = &files_info[files_count++];
     fp->fattrib = 0;
     fp->fdata = 0;
