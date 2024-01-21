@@ -178,7 +178,7 @@ void reset(uint8_t cmd) {
     mark_to_exit_flag = true;
     if (g_conf.bk0010mode == BK_FDD) {
         kbd_script_idx = 0;
-        add_repeating_timer_ms(150, timer_callback, NULL, &timer);
+        add_repeating_timer_ms(200, timer_callback, NULL, &timer);
     }
 }
 
@@ -1381,7 +1381,7 @@ static inline bool run_img(char* path) {
     }
 #endif
     const lines_t lines = { 4, 1, drive_num_lns };
-    int mount_as = draw_selector(50, 10, 30, 8, "Device to mount", &lines, 1);
+    int mount_as = draw_selector(50, 10, 30, 8, "Device to mount", &lines, 2);
     if (escPressed) {
         escPressed = false;
         redraw_window();
