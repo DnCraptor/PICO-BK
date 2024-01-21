@@ -914,8 +914,8 @@ static void bottom_line() {
         buf,
         BTN_WIDTH * 13,
         F_BTN_Y_POS,
-        5, // red?
-        get_color_schema()->BACKGROUND_FIELD_COLOR
+        5, // red
+        0  // black
     );
     draw_cmd_line(0, CMD_Y_POS, os_type);
 }
@@ -1242,7 +1242,7 @@ static inline void redraw_current_panel() {
     draw_cmd_line(0, CMD_Y_POS, os_type);
 }
 
-#include "SNAP001001.h"
+//#include "SNAP001001.h"
 
 static inline bool run_bin(char* path) {
     enterPressed = false;
@@ -1261,13 +1261,13 @@ static inline bool run_bin(char* path) {
     gpio_put(PICO_DEFAULT_LED_PIN, true);
     set_bk0010mode(m);
     main_init();
-    if (m == BK_0010_01) {
-        size_t off = sizeof(Device_Data);
-        memcpy(&Device_Data, SNAP001001, off);
-        memcpy(&g_conf, SNAP001001 + off, sizeof(g_conf));
-        off += sizeof(g_conf);
-        memcpy(RAM, SNAP001001 + off, sizeof(SNAP001001) - off);
-    }
+  //  if (m == BK_0010_01) {
+  //      size_t off = sizeof(Device_Data);
+  //      memcpy(&Device_Data, SNAP001001, off);
+  //      memcpy(&g_conf, SNAP001001 + off, sizeof(g_conf));
+  //      off += sizeof(g_conf);
+  //      memcpy(RAM, SNAP001001 + off, sizeof(SNAP001001) - off);
+  //  }
     FIL file;
     FRESULT result = f_open(&file, path, FA_READ);
     if (result != FR_OK) {
