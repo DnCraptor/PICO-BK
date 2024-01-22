@@ -264,11 +264,11 @@ static void do_nothing(uint8_t cmd) {
 }
 
 static const line_t bk_mode_lns[] = {
-    { 1, " BK 0010 + KNGMD 16k " },
-    { 1, " BK 0010 Focal [bugs]" },
-    { 1, " BK 0010-01 Basic 86 " },
-    { 1, " BK 0011M + KNGMD    " },
-    { 1, " BK 0011M + MSTD     " }
+    { 1, " \x81\x8A-0010 + \x8A\x8D\x83\x8C\x84 16K " },
+    { 1, " \x81\x8A-0010 Focal [bugs]" },
+    { 1, " \x81\x8A-0010-01 Basic 86" },
+    { 1, " \x81\x8A-0011M + \x8A\x8D\x83\x8C\x84    " },
+    { 1, " \x81\x8A-0011M + \x8C\x91\x92\x84     " }
 };
 
 static int z_idx = 0;
