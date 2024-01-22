@@ -73,13 +73,13 @@ void scan_code_cleanup() {
   lastCleanableScanCode = 0;
 }
 
-static const uint8_t PANEL_TOP_Y = 0;
+const static const uint8_t PANEL_TOP_Y = 0;
 static const uint8_t TOTAL_SCREEN_LINES = MAX_HEIGHT;
 static const uint8_t F_BTN_Y_POS = TOTAL_SCREEN_LINES - 1;
 static const uint8_t CMD_Y_POS = F_BTN_Y_POS - 1;
 static const uint8_t PANEL_LAST_Y = CMD_Y_POS - 1;
 
-static uint8_t FIRST_FILE_LINE_ON_PANEL_Y = PANEL_TOP_Y + 1;
+const static uint8_t FIRST_FILE_LINE_ON_PANEL_Y = PANEL_TOP_Y + 1;
 static uint8_t LAST_FILE_LINE_ON_PANEL_Y = PANEL_LAST_Y - 1;
 
 typedef struct {
@@ -95,13 +95,18 @@ typedef struct {
 static file_info_t files_info[MAX_FILES] = { 0 };
 static size_t files_count = 0;
 
+typedef struct {
+    int selected_file_idx;
+    int start_file_offset;
+} indexes_t;
+
 typedef struct file_panel_desc {
     int left;
     int width;
-    int selected_file_idx;
-    int start_file_offset;
     int files_number;
     char path[256];
+    indexes_t indexes[16];
+    int level;
 #if EXT_DRIVES_MOUNT
     bool in_dos;
     char in_path[256];
@@ -109,13 +114,23 @@ typedef struct file_panel_desc {
 } file_panel_desc_t;
 
 static file_panel_desc_t left_panel = {
-    0, MAX_WIDTH / 2, 1, 0, 0,
+    0, MAX_WIDTH / 2,
+    0,
     { "\\" },
+    { FIRST_FILE_LINE_ON_PANEL_Y, 0 },
+    0,
+    false,
+    { 0 }
 };
 
 static file_panel_desc_t right_panel = {
-    MAX_WIDTH / 2, MAX_WIDTH / 2, 1, 0, 0,
+    MAX_WIDTH / 2, MAX_WIDTH / 2,
+     0,
     { "\\BK" },
+    { FIRST_FILE_LINE_ON_PANEL_Y, 0 },
+    0,
+    false,
+    { 0 }
 };
 
 static volatile bool left_panel_make_active = true;
@@ -1082,14 +1097,16 @@ static inline void fill_panel(file_panel_desc_t* p) {
     collect_files(p);
     int y = 1;
     p->files_number = 0;
-    if (p->start_file_offset == 0 && strlen(p->path) > 1) {
-        draw_label(p->left + 1, y, p->width - 2, "..", p == psp && p->selected_file_idx == y, true);
+    int start_file_offset = p->indexes[p->level].start_file_offset;
+    int selected_file_idx = p->indexes[p->level].selected_file_idx;
+    if (start_file_offset == 0 && strlen(p->path) > 1) {
+        draw_label(p->left + 1, y, p->width - 2, "..", p == psp && selected_file_idx == y, true);
         y++;
         p->files_number++;
     }
     for(int fn = 0; fn < files_count; ++ fn) {
         file_info_t* fp = &files_info[fn];
-        if (p->start_file_offset <= p->files_number && y <= LAST_FILE_LINE_ON_PANEL_Y) {
+        if (start_file_offset <= p->files_number && y <= LAST_FILE_LINE_ON_PANEL_Y) {
             char* filename = fp->name;
             snprintf(line, MAX_WIDTH, "%s\\%s", p->path, fp->name);
 #if EXT_DRIVES_MOUNT
@@ -1106,7 +1123,7 @@ static inline void fill_panel(file_panel_desc_t* p) {
                     break;
                 }
             }
-            bool selected = p == psp && p->selected_file_idx == y;
+            bool selected = p == psp && selected_file_idx == y;
             draw_label(p->left + 1, y, p->width - 2, filename, selected, fp->fattrib & AM_DIR);
             if (
 #if EXT_DRIVES_MOUNT
@@ -1157,73 +1174,79 @@ inline static fn_1_12_btn_pressed(uint8_t fn_idx) {
 }
 
 inline static void handle_pagedown_pressed() {
-  for (int i = 0; i < MAX_HEIGHT / 2; ++i)
-    if (psp->selected_file_idx < LAST_FILE_LINE_ON_PANEL_Y &&
-        psp->start_file_offset + psp->selected_file_idx < psp->files_number
-    ) {
-        psp->selected_file_idx++;
-    } else if (
-        psp->selected_file_idx == LAST_FILE_LINE_ON_PANEL_Y &&
-        psp->start_file_offset + psp->selected_file_idx < psp->files_number
-    ) {
-        psp->selected_file_idx--;
-        psp->start_file_offset++;
+    int start_file_offset = psp->indexes[psp->level].start_file_offset;
+    int selected_file_idx = psp->indexes[psp->level].selected_file_idx;
+    for (int i = 0; i < MAX_HEIGHT / 2; ++i) {
+        if (selected_file_idx < LAST_FILE_LINE_ON_PANEL_Y &&
+            start_file_offset + selected_file_idx < psp->files_number
+        ) {
+            psp->indexes[psp->level].selected_file_idx++;
+        } else if (
+            selected_file_idx == LAST_FILE_LINE_ON_PANEL_Y &&
+            start_file_offset + selected_file_idx < psp->files_number
+        ) {
+            psp->indexes[psp->level].selected_file_idx--;
+            psp->indexes[psp->level].start_file_offset++;
+        }
     }
-  fill_panel(psp);
-  scan_code_processed();
+    fill_panel(psp);
+    scan_code_processed();
 }
 
 inline static void handle_down_pressed() {
-    if (psp->selected_file_idx < LAST_FILE_LINE_ON_PANEL_Y &&
-        psp->start_file_offset + psp->selected_file_idx < psp->files_number
+    int start_file_offset = psp->indexes[psp->level].start_file_offset;
+    int selected_file_idx = psp->indexes[psp->level].selected_file_idx;
+    if (selected_file_idx < LAST_FILE_LINE_ON_PANEL_Y &&
+        start_file_offset + selected_file_idx < psp->files_number
     ) {
-        psp->selected_file_idx++;
+        psp->indexes[psp->level].selected_file_idx++;
         fill_panel(psp);
     } else if (
-        psp->selected_file_idx == LAST_FILE_LINE_ON_PANEL_Y &&
-        psp->start_file_offset + psp->selected_file_idx < psp->files_number
+        selected_file_idx == LAST_FILE_LINE_ON_PANEL_Y &&
+        start_file_offset + selected_file_idx < psp->files_number
     ) {
-        psp->selected_file_idx -= 5;
-        psp->start_file_offset += 5;
+        psp->indexes[psp->level].selected_file_idx -= 5;
+        psp->indexes[psp->level].start_file_offset += 5;
         fill_panel(psp);    
     }
     scan_code_processed();
 }
 
 inline static void handle_pageup_pressed() {
-  for (int i = 0; i < MAX_HEIGHT / 2; ++i)
-    if (psp->selected_file_idx > FIRST_FILE_LINE_ON_PANEL_Y) {
-        psp->selected_file_idx--;
-    } else if (psp->selected_file_idx == FIRST_FILE_LINE_ON_PANEL_Y && psp->start_file_offset > 0) {
-        psp->selected_file_idx++;
-        psp->start_file_offset--;
+    int start_file_offset = psp->indexes[psp->level].start_file_offset;
+    int selected_file_idx = psp->indexes[psp->level].selected_file_idx;
+    for (int i = 0; i < MAX_HEIGHT / 2; ++i) {
+        if (selected_file_idx > FIRST_FILE_LINE_ON_PANEL_Y) {
+            psp->indexes[psp->level].selected_file_idx--;
+        } else if (selected_file_idx == FIRST_FILE_LINE_ON_PANEL_Y && start_file_offset > 0) {
+            psp->indexes[psp->level].selected_file_idx++;
+            psp->indexes[psp->level].start_file_offset--;
+        }
     }
-  fill_panel(psp);
-  scan_code_processed();
+    fill_panel(psp);
+    scan_code_processed();
 }
 
 inline static void handle_up_pressed() {
-    if (psp->selected_file_idx > FIRST_FILE_LINE_ON_PANEL_Y) {
-        psp->selected_file_idx--;
+    int start_file_offset = psp->indexes[psp->level].start_file_offset;
+    int selected_file_idx = psp->indexes[psp->level].selected_file_idx;
+    if (selected_file_idx > FIRST_FILE_LINE_ON_PANEL_Y) {
+        psp->indexes[psp->level].selected_file_idx--;
         fill_panel(psp);
-    } else if (psp->selected_file_idx == FIRST_FILE_LINE_ON_PANEL_Y && psp->start_file_offset > 0) {
-        psp->selected_file_idx += 5;
-        psp->start_file_offset -= 5;
+    } else if (selected_file_idx == FIRST_FILE_LINE_ON_PANEL_Y && start_file_offset > 0) {
+        psp->indexes[psp->level].selected_file_idx += 5;
+        psp->indexes[psp->level].start_file_offset -= 5;
         fill_panel(psp);       
     }
     scan_code_processed();
 }
 
 static inline void redraw_current_panel() {
-    psp->selected_file_idx = 1;
-    psp->start_file_offset = 0;
     sprintf(line, "SD:%s", psp->path);
     draw_panel(psp->left, PANEL_TOP_Y, psp->width, PANEL_LAST_Y + 1, line, 0);
     fill_panel(psp);
     draw_cmd_line(0, CMD_Y_POS, os_type);
 }
-
-//#include "SNAP001001.h"
 
 static inline bool run_bin(char* path) {
     enterPressed = false;
@@ -1242,13 +1265,6 @@ static inline bool run_bin(char* path) {
     gpio_put(PICO_DEFAULT_LED_PIN, true);
     set_bk0010mode(m);
     main_init();
-  //  if (m == BK_0010_01) {
-  //      size_t off = sizeof(Device_Data);
-  //      memcpy(&Device_Data, SNAP001001, off);
-  //      memcpy(&g_conf, SNAP001001 + off, sizeof(g_conf));
-  //      off += sizeof(g_conf);
-  //      memcpy(RAM, SNAP001001 + off, sizeof(SNAP001001) - off);
-  //  }
     FIL file;
     FRESULT result = f_open(&file, path, FA_READ);
     if (result != FR_OK) {
@@ -1280,29 +1296,6 @@ static inline bool run_bin(char* path) {
         redraw_window();
         return false;
     }
-    // TODO: ensue it is ok for ever game
-//    Device_Data.MemPages [0] = CPU_PAGE01_MEM_ADR; /* RAM Page 0.1 */
-//    Device_Data.MemPages [1] = CPU_PAGE02_MEM_ADR; /* RAM Page 0.2 */
-//    Device_Data.MemPages [2] = CPU_PAGE03_MEM_ADR; /* RAM Page 0.3 */
-//    Device_Data.MemPages [3] = CPU_PAGE04_MEM_ADR; /* RAM Page 0.4 */
-//    Device_Data.MemPages [4] = CPU_PAGE51_MEM_ADR; /* RAM Page 4.1 video 0 */
-//    Device_Data.MemPages [5] = CPU_PAGE52_MEM_ADR; /* RAM Page 4.2 video 0 */
-//    Device_Data.MemPages [6] = CPU_PAGE53_MEM_ADR; /* RAM Page 4.3 video 0 */
-//    Device_Data.MemPages [7] = CPU_PAGE54_MEM_ADR; /* RAM Page 4.4 video 0 */
-//    graphics_set_page(CPU_PAGE51_MEM_ADR, is_bk0011mode() == BK_0011M ? 15 : 0);
-//    graphics_shift_screen((uint16_t)0330 | 0b01000000000);
-
-/* TODO: in status
-    snprintf(line, MAX_WIDTH, "offset = 0%o; len = %d", offset, len);
-    const line_t lns[3] = {
-        { -1, "Selected file header info:" },
-        { -1, path },
-        { -1, line }
-    };
-    const lines_t lines = { 3, 2, lns };
-    draw_box((MAX_WIDTH - 60) / 2, 7, 60, 10, "Info", &lines);
-    sleep_ms(2500);
-*/
     uint16_t len2 = (len > (16 << 10) - offset) ? (16 << 10) - offset : len;
     result = f_read(&file, RAM + offset, len2, &bw);
     if (result != FR_OK) {
@@ -1354,8 +1347,12 @@ static inline bool run_img(char* path) {
         }
         strncpy(psp->path, path, 256);
         psp->in_dos = true;
-        psp->selected_file_idx = FIRST_FILE_LINE_ON_PANEL_Y;
-        psp->start_file_offset = 0;
+        psp->level++;
+        if (psp->level >= 16) {
+            psp->level = 15;
+        }
+        psp->indexes[psp->level].selected_file_idx = FIRST_FILE_LINE_ON_PANEL_Y;
+        psp->indexes[psp->level].start_file_offset = 0;
         redraw_window();
         DBGM_PRINT(("run_img: %s done", path));
         return true;
@@ -1379,20 +1376,22 @@ static inline bool run_img(char* path) {
 }
 
 static file_info_t* selected_file() {
-    if (psp->selected_file_idx == 1 && psp->start_file_offset == 0 && strlen(psp->path) > 1) {
+    int start_file_offset = psp->indexes[psp->level].start_file_offset;
+    int selected_file_idx = psp->indexes[psp->level].selected_file_idx;
+    if (selected_file_idx == FIRST_FILE_LINE_ON_PANEL_Y && start_file_offset == 0 && strlen(psp->path) > 1) {
         return 0;
     }
     collect_files(psp);
     int y = 1;
     int files_number = 0;
-    if (psp->start_file_offset == 0 && strlen(psp->path) > 1) {
+    if (start_file_offset == 0 && strlen(psp->path) > 1) {
         y++;
         files_number++;
     }
     for(int fn = 0; fn < files_count; ++ fn) {
         file_info_t* fp = &files_info[fn];
-        if (psp->start_file_offset <= files_number && y <= LAST_FILE_LINE_ON_PANEL_Y) {
-            if (psp->selected_file_idx == y) {
+        if (start_file_offset <= files_number && y <= LAST_FILE_LINE_ON_PANEL_Y) {
+            if (selected_file_idx == y) {
                 return fp;
             }
             y++;
@@ -1409,6 +1408,7 @@ static inline void enter_pressed() {
         while(--i > 0) {
             if (psp->path[i] == '\\') {
                 psp->path[i] = 0;
+                psp->level--;
                 redraw_current_panel();
                 return;
             }
@@ -1419,7 +1419,7 @@ static inline void enter_pressed() {
         psp->in_dos = false; // TODO:
         psp->in_path[0] = 0;
 #endif
-        // TODO: position
+        psp->level--;
         redraw_current_panel();
         return;
     }
@@ -1427,6 +1427,12 @@ static inline void enter_pressed() {
         char path[256];
         construct_full_name(path, psp->path, fp->name);
         strncpy(psp->path, path, 256);
+        psp->level++;
+        if (psp->level >= 16) {
+            psp->level = 15;
+        }
+        psp->indexes[psp->level].selected_file_idx = FIRST_FILE_LINE_ON_PANEL_Y;
+        psp->indexes[psp->level].start_file_offset = 0;
         redraw_current_panel();
         return;
     } else {
