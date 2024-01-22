@@ -314,7 +314,7 @@ void mkdos_review(const PARSE_RESULT_C& parse_result) {
 		// выбираем только те записи, которые к нужной директории принадлежат.
 		if (AFR.nDirBelong == m_sDiskCat.nCurrDirNum) {
 	//		m_sDiskCat.vecFC.push_back(AFR);
-	        m_add_file_ext(AFR.strName);
+	        m_add_file_ext(AFR.strName, AFR.nRecType == BKDirDataItem::RECORD_TYPE::DIRECTORY);
 		}
 	}
 #ifdef _DEBUG

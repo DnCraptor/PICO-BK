@@ -5,7 +5,7 @@
 extern "C" {
 #include "string.h"
 #include "stdint.h"
-int m_add_file_ext(const char* fname);
+int m_add_file_ext(const char* fname, bool dir);
 }
 
 enum FR_ATTR : uint32_t {

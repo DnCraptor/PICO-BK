@@ -83,11 +83,10 @@ static uint8_t FIRST_FILE_LINE_ON_PANEL_Y = PANEL_TOP_Y + 1;
 static uint8_t LAST_FILE_LINE_ON_PANEL_Y = PANEL_LAST_Y - 1;
 
 typedef struct {
-	  FSIZE_t fsize;   /* File size */
-	  WORD    fdate;   /* Modified date */
-	  WORD    ftime;   /* Modified time */
-	  BYTE    fattrib; /* File attribute */
-    DWORD*  fdata;
+    FSIZE_t fsize;   /* File size */
+    WORD    fdate;   /* Modified date */
+    WORD    ftime;   /* Modified time */
+    BYTE    fattrib; /* File attribute */
     char    name[MAX_WIDTH >> 1];
 } file_info_t;
 
@@ -981,7 +980,7 @@ static void switch_color(uint8_t cmd) {
 }
 
 void m_cleanup_ext() {
-    DBGM_PRINT(("m_cleanup"));
+    DBGM_PRINT(("m_cleanup_ext"));
     files_count = 0;
 }
 
@@ -990,47 +989,32 @@ inline static void m_cleanup() {
     files_count = 0;
 }
 
-int m_add_file_ext(const char* fname) {
+static const char koi8_2_cp866_arr[] = {
+    0xC4, 0xB3, 0xDA, 0xBF, 0xC0, 0xD9, 0xC3, 0xB4, 0xC2, 0xC1, 0xC5, 0xDF, 0xDC, 0xDB, 0xDD, 0xDE,
+    0xB0, 0xB1, 0xB2, 0xF4, 0xFE, 0xF9, 0xFB, 0xF7, 0xF3, 0xF2, 0xFF, 0xF5, 0xF8, 0xFD, 0xFA, 0xF6,
+    0xCD, 0xBA, 0xD5, 0xF1, 0xD6, 0xC9, 0xB8, 0xB7, 0xBB, 0xD4, 0xD3, 0xC8, 0xBE, 0xBD, 0xBC, 0xC6,
+    0xC7, 0xCC, 0xB5, 0xF0, 0xB6, 0xB9, 0xD1, 0xD2, 0xCB, 0xCF, 0xD0, 0xCA, 0xD8, 0xD7, 0xCE, 0x63,
+    0xEE, 0xA0, 0xA1, 0xE6, 0xA4, 0xA5, 0xE4, 0xA3, 0xE5, 0xA8, 0xA9, 0xAA, 0xAB, 0xAC, 0xAD, 0xAE,
+    0xAF, 0xEF, 0xE0, 0xE1, 0xE2, 0xE3, 0xA6, 0xA2, 0xEC, 0xEB, 0xA7, 0xE8, 0xED, 0xE9, 0xE7, 0xEA,
+    0x9E, 0x80, 0x81, 0x96, 0x84, 0x85, 0x94, 0x83, 0x95, 0x88, 0x89, 0x8A, 0x8B, 0x8C, 0x8D, 0x8E,
+    0x8F, 0x9F, 0x90, 0x91, 0x92, 0x93, 0x86, 0x82, 0x9C, 0x9B, 0x87, 0x98, 0x9D, 0x99, 0x97, 0x9A 
+};
+
+inline static char koi8_2_cp866(char c) {
+   if (c < 0x80) return c;
+   return koi8_2_cp866_arr[c - 0x80];
+}
+
+int m_add_file_ext(const char* fname, bool dir) {
     file_info_t* fp = &files_info[files_count++];
-    fp->fattrib = 0;
-    fp->fdata = 0;
+    fp->fattrib = dir ? AM_DIR : 0;
     fp->fsize = 0;
-    strncpy(fp->name, fname, MAX_WIDTH >> 1);
-    return files_count; // TODO: ensure
-}
-
-const char* m_get_file_data(size_t i) {
-    if (i >= files_count) {
-        return 0;
+    int i = 0;
+    for (; i < (MAX_WIDTH >> 1) && fname[i] != 0; ++i) {
+        fp->name[i] = koi8_2_cp866(fname[i]);
     }
-    return files_info[i].fdate;
-}
-
-void m_set_file_attr(size_t i, int c, const char* str) {
-    if (i >= files_count) {
-        return;
-    }
-    file_info_t* fp = &files_info[i];
-		switch (c)
-		{
-    case -1:
-        fp->fdata = str;
-        break;
-		case 0: // LC_FNAME_POS:
-        strncpy(fp->name, str, MAX_WIDTH >> 1);
-        break;
-		case 4: // LC_SIZE_POS:
-		    fp->fsize = 1; // TODO:
-        break;
-		case 5: // LC_ATTR_POS:
-		    if(strnstr(str, "D", 4)) {
-           fp->fattrib |= AM_DIR;
-        }
-		    break;
-			// TODO:
-		default:
-			break;
-		}
+    fp->name[i] = 0;
+    return files_count;
 }
 
 inline static void m_add_file(FILINFO* fi) {
