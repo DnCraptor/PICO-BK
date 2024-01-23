@@ -249,7 +249,7 @@ inline static bool AppendDirNum(uint8_t nNum) {
 	return bRet;
 }
 
-void mkdos_review(const PARSE_RESULT_C& parse_result) {
+void mkdos_review(const PARSE_RESULT_C& parse_result, int curr_dir_num) {
     m_pDiskCat = reinterpret_cast<MKDosFileRecord *>(m_pCatBuffer + FMT_MKDOS_CAT_BEGIN); // каталог диска
 	m_nMKCatSize = MKDOS_CAT_RECORD_SIZE;
 	m_nMKLastCatRecord = m_nMKCatSize - 1;
@@ -258,6 +258,7 @@ void mkdos_review(const PARSE_RESULT_C& parse_result) {
 	m_bMakeRename = true;
 	m_bChangeAddr = true;
     m_sDiskCat.init();
+	m_sDiskCat.nCurrDirNum = curr_dir_num;
 	m_sDiskCat.bHasDir = true;
 	m_sDiskCat.nMaxDirNum = 0177;
 	FIL fil;
@@ -314,7 +315,7 @@ void mkdos_review(const PARSE_RESULT_C& parse_result) {
 		// выбираем только те записи, которые к нужной директории принадлежат.
 		if (AFR.nDirBelong == m_sDiskCat.nCurrDirNum) {
 	//		m_sDiskCat.vecFC.push_back(AFR);
-	        m_add_file_ext(AFR.strName, AFR.nRecType == BKDirDataItem::RECORD_TYPE::DIRECTORY);
+	        m_add_file_ext(AFR.strName, AFR.nRecType == BKDirDataItem::RECORD_TYPE::DIRECTORY, AFR.nDirNum);
 		}
 	}
 #ifdef _DEBUG

@@ -5,7 +5,7 @@
 extern "C" {
 #include "string.h"
 #include "stdint.h"
-int m_add_file_ext(const char* fname, bool dir);
+int m_add_file_ext(const char* fname, bool dir, int dir_num);
 }
 
 enum FR_ATTR : uint32_t {
@@ -57,7 +57,7 @@ constexpr auto BLOCK_SIZE = 512;
 
 extern "C" void detect_os_type(const char* path, char* os_type, size_t sz);
 #if EXT_DRIVES_MOUNT
-extern "C" bool mount_img(const char* path);
+extern "C" bool mount_img(const char* path, int curr_dir_num);
 #endif
 
 #endif

@@ -88,6 +88,7 @@ typedef struct {
     WORD    ftime;   /* Modified time */
     BYTE    fattrib; /* File attribute */
     char    name[MAX_WIDTH >> 1];
+    int     dir_num;
 } file_info_t;
 
 #define MAX_FILES 500
@@ -109,7 +110,7 @@ typedef struct file_panel_desc {
     int level;
 #if EXT_DRIVES_MOUNT
     bool in_dos;
-    char in_path[256];
+    int dir_num;
 #endif
 } file_panel_desc_t;
 
@@ -120,7 +121,7 @@ static file_panel_desc_t left_panel = {
     { FIRST_FILE_LINE_ON_PANEL_Y, 0 },
     0,
     false,
-    { 0 }
+    0
 };
 
 static file_panel_desc_t right_panel = {
@@ -130,7 +131,7 @@ static file_panel_desc_t right_panel = {
     { FIRST_FILE_LINE_ON_PANEL_Y, 0 },
     0,
     false,
-    { 0 }
+    0
 };
 
 static volatile bool left_panel_make_active = true;
@@ -1020,10 +1021,11 @@ inline static char koi8_2_cp866(char c) {
    return koi8_2_cp866_arr[c - 0x80];
 }
 
-int m_add_file_ext(const char* fname, bool dir) {
+int m_add_file_ext(const char* fname, bool dir, int dir_num) {
     file_info_t* fp = &files_info[files_count++];
     fp->fattrib = dir ? AM_DIR : 0;
     fp->fsize = 0;
+    fp->dir_num = dir_num;
     int i = 0;
     for (; i < (MAX_WIDTH >> 1) && fname[i] != 0; ++i) {
         fp->name[i] = koi8_2_cp866(fname[i]);
@@ -1073,7 +1075,7 @@ inline static void collect_files(file_panel_desc_t* p) {
     m_cleanup();
 #if EXT_DRIVES_MOUNT
     if (p->in_dos) {
-        if(!mount_img(p->path)) {
+        if(!mount_img(p->path, p->dir_num)) {
            return;
         }
         qsort (files_info, files_count, sizeof(file_info_t), m_comp);
@@ -1416,8 +1418,8 @@ static inline void enter_pressed() {
         psp->path[0] = '\\';
         psp->path[1] = 0;
 #if EXT_DRIVES_MOUNT
-        psp->in_dos = false; // TODO:
-        psp->in_path[0] = 0;
+        psp->in_dos = false; // TODO: in case
+        psp->dir_num = 0; // TODO:
 #endif
         psp->level--;
         redraw_current_panel();
@@ -1426,6 +1428,7 @@ static inline void enter_pressed() {
     if (fp->fattrib & AM_DIR) {
         char path[256];
         construct_full_name(path, psp->path, fp->name);
+        psp->dir_num = fp->dir_num;
         strncpy(psp->path, path, 256);
         psp->level++;
         if (psp->level >= 16) {

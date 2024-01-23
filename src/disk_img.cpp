@@ -646,14 +646,14 @@ extern "C" void detect_os_type(const char* path, char* os_type, size_t sz) {
 }
 
 #if EXT_DRIVES_MOUNT
-extern "C" bool mount_img(const char* path) {
-    DBGM_PRINT(("mount_img: %s", path));
+extern "C" bool mount_img(const char* path, int curr_dir_num) {
+    DBGM_PRINT(("mount_img: %s dir_num: %d", path, , curr_dir_num));
     if ( !is_browse_os_supported() ) {
         DBGM_PRINT(("mount_img: %s unsupported file type (resources)", path));
         return false;
     }
     m_cleanup_ext();
-	mkdos_review(parse_result); // TODO: pass callback
+	mkdos_review(parse_result, curr_dir_num); // TODO: pass callback
 	return true;
 }
 #endif

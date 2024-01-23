@@ -100,6 +100,6 @@ extern struct i8253_s {
 #define rgb1(b, g, r) r | (g<<8) | (b<<16);
 
 void m_cleanup_ext();
-int m_add_file_ext(const char* fname, bool dir);
+int m_add_file_ext(const char* fname, bool dir, int dir_num);
 bool is_browse_os_supported();
 
