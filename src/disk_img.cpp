@@ -1,7 +1,7 @@
 #include "disk_img.h"
 #include "mkdos.h"
 extern "C" {
-#include "debug.h"
+#define DBGM_PRINT(X)
 #include "stdint.h"
 #include "string.h"
 #include "ff.h"
@@ -638,7 +638,7 @@ extern "C" void detect_os_type(const char* path, char* os_type, size_t sz) {
 		         parse_result.nImageSize >> 10,
 				 GetOSName(parse_result.imageOSType),
 				 parse_result.bImageBootable ? " [bootable]" : "");
-        DBGM_PRINT(("detect_os_type: %s %s", path, b));
+        DBGM_PRINT(("detect_os_type: %s %s", path, os_type));
     } catch(...) {
         DBGM_PRINT(("detect_os_type: %s FAILED", path));
         strncpy(os_type, "DETECT OS TYPE FAILED", sz);
@@ -647,7 +647,7 @@ extern "C" void detect_os_type(const char* path, char* os_type, size_t sz) {
 
 #if EXT_DRIVES_MOUNT
 extern "C" bool mount_img(const char* path, int curr_dir_num) {
-    DBGM_PRINT(("mount_img: %s dir_num: %d", path, , curr_dir_num));
+    DBGM_PRINT(("mount_img: %s dir_num: %d", path, curr_dir_num));
     if ( !is_browse_os_supported() ) {
         DBGM_PRINT(("mount_img: %s unsupported file type (resources)", path));
         return false;

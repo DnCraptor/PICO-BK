@@ -11,6 +11,10 @@
 #include "aySoundSoft.h"
 #include "ps2.h"
 
+//#include "EmuUi/Key_eu.h"
+extern bool is_swap_wins_enabled;
+extern bool swap_wins;
+
 static void bottom_line();
 static void redraw_window();
 
@@ -296,6 +300,7 @@ static void in_conf() {
     draw_label(15, 22, 23, "           color_mode:", false, z_idx == 3);
     draw_label(15, 23, 23, "           snd_volume:", false, z_idx == 4);
     draw_label(15, 24, 23, "graphics_pallette_idx:", false, z_idx == 5);
+    draw_label(15, 25, 23, " is_swap_wins_enabled:", false, z_idx == 6);
     const static char b_on [2] = { 0xFB, 0 };
     const static char b_off[2] = { 0xB0, 0 };
     draw_label(38, 20, 1, g_conf.is_covox_on ? b_on : b_off, z_idx == 1, z_idx == 1);
@@ -306,6 +311,7 @@ static void in_conf() {
     draw_label(38, 23, 2, b, z_idx == 4, z_idx == 4);
     snprintf(b, 4, "%d", g_conf.graphics_pallette_idx);
     draw_label(38, 24, 3, b, z_idx == 5, z_idx == 5);
+    draw_label(38, 25, 1, is_swap_wins_enabled ? b_on : b_off, z_idx == 6, z_idx == 6);
 }
 
 static void conf_it(uint8_t cmd) {
@@ -318,13 +324,15 @@ static void conf_it(uint8_t cmd) {
             FIL fil;
             f_open(&fil, "\\BK\\bk.conf", FA_CREATE_ALWAYS | FA_WRITE);
             char buf[256];
-            snprintf(buf, 256, "mode:%d\r\nis_covox_on:%d\r\nis_AY_on:%d\r\ncolor_mode:%d\r\nsnd_volume:%d\r\ngraphics_pallette_idx:%d",
+            snprintf(buf, 256,
+             "mode:%d\r\nis_covox_on:%d\r\nis_AY_on:%d\r\ncolor_mode:%d\r\nsnd_volume:%d\r\ngraphics_pallette_idx:%d\r\nis_swap_wins_enabled:%d",
                 g_conf.bk0010mode,
                 g_conf.is_covox_on,
                 g_conf.is_AY_on,
                 g_conf.color_mode,
                 g_conf.snd_volume,
-                g_conf.graphics_pallette_idx
+                g_conf.graphics_pallette_idx,
+                is_swap_wins_enabled
             );
             UINT bw;
             f_write(&fil, buf, strlen(buf), &bw);
@@ -345,14 +353,14 @@ static void conf_it(uint8_t cmd) {
             if (z_idx == 0) {
                 if (g_conf.bk0010mode < 5) g_conf.bk0010mode++;
             } else {
-                if (++z_idx > 5) z_idx = 5;
+                if (++z_idx > 6) z_idx = 6;
             }
             in_conf();
         }
         if (tabPressed) {
             tabPressed = false;
             z_idx++;
-            if (z_idx > 5) z_idx = 0;
+            if (z_idx > 6) z_idx = 0;
             in_conf();
         }
         if (spacePressed) {
@@ -375,6 +383,9 @@ static void conf_it(uint8_t cmd) {
             case 5:
               g_conf.graphics_pallette_idx++;
               if (g_conf.graphics_pallette_idx == 16) g_conf.graphics_pallette_idx = 0;
+              break;
+            case 6:
+              is_swap_wins_enabled = !is_swap_wins_enabled;
               break;
             }
             in_conf();
@@ -771,14 +782,16 @@ static char scan_code_2_cp866[0x80] = {
      0 ,  0 , '1', '2', '3', '4', '5', '6', '7', '8', '9', '0', '-', '=',  0 , ' ', // 0D - TAB
     'Q', 'W', 'E', 'R', 'T', 'Y', 'U', 'I', 'O', 'P', '[', ']',  0 ,  0 , 'A', 'S',
     'D', 'F', 'G', 'H', 'J', 'K', 'L', ';',  0 , '~',  0 ,  0 , 'Z', 'X', 'C', 'V',
-    'B', 'N', 'M', ',', '.',  0 ,  0 , '*',  0 , ' ',  0 , 0 
+    'B', 'N', 'M', ',', '.',  0 ,  0 , '*',  0 , ' ',  0 ,  0 ,  0 ,  0 ,  0 ,  0 ,
+     0 ,  0,   0 ,  0 ,  0 ,  0,   0 , '7', '8', '9', '-', '4', '5', '6', '+', '1',
+    '2', '3', '0', '.',  0 , 0 
 };
 /*
 static char scan_code_2_cp866[0x80] = {
      0 ,  0 , '1', '2', '3', '4', '5', '6', '7', '8', '9', '0', '-', '=',  0 , ' ', // 0D - TAB
     'Q', 'W', 'E', 'R', 'T', 'Y', 'U', 'I', 'O', 'P', '[', ']',  0 ,  0 , 'A', 'S',
     'D', 'F', 'G', 'H', 'J', 'K', 'L', ';','\'', '~',  0 ,'\\', 'Z', 'X', 'C', 'V',
-    'B', 'N', 'M', ',', '.', '/',  0 , '*',  0 , ' ',  0 , 0 
+    'B', 'N', 'M', ',', '.', '/',  0 , '*',  0 , ' ',  0 , 0 ,  0 , 0,  0 , 0,  0 , 0
 };
 */
 static void m_mk_dir(uint8_t cmd) {

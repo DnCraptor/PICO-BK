@@ -178,6 +178,8 @@ inline static int parse_conf_word(const char* buf, const char* param, size_t ple
     return -100;
 }
 
+extern "C" bool is_swap_wins_enabled;
+
 inline static void read_config(const char* path) {
     FIL fil;
     if (f_open(&fil, path, FA_READ) != FR_OK) {
@@ -221,6 +223,11 @@ inline static void read_config(const char* path) {
     mode = parse_conf_word(buf, p5, sizeof(p5), 256);
     if (mode >= 0 && mode <= 15) {
         g_conf.graphics_pallette_idx = mode;
+    }
+    const char p6[] = "is_swap_wins_enabled:";
+    mode = parse_conf_word(buf, p6, sizeof(p6), 256);
+    if (mode >= 0 && mode <= 1) {
+        is_swap_wins_enabled = (bool)mode;
     }
     f_close(&fil);
 }

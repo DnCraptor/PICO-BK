@@ -2,10 +2,13 @@
 #include "ps2_codes.h"
 #include "reboot.h"
 #include "Key.h"
+#include "debug.h"
 
 #define AT_OVL __attribute__((section(".ovl1_eu.text")))
 
-#include "Key_eu.h"
+#include <stdbool.h>
+
+bool is_swap_wins_enabled = true;
 
 static const uint8_t Key_ShiftTab [32][2] = {
     { '`',  '~'},   // 0x80    `~
@@ -284,8 +287,16 @@ uint_fast16_t AT_OVL Key_Translate (uint_fast16_t CodeAndFlags)
                             Key_Flags = KeyFlags;
                             return KEY_UNKNOWN;
 
-        case PS2_L_WIN:     return ReturnKeyCode (14, KeyFlags);
-        case PS2_R_WIN:     return ReturnKeyCode (15, KeyFlags);
+        case PS2_L_WIN:     if (is_swap_wins_enabled) {
+                                DBGM_PRINT(("PS2_L_WIN: KeyFlags: %d", KeyFlags));
+                                return ReturnKeyCode (KeyFlags & 1 ? 15 : 14, KeyFlags);
+                            }
+                            return ReturnKeyCode (14, KeyFlags);
+        case PS2_R_WIN:     if (is_swap_wins_enabled) {
+                                DBGM_PRINT(("PS2_R_WIN: KeyFlags: %d", KeyFlags));
+                                return ReturnKeyCode (KeyFlags & 1 ? 15 : 14, KeyFlags);
+                            }
+                            return ReturnKeyCode (15, KeyFlags);
 //      case PS2_MENU:
 //      case PS2_KP_SLASH:
 //      case PS2_KP_ENTER:
