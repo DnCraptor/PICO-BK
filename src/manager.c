@@ -99,6 +99,7 @@ static size_t files_count = 0;
 typedef struct {
     int selected_file_idx;
     int start_file_offset;
+    int dir_num;
 } indexes_t;
 
 typedef struct file_panel_desc {
@@ -106,11 +107,10 @@ typedef struct file_panel_desc {
     int width;
     int files_number;
     char path[256];
-    indexes_t indexes[16];
+    indexes_t indexes[16]; // TODO: some ext. limit logic
     int level;
 #if EXT_DRIVES_MOUNT
     bool in_dos;
-    int dir_num;
 #endif
 } file_panel_desc_t;
 
@@ -120,8 +120,7 @@ static file_panel_desc_t left_panel = {
     { "\\" },
     { FIRST_FILE_LINE_ON_PANEL_Y, 0 },
     0,
-    false,
-    0
+    false
 };
 
 static file_panel_desc_t right_panel = {
@@ -130,8 +129,7 @@ static file_panel_desc_t right_panel = {
     { "\\BK" },
     { FIRST_FILE_LINE_ON_PANEL_Y, 0 },
     0,
-    false,
-    0
+    false
 };
 
 static volatile bool left_panel_make_active = true;
@@ -1030,7 +1028,9 @@ int m_add_file_ext(const char* fname, bool dir, int dir_num) {
     for (; i < (MAX_WIDTH >> 1) && fname[i] != 0; ++i) {
         fp->name[i] = koi8_2_cp866(fname[i]);
     }
-    fp->name[i] = 0;
+    do { // trim trailing spaces
+        fp->name[i] = 0;
+    } while (--i && (fp->name[i] == ' ' || fp->name[i] == '\t'));
     return files_count;
 }
 
@@ -1075,7 +1075,7 @@ inline static void collect_files(file_panel_desc_t* p) {
     m_cleanup();
 #if EXT_DRIVES_MOUNT
     if (p->in_dos) {
-        if(!mount_img(p->path, p->dir_num)) {
+        if(!mount_img(p->path, p->indexes[p->level].dir_num)) {
            return;
         }
         qsort (files_info, files_count, sizeof(file_info_t), m_comp);
@@ -1418,8 +1418,7 @@ static inline void enter_pressed() {
         psp->path[0] = '\\';
         psp->path[1] = 0;
 #if EXT_DRIVES_MOUNT
-        psp->in_dos = false; // TODO: in case
-        psp->dir_num = 0; // TODO:
+        psp->in_dos = false;
 #endif
         psp->level--;
         redraw_current_panel();
@@ -1428,7 +1427,6 @@ static inline void enter_pressed() {
     if (fp->fattrib & AM_DIR) {
         char path[256];
         construct_full_name(path, psp->path, fp->name);
-        psp->dir_num = fp->dir_num;
         strncpy(psp->path, path, 256);
         psp->level++;
         if (psp->level >= 16) {
@@ -1436,6 +1434,7 @@ static inline void enter_pressed() {
         }
         psp->indexes[psp->level].selected_file_idx = FIRST_FILE_LINE_ON_PANEL_Y;
         psp->indexes[psp->level].start_file_offset = 0;
+        psp->indexes[psp->level].dir_num = fp->dir_num;
         redraw_current_panel();
         return;
     } else {
