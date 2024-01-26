@@ -1014,9 +1014,14 @@ static void bottom_line() {
 static inline void turn_usb_off(uint8_t cmd) { // TODO: support multiple enter for USB mount
     set_tud_msc_ejected(true);
     usb_started = false;
+    int cnt = 1000;
+    while(--cnt) {
+        sleep_ms(1);
+        pico_usb_drive_heartbeat();
+    }
     // Alt + F10 no more actions
-    memset(fn_1_12_tbl_alt[9].name, ' ', BTN_WIDTH);
-    fn_1_12_tbl_alt[9].action = do_nothing;
+    sprintf(fn_1_12_tbl_alt[9].name, " USB  ");
+    fn_1_12_tbl_alt[9].action = turn_usb_on;
     // F10 / Ctrl + F10 - Exit
     sprintf(fn_1_12_tbl[9].name, " Exit ");
     fn_1_12_tbl[9].action = mark_to_exit;
