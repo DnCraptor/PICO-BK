@@ -1011,7 +1011,7 @@ static void bottom_line() {
     draw_cmd_line(0, CMD_Y_POS, os_type);
 }
 
-static inline void turn_usb_off(uint8_t cmd) { // TODO: support multiple enter for USB mount
+static inline void turn_usb_off(uint8_t cmd) {
     set_tud_msc_ejected(true);
     usb_started = false;
     int cnt = 1000;

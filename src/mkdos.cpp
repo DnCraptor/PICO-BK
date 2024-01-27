@@ -249,6 +249,24 @@ inline static bool AppendDirNum(uint8_t nNum) {
 	return bRet;
 }
 
+inline static bool read_cat(const PARSE_RESULT_C& parse_result) {
+	FIL fil;
+	if (f_open(&fil, parse_result.strName, FA_READ | FA_WRITE) == FR_OK) {
+		m_bFileROMode = false;
+	} else if (f_open(&fil, parse_result.strName, FA_READ) != FR_OK) {
+        return false;
+	} else {
+		m_bFileROMode = true;
+	}
+	UINT br;
+	if (f_read(&fil, m_pCatBuffer, sizeof m_pCatBuffer, &br) != FR_OK) {
+		f_close(&fil);
+		return false;
+	}
+	f_close(&fil);
+	return true;
+} 
+
 void mkdos_review(const PARSE_RESULT_C& parse_result, int curr_dir_num) {
     m_pDiskCat = reinterpret_cast<MKDosFileRecord *>(m_pCatBuffer + FMT_MKDOS_CAT_BEGIN); // каталог диска
 	m_nMKCatSize = MKDOS_CAT_RECORD_SIZE;
@@ -261,20 +279,9 @@ void mkdos_review(const PARSE_RESULT_C& parse_result, int curr_dir_num) {
 	m_sDiskCat.nCurrDirNum = curr_dir_num;
 	m_sDiskCat.bHasDir = true;
 	m_sDiskCat.nMaxDirNum = 0177;
-	FIL fil;
-	if (f_open(&fil, parse_result.strName, FA_READ | FA_WRITE) == FR_OK) {
-		m_bFileROMode = false;
-	} else if (f_open(&fil, parse_result.strName, FA_READ) != FR_OK) {
-        return;
-	} else {
-		m_bFileROMode = true;
-	}
-	UINT br;
-	if (f_read(&fil, m_pCatBuffer, sizeof m_pCatBuffer, &br) != FR_OK) {
-		f_close(&fil);
+    if (!read_cat(parse_result)) {
 		return;
 	}
-	f_close(&fil);
 	int files_count = 0;
 	int files_total = *(reinterpret_cast<uint16_t *>(&m_pCatBuffer[FMT_MKDOS_CAT_RECORD_NUMBER])); // читаем общее кол-во файлов. (НЕ записей!)
 	m_sDiskCat.nDataBegin = *(reinterpret_cast<uint16_t *>(&m_pCatBuffer[FMT_MKDOS_FIRST_FILE_BLOCK])); // блок начала данных
@@ -325,4 +332,201 @@ void mkdos_review(const PARSE_RESULT_C& parse_result, int curr_dir_num) {
 	m_sDiskCat.nTotalBlocks = *(reinterpret_cast<uint16_t *>(&m_pCatBuffer[FMT_MKDOS_DISK_SIZE])) - *(reinterpret_cast<uint16_t *>(&m_pCatBuffer[FMT_MKDOS_FIRST_FILE_BLOCK]));
 	m_sDiskCat.nFreeBlocks = m_sDiskCat.nTotalBlocks - used_size;
 	return;
+}
+
+// оптимизация каталога - объединение смежных дырок
+bool OptimizeCatalog() {
+	int nUsedBlocs = 0;
+	unsigned int p = 0;
+	while (p <= m_nMKLastCatRecord) {
+		if (m_pDiskCat[p].status == 0377) // если нашли дырку
+		{
+			unsigned int n = p + 1; // индекс следующей записи
+			if (n > m_nMKLastCatRecord) // если p - последняя запись
+			{
+				// Тут надо обработать выход
+				m_pDiskCat[p].status = m_pDiskCat[p].dir_num = 0;
+				memset(m_pDiskCat[p].name, 0, 14);
+				m_pDiskCat[p].address = m_pDiskCat[p].length = 0;
+				m_pDiskCat[p].start_block = m_pDiskCat[p - 1].start_block + m_pDiskCat[p - 1].len_blk;
+				m_pDiskCat[p].len_blk = *(reinterpret_cast<uint16_t *>(&m_vCatBuffer[FMT_MKDOS_DISK_SIZE])) - nUsedBlocs;
+				break;
+			}
+			if (m_pDiskCat[n].status == 0377) // и за дыркой снова дырка
+			{
+				m_pDiskCat[p].len_blk += m_pDiskCat[n].len_blk; // первую - укрупним
+				// а вторую удалим.
+				while (n < m_nMKLastCatRecord) // сдвигаем каталог
+				{
+					m_pDiskCat[n] = m_pDiskCat[n + 1];
+					n++;
+				}
+				memset(&m_pDiskCat[m_nMKLastCatRecord--], 0, sizeof(MKDosFileRecord));
+				continue; // и всё сначала
+			}
+		}
+		nUsedBlocs += m_pDiskCat[p].len_blk;
+		p++;
+	}
+	return true;
+}
+
+
+bool WriteCurrentDir() {
+	OptimizeCatalog();
+	if (!SeektoBlkWriteData(0, m_vCatBuffer.data(), m_nCatSize)) // сохраняем каталог как есть
+	{
+		return false;
+	}
+	return true;
+}
+
+// сквизирование диска
+bool Squeeze() {
+	bool bRet = true;
+	int nUsedBlocs = 0;
+	unsigned int p = 0;
+	while (p <= m_nMKLastCatRecord) {
+		if (m_pDiskCat[p].status == 0377) // если нашли дырку
+		{
+			unsigned int n = p + 1; // индекс следующей записи
+			if (n >= m_nMKLastCatRecord) // если p - последняя запись
+			{
+				// Тут надо обработать выход
+				m_pDiskCat[p].status = m_pDiskCat[p].dir_num = 0;
+				memset(m_pDiskCat[p].name, 0, 14);
+				m_pDiskCat[p].address = m_pDiskCat[p].length = 0;
+				m_pDiskCat[p].start_block = m_pDiskCat[p - 1].start_block + m_pDiskCat[p - 1].len_blk;
+				m_pDiskCat[p].len_blk = *(reinterpret_cast<uint16_t *>(&m_vCatBuffer[FMT_MKDOS_DISK_SIZE])) - nUsedBlocs;
+				m_nMKLastCatRecord--;
+				break;
+			}
+			if (m_pDiskCat[n].status == 0377) // и за дыркой снова дырка
+			{
+				m_pDiskCat[p].len_blk += m_pDiskCat[n].len_blk; // первую - укрупним
+				// а вторую удалим.
+				while (n < m_nMKLastCatRecord) // сдвигаем каталог
+				{
+					m_pDiskCat[n] = m_pDiskCat[n + 1];
+					n++;
+				}
+				memset(&m_pDiskCat[m_nMKLastCatRecord--], 0, sizeof(MKDosFileRecord));
+				continue; // и всё сначала
+			}
+
+			size_t nBufSize = size_t(m_pDiskCat[n].len_blk) * m_nBlockSize;
+			auto pBuf = std::vector<uint8_t>(nBufSize);
+			if (pBuf.data()) {
+				if (SeekToBlock(m_pDiskCat[n].start_block)) {
+					if (!ReadData(pBuf.data(), nBufSize)) {
+					//	m_nLastErrorNumber = IMAGE_ERROR::IMAGE_CANNOT_READ;
+						bRet = false;
+						break;
+					}
+					if (SeekToBlock(m_pDiskCat[p].start_block)) {
+						if (!WriteData(pBuf.data(), nBufSize)) {
+							m_nLastErrorNumber = IMAGE_ERROR::IMAGE_CANNOT_READ;
+							bRet = false;
+							break;
+						}
+						// теперь надо записи местами поменять.
+						std::swap(m_pDiskCat[p], m_pDiskCat[n]); // обменяем записи целиком
+						std::swap(m_pDiskCat[p].start_block, m_pDiskCat[n].start_block); // начальные блоки вернём как было.
+						m_pDiskCat[n].start_block = m_pDiskCat[p].start_block + m_pDiskCat[p].len_blk;
+					} else {
+						bRet = false;
+					}
+				} else {
+					bRet = false;
+				}
+			} else {
+			//	m_nLastErrorNumber = IMAGE_ERROR::NOT_ENOUGHT_MEMORY;
+				bRet = false;
+				break;
+			}
+		}
+		nUsedBlocs += m_pDiskCat[p].len_blk;
+		p++;
+	}
+	WriteCurrentDir(); // сохраним
+	return bRet;
+}
+
+
+bool CreateDir(BKDirDataItem *pFR) {
+	bool bRet = false;
+	if (m_bFileROMode) {
+		// Если образ открылся только для чтения,
+	//	m_nLastErrorNumber = IMAGE_ERROR::IMAGE_WRITE_PROTECRD;
+		return bRet; // то записать в него мы ничего не сможем.
+	}
+	if (m_sDiskCat.nFreeRecs <= 0) {
+	//	m_nLastErrorNumber = IMAGE_ERROR::FS_CAT_FULL;
+		return false;
+	}
+	if (pFR->nAttr & FR_ATTR::DIRECTORY) {
+		ConvertAbstractToRealRecord(pFR);
+		auto pRec = reinterpret_cast<MKDosFileRecord *>(pFR->pSpecificData); // Вот эту запись надо добавить
+		pFR->nDirBelong = pRec->dir_num = m_sDiskCat.nCurrDirNum; // номер текущего открытого подкаталога
+		// проверим, вдруг такая директория уже есть
+		int nInd = FindRecord2(pRec, false); // мы тут не знаем номер директории. мы можем только по имени проверить.
+		if (nInd >= 0) {
+		//	m_nLastErrorNumber = IMAGE_ERROR::FS_DIR_EXIST;
+			pFR->nDirNum = m_pDiskCat[nInd].status; // и заодно узнаем номер директории
+		} else {
+			unsigned int nIndex = 0;
+			// найдём свободное место в каталоге.
+			bool bHole = false;
+			bool bFound = false;
+			for (unsigned int i = 0; i < m_nMKLastCatRecord; ++i) {
+				if ((m_pDiskCat[i].status == 0377) && (m_pDiskCat[i].name[0] == 0177)) {
+					// если нашли дырку в которой было имя директории
+					bHole = true;
+					nIndex = i;
+					bFound = true;
+					break;
+				}
+			}
+			if (!bFound) {
+				nIndex = m_nMKLastCatRecord;
+				if (nIndex < m_nMKCatSize) // если в конце каталога вообще есть место
+				{
+					bFound = true; // то нашли, иначе - нет
+				}
+			}
+			if (bFound) {
+				pFR->nDirNum = pRec->status = AssignNewDirNum(); // назначаем номер директории.
+				if (pFR->nDirNum == 0) {
+				//	m_nLastErrorNumber = IMAGE_ERROR::FS_DIRNUM_FULL;
+				}
+				// если ошибок не произошло, сохраним результаты
+				if (bHole) {
+					// сохраняем нашу запись вместо удалённой директории
+					m_pDiskCat[nIndex] = pRec;
+				} else {
+					// если нашли свободную область в конце каталога
+					int nHoleSize = m_pDiskCat[nIndex].len_blk;
+					int nStartBlock = m_pDiskCat[nIndex].start_block;
+					// сохраняем нашу запись
+					m_pDiskCat[nIndex] = pRec;
+					// сохраняем признак конца каталога
+					MKDosFileRecord hole;
+					hole.start_block = nStartBlock + pRec->len_blk;
+					hole.len_blk = nHoleSize - pRec->len_blk;
+					// и запись с инфой о свободной области
+					m_pDiskCat[nIndex + 1] = hole;
+					m_nMKLastCatRecord++;
+				}
+				// сохраняем каталог
+				*(reinterpret_cast<uint16_t *>(&m_vCatBuffer[FMT_MKDOS_CAT_RECORD_NUMBER])) += 1; // поправим параметры - количество файлов
+				bRet = WriteCurrentDir();
+				m_sDiskCat.nFreeRecs--;
+			} else {
+			//	m_nLastErrorNumber = IMAGE_ERROR::FS_CAT_FULL;
+			}
+		}
+	} else {
+	//	m_nLastErrorNumber = IMAGE_ERROR::FS_IS_NOT_DIR;
+	}
+	return bRet;
 }
