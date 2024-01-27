@@ -87,6 +87,7 @@ pico_set_program_version(pico-bk "test")
     )
 #    target_link_options(${PROJECT_NAME} PRIVATE "LINKER:--script=${CMAKE_CURRENT_LIST_DIR}/memmap.ld")
 #    set_target_properties(${PROJECT_NAME} PROPERTIES LINK_DEPENDS ${CMAKE_CURRENT_LIST_DIR}/memmap.ld)
+    target_link_options(${PROJECT_NAME} PRIVATE -Xlinker --print-memory-usage)
 
     family_configure_device_example(${PROJECT_NAME} noos)
 

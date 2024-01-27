@@ -82,81 +82,6 @@ struct DiskCatalog {
 };
 static DiskCatalog m_sDiskCat;
 
-
-constexpr auto SPECIFIC_DATA_BUFFER_LENGTH = 64; // размер буфера в байтах, где хранится оригинальная запись как есть.
-
-class BKDirDataItem {
-	public:
-		enum class RECORD_TYPE : int        // тип записи каталога
-		{
-			UP = 0,                         // обозначение выхода из каталога
-			DIRECTORY,                      // обозначение директории
-			LINK,                           // обозначение ссылки (на другой диск)
-			LOGDSK,                         // обозначение логического диска
-			FILE                            // обозначение файла
-		};
-		char            strName[16];        // имя/название
-		unsigned int    nAttr;              // атрибуты, ну там директория, защищённый, скрытый, удалённый, плохой
-		RECORD_TYPE     nRecType;           // тип записи: 0="..", 1=директория, 2=ссылка, 3=логический диск, 4=простой файл, вводится специально для сортировки
-		// поэтому частично дублирует атрибуты
-		int             nDirBelong;         // номер каталога, к которому принадлежит файл для файла и директории
-		int             nDirNum;            // номер директории для директории, 0 - для файла
-		unsigned int    nAddress;           // адрес файла, для директории 0, если для директории не 0, то это ссылка на другой диск.
-		unsigned int    nSize;              // размер файла
-		int             nBlkSize;           // размер в блоках, или кластерах (для андос)
-		unsigned int    nStartBlock;        // начальный сектор/блок/кластер
-		bool            bSelected;          // вводим флаг, что запись в списке выделена.
-	//	time_t          timeCreation;       // для ФС умеющих хранить дату создания файла
-		// здесь будем хранить оригинальную запись о файле.
-		uint32_t        nSpecificDataLength; // размер записи о файле. на БК они гарантированно меньше SPECIFIC_DATA_BUFFER_LENGTH байтов
-		uint8_t         pSpecificData[SPECIFIC_DATA_BUFFER_LENGTH]; // буфер данных
-		BKDirDataItem()	{
-			clear();
-		}
-		~BKDirDataItem() = default;
-		void clear() {
-			memset(this->strName, 0, 16);
-			this->nAttr = 0;
-			this->nStartBlock = this->nBlkSize = this->nSize = this->nAddress = this->nDirNum = this->nDirBelong = 0;
-			this->nRecType = RECORD_TYPE::UP;
-			this->bSelected = false;
-			this->nSpecificDataLength = 0;
-		//	this->timeCreation = 0;
-			memset(this->pSpecificData, 0, SPECIFIC_DATA_BUFFER_LENGTH);
-		}
-		BKDirDataItem(const BKDirDataItem *src)	{
-			strncpy(this->strName, src->strName, sizeof this->strName);
-			this->nAttr = src->nAttr;
-			this->nRecType = src->nRecType;
-			this->nDirBelong = src->nDirBelong;
-			this->nDirNum = src->nDirNum;
-			this->nAddress = src->nAddress;
-			this->nSize = src->nSize;
-			this->nBlkSize = src->nBlkSize;
-			this->nStartBlock = src->nStartBlock;
-			this->bSelected = src->bSelected;
-			//this->timeCreation = src->timeCreation;
-			this->nSpecificDataLength = src->nSpecificDataLength;
-			memcpy(this->pSpecificData, src->pSpecificData, SPECIFIC_DATA_BUFFER_LENGTH);
-		}
-		BKDirDataItem &operator = (const BKDirDataItem &src) {
-			strncpy(this->strName, src.strName, sizeof this->strName);
-			this->nAttr = src.nAttr;
-			this->nRecType = src.nRecType;
-			this->nDirBelong = src.nDirBelong;
-			this->nDirNum = src.nDirNum;
-			this->nAddress = src.nAddress;
-			this->nSize = src.nSize;
-			this->nBlkSize = src.nBlkSize;
-			this->nStartBlock = src.nStartBlock;
-			this->bSelected = src.bSelected;
-		//	this->timeCreation = src.timeCreation;
-			this->nSpecificDataLength = src.nSpecificDataLength;
-			memcpy(this->pSpecificData, src.pSpecificData, SPECIFIC_DATA_BUFFER_LENGTH);
-			return *this;
-		}
-};
-
 // на входе указатель на абстрактную запись.
 // в ней заполнена копия реальной записи, по ней формируем абстрактную
 inline static void ConvertRealToAbstractRecord(BKDirDataItem *pFR) {
@@ -452,8 +377,49 @@ bool Squeeze() {
 	return bRet;
 }
 
+void ConvertAbstractToRealRecord(BKDirDataItem *pFR, bool bRenameOnly = false) {
+	auto pRec = reinterpret_cast<MKDosFileRecord *>(pFR->pSpecificData); // Вот эту запись надо добавить
+	// преобразовывать будем только если там ещё не сформирована реальная запись.
+	if (pFR->nSpecificDataLength == 0 || bRenameOnly) {
+		if (!bRenameOnly) {
+			pFR->nSpecificDataLength = sizeof(MKDosFileRecord);
+			memset(pRec, 0, sizeof(MKDosFileRecord));
+		}
+		// надо сформировать мкдосную запись из абстрактной
+		std::wstring strMKName = pFR->strName.stem().wstring();
+		std::wstring strMKExt = strUtil::CropStr(pFR->strName.extension().wstring(), 4); // включая точку
+		size_t nNameLen = (14 - strMKExt.length()); // допустимая длина имени
+		if (strMKName.length() > nNameLen) // если имя длиньше
+		{
+			strMKName = strUtil::CropStr(strMKName, nNameLen); // обрезаем
+		}
+		strMKName += strMKExt; // прицепляем расширение
+		if (pFR->nAttr & FR_ATTR::DIRECTORY) {
+			std::wstring strDir = strUtil::CropStr(pFR->strName, 13);
+			imgUtil::UNICODEtoBK(strDir, pRec->name + 1, 13, true);
+			if (!bRenameOnly) {
+				pRec->name[0] = 0177; // признак каталога
+				pRec->status = pFR->nDirNum;
+				pRec->dir_num = m_sDiskCat.nCurrDirNum; // номер текущего открытого подкаталога
+			}
+		} else {
+			imgUtil::UNICODEtoBK(strMKName, pRec->name, 14, true);
+			pRec->address = pFR->nAddress; // возможно, если мы сохраняем бин файл, адрес будет браться оттуда
+			if (!bRenameOnly) {
+				if (pFR->nAttr & FR_ATTR::PROTECTED) {
+					pRec->status = 1;
+				} else {
+					pRec->status = 0;
+				}
+				pRec->dir_num = pFR->nDirBelong;
+				pRec->len_blk = ByteSizeToBlockSize_l(pFR->nSize); // размер в блоках
+				pRec->length = pFR->nSize % 0200000; // остаток от длины по модулю 65535
+			}
+		}
+	}
+}
 
-bool CreateDir(BKDirDataItem *pFR) {
+bool MkDirCreateDir(BKDirDataItem *pFR) {
 	bool bRet = false;
 	if (m_bFileROMode) {
 		// Если образ открылся только для чтения,

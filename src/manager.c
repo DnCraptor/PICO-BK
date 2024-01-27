@@ -1153,6 +1153,8 @@ static int m_comp(const file_info_t * e1, const file_info_t * e2) {
     return strncmp(e1->name, e2->name, MAX_WIDTH >> 1);
 }
 
+bool mount_img(const char* path, int curr_dir_num); // TODO: .h?
+
 inline static void collect_files(file_panel_desc_t* p) {
     if (!SD_CARD_AVAILABLE) return;
     m_cleanup();

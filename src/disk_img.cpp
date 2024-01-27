@@ -656,4 +656,248 @@ extern "C" bool mount_img(const char* path, int curr_dir_num) {
 	mkdos_review(parse_result, curr_dir_num); // TODO: pass callback
 	return true;
 }
+
+/*
+Класс, где будут все основные методы для работы с образом.
+Открытие образа, закрытие,
+добавление файлов/директорий (групповое)
+удаление файлов/директорий (групповое и рекурсивное)
+создание директорий
+извлечение файлов и преобразование форматов
+*/
+enum class ADD_ERROR : int
+{
+	OK_NOERROR = 0, // нет ошибок
+	IMAGE_NOT_OPEN, // файл образа не открыт
+	FILE_TOO_LARGE, // файл слишком большой
+	USER_CANCEL,    // операция отменена пользователем
+	IMAGE_ERROR,    // ошибку смотри в nImageErrorNumber
+	NUMBERS
+};
+
+enum class IMAGE_ERROR : int
+{
+	OK_NOERRORS = 0,        // нет ошибок
+	NOT_ENOUGHT_MEMORY,     // Недостаточно памяти.
+	IMAGE_CANNOT_OPEN,      // Невозможно открыть файл образа
+	FILE_CANNOT_CREATE,     // Невозможно создать файл
+	IMAGE_NOT_OPEN,         // Файл образа не открыт
+	IMAGE_WRITE_PROTECRD,   // Файл образа защищён от записи.
+	IMAGE_CANNOT_SEEK,      // Ошибка позиционирования в файле образа
+	IMAGE_CANNOT_READ,      // Ошибка чтения файла образа
+	IMAGE_CANNOT_WRITE,     // Ошибка записи в файл образа
+	FS_CANNOT_CREATE_DIR,   // Невозможно создать директорию
+	FS_FILE_NOT_FOUND,      // Файл(запись о файле в каталоге не найдена)
+	FS_FORMAT_ERROR,        // ошибка в формате файловой системы
+	FS_FILE_EXIST,          // Файл с таким именем уже существует.
+	FS_DIR_EXIST,           // Директория с таким именем уже существует.
+	FS_DIR_NOT_EXIST,       // Директории с таким именем не существует.
+	FS_CAT_FULL,            // Каталог заполнен.
+	FS_DISK_FULL,           // Диск заполнен.
+	FS_DISK_NEED_SQEEZE,    // Диск сильно фрагментирован, нужно провести сквизирование.
+	FS_DIR_NOT_EMPTY,       // Директория не пуста.
+	FS_STRUCT_ERR,          // Нарушена структура каталога.
+	FS_IS_NOT_DIR,          // Это не директория. - попытка подсунуть файл функции change dir
+	FS_IS_NOT_FILE,         // Это не файл. - попытка подсунуть не файл функции, работающей с файлами
+	FS_NOT_SUPPORT_DIRS,    // Файловая система не поддерживает директории.
+	FS_FILE_PROTECTED,      // Файл защищён от удаления
+	FS_DIR_DUPLICATE,       // встретилось дублирование номеров директорий
+	FS_DIRNUM_FULL,         // закончились номера для директорий
+    IMAGE_TYPE_IS_UNSUPPORTED,
+	NUMBERS
+};
+
+struct ADDOP_RESULT
+{
+	bool            bFatal;     // флаг необходимости прервать работу.
+	ADD_ERROR       nError;     // номер ошибки в результате добавления объекта в образ
+	IMAGE_ERROR     nImageErrorNumber; // номер ошибки в результате операций с образом
+	BKDirDataItem   afr;        // экземпляр абстрактной записи, которая вызвала ошибку.
+	// Она нам нужна будет для последующей обработки ошибок
+	ADDOP_RESULT()
+		: bFatal(false)
+		, nError(ADD_ERROR::OK_NOERROR)
+		, nImageErrorNumber(IMAGE_ERROR::OK_NOERRORS)
+	{
+		afr.clear();
+	}
+};
+
+bool MkDirCreateDir(BKDirDataItem *pFR);
+inline static bool CreateDir(BKDirDataItem *pFR) {
+	if (is_browse_os_supported()) {
+		return false;
+	}
+	return MkDirCreateDir(pFR);
+}
+
+// возвращаем коды состояния и ошибок вызывающей функции. Она должна заниматься обработкой
+// разных возникающих ситуаций
+// сюда принимаем структуру sendfiledata и делаем из неё AbstractFileRecord
+// bExistDir - флаг, когда мы пытаемся создать уже существующую директорию, - игнорировать ошибку
+ADDOP_RESULT AddObject(const char* pFileName, bool folder, bool bExistDir = false) {
+	ADDOP_RESULT ret;
+	if (is_browse_os_supported()) {
+		ret.bFatal = IMAGE_ERROR::IMAGE_TYPE_IS_UNSUPPORTED;
+		ret.nError = ADD_ERROR::IMAGE_ERROR;
+		return ret;
+	}
+/*	if (!m_pFloppyImage)
+	{
+		// файл образа не открыт
+		ret.bFatal = true;
+		ret.nError = ADD_ERROR::IMAGE_NOT_OPEN;
+		return ret;
+	}
+*/
+	BKDirDataItem AFR;
+	strncpy(AFR.strName, pFileName, 16);
+
+	// мы не можем сформировать данные:
+	// nDirBelong - потому, что это внутренние данные образа
+	// nBlkSize - потому, что это данные, зависящие от формата образа
+	// nStartBlock - потому, что эти данные ещё неизвестны.
+	if (folder)	{
+		AFR.nAttr |= FR_ATTR::DIRECTORY;
+		AFR.nRecType = BKDirDataItem::RECORD_TYPE::DIRECTORY;
+		if (CreateDir(&AFR) || bExistDir) {
+			if (!ChangeDir(&AFR)) {
+				// ошибка изменения директории:
+				// IMAGE_ERROR::FS_NOT_SUPPORT_DIRS
+				// IMAGE_ERROR::IS_NOT_DIR
+				ret.nImageErrorNumber = m_pFloppyImage->GetErrorNumber();
+				// обрабатывать теперь
+				ret.nError = ADD_ERROR::IMAGE_ERROR;
+				switch (ret.nImageErrorNumber) {
+					case IMAGE_ERROR::FS_NOT_SUPPORT_DIRS:
+						ret.bFatal = false;
+						break;
+					case IMAGE_ERROR::FS_IS_NOT_DIR:
+					default:
+						ret.bFatal = true;
+						break;
+				}
+			}
+		} else {
+			// ошибка создания директории:
+			// IMAGE_ERROR::FS_NOT_SUPPORT_DIRS - два варианта: игнорировать, остановиться
+			// IMAGE_ERROR::CANNOT_WRITE_FILE
+			// IMAGE_ERROR::FS_DIR_EXIST - такая директория уже существует, два варианта: игнорировать, остановиться
+			ret.nImageErrorNumber = m_pFloppyImage->GetErrorNumber();
+			// обрабатывать теперь
+			ret.nError = ADD_ERROR::IMAGE_ERROR;
+			switch (ret.nImageErrorNumber) {
+				case IMAGE_ERROR::FS_NOT_SUPPORT_DIRS:
+				case IMAGE_ERROR::FS_DIR_EXIST:
+					ret.bFatal = false;
+					break;
+				default:
+					ret.bFatal = true;
+					break;
+			}
+		}
+	} else {
+		AFR.nRecType = BKDirDataItem::RECORD_TYPE::FILE;
+		AFR.nSize = fs::file_size(findFile);
+		if (AFR.nSize > m_pFloppyImage->GetImageFreeSpace()) {
+			// файл слишком большой
+			ret.bFatal = true;
+			ret.nError = ADD_ERROR::FILE_TOO_LARGE;
+		} else {
+			const auto nBufferSize = m_pFloppyImage->EvenSizeByBlock(AFR.nSize);
+			auto Buffer = std::vector<uint8_t>(nBufferSize);
+			const auto pBuffer = Buffer.data();
+			if (pBuffer) {
+				memset(pBuffer, 0, nBufferSize);
+				AnalyseFileStruct AFS;
+				if ((AFS.file = _tfopen(findFile.c_str(), _T("rb"))) != nullptr) {
+					AFS.strName = findFile.stem();
+					AFS.strExt = findFile.extension();
+					AFS.nAddr = 01000;
+					AFS.nLen = AFR.nSize;
+					AFS.nCRC = 0;
+					if (imgUtil::AnalyseImportFile(&AFS)) {
+						// если обнаружился формат .bin
+						// если в заголовке бин было оригинальное имя файла
+						if (AFS.OrigName[0]) {
+							// то восстановим оригинальное
+							AFR.strName = strUtil::trim(imgUtil::BKToUNICODE(AFS.OrigName, 16, m_pFloppyImage->m_pKoi8tbl));
+						} else {
+							AFR.strName = AFS.strName + AFS.strExt;
+						}
+					}
+					AFR.nAddress = AFS.nAddr;
+					AFR.nSize = AFS.nLen;
+					fread(pBuffer, 1, AFR.nSize, AFS.file);
+					if (AFS.bIsCRC) {
+						fread(&AFS.nCRC, 1, 2, AFS.file);
+						if (AFS.nCRC != imgUtil::CalcCRC(pBuffer, AFR.nSize)) {
+							TRACE("CRC Mismatch!\n");
+						}
+					} else {
+						AFS.nCRC = imgUtil::CalcCRC(pBuffer, AFR.nSize);
+					}
+					fclose(AFS.file);
+					constexpr int MAX_SQUEEZE_ITERATIONS = 3;
+					int nSqIter = MAX_SQUEEZE_ITERATIONS;
+					bool bNeedSqueeze = false;
+l_sque_retries:
+					if (!m_pFloppyImage->WriteFile(&AFR, pBuffer, bNeedSqueeze)) {
+						// ошибка записи файла:
+						// IMAGE_ERROR::CANNOT_WRITE_FILE
+						// IMAGE_ERROR::FS_DISK_FULL
+						// IMAGE_ERROR::FS_FILE_EXIST - Файл существует. два варианта: остановиться, удалить старый и перезаписать новый файл
+						// IMAGE_ERROR::FS_STRUCT_ERR
+						// IMAGE_ERROR::FS_CAT_FULL
+						// IMAGE_ERROR::FS_DISK_NEED_SQEEZE - нужно сделать сквизирование, но от него отказались
+						// и прочие ошибки позиционирования и записи
+						ret.nImageErrorNumber = m_pFloppyImage->GetErrorNumber();
+						// предполагаем ошибку безусловно фатальную
+						ret.bFatal = true;
+						// если нужно делать сквизирование
+						if (bNeedSqueeze) {
+							// если попытки не кончились ещё
+							if (nSqIter > 0) {
+								// выведем сообщение
+								CString str;
+								str.Format(_T("Попытка %d из %d.\n"), nSqIter, MAX_SQUEEZE_ITERATIONS);
+								str += (m_pFloppyImage->GetImgOSType() == IMAGE_TYPE::OPTOK) ?
+								       _T("Попробовать выполнить уплотнение?\nПоможет только если есть удалённые файлы.") :
+								       _T("Диск сильно фрагментирован. Выполнить сквизирование?");
+								LRESULT definite = AfxGetMainWnd()->SendMessage(WM_SEND_MESSAGEBOX, WPARAM(MB_YESNO | MB_ICONINFORMATION), reinterpret_cast<LPARAM>(str.GetString()));
+								// если согласны
+								nSqIter--;
+								if (definite == IDYES) {
+									goto l_sque_retries;
+								}
+								// если отказ, то сразу выход с фатальной ошибкой - диск полон
+							} else {
+								// итерации кончились, но так ничего и не получилось, то фатальная ошибка
+								if (ret.nImageErrorNumber == IMAGE_ERROR::FS_DISK_NEED_SQEEZE) {
+									ret.nImageErrorNumber = IMAGE_ERROR::FS_DISK_FULL;
+								}
+							}
+							// у сквизирования есть 2 причины: в каталоге нет места для записи, надо делать уплотнение
+							// или место есть, но нету дырки нужного размера, тоже надо делать уплотнение
+							// если и после этого записать ничего не получится, то диск точно полон.
+							// обычно это происходит в случае, когда каталог заполнен и ничего не помогает.
+						} else if (ret.nImageErrorNumber == IMAGE_ERROR::FS_FILE_EXIST) {
+							// если файл существует, то ошибка не фатальная, нужно спросить
+							// перезаписывать файл или нет
+							ret.bFatal = false;
+						}
+						ret.nError = ADD_ERROR::IMAGE_ERROR;
+					}
+				}
+			} else {
+				// недостаточно памяти
+				ret.bFatal = true;
+				ret.nError = ADD_ERROR::IMAGE_ERROR;
+				ret.nImageErrorNumber = IMAGE_ERROR::NOT_ENOUGHT_MEMORY;
+			}
+		}
+	}
+	ret.afr = AFR;
+	return ret;
+}
 #endif
