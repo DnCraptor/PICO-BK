@@ -166,5 +166,5 @@ Extra PSRAM support (для ещё незаконченной СМК-512) on pi 
 <li>graphics_pallette_idx: - 0..15</li>
 <li>is_swap_wins_enabled: 0/1 (по умолчанию: 1, т.е. левый и правый Win взаимозаменяемые и переключают язык циклически.</li>
 <li>is_dendy_joystick: - 0/1 (если is_dendy_joystick включен, то covox-loppback (не сам covox) выключается, т.к. они конфликтуют (используют один порт))</li>
-<li>is_kbd_joystick: 0/1 (если is_kbd_joystick включен, то covox-loppback выключается)</li>
+<li>is_kbd_joystick: 0/1 (если is_kbd_joystick включен, то covox-loppback выключается) с дендиджоем несовместимо, если включен денди, то он перебивает эмуляцию</li>
 </ul>
