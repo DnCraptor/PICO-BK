@@ -15,9 +15,9 @@ extern "C" {
 #include <pico/stdio.h>
 
 #include "psram_spi.h"
-#include "nespad.h"
 
 extern "C" {
+#include "nespad.h"
 #include "vga.h"
 #include "ps2.h"
 #include "usb.h"
@@ -70,29 +70,6 @@ void __time_critical_func(render_core)() {
     graphics_set_offset(0, 0);
     graphics_set_flashmode(true, true);
     sem_acquire_blocking(&vga_start_semaphore);
-#if NESPAD_ENABLED
-    uint8_t tick50ms_counter = 0;
-    while (true) {
-        busy_wait_us(timer_period);
-        if (tick50ms_counter % 2 == 0 && nespad_available) {
-            nespad_read();
-            if (is_dendy_joystick) {
-                Device_Data.SysRegs.RdReg177714 = ((uint16_t)nespad_state2 << 8 | nespad_state); // TODO: ensure core#1, ensure mapping
-            }
-        //    if (nespad_state) {
-        //        sermouseevent(nespad_state & DPAD_B ? 1 : nespad_state & DPAD_A ? 2 : 0,
-        //                      nespad_state & DPAD_LEFT ? -3 : nespad_state & DPAD_RIGHT ? 3 : 0,
-        //                      nespad_state & DPAD_UP ? -3 : nespad_state & DPAD_DOWN ? 3 : 0);
-        //    }
-        }
-        if (tick50ms_counter < 20) {
-            tick50ms_counter++;
-        }
-        else {
-            tick50ms_counter = 0;
-        }
-    }
-#endif
 }
 
 void inInit(uint gpio) {

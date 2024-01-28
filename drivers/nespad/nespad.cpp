@@ -1,5 +1,6 @@
+extern "C" {
 #include "nespad.h"
-
+}
 #include "hardware/pio.h"
 
 #define nespad_wrap_target 0

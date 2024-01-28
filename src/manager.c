@@ -10,6 +10,7 @@
 #include "debug.h"
 #include "aySoundSoft.h"
 #include "ps2.h"
+#include "nespad.h"
 
 //#include "EmuUi/Key_eu.h"
 extern bool is_swap_wins_enabled;
@@ -2103,6 +2104,10 @@ int if_manager(bool force) {
     if_sound_control();
     if (manager_started) {
         return tormoz;
+    }
+    if (is_dendy_joystick) {
+    //    nespad_read();
+    //    Device_Data.SysRegs.RdReg177714 = ((uint16_t)nespad_state2 << 8 | nespad_state); // TODO: ensure core#1, ensure mapping
     }
     if (force) {
         true_covox = 0;
