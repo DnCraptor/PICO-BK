@@ -137,4 +137,36 @@ class BKDirDataItem {
 		}
 };
 
+enum class IMAGE_ERROR : int
+{
+	OK_NOERRORS = 0,        // нет ошибок
+	NOT_ENOUGHT_MEMORY,     // Недостаточно памяти.
+	IMAGE_CANNOT_OPEN,      // Невозможно открыть файл образа
+	FILE_CANNOT_CREATE,     // Невозможно создать файл
+	IMAGE_NOT_OPEN,         // Файл образа не открыт
+	IMAGE_WRITE_PROTECRD,   // Файл образа защищён от записи.
+	IMAGE_CANNOT_SEEK,      // Ошибка позиционирования в файле образа
+	IMAGE_CANNOT_READ,      // Ошибка чтения файла образа
+	IMAGE_CANNOT_WRITE,     // Ошибка записи в файл образа
+	FS_CANNOT_CREATE_DIR,   // Невозможно создать директорию
+	FS_FILE_NOT_FOUND,      // Файл(запись о файле в каталоге не найдена)
+	FS_FORMAT_ERROR,        // ошибка в формате файловой системы
+	FS_FILE_EXIST,          // Файл с таким именем уже существует.
+	FS_DIR_EXIST,           // Директория с таким именем уже существует.
+	FS_DIR_NOT_EXIST,       // Директории с таким именем не существует.
+	FS_CAT_FULL,            // Каталог заполнен.
+	FS_DISK_FULL,           // Диск заполнен.
+	FS_DISK_NEED_SQEEZE,    // Диск сильно фрагментирован, нужно провести сквизирование.
+	FS_DIR_NOT_EMPTY,       // Директория не пуста.
+	FS_STRUCT_ERR,          // Нарушена структура каталога.
+	FS_IS_NOT_DIR,          // Это не директория. - попытка подсунуть файл функции change dir
+	FS_IS_NOT_FILE,         // Это не файл. - попытка подсунуть не файл функции, работающей с файлами
+	FS_NOT_SUPPORT_DIRS,    // Файловая система не поддерживает директории.
+	FS_FILE_PROTECTED,      // Файл защищён от удаления
+	FS_DIR_DUPLICATE,       // встретилось дублирование номеров директорий
+	FS_DIRNUM_FULL,         // закончились номера для директорий
+    IMAGE_TYPE_IS_UNSUPPORTED,
+	NUMBERS
+};
+
 #endif

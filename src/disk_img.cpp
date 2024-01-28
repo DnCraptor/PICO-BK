@@ -678,38 +678,6 @@ enum class ADD_ERROR : int
 	NUMBERS
 };
 
-enum class IMAGE_ERROR : int
-{
-	OK_NOERRORS = 0,        // нет ошибок
-	NOT_ENOUGHT_MEMORY,     // Недостаточно памяти.
-	IMAGE_CANNOT_OPEN,      // Невозможно открыть файл образа
-	FILE_CANNOT_CREATE,     // Невозможно создать файл
-	IMAGE_NOT_OPEN,         // Файл образа не открыт
-	IMAGE_WRITE_PROTECRD,   // Файл образа защищён от записи.
-	IMAGE_CANNOT_SEEK,      // Ошибка позиционирования в файле образа
-	IMAGE_CANNOT_READ,      // Ошибка чтения файла образа
-	IMAGE_CANNOT_WRITE,     // Ошибка записи в файл образа
-	FS_CANNOT_CREATE_DIR,   // Невозможно создать директорию
-	FS_FILE_NOT_FOUND,      // Файл(запись о файле в каталоге не найдена)
-	FS_FORMAT_ERROR,        // ошибка в формате файловой системы
-	FS_FILE_EXIST,          // Файл с таким именем уже существует.
-	FS_DIR_EXIST,           // Директория с таким именем уже существует.
-	FS_DIR_NOT_EXIST,       // Директории с таким именем не существует.
-	FS_CAT_FULL,            // Каталог заполнен.
-	FS_DISK_FULL,           // Диск заполнен.
-	FS_DISK_NEED_SQEEZE,    // Диск сильно фрагментирован, нужно провести сквизирование.
-	FS_DIR_NOT_EMPTY,       // Директория не пуста.
-	FS_STRUCT_ERR,          // Нарушена структура каталога.
-	FS_IS_NOT_DIR,          // Это не директория. - попытка подсунуть файл функции change dir
-	FS_IS_NOT_FILE,         // Это не файл. - попытка подсунуть не файл функции, работающей с файлами
-	FS_NOT_SUPPORT_DIRS,    // Файловая система не поддерживает директории.
-	FS_FILE_PROTECTED,      // Файл защищён от удаления
-	FS_DIR_DUPLICATE,       // встретилось дублирование номеров директорий
-	FS_DIRNUM_FULL,         // закончились номера для директорий
-    IMAGE_TYPE_IS_UNSUPPORTED,
-	NUMBERS
-};
-
 struct ADDOP_RESULT
 {
 	bool            bFatal;     // флаг необходимости прервать работу.
@@ -726,12 +694,20 @@ struct ADDOP_RESULT
 	}
 };
 
-bool MkDirCreateDir(BKDirDataItem *pFR);
+bool MkDosCreateDir(BKDirDataItem *pFR);
 inline static bool CreateDir(BKDirDataItem *pFR) {
 	if (is_browse_os_supported()) {
 		return false;
 	}
-	return MkDirCreateDir(pFR);
+	return MkDosCreateDir(pFR);
+}
+
+IMAGE_ERROR MkDosErrorNumber();
+inline static IMAGE_ERROR GetErrorNumber() {
+	if (is_browse_os_supported()) {
+		return IMAGE_ERROR::IMAGE_TYPE_IS_UNSUPPORTED;
+	}
+	return MkDosErrorNumber();
 }
 
 // возвращаем коды состояния и ошибок вызывающей функции. Она должна заниматься обработкой
@@ -741,7 +717,8 @@ inline static bool CreateDir(BKDirDataItem *pFR) {
 ADDOP_RESULT AddObject(const char* pFileName, bool folder, bool bExistDir = false) {
 	ADDOP_RESULT ret;
 	if (is_browse_os_supported()) {
-		ret.bFatal = IMAGE_ERROR::IMAGE_TYPE_IS_UNSUPPORTED;
+		ret.bFatal = true;
+		ret.nImageErrorNumber = IMAGE_ERROR::IMAGE_TYPE_IS_UNSUPPORTED;
 		ret.nError = ADD_ERROR::IMAGE_ERROR;
 		return ret;
 	}
@@ -764,7 +741,7 @@ ADDOP_RESULT AddObject(const char* pFileName, bool folder, bool bExistDir = fals
 		AFR.nAttr |= FR_ATTR::DIRECTORY;
 		AFR.nRecType = BKDirDataItem::RECORD_TYPE::DIRECTORY;
 		if (CreateDir(&AFR) || bExistDir) {
-			if (!ChangeDir(&AFR)) {
+	/***		if (!ChangeDir(&AFR)) {
 				// ошибка изменения директории:
 				// IMAGE_ERROR::FS_NOT_SUPPORT_DIRS
 				// IMAGE_ERROR::IS_NOT_DIR
@@ -780,13 +757,13 @@ ADDOP_RESULT AddObject(const char* pFileName, bool folder, bool bExistDir = fals
 						ret.bFatal = true;
 						break;
 				}
-			}
+			}**/
 		} else {
 			// ошибка создания директории:
 			// IMAGE_ERROR::FS_NOT_SUPPORT_DIRS - два варианта: игнорировать, остановиться
 			// IMAGE_ERROR::CANNOT_WRITE_FILE
 			// IMAGE_ERROR::FS_DIR_EXIST - такая директория уже существует, два варианта: игнорировать, остановиться
-			ret.nImageErrorNumber = m_pFloppyImage->GetErrorNumber();
+			ret.nImageErrorNumber = GetErrorNumber();
 			// обрабатывать теперь
 			ret.nError = ADD_ERROR::IMAGE_ERROR;
 			switch (ret.nImageErrorNumber) {
@@ -800,7 +777,7 @@ ADDOP_RESULT AddObject(const char* pFileName, bool folder, bool bExistDir = fals
 			}
 		}
 	} else {
-		AFR.nRecType = BKDirDataItem::RECORD_TYPE::FILE;
+/***		AFR.nRecType = BKDirDataItem::RECORD_TYPE::FILE;
 		AFR.nSize = fs::file_size(findFile);
 		if (AFR.nSize > m_pFloppyImage->GetImageFreeSpace()) {
 			// файл слишком большой
@@ -898,7 +875,7 @@ l_sque_retries:
 				ret.nError = ADD_ERROR::IMAGE_ERROR;
 				ret.nImageErrorNumber = IMAGE_ERROR::NOT_ENOUGHT_MEMORY;
 			}
-		}
+		}**/
 	}
 	ret.afr = AFR;
 	return ret;

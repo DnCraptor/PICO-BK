@@ -49,6 +49,7 @@ static bool            m_bMakeDel;         // флаг, реализованы �
 static bool            m_bMakeRename;      // флаг, реализованы ли функции переименования
 static bool            m_bChangeAddr;      // флаг, разрешено ли менять адрес записей
 static bool            m_bFileROMode;      // режим открытия образа, только для чтения == true. или для чтения/записи == false
+static IMAGE_ERROR     m_nLastErrorNumber;
 
 struct DiskCatalog {
 	//std::vector<BKDirDataItem> vecFC; // текущий каталог
@@ -240,7 +241,7 @@ void mkdos_review(const PARSE_RESULT_C& parse_result, int curr_dir_num) {
 				// если директория
 				if (!AppendDirNum(m_pDiskCat[i].status)) {
 					// встретили дублирование номеров директорий
-		//			m_nLastErrorNumber = IMAGE_ERROR::FS_DIR_DUPLICATE;
+					m_nLastErrorNumber = IMAGE_ERROR::FS_DIR_DUPLICATE;
 				}
 			} else {
 				// если файл
@@ -347,7 +348,7 @@ bool Squeeze() {
 			if (pBuf.data()) {
 				if (SeekToBlock(m_pDiskCat[n].start_block)) {
 					if (!ReadData(pBuf.data(), nBufSize)) {
-					//	m_nLastErrorNumber = IMAGE_ERROR::IMAGE_CANNOT_READ;
+						m_nLastErrorNumber = IMAGE_ERROR::IMAGE_CANNOT_READ;
 						bRet = false;
 						break;
 					}
@@ -368,7 +369,7 @@ bool Squeeze() {
 					bRet = false;
 				}
 			} else {
-			//	m_nLastErrorNumber = IMAGE_ERROR::NOT_ENOUGHT_MEMORY;
+				m_nLastErrorNumber = IMAGE_ERROR::NOT_ENOUGHT_MEMORY;
 				bRet = false;
 				break;
 			}
@@ -422,15 +423,19 @@ void ConvertAbstractToRealRecord(BKDirDataItem *pFR, bool bRenameOnly = false) {
 	}
 }
 
-bool MkDirCreateDir(BKDirDataItem *pFR) {
+IMAGE_ERROR MkDosErrorNumber() {
+	return m_nLastErrorNumber;
+}
+
+bool MkDosCreateDir(BKDirDataItem *pFR) {
 	bool bRet = false;
 	if (m_bFileROMode) {
 		// Если образ открылся только для чтения,
-	//	m_nLastErrorNumber = IMAGE_ERROR::IMAGE_WRITE_PROTECRD;
+		m_nLastErrorNumber = IMAGE_ERROR::IMAGE_WRITE_PROTECRD;
 		return bRet; // то записать в него мы ничего не сможем.
 	}
 	if (m_sDiskCat.nFreeRecs <= 0) {
-	//	m_nLastErrorNumber = IMAGE_ERROR::FS_CAT_FULL;
+		m_nLastErrorNumber = IMAGE_ERROR::FS_CAT_FULL;
 		return false;
 	}
 	if (pFR->nAttr & FR_ATTR::DIRECTORY) {
@@ -440,7 +445,7 @@ bool MkDirCreateDir(BKDirDataItem *pFR) {
 		// проверим, вдруг такая директория уже есть
 		int nInd = FindRecord2(pRec, false); // мы тут не знаем номер директории. мы можем только по имени проверить.
 		if (nInd >= 0) {
-		//	m_nLastErrorNumber = IMAGE_ERROR::FS_DIR_EXIST;
+			m_nLastErrorNumber = IMAGE_ERROR::FS_DIR_EXIST;
 			pFR->nDirNum = m_pDiskCat[nInd].status; // и заодно узнаем номер директории
 		} else {
 			unsigned int nIndex = 0;
@@ -466,7 +471,7 @@ bool MkDirCreateDir(BKDirDataItem *pFR) {
 			if (bFound) {
 				pFR->nDirNum = pRec->status = AssignNewDirNum(); // назначаем номер директории.
 				if (pFR->nDirNum == 0) {
-				//	m_nLastErrorNumber = IMAGE_ERROR::FS_DIRNUM_FULL;
+					m_nLastErrorNumber = IMAGE_ERROR::FS_DIRNUM_FULL;
 				}
 				// если ошибок не произошло, сохраним результаты
 				if (bHole) {
@@ -491,11 +496,11 @@ bool MkDirCreateDir(BKDirDataItem *pFR) {
 				bRet = WriteCurrentDir();
 				m_sDiskCat.nFreeRecs--;
 			} else {
-			//	m_nLastErrorNumber = IMAGE_ERROR::FS_CAT_FULL;
+				m_nLastErrorNumber = IMAGE_ERROR::FS_CAT_FULL;
 			}
 		}
 	} else {
-	//	m_nLastErrorNumber = IMAGE_ERROR::FS_IS_NOT_DIR;
+		m_nLastErrorNumber = IMAGE_ERROR::FS_IS_NOT_DIR;
 	}
 	return bRet;
 }
