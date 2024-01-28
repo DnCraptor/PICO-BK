@@ -143,6 +143,7 @@ target_compile_definitions(${PROJECT_NAME} PRIVATE
         NES_GPIO_CLK=14
         NES_GPIO_DATA=16
         NES_GPIO_LAT=15
+        NESPAD_ENABLED=1
 
         PSRAM
         # PSRAM_MUTEX=1

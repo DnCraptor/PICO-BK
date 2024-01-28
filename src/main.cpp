@@ -76,11 +76,14 @@ void __time_critical_func(render_core)() {
         busy_wait_us(timer_period);
         if (tick50ms_counter % 2 == 0 && nespad_available) {
             nespad_read();
-            if (nespad_state) {
-                sermouseevent(nespad_state & DPAD_B ? 1 : nespad_state & DPAD_A ? 2 : 0,
-                              nespad_state & DPAD_LEFT ? -3 : nespad_state & DPAD_RIGHT ? 3 : 0,
-                              nespad_state & DPAD_UP ? -3 : nespad_state & DPAD_DOWN ? 3 : 0);
+            if (is_dendy_joystick) {
+                Device_Data.SysRegs.RdReg177714 = ((uint16_t)nespad_state2 << 8 | nespad_state); // TODO: ensure core#1, ensure mapping
             }
+        //    if (nespad_state) {
+        //        sermouseevent(nespad_state & DPAD_B ? 1 : nespad_state & DPAD_A ? 2 : 0,
+        //                      nespad_state & DPAD_LEFT ? -3 : nespad_state & DPAD_RIGHT ? 3 : 0,
+        //                      nespad_state & DPAD_UP ? -3 : nespad_state & DPAD_DOWN ? 3 : 0);
+        //    }
         }
         if (tick50ms_counter < 20) {
             tick50ms_counter++;
@@ -179,6 +182,7 @@ inline static int parse_conf_word(const char* buf, const char* param, size_t ple
 }
 
 extern "C" bool is_swap_wins_enabled;
+extern "C" bool is_dendy_joystick;
 
 inline static void read_config(const char* path) {
     FIL fil;
@@ -228,6 +232,11 @@ inline static void read_config(const char* path) {
     mode = parse_conf_word(buf, p6, sizeof(p6), 256);
     if (mode >= 0 && mode <= 1) {
         is_swap_wins_enabled = (bool)mode;
+    }
+    const char p7[] = "is_dendy_joystick:";
+    mode = parse_conf_word(buf, p7, sizeof(p7), 256);
+    if (mode >= 0 && mode <= 1) {
+        is_dendy_joystick = (bool)mode;
     }
     f_close(&fil);
 }

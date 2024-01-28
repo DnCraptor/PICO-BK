@@ -398,7 +398,9 @@ TCPU_Arg AT_OVL CPU_WriteW (TCPU_Arg Adr, uint_fast16_t Word) {
 #ifdef COVOX
                 if (g_conf.is_covox_on) { // TODO: stereo ?
                     true_covox = (uint16_t) Word;
-                    Device_Data.SysRegs.RdReg177714 = (uint16_t) Word; // loopback
+                    if (!is_dendy_joystick) {
+                        Device_Data.SysRegs.RdReg177714 = (uint16_t) Word; // loopback
+                    }
                 }
 #endif
 #ifdef AYSOUND
@@ -531,7 +533,9 @@ TCPU_Arg AT_OVL CPU_WriteB (TCPU_Arg Adr, uint_fast8_t Byte) {
 #ifdef COVOX
                 if (g_conf.is_covox_on) {
                     true_covox = (uint16_t) Word;
-                    Device_Data.SysRegs.RdReg177714 = (uint16_t) Word; // loopback (byte?)
+                    if (!is_dendy_joystick) {
+                        Device_Data.SysRegs.RdReg177714 = (uint16_t) Word; // loopback (byte?)
+                    }
                 }
 #endif
 #ifdef AYSOUND
