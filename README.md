@@ -73,7 +73,7 @@ Extra PSRAM support (для ещё незаконченной СМК-512) on pi 
 <li>F - Кнопка 5 (разряд 8 порта)</li>
 </ul>
 
-Биты денди-джойстика №1 (не тестировалось):
+Биты денди-джойстика №1:
 <ul>
 <li>DPAD_A - Кнопка А (разряд 0 порта)</li>
 <li>DPAD_B - Кнопка В (разряд 1 порта)</li>
@@ -162,5 +162,6 @@ Extra PSRAM support (для ещё незаконченной СМК-512) on pi 
 <li>snd_volume: - -16..5</li>
 <li>graphics_pallette_idx: - 0..15</li>
 <li>is_swap_wins_enabled: 0/1 (по умолчанию: 1, т.е. левый и правый Win взаимозаменяемые и переключают язык циклически.</li>
-<li>is_dendy_joystick - 0/1 (если is_dendy_joystick включен, то covox-loppback (не сам covox) выключается, т.к. они конфликтуют (используют один порт))</li>
+<li>is_dendy_joystick: - 0/1 (если is_dendy_joystick включен, то covox-loppback (не сам covox) выключается, т.к. они конфликтуют (используют один порт))</li>
+<li>is_kbd_joystick: 0/1 (если is_kbd_joystick включен, то covox-loppback выключается)</li>
 </ul>

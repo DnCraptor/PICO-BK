@@ -251,13 +251,18 @@ uint_fast16_t AT_OVL Key_Translate (uint_fast16_t CodeAndFlags)
 
             case KEY_ESC:       return KEY_MENU_ESC;
 
-            case KEY_NUMLOCK:   if ((CodeAndFlags & 0x8000U) == 0) Key_Flags = KeyFlags ^ KEY_FLAGS_NUMLOCK;
+            case KEY_NUMLOCK:   if ((CodeAndFlags & 0x8000U) == 0) {
+                                    Key_Flags = KeyFlags ^ KEY_FLAGS_NUMLOCK;
+                                    if (Key_Flags & KEY_FLAGS_NUMLOCK) {
+                                        is_kbd_joystick = !is_kbd_joystick;
+                                    }
+                                }
                                 return KEY_UNKNOWN;
 
             case KEY_SPACE:     if (CodeAndFlags & 0x8000U) KeyFlags &= ~KEY_FLAGS_BTN1;
                                 else                        KeyFlags |=  KEY_FLAGS_BTN1;
                                 Key_Flags = KeyFlags;
-                                if ((KeyFlags & KEY_FLAGS_NUMLOCK) && (CodeAndFlags & KEY_TRANSLATE_UI) == 0) return KEY_UNKNOWN;
+                                if ((KeyFlags & is_kbd_joystick) && (CodeAndFlags & KEY_TRANSLATE_UI) == 0) return KEY_UNKNOWN;
                                 return ReturnKeyCode (32, KeyFlags);
             case KEY_A:
             case KEY_S:
@@ -265,7 +270,7 @@ uint_fast16_t AT_OVL Key_Translate (uint_fast16_t CodeAndFlags)
             case KEY_F:         if (CodeAndFlags & 0x8000U) KeyFlags &= ~(KEY_FLAGS_BTN2 << (Key - KEY_A));
                                 else                        KeyFlags |=  (KEY_FLAGS_BTN2 << (Key - KEY_A));
                                 Key_Flags = KeyFlags;
-                                if ((KeyFlags & KEY_FLAGS_NUMLOCK) && (CodeAndFlags & KEY_TRANSLATE_UI) == 0) return KEY_UNKNOWN;
+                                if ((KeyFlags & is_kbd_joystick) && (CodeAndFlags & KEY_TRANSLATE_UI) == 0) return KEY_UNKNOWN;
                                 return ReturnShiftedKeyCode (Key_ASDF_RusLatTab [Key - KEY_A] [(KeyFlags >> KEY_FLAGS_RUSLAT_POS) & 1], KeyFlags);
         }
 
@@ -305,7 +310,7 @@ uint_fast16_t AT_OVL Key_Translate (uint_fast16_t CodeAndFlags)
         case PS2_LEFT:      if (CodeAndFlags & 0x8000U) KeyFlags &= ~KEY_FLAGS_LEFT;
                             else                        KeyFlags |=  KEY_FLAGS_LEFT;
                             Key_Flags = KeyFlags;
-                            if ((KeyFlags & KEY_FLAGS_NUMLOCK) && (CodeAndFlags & KEY_TRANSLATE_UI) == 0) return KEY_UNKNOWN;
+                            if ((KeyFlags & is_kbd_joystick) && (CodeAndFlags & KEY_TRANSLATE_UI) == 0) return KEY_UNKNOWN;
                             return ReturnKeyCode (8, KeyFlags);
 
 //      case PS2_HOME:
@@ -314,19 +319,19 @@ uint_fast16_t AT_OVL Key_Translate (uint_fast16_t CodeAndFlags)
         case PS2_DOWN:      if (CodeAndFlags & 0x8000U) KeyFlags &= ~KEY_FLAGS_DOWN;
                             else                        KeyFlags |=  KEY_FLAGS_DOWN;
                             Key_Flags = KeyFlags;
-                            if ((KeyFlags & KEY_FLAGS_NUMLOCK) && (CodeAndFlags & KEY_TRANSLATE_UI) == 0) return KEY_UNKNOWN;
+                            if ((KeyFlags & is_kbd_joystick) && (CodeAndFlags & KEY_TRANSLATE_UI) == 0) return KEY_UNKNOWN;
                             return ReturnKeyCode (27, KeyFlags);
 
         case PS2_RIGHT:     if (CodeAndFlags & 0x8000U) KeyFlags &= ~KEY_FLAGS_RIGHT;
                             else                        KeyFlags |=  KEY_FLAGS_RIGHT;
                             Key_Flags = KeyFlags;
-                            if ((KeyFlags & KEY_FLAGS_NUMLOCK) && (CodeAndFlags & KEY_TRANSLATE_UI) == 0) return KEY_UNKNOWN;
+                            if ((KeyFlags & is_kbd_joystick) && (CodeAndFlags & KEY_TRANSLATE_UI) == 0) return KEY_UNKNOWN;
                             return ReturnKeyCode (25, KeyFlags);
 
         case PS2_UP:        if (CodeAndFlags & 0x8000U) KeyFlags &= ~KEY_FLAGS_UP;
                             else                        KeyFlags |=  KEY_FLAGS_UP;
                             Key_Flags = KeyFlags;
-                            if ((KeyFlags & KEY_FLAGS_NUMLOCK) && (CodeAndFlags & KEY_TRANSLATE_UI) == 0) return KEY_UNKNOWN;
+                            if ((KeyFlags & is_kbd_joystick) && (CodeAndFlags & KEY_TRANSLATE_UI) == 0) return KEY_UNKNOWN;
                             return ReturnKeyCode (26, KeyFlags);
 
 //      case PS2_PGDN:

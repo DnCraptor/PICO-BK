@@ -14,7 +14,7 @@
 //#include "EmuUi/Key_eu.h"
 extern bool is_swap_wins_enabled;
 extern bool swap_wins;
-bool is_dendy_joystick = true;
+volatile bool is_dendy_joystick = true;
 
 static void bottom_line();
 static void redraw_window();
@@ -303,6 +303,7 @@ static void in_conf() {
     draw_label(15, 24, 23, "graphics_pallette_idx:", false, z_idx == 5);
     draw_label(15, 25, 23, " is_swap_wins_enabled:", false, z_idx == 6);
     draw_label(15, 26, 23, "    is_dendy_joystick:", false, z_idx == 7);
+    draw_label(15, 27, 23, "      is_kbd_joystick:", false, z_idx == 8);
     const static char b_on [2] = { 0xFB, 0 };
     const static char b_off[2] = { 0xB0, 0 };
     draw_label(38, 20, 1, g_conf.is_covox_on ? b_on : b_off, z_idx == 1, z_idx == 1);
@@ -315,6 +316,7 @@ static void in_conf() {
     draw_label(38, 24, 3, b, z_idx == 5, z_idx == 5);
     draw_label(38, 25, 1, is_swap_wins_enabled ? b_on : b_off, z_idx == 6, z_idx == 6);
     draw_label(38, 26, 1, is_dendy_joystick ? b_on : b_off, z_idx == 7, z_idx == 7);
+    draw_label(38, 27, 1, is_kbd_joystick ? b_on : b_off, z_idx == 8, z_idx == 8);
 }
 
 static void conf_it(uint8_t cmd) {
@@ -328,7 +330,7 @@ static void conf_it(uint8_t cmd) {
             f_open(&fil, "\\BK\\bk.conf", FA_CREATE_ALWAYS | FA_WRITE);
             char buf[256];
             snprintf(buf, 256,
-             "mode:%d\r\nis_covox_on:%d\r\nis_AY_on:%d\r\ncolor_mode:%d\r\nsnd_volume:%d\r\ngraphics_pallette_idx:%d\r\nis_swap_wins_enabled:%d\r\nis_dendy_joystick:%d",
+             "mode:%d\r\nis_covox_on:%d\r\nis_AY_on:%d\r\ncolor_mode:%d\r\nsnd_volume:%d\r\ngraphics_pallette_idx:%d\r\nis_swap_wins_enabled:%d\r\nis_dendy_joystick:%d\r\nis_kbd_joystick:%d",
                 g_conf.bk0010mode,
                 g_conf.is_covox_on,
                 g_conf.is_AY_on,
@@ -336,7 +338,8 @@ static void conf_it(uint8_t cmd) {
                 g_conf.snd_volume,
                 g_conf.graphics_pallette_idx,
                 is_swap_wins_enabled,
-                is_dendy_joystick
+                is_dendy_joystick,
+                is_kbd_joystick
             );
             UINT bw;
             f_write(&fil, buf, strlen(buf), &bw);
@@ -357,14 +360,14 @@ static void conf_it(uint8_t cmd) {
             if (z_idx == 0) {
                 if (g_conf.bk0010mode < 5) g_conf.bk0010mode++;
             } else {
-                if (++z_idx > 7) z_idx = 7;
+                if (++z_idx > 8) z_idx = 8;
             }
             in_conf();
         }
         if (tabPressed) {
             tabPressed = false;
             z_idx++;
-            if (z_idx > 6) z_idx = 0;
+            if (z_idx > 8) z_idx = 0;
             in_conf();
         }
         if (spacePressed) {
@@ -393,6 +396,9 @@ static void conf_it(uint8_t cmd) {
               break;
             case 7:
               is_dendy_joystick = !is_dendy_joystick;
+              break;
+            case 8:
+              is_kbd_joystick = !is_kbd_joystick;
               break;
             }
             in_conf();

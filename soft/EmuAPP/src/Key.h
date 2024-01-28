@@ -2,6 +2,7 @@
 #define KEY_E_H_INCLUDE
 
 #include <stdint.h>
+#include <stdbool.h>
 
 #define Key_SetRusLat(     ) Key_Flags |=  KEY_FLAGS_RUSLAT
 #define Key_ClrRusLat(     ) Key_Flags &= ~KEY_FLAGS_RUSLAT
@@ -71,6 +72,7 @@ enum
 #define KEY_AR2_PRESSED 0x8000
 
 extern uint32_t Key_Flags;
+extern bool is_kbd_joystick;
 
 #define KEY_TRANSLATE_UI 0x4000
 

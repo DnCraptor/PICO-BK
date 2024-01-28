@@ -398,7 +398,7 @@ TCPU_Arg AT_OVL CPU_WriteW (TCPU_Arg Adr, uint_fast16_t Word) {
 #ifdef COVOX
                 if (g_conf.is_covox_on) { // TODO: stereo ?
                     true_covox = (uint16_t) Word;
-                    if (!is_dendy_joystick) {
+                    if (!is_dendy_joystick && !is_kbd_joystick) {
                         Device_Data.SysRegs.RdReg177714 = (uint16_t) Word; // loopback
                     }
                 }
@@ -527,13 +527,13 @@ TCPU_Arg AT_OVL CPU_WriteB (TCPU_Arg Adr, uint_fast8_t Byte) {
             break;
         case (0177714 >> 1):
             Device_Data.SysRegs.WrReg177714 = (uint16_t) Word;
-            { //????
-            //    uint_fast32_t Reg = (Word & 0xFF) >> 1;
-            //    if (Device_Data.SysRegs.WrReg177716 & 0100) Reg += 0x80;
+            { 
+                uint_fast32_t Reg = (Word & 0xFF) >> 1;
+                if (Device_Data.SysRegs.WrReg177716 & 0100) Reg += 0x80;
 #ifdef COVOX
                 if (g_conf.is_covox_on) {
                     true_covox = (uint16_t) Word;
-                    if (!is_dendy_joystick) {
+                    if (!is_dendy_joystick && !is_kbd_joystick) {
                         Device_Data.SysRegs.RdReg177714 = (uint16_t) Word; // loopback (byte?)
                     }
                 }

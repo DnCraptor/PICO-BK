@@ -182,7 +182,8 @@ inline static int parse_conf_word(const char* buf, const char* param, size_t ple
 }
 
 extern "C" bool is_swap_wins_enabled;
-extern "C" bool is_dendy_joystick;
+extern "C" volatile bool is_dendy_joystick;
+extern "C" bool is_kbd_joystick;
 
 inline static void read_config(const char* path) {
     FIL fil;
@@ -237,6 +238,11 @@ inline static void read_config(const char* path) {
     mode = parse_conf_word(buf, p7, sizeof(p7), 256);
     if (mode >= 0 && mode <= 1) {
         is_dendy_joystick = (bool)mode;
+    }
+    const char p8[] = "is_kbd_joystick:";
+    mode = parse_conf_word(buf, p8, sizeof(p8), 256);
+    if (mode >= 0 && mode <= 1) {
+        is_kbd_joystick = (bool)mode;
     }
     f_close(&fil);
 }
