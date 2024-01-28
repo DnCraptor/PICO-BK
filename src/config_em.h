@@ -30,3 +30,5 @@ typedef struct config_em {
 } config_em_t;
 
 extern volatile config_em_t g_conf;
+extern volatile bool is_dendy_joystick;
+extern volatile bool is_kbd_joystick;

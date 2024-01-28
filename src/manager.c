@@ -10,10 +10,12 @@
 #include "debug.h"
 #include "aySoundSoft.h"
 #include "ps2.h"
+#include "nespad.h"
 
 //#include "EmuUi/Key_eu.h"
 extern bool is_swap_wins_enabled;
 extern bool swap_wins;
+volatile bool is_dendy_joystick = true;
 
 static void bottom_line();
 static void redraw_window();
@@ -301,6 +303,8 @@ static void in_conf() {
     draw_label(15, 23, 23, "           snd_volume:", false, z_idx == 4);
     draw_label(15, 24, 23, "graphics_pallette_idx:", false, z_idx == 5);
     draw_label(15, 25, 23, " is_swap_wins_enabled:", false, z_idx == 6);
+    draw_label(15, 26, 23, "    is_dendy_joystick:", false, z_idx == 7);
+    draw_label(15, 27, 23, "      is_kbd_joystick:", false, z_idx == 8);
     const static char b_on [2] = { 0xFB, 0 };
     const static char b_off[2] = { 0xB0, 0 };
     draw_label(38, 20, 1, g_conf.is_covox_on ? b_on : b_off, z_idx == 1, z_idx == 1);
@@ -312,12 +316,36 @@ static void in_conf() {
     snprintf(b, 4, "%d", g_conf.graphics_pallette_idx);
     draw_label(38, 24, 3, b, z_idx == 5, z_idx == 5);
     draw_label(38, 25, 1, is_swap_wins_enabled ? b_on : b_off, z_idx == 6, z_idx == 6);
+    draw_label(38, 26, 1, is_dendy_joystick ? b_on : b_off, z_idx == 7, z_idx == 7);
+    draw_label(38, 27, 1, is_kbd_joystick ? b_on : b_off, z_idx == 8, z_idx == 8);
 }
 
 static void conf_it(uint8_t cmd) {
     draw_panel(10, 10, MAX_WIDTH - 20, MAX_HEIGHT - 20, "Startup configuration", 0);
     in_conf();
     while(1) {
+        if (is_dendy_joystick) {
+            nespad_read();
+            if(nespad_state & DPAD_UP) {
+                nespad_state &= ~DPAD_UP;
+                upPressed = true;
+            } else if(nespad_state & DPAD_DOWN) {
+                nespad_state &= ~DPAD_DOWN;
+                downPressed = true;
+            } else if (nespad_state & DPAD_START) {
+                nespad_state &= ~DPAD_START;
+                enterPressed = true;
+            } else if (nespad_state & DPAD_LEFT) {
+                nespad_state &= ~DPAD_LEFT;
+                escPressed = true;
+            } else if (nespad_state & DPAD_SELECT) {
+                nespad_state &= ~DPAD_SELECT;
+                tabPressed = true;
+            } else if (nespad_state & DPAD_A) {
+                nespad_state &= ~DPAD_A;
+                spacePressed = true;
+            }
+        }
         if (escPressed) break;
         if (enterPressed) {
             enterPressed = false;
@@ -325,14 +353,16 @@ static void conf_it(uint8_t cmd) {
             f_open(&fil, "\\BK\\bk.conf", FA_CREATE_ALWAYS | FA_WRITE);
             char buf[256];
             snprintf(buf, 256,
-             "mode:%d\r\nis_covox_on:%d\r\nis_AY_on:%d\r\ncolor_mode:%d\r\nsnd_volume:%d\r\ngraphics_pallette_idx:%d\r\nis_swap_wins_enabled:%d",
+             "mode:%d\r\nis_covox_on:%d\r\nis_AY_on:%d\r\ncolor_mode:%d\r\nsnd_volume:%d\r\ngraphics_pallette_idx:%d\r\nis_swap_wins_enabled:%d\r\nis_dendy_joystick:%d\r\nis_kbd_joystick:%d",
                 g_conf.bk0010mode,
                 g_conf.is_covox_on,
                 g_conf.is_AY_on,
                 g_conf.color_mode,
                 g_conf.snd_volume,
                 g_conf.graphics_pallette_idx,
-                is_swap_wins_enabled
+                is_swap_wins_enabled,
+                is_dendy_joystick,
+                is_kbd_joystick
             );
             UINT bw;
             f_write(&fil, buf, strlen(buf), &bw);
@@ -353,14 +383,14 @@ static void conf_it(uint8_t cmd) {
             if (z_idx == 0) {
                 if (g_conf.bk0010mode < 5) g_conf.bk0010mode++;
             } else {
-                if (++z_idx > 6) z_idx = 6;
+                if (++z_idx > 8) z_idx = 8;
             }
             in_conf();
         }
         if (tabPressed) {
             tabPressed = false;
             z_idx++;
-            if (z_idx > 6) z_idx = 0;
+            if (z_idx > 8) z_idx = 0;
             in_conf();
         }
         if (spacePressed) {
@@ -386,6 +416,12 @@ static void conf_it(uint8_t cmd) {
               break;
             case 6:
               is_swap_wins_enabled = !is_swap_wins_enabled;
+              break;
+            case 7:
+              is_dendy_joystick = !is_dendy_joystick;
+              break;
+            case 8:
+              is_kbd_joystick = !is_kbd_joystick;
               break;
             }
             in_conf();
@@ -608,6 +644,28 @@ static bool m_prompt(const char* txt) {
     draw_button((MAX_WIDTH - 60) / 2 + 16, 12, 11, "Yes", yes);
     draw_button((MAX_WIDTH - 60) / 2 + 35, 12, 10, "No", !yes);
     while(1) {
+        if (is_dendy_joystick) {
+            nespad_read();
+            if(nespad_state & DPAD_UP) {
+                nespad_state &= ~DPAD_UP;
+                upPressed = true;
+            } else if(nespad_state & DPAD_DOWN) {
+                nespad_state &= ~DPAD_DOWN;
+                downPressed = true;
+            } else if (nespad_state & DPAD_START) {
+                nespad_state &= ~DPAD_START;
+                enterPressed = true;
+            } else if (nespad_state & DPAD_LEFT) {
+                nespad_state &= ~DPAD_LEFT;
+                leftPressed = true;
+            } else if (nespad_state & DPAD_RIGHT) {
+                nespad_state &= ~DPAD_RIGHT;
+                rightPressed = true;
+            } else if (nespad_state & DPAD_SELECT) {
+                nespad_state &= ~DPAD_SELECT;
+                tabPressed = true;
+            }
+        }
         if (enterPressed) {
             enterPressed = false;
             scan_code_cleanup();
@@ -1082,7 +1140,6 @@ void m_cleanup_ext() {
 }
 
 inline static void m_cleanup() {
-    DBGM_PRINT(("m_cleanup"));
     files_count = 0;
 }
 
@@ -1261,19 +1318,18 @@ inline static fn_1_12_btn_pressed(uint8_t fn_idx) {
 }
 
 inline static void handle_pagedown_pressed() {
-    int start_file_offset = psp->indexes[psp->level].start_file_offset;
-    int selected_file_idx = psp->indexes[psp->level].selected_file_idx;
+    indexes_t* p = &psp->indexes[psp->level];
     for (int i = 0; i < MAX_HEIGHT / 2; ++i) {
-        if (selected_file_idx < LAST_FILE_LINE_ON_PANEL_Y &&
-            start_file_offset + selected_file_idx < psp->files_number
+        if (p->selected_file_idx < LAST_FILE_LINE_ON_PANEL_Y &&
+            p->start_file_offset + p->selected_file_idx < psp->files_number
         ) {
-            psp->indexes[psp->level].selected_file_idx++;
+            p->selected_file_idx++;
         } else if (
-            selected_file_idx == LAST_FILE_LINE_ON_PANEL_Y &&
-            start_file_offset + selected_file_idx < psp->files_number
+            p->selected_file_idx == LAST_FILE_LINE_ON_PANEL_Y &&
+            p->start_file_offset + p->selected_file_idx < psp->files_number
         ) {
-            psp->indexes[psp->level].selected_file_idx--;
-            psp->indexes[psp->level].start_file_offset++;
+            p->selected_file_idx--;
+            p->start_file_offset++;
         }
     }
     fill_panel(psp);
@@ -1281,33 +1337,31 @@ inline static void handle_pagedown_pressed() {
 }
 
 inline static void handle_down_pressed() {
-    int start_file_offset = psp->indexes[psp->level].start_file_offset;
-    int selected_file_idx = psp->indexes[psp->level].selected_file_idx;
-    if (selected_file_idx < LAST_FILE_LINE_ON_PANEL_Y &&
-        start_file_offset + selected_file_idx < psp->files_number
+    indexes_t* p = &psp->indexes[psp->level];
+    if (p->selected_file_idx < LAST_FILE_LINE_ON_PANEL_Y &&
+        p->start_file_offset + p->selected_file_idx < psp->files_number
     ) {
-        psp->indexes[psp->level].selected_file_idx++;
+        p->selected_file_idx++;
         fill_panel(psp);
     } else if (
-        selected_file_idx == LAST_FILE_LINE_ON_PANEL_Y &&
-        start_file_offset + selected_file_idx < psp->files_number
+        p->selected_file_idx == LAST_FILE_LINE_ON_PANEL_Y &&
+        p->start_file_offset + p->selected_file_idx < psp->files_number
     ) {
-        psp->indexes[psp->level].selected_file_idx -= 5;
-        psp->indexes[psp->level].start_file_offset += 5;
+        p->selected_file_idx -= 5;
+        p->start_file_offset += 5;
         fill_panel(psp);    
     }
     scan_code_processed();
 }
 
 inline static void handle_pageup_pressed() {
-    int start_file_offset = psp->indexes[psp->level].start_file_offset;
-    int selected_file_idx = psp->indexes[psp->level].selected_file_idx;
+    indexes_t* p = &psp->indexes[psp->level];
     for (int i = 0; i < MAX_HEIGHT / 2; ++i) {
-        if (selected_file_idx > FIRST_FILE_LINE_ON_PANEL_Y) {
-            psp->indexes[psp->level].selected_file_idx--;
-        } else if (selected_file_idx == FIRST_FILE_LINE_ON_PANEL_Y && start_file_offset > 0) {
-            psp->indexes[psp->level].selected_file_idx++;
-            psp->indexes[psp->level].start_file_offset--;
+        if (p->selected_file_idx > FIRST_FILE_LINE_ON_PANEL_Y) {
+            p->selected_file_idx--;
+        } else if (p->selected_file_idx == FIRST_FILE_LINE_ON_PANEL_Y && p->start_file_offset > 0) {
+            p->selected_file_idx++;
+            p->start_file_offset--;
         }
     }
     fill_panel(psp);
@@ -1315,14 +1369,13 @@ inline static void handle_pageup_pressed() {
 }
 
 inline static void handle_up_pressed() {
-    int start_file_offset = psp->indexes[psp->level].start_file_offset;
-    int selected_file_idx = psp->indexes[psp->level].selected_file_idx;
-    if (selected_file_idx > FIRST_FILE_LINE_ON_PANEL_Y) {
-        psp->indexes[psp->level].selected_file_idx--;
+    indexes_t* p = &psp->indexes[psp->level];
+    if (p->selected_file_idx > FIRST_FILE_LINE_ON_PANEL_Y) {
+        p->selected_file_idx--;
         fill_panel(psp);
-    } else if (selected_file_idx == FIRST_FILE_LINE_ON_PANEL_Y && start_file_offset > 0) {
-        psp->indexes[psp->level].selected_file_idx += 5;
-        psp->indexes[psp->level].start_file_offset -= 5;
+    } else if (p->selected_file_idx == FIRST_FILE_LINE_ON_PANEL_Y && p->start_file_offset > 0) {
+        p->selected_file_idx += 5;
+        p->start_file_offset -= 5;
         fill_panel(psp);       
     }
     scan_code_processed();
@@ -1594,6 +1647,32 @@ static uint8_t repeat_cnt = 0;
 
 static inline void work_cycle() {
     while(1) {
+        if (is_dendy_joystick) {
+            nespad_read(); // TODO: with kbd_joy
+            if(nespad_state & DPAD_UP) {
+                nespad_state &= ~DPAD_UP;
+                handle_up_pressed();
+            } else if(nespad_state & DPAD_DOWN) {
+                nespad_state &= ~DPAD_DOWN;
+                handle_down_pressed();
+            } else if (nespad_state & DPAD_START) {
+                nespad_state &= ~DPAD_START;
+                enter_pressed();
+            } else if (nespad_state & DPAD_LEFT) {
+                nespad_state &= ~DPAD_LEFT;
+                mark_to_exit(0);
+            } else if (nespad_state & DPAD_SELECT) {
+                nespad_state &= ~DPAD_SELECT;
+                left_panel_make_active = !left_panel_make_active;
+            } else if (nespad_state & DPAD_A) {
+                nespad_state &= ~DPAD_A;
+                conf_it(0);
+            } else if (nespad_state & DPAD_B) {
+                nespad_state &= ~DPAD_B;
+                reset(0);
+                return;
+            }
+        }
         if (ctrlPressed && altPressed && delPressed) {
             ctrlPressed = altPressed = delPressed = false;
             reset(0);
@@ -1737,7 +1816,6 @@ inline static void start_manager() {
         select_left_panel();
         update_menu_color();
         m_info(0); // F1 TODO: ensure it is not too aggressive
-
         work_cycle();
     } else {
         if (switch_mode_dialog(&g_conf.bk0010mode) ) {
@@ -1749,7 +1827,92 @@ inline static void start_manager() {
     restore_video_ram();
 }
 
+inline static void handleJoystickEmulation(uint8_t sc) { // core 1
+    if (!is_kbd_joystick) return;
+    register uint16_t t = Device_Data.SysRegs.RdReg177714;
+    switch(sc) {
+        case 0x1E: // A
+            t |= 1;
+            break;
+        case 0x9E:
+            t &= ~1;
+            break;
+        case 0x11: // W
+            t |= 2;
+            break;
+        case 0x91:
+            t &= ~2;
+            break;
+        case 0x20: // D
+            t |= 4;
+            break;
+        case 0xA0:
+            t &= ~4;
+            break;
+        case 0x1F: // S
+            t |= 8;
+            break;
+        case 0x9F:
+            t &= ~8;
+            break;
+        case 0x2C: // Z
+            t |= 16;
+            break;
+        case 0xAC:
+            t &= ~16;
+            break;
+        case 0x2D: // X
+            t |= 32;
+            break;
+        case 0xAD:
+            t &= ~32;
+            break;
+        case 0x18: // O
+            t |= 64;
+            break;
+        case 0x98:
+            t &= ~64;
+            break;
+        case 0x25: // K
+            t |= 128;
+            break;
+        case 0xA5:
+            t &= ~128;
+            break;
+        case 0x27: // ;
+            t |= 256;
+            break;
+        case 0xA7:
+            t &= ~256;
+            break;
+        case 0x26: // L
+            t |= 512;
+            break;
+        case 0xA6:
+            t &= ~512;
+            break;
+        case 0x33: // <
+            t |= 1024;
+            break;
+        case 0xB3:
+            t &= ~1024;
+            break;
+        case 0x34: // >
+            t |= 2048;
+            break;
+        case 0xB4:
+            t &= ~2048;
+            break;
+            // TODO: QEi[
+        default:
+            return;
+    }
+    Device_Data.SysRegs.RdReg177714 = t;
+}
+
 bool handleScancode(uint32_t ps2scancode) { // core 1
+    DBGM_PRINT(("handleScancode: %08Xh", ps2scancode));
+    handleJoystickEmulation((uint8_t)ps2scancode);
     lastCleanableScanCode = ps2scancode;
     switch (ps2scancode) {
       case 0x01: // Esc down
@@ -2009,6 +2172,15 @@ int if_manager(bool force) {
     if_sound_control();
     if (manager_started) {
         return tormoz;
+    }
+    if (is_dendy_joystick) {
+        nespad_read(); // TODO: with kbd_joy
+        if(nespad_state & (DPAD_START | DPAD_SELECT)) {
+            nespad_state = 0;
+            force = true;
+        } else {
+            Device_Data.SysRegs.RdReg177714 = ((uint16_t)nespad_state2 << 8 | nespad_state);
+        }
     }
     if (force) {
         true_covox = 0;
