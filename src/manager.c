@@ -2106,8 +2106,8 @@ int if_manager(bool force) {
         return tormoz;
     }
     if (is_dendy_joystick) {
-    //    nespad_read();
-    //    Device_Data.SysRegs.RdReg177714 = ((uint16_t)nespad_state2 << 8 | nespad_state); // TODO: ensure core#1, ensure mapping
+        nespad_read(); // TODO: with kbd_joy
+        Device_Data.SysRegs.RdReg177714 = ((uint16_t)nespad_state2 << 8 | nespad_state);
     }
     if (force) {
         true_covox = 0;
