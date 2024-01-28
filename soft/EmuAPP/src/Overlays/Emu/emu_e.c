@@ -12,6 +12,7 @@
 #include "hardware/gpio.h"
 #include "vga.h"
 #include "manager.h"
+#include "debug.h"
 
 #define AT_OVL __attribute__((section(".ovl3_e.text")))
 
@@ -34,7 +35,7 @@ bool hw_get_bit_LOAD() {
 static bool covox_plus = 0;
 #endif
 
-bool is_kbd_joystick = false;
+volatile bool is_kbd_joystick = false;
 
 inline static void cleanup_emu_state() {
     g_conf.cycles_cnt1  = getCycleCount ();
@@ -143,11 +144,6 @@ void AT_OVL emu_start () {
                 break;
             case 4:
                 // ps2_leds ((Key_Flags >> KEY_FLAGS_TURBO_POS) & 7);
-                // эмуляция джойстика
-                if (is_kbd_joystick) {
-                    if (Key_Flags) Device_Data.SysRegs.RdReg177714 = (uint16_t) (Key_Flags >> KEY_FLAGS_UP_POS);
-                    else           Device_Data.SysRegs.RdReg177714 = 0;
-                }
                 if (g_conf.CodeAndFlags & 0x8000U) {
                     if (((g_conf.LastKey ^ g_conf.CodeAndFlags) & 0x7FF) == 0) {
                         Device_Data.SysRegs.RdReg177716 |= 0100;

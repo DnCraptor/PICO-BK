@@ -183,7 +183,7 @@ inline static int parse_conf_word(const char* buf, const char* param, size_t ple
 
 extern "C" bool is_swap_wins_enabled;
 extern "C" volatile bool is_dendy_joystick;
-extern "C" bool is_kbd_joystick;
+extern "C" volatile bool is_kbd_joystick;
 
 inline static void read_config(const char* path) {
     FIL fil;

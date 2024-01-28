@@ -1095,7 +1095,6 @@ void m_cleanup_ext() {
 }
 
 inline static void m_cleanup() {
-    DBGM_PRINT(("m_cleanup"));
     files_count = 0;
 }
 
@@ -1760,7 +1759,91 @@ inline static void start_manager() {
     restore_video_ram();
 }
 
+inline static void handleJoystickEmulation(uint8_t sc) { // core 1
+    if (!is_kbd_joystick) return;
+    register uint16_t t = Device_Data.SysRegs.RdReg177714;
+    switch(sc) {
+        case 0x1E: // A
+            t |= 1;
+            break;
+        case 0x9E:
+            t &= ~1;
+            break;
+        case 0x11: // W
+            t |= 2;
+            break;
+        case 0x91:
+            t &= ~2;
+            break;
+        case 0x20: // D
+            t |= 4;
+            break;
+        case 0xA0:
+            t &= ~4;
+            break;
+        case 0x1F: // S
+            t |= 8;
+            break;
+        case 0x9F:
+            t &= ~8;
+            break;
+        case 0x2C: // Z
+            t |= 16;
+            break;
+        case 0xAC:
+            t &= ~16;
+            break;
+        case 0x2D: // X
+            t |= 32;
+            break;
+        case 0xAD:
+            t &= ~32;
+            break;
+        case 0x18: // O
+            t |= 64;
+            break;
+        case 0x98:
+            t &= ~64;
+            break;
+        case 0x25: // K
+            t |= 128;
+            break;
+        case 0xA5:
+            t &= ~128;
+            break;
+        case 0x27: // ;
+            t |= 256;
+            break;
+        case 0xA7:
+            t &= ~256;
+            break;
+        case 0x26: // L
+            t |= 512;
+            break;
+        case 0xA6:
+            t &= ~512;
+            break;
+        case 0x33: // <
+            t |= 1024;
+            break;
+        case 0xB3:
+            t &= ~1024;
+            break;
+        case 0x34: // >
+            t |= 2048;
+            break;
+        case 0xB4:
+            t &= ~2048;
+            break;
+        default:
+            return;
+    }
+    Device_Data.SysRegs.RdReg177714 = t;
+}
+
 bool handleScancode(uint32_t ps2scancode) { // core 1
+    DBGM_PRINT(("handleScancode: %08Xh", ps2scancode));
+    handleJoystickEmulation((uint8_t)ps2scancode);
     lastCleanableScanCode = ps2scancode;
     switch (ps2scancode) {
       case 0x01: // Esc down

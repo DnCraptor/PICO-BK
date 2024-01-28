@@ -59,6 +59,7 @@ enum
 #define KEY_FLAGS_CAPSLOCK      (1UL << KEY_FLAGS_CAPSLOCK_POS    )
 #define KEY_FLAGS_TURBO         (1UL << KEY_FLAGS_TURBO_POS       )
 #define KEY_FLAGS_NUMLOCK       (1UL << KEY_FLAGS_NUMLOCK_POS     )
+// TODO: cleanup outdated?
 #define KEY_FLAGS_UP            (1UL << KEY_FLAGS_UP_POS          )
 #define KEY_FLAGS_RIGHT         (1UL << KEY_FLAGS_RIGHT_POS       )
 #define KEY_FLAGS_DOWN          (1UL << KEY_FLAGS_DOWN_POS        )
@@ -72,7 +73,7 @@ enum
 #define KEY_AR2_PRESSED 0x8000
 
 extern uint32_t Key_Flags;
-extern bool is_kbd_joystick;
+extern volatile bool is_kbd_joystick;
 
 #define KEY_TRANSLATE_UI 0x4000
 
