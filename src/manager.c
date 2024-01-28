@@ -1272,19 +1272,18 @@ inline static fn_1_12_btn_pressed(uint8_t fn_idx) {
 }
 
 inline static void handle_pagedown_pressed() {
-    int start_file_offset = psp->indexes[psp->level].start_file_offset;
-    int selected_file_idx = psp->indexes[psp->level].selected_file_idx;
+    indexes_t* p = &psp->indexes[psp->level];
     for (int i = 0; i < MAX_HEIGHT / 2; ++i) {
-        if (selected_file_idx < LAST_FILE_LINE_ON_PANEL_Y &&
-            start_file_offset + selected_file_idx < psp->files_number
+        if (p->selected_file_idx < LAST_FILE_LINE_ON_PANEL_Y &&
+            p->start_file_offset + p->selected_file_idx < psp->files_number
         ) {
-            psp->indexes[psp->level].selected_file_idx++;
+            p->selected_file_idx++;
         } else if (
-            selected_file_idx == LAST_FILE_LINE_ON_PANEL_Y &&
-            start_file_offset + selected_file_idx < psp->files_number
+            p->selected_file_idx == LAST_FILE_LINE_ON_PANEL_Y &&
+            p->start_file_offset + p->selected_file_idx < psp->files_number
         ) {
-            psp->indexes[psp->level].selected_file_idx--;
-            psp->indexes[psp->level].start_file_offset++;
+            p->selected_file_idx--;
+            p->start_file_offset++;
         }
     }
     fill_panel(psp);
@@ -1292,33 +1291,31 @@ inline static void handle_pagedown_pressed() {
 }
 
 inline static void handle_down_pressed() {
-    int start_file_offset = psp->indexes[psp->level].start_file_offset;
-    int selected_file_idx = psp->indexes[psp->level].selected_file_idx;
-    if (selected_file_idx < LAST_FILE_LINE_ON_PANEL_Y &&
-        start_file_offset + selected_file_idx < psp->files_number
+    indexes_t* p = &psp->indexes[psp->level];
+    if (p->selected_file_idx < LAST_FILE_LINE_ON_PANEL_Y &&
+        p->start_file_offset + p->selected_file_idx < psp->files_number
     ) {
-        psp->indexes[psp->level].selected_file_idx++;
+        p->selected_file_idx++;
         fill_panel(psp);
     } else if (
-        selected_file_idx == LAST_FILE_LINE_ON_PANEL_Y &&
-        start_file_offset + selected_file_idx < psp->files_number
+        p->selected_file_idx == LAST_FILE_LINE_ON_PANEL_Y &&
+        p->start_file_offset + p->selected_file_idx < psp->files_number
     ) {
-        psp->indexes[psp->level].selected_file_idx -= 5;
-        psp->indexes[psp->level].start_file_offset += 5;
+        p->selected_file_idx -= 5;
+        p->start_file_offset += 5;
         fill_panel(psp);    
     }
     scan_code_processed();
 }
 
 inline static void handle_pageup_pressed() {
-    int start_file_offset = psp->indexes[psp->level].start_file_offset;
-    int selected_file_idx = psp->indexes[psp->level].selected_file_idx;
+    indexes_t* p = &psp->indexes[psp->level];
     for (int i = 0; i < MAX_HEIGHT / 2; ++i) {
-        if (selected_file_idx > FIRST_FILE_LINE_ON_PANEL_Y) {
-            psp->indexes[psp->level].selected_file_idx--;
-        } else if (selected_file_idx == FIRST_FILE_LINE_ON_PANEL_Y && start_file_offset > 0) {
-            psp->indexes[psp->level].selected_file_idx++;
-            psp->indexes[psp->level].start_file_offset--;
+        if (p->selected_file_idx > FIRST_FILE_LINE_ON_PANEL_Y) {
+            p->selected_file_idx--;
+        } else if (p->selected_file_idx == FIRST_FILE_LINE_ON_PANEL_Y && p->start_file_offset > 0) {
+            p->selected_file_idx++;
+            p->start_file_offset--;
         }
     }
     fill_panel(psp);
@@ -1326,14 +1323,13 @@ inline static void handle_pageup_pressed() {
 }
 
 inline static void handle_up_pressed() {
-    int start_file_offset = psp->indexes[psp->level].start_file_offset;
-    int selected_file_idx = psp->indexes[psp->level].selected_file_idx;
-    if (selected_file_idx > FIRST_FILE_LINE_ON_PANEL_Y) {
-        psp->indexes[psp->level].selected_file_idx--;
+    indexes_t* p = &psp->indexes[psp->level];
+    if (p->selected_file_idx > FIRST_FILE_LINE_ON_PANEL_Y) {
+        p->selected_file_idx--;
         fill_panel(psp);
-    } else if (selected_file_idx == FIRST_FILE_LINE_ON_PANEL_Y && start_file_offset > 0) {
-        psp->indexes[psp->level].selected_file_idx += 5;
-        psp->indexes[psp->level].start_file_offset -= 5;
+    } else if (p->selected_file_idx == FIRST_FILE_LINE_ON_PANEL_Y && p->start_file_offset > 0) {
+        p->selected_file_idx += 5;
+        p->start_file_offset -= 5;
         fill_panel(psp);       
     }
     scan_code_processed();
