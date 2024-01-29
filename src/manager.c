@@ -326,6 +326,9 @@ static void conf_it(uint8_t cmd) {
     while(1) {
         if (is_dendy_joystick) {
             nespad_read();
+            if (nespad_state) {
+                sleep_ms(DPAD_DELAY_MS);
+            }
             if(nespad_state & DPAD_UP) {
                 nespad_state &= ~DPAD_UP;
                 upPressed = true;
@@ -646,6 +649,9 @@ static bool m_prompt(const char* txt) {
     while(1) {
         if (is_dendy_joystick) {
             nespad_read();
+            if (nespad_state) {
+                sleep_ms(DPAD_DELAY_MS);
+            }
             if(nespad_state & DPAD_UP) {
                 nespad_state &= ~DPAD_UP;
                 upPressed = true;
@@ -986,7 +992,15 @@ static void m_info(uint8_t cmd) {
     lines_t lines = { 40, 0, plns };
     draw_box(5, 2, MAX_WIDTH - 15, MAX_HEIGHT - 6, "Help", &lines);
     enterPressed = escPressed = false;
-    while(!escPressed && !enterPressed) { }
+    while(!escPressed && !enterPressed) {
+        if (is_dendy_joystick) {
+            nespad_read();
+            if (nespad_state != 0) {
+                nespad_state = 0;
+                break;
+            }
+        }
+    }
     redraw_window();
 }
 
@@ -1647,6 +1661,9 @@ static inline void work_cycle() {
     while(1) {
         if (is_dendy_joystick) {
             nespad_read(); // TODO: with kbd_joy
+            if (nespad_state) {
+                sleep_ms(DPAD_DELAY_MS);
+            }
             if(nespad_state & DPAD_UP) {
                 nespad_state &= ~DPAD_UP;
                 handle_up_pressed();
@@ -1901,7 +1918,30 @@ inline static void handleJoystickEmulation(uint8_t sc) { // core 1
         case 0xB4:
             t &= ~2048;
             break;
-            // TODO: QEi[
+        case 0x10: // Q
+            t |= 4096;
+            break;
+        case 0x90:
+            t &= ~4096;
+            break;
+        case 0x12: // E
+            t |= (1ul << 13);
+            break;
+        case 0x92:
+            t &= ~(1ul << 13);
+            break;
+        case 0x17: // I
+            t |= (1ul << 14);
+            break;
+        case 0x97:
+            t &= ~(1ul << 14);
+            break;
+        case 0x19: // P
+            t |= (1ul << 15);
+            break;
+        case 0x99:
+            t &= ~(1ul << 15);
+            break;
         default:
             return;
     }
