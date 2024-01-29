@@ -744,6 +744,8 @@ static void m_delete_file(uint8_t cmd) {
             const lines_t lines = { 3, 2, lns };
             draw_box((MAX_WIDTH - 60) / 2, 7, 60, 10, "Error", &lines);
             sleep_ms(2500);
+        } else {
+            psp->indexes[psp->level].selected_file_idx--;
         }
     }
     gpio_put(PICO_DEFAULT_LED_PIN, false);
@@ -1252,10 +1254,15 @@ static char selected_file_path[260];
 static inline void fill_panel(file_panel_desc_t* p) {
     if (!SD_CARD_AVAILABLE) return;
     collect_files(p);
+    indexes_t* pp = &p->indexes[p->level];
+    if (pp->selected_file_idx < FIRST_FILE_LINE_ON_PANEL_Y)
+        pp->selected_file_idx = FIRST_FILE_LINE_ON_PANEL_Y;
+    if (pp->start_file_offset < 0)
+        pp->start_file_offset = 0;
     int y = 1;
     p->files_number = 0;
-    int start_file_offset = p->indexes[p->level].start_file_offset;
-    int selected_file_idx = p->indexes[p->level].selected_file_idx;
+    int start_file_offset = pp->start_file_offset;
+    int selected_file_idx = pp->selected_file_idx;
     if (start_file_offset == 0 && strlen(p->path) > 1) {
         draw_label(p->left + 1, y, p->width - 2, "..", p == psp && selected_file_idx == y, true);
         y++;
@@ -1676,7 +1683,7 @@ static inline void work_cycle() {
                     enter_pressed();
                 } else if ((nespad_state & DPAD_A) && (nespad_state & DPAD_START)) {
                     turn_usb_on(0);
-                } else if (nespad_state & DPAD_B) {
+                } else if ((nespad_state & DPAD_B) && (nespad_state & DPAD_SELECT)) {
                     mark_to_exit(0);
                 } else if ((nespad_state & DPAD_LEFT) || (nespad_state & DPAD_RIGHT)) {
                     left_panel_make_active = !left_panel_make_active;

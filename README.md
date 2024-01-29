@@ -181,8 +181,9 @@ Extra PSRAM support (для ещё незаконченной СМК-512) on pi 
 <li>LEFT / RIGHT - смена панели (смена значения в меню конфигурации)</li>
 <li>START - аналог Enter</li>
 <li>A - аналог ОК в менюшках</li>
-<li>B - выход обратно в эмулятор (в менюшках аналог Esc)</li>
+<li>B - в менюшках аналог Esc</li>
 <li>SELECT + A - вход в конфиг</li>
+<li>SELECT + B - выход в эмуляцию</li>
 <li>START + A - mount USB</li>
 <li>START + B - reset</li>
 </ul>
