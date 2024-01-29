@@ -132,6 +132,7 @@ extern volatile bool upPressed;
 extern volatile bool downPressed;
 void scan_code_cleanup();
 #include "nespad.h"
+static int nespad_state_delay = 0;
 
 int draw_selector(int left, int top, int width, int height, const char* title, const lines_t* plines, int selected_line) {
     int s_line = selected_line;
@@ -152,23 +153,22 @@ int draw_selector(int left, int top, int width, int height, const char* title, c
             }
             draw_label(left + 1 + off, y, width - 2 - off, pl->txt, i == s_line, false);
         }
-        if (is_dendy_joystick) {
-            nespad_read();
-            if (nespad_state) {
-                sleep_ms(DPAD_DELAY_MS);
+        if (is_dendy_joystick || is_kbd_joystick) {
+            if (is_dendy_joystick) nespad_read();
+            if (nespad_state_delay > 0) {
+                nespad_state_delay--;
             }
-            if(nespad_state & DPAD_UP) {
-                nespad_state &= ~DPAD_UP;
-                upPressed = true;
-            } else if(nespad_state & DPAD_DOWN) {
-                nespad_state &= ~DPAD_DOWN;
-                downPressed = true;
-            } else if (nespad_state & DPAD_START) {
-                nespad_state &= ~DPAD_START;
-                enterPressed = true;
-            } else if (nespad_state & DPAD_LEFT) {
-                nespad_state &= ~DPAD_LEFT;
-                escPressed = true;
+            else {
+                nespad_state_delay = DPAD_STATE_DELAY;
+                if(nespad_state & DPAD_UP) {
+                    upPressed = true;
+                } else if(nespad_state & DPAD_DOWN) {
+                    downPressed = true;
+                } else if (nespad_state & DPAD_START) {
+                    enterPressed = true;
+                } else if (nespad_state & DPAD_LEFT) {
+                    escPressed = true;
+                }
             }
         }
         if (enterPressed) {
