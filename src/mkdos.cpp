@@ -278,7 +278,7 @@ bool OptimizeCatalog() {
 				memset(m_pDiskCat[p].name, 0, 14);
 				m_pDiskCat[p].address = m_pDiskCat[p].length = 0;
 				m_pDiskCat[p].start_block = m_pDiskCat[p - 1].start_block + m_pDiskCat[p - 1].len_blk;
-				m_pDiskCat[p].len_blk = *(reinterpret_cast<uint16_t *>(&m_vCatBuffer[FMT_MKDOS_DISK_SIZE])) - nUsedBlocs;
+				m_pDiskCat[p].len_blk = *(reinterpret_cast<uint16_t *>(&m_pCatBuffer[FMT_MKDOS_DISK_SIZE])) - nUsedBlocs;
 				break;
 			}
 			if (m_pDiskCat[n].status == 0377) // и за дыркой снова дырка
@@ -303,7 +303,7 @@ bool OptimizeCatalog() {
 
 bool WriteCurrentDir() {
 	OptimizeCatalog();
-	if (!SeektoBlkWriteData(0, m_vCatBuffer.data(), m_nCatSize)) // сохраняем каталог как есть
+	if (!SeektoBlkWriteData(0, m_pCatBuffer, m_nCatSize)) // сохраняем каталог как есть
 	{
 		return false;
 	}
@@ -326,7 +326,7 @@ bool Squeeze() {
 				memset(m_pDiskCat[p].name, 0, 14);
 				m_pDiskCat[p].address = m_pDiskCat[p].length = 0;
 				m_pDiskCat[p].start_block = m_pDiskCat[p - 1].start_block + m_pDiskCat[p - 1].len_blk;
-				m_pDiskCat[p].len_blk = *(reinterpret_cast<uint16_t *>(&m_vCatBuffer[FMT_MKDOS_DISK_SIZE])) - nUsedBlocs;
+				m_pDiskCat[p].len_blk = *(reinterpret_cast<uint16_t *>(&m_pCatBuffer[FMT_MKDOS_DISK_SIZE])) - nUsedBlocs;
 				m_nMKLastCatRecord--;
 				break;
 			}
@@ -492,7 +492,7 @@ bool MkDosCreateDir(BKDirDataItem *pFR) {
 					m_nMKLastCatRecord++;
 				}
 				// сохраняем каталог
-				*(reinterpret_cast<uint16_t *>(&m_vCatBuffer[FMT_MKDOS_CAT_RECORD_NUMBER])) += 1; // поправим параметры - количество файлов
+				*(reinterpret_cast<uint16_t *>(&m_pCatBuffer[FMT_MKDOS_CAT_RECORD_NUMBER])) += 1; // поправим параметры - количество файлов
 				bRet = WriteCurrentDir();
 				m_sDiskCat.nFreeRecs--;
 			} else {
