@@ -552,35 +552,35 @@ inline static void if_video_mode() {
   }
   if (ctrlPressed || altPressed)
     if(f1Pressed) {
-        if (altPressed) save_snap(0);
+        if (ctrlPressed) save_snap(0);
         else restore_snap(0);
         f1Pressed = false;
     } else if (f2Pressed) {
-        if (altPressed) save_snap(1);
+        if (ctrlPressed) save_snap(1);
         else restore_snap(1);
         f2Pressed = false;
     } else if (f3Pressed) {
-        if (altPressed) save_snap(2);
+        if (ctrlPressed) save_snap(2);
         else restore_snap(2);
         f3Pressed = false;
     } else if (f4Pressed) {
-        if (altPressed) save_snap(3);
+        if (ctrlPressed) save_snap(3);
         else restore_snap(3);
         f4Pressed = false;
     } else if (f5Pressed) {
         f5Pressed = false;
-        if (altPressed) save_snap(4);
+        if (ctrlPressed) save_snap(4);
         else restore_snap(4);
     } else if (f6Pressed) {
-        if (altPressed) save_snap(5);
+        if (ctrlPressed) save_snap(5);
         else restore_snap(5);
         f6Pressed = false;
     } else if (f7Pressed) {
-        if (altPressed) save_snap(6);
+        if (ctrlPressed) save_snap(6);
         else restore_snap(6);
         f7Pressed = false;
     } else if (f8Pressed) {
-        if (altPressed) save_snap(7);
+        if (ctrlPressed) save_snap(7);
         else restore_snap(7);
         f8Pressed = false;
     } else if (f10Pressed) {
@@ -976,8 +976,8 @@ static void m_info(uint8_t cmd) {
         { 1, " - Ctrl + F10       - default BK-0011 pallete" },
         { 1, " - F11              - adjust brightness" },
         { 1, " - F12              - Switch B/W 512x256 to Color 256x256 and back" },
-        { 1, " - Alt  + F1..F8    - fast save a snapshot (BK\\SNAP[1..8].BKE)" },
-        { 1, " - Ctrl + F1..F8    - fast restore from related snapshot" },
+        { 1, " - Ctrl + F1..F8    - fast save a snapshot (BK\\SNAP[1..8].BKE)" },
+        { 1, " - Alt  + F1..F8    - fast restore from related snapshot" },
         { 1, " - Ctrl + F11       - slower emulation (default emulation is about to BK on 3 MHz)" },
         { 1, " - Ctrl + F12       - faster emulation" },
         { 1, " - Ctrl + \"+\"       - increase volume" },
