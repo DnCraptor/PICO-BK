@@ -337,13 +337,13 @@ static void conf_it(uint8_t cmd) {
                     upPressed = true;
                 } else if(nespad_state & DPAD_DOWN) {
                     downPressed = true;
-                } else if (nespad_state & DPAD_START) {
+                } else if (nespad_state & DPAD_A) {
                     enterPressed = true;
-                } else if (nespad_state & DPAD_LEFT) {
+                } else if (nespad_state & DPAD_B) {
                     escPressed = true;
                 } else if (nespad_state & DPAD_SELECT) {
                     tabPressed = true;
-                } else if (nespad_state & DPAD_A) {
+                } else if ((nespad_state & DPAD_LEFT) || (nespad_state & DPAD_RIGHT)) {
                     spacePressed = true;
                 }
             }
@@ -383,7 +383,7 @@ static void conf_it(uint8_t cmd) {
         if (downPressed) {
             downPressed = false;
             if (z_idx == 0) {
-                if (g_conf.bk0010mode < 5) g_conf.bk0010mode++;
+                if (g_conf.bk0010mode < 4) g_conf.bk0010mode++;
             } else {
                 if (++z_idx > 8) z_idx = 8;
             }
@@ -658,8 +658,10 @@ static bool m_prompt(const char* txt) {
                     upPressed = true;
                 } else if(nespad_state & DPAD_DOWN) {
                     downPressed = true;
-                } else if (nespad_state & DPAD_START) {
+                } else if (nespad_state & DPAD_A) {
                     enterPressed = true;
+                } else if (nespad_state & DPAD_B) {
+                    escPressed = true;
                 } else if (nespad_state & DPAD_LEFT) {
                     leftPressed = true;
                 } else if (nespad_state & DPAD_RIGHT) {
@@ -1101,6 +1103,7 @@ static inline void turn_usb_off(uint8_t cmd) {
 }
 
 static void turn_usb_on(uint8_t cmd) {
+    if (usb_started) return;
     init_pico_usb_drive();
     usb_started = true;
     // do not Exit in usb mode
@@ -1671,13 +1674,15 @@ static inline void work_cycle() {
                     handle_down_pressed();
                 } else if (nespad_state & DPAD_START) {
                     enter_pressed();
-                } else if (nespad_state & DPAD_LEFT) {
-                    mark_to_exit(0);
-                } else if (nespad_state & DPAD_SELECT) {
-                    left_panel_make_active = !left_panel_make_active;
-                } else if (nespad_state & DPAD_A) {
-                    conf_it(0);
+                } else if ((nespad_state & DPAD_A) && (nespad_state & DPAD_START)) {
+                    turn_usb_on(0);
                 } else if (nespad_state & DPAD_B) {
+                    mark_to_exit(0);
+                } else if ((nespad_state & DPAD_LEFT) || (nespad_state & DPAD_RIGHT)) {
+                    left_panel_make_active = !left_panel_make_active;
+                } else if ((nespad_state & DPAD_A) && (nespad_state & DPAD_SELECT)) {
+                    conf_it(0);
+                } else if ((nespad_state & DPAD_B) && (nespad_state & DPAD_START)) {
                     reset(0);
                     return;
                 }

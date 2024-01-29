@@ -165,9 +165,9 @@ int draw_selector(int left, int top, int width, int height, const char* title, c
                     upPressed = true;
                 } else if(nespad_state & DPAD_DOWN) {
                     downPressed = true;
-                } else if (nespad_state & DPAD_START) {
+                } else if (nespad_state & DPAD_A) {
                     enterPressed = true;
-                } else if (nespad_state & DPAD_LEFT) {
+                } else if (nespad_state & DPAD_B) {
                     escPressed = true;
                 }
             }
