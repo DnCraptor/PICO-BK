@@ -66,6 +66,7 @@ static char line[MAX_WIDTH + 2];
 
 static volatile uint32_t lastCleanableScanCode = 0;
 static uint32_t lastSavedScanCode = 0;
+int nespad_state_delay = DPAD_STATE_DELAY;
 
 inline static void scan_code_processed() {
   if (lastCleanableScanCode) {
@@ -324,26 +325,27 @@ static void conf_it(uint8_t cmd) {
     draw_panel(10, 10, MAX_WIDTH - 20, MAX_HEIGHT - 20, "Startup configuration", 0);
     in_conf();
     while(1) {
-        if (is_dendy_joystick) {
-            nespad_read();
-            if(nespad_state & DPAD_UP) {
-                nespad_state &= ~DPAD_UP;
-                upPressed = true;
-            } else if(nespad_state & DPAD_DOWN) {
-                nespad_state &= ~DPAD_DOWN;
-                downPressed = true;
-            } else if (nespad_state & DPAD_START) {
-                nespad_state &= ~DPAD_START;
-                enterPressed = true;
-            } else if (nespad_state & DPAD_LEFT) {
-                nespad_state &= ~DPAD_LEFT;
-                escPressed = true;
-            } else if (nespad_state & DPAD_SELECT) {
-                nespad_state &= ~DPAD_SELECT;
-                tabPressed = true;
-            } else if (nespad_state & DPAD_A) {
-                nespad_state &= ~DPAD_A;
-                spacePressed = true;
+        if (is_dendy_joystick || is_kbd_joystick) {
+            if (is_dendy_joystick) nespad_read();
+            if (nespad_state_delay > 0) {
+                nespad_state_delay--;
+                sleep_ms(1);
+            }
+            else {
+                nespad_state_delay = DPAD_STATE_DELAY;
+                if(nespad_state & DPAD_UP) {
+                    upPressed = true;
+                } else if(nespad_state & DPAD_DOWN) {
+                    downPressed = true;
+                } else if (nespad_state & DPAD_A) {
+                    enterPressed = true;
+                } else if (nespad_state & DPAD_B) {
+                    escPressed = true;
+                } else if (nespad_state & DPAD_SELECT) {
+                    tabPressed = true;
+                } else if ((nespad_state & DPAD_LEFT) || (nespad_state & DPAD_RIGHT)) {
+                    spacePressed = true;
+                }
             }
         }
         if (escPressed) break;
@@ -381,7 +383,7 @@ static void conf_it(uint8_t cmd) {
         if (downPressed) {
             downPressed = false;
             if (z_idx == 0) {
-                if (g_conf.bk0010mode < 5) g_conf.bk0010mode++;
+                if (g_conf.bk0010mode < 4) g_conf.bk0010mode++;
             } else {
                 if (++z_idx > 8) z_idx = 8;
             }
@@ -550,35 +552,35 @@ inline static void if_video_mode() {
   }
   if (ctrlPressed || altPressed)
     if(f1Pressed) {
-        if (altPressed) save_snap(0);
+        if (ctrlPressed) save_snap(0);
         else restore_snap(0);
         f1Pressed = false;
     } else if (f2Pressed) {
-        if (altPressed) save_snap(1);
+        if (ctrlPressed) save_snap(1);
         else restore_snap(1);
         f2Pressed = false;
     } else if (f3Pressed) {
-        if (altPressed) save_snap(2);
+        if (ctrlPressed) save_snap(2);
         else restore_snap(2);
         f3Pressed = false;
     } else if (f4Pressed) {
-        if (altPressed) save_snap(3);
+        if (ctrlPressed) save_snap(3);
         else restore_snap(3);
         f4Pressed = false;
     } else if (f5Pressed) {
         f5Pressed = false;
-        if (altPressed) save_snap(4);
+        if (ctrlPressed) save_snap(4);
         else restore_snap(4);
     } else if (f6Pressed) {
-        if (altPressed) save_snap(5);
+        if (ctrlPressed) save_snap(5);
         else restore_snap(5);
         f6Pressed = false;
     } else if (f7Pressed) {
-        if (altPressed) save_snap(6);
+        if (ctrlPressed) save_snap(6);
         else restore_snap(6);
         f7Pressed = false;
     } else if (f8Pressed) {
-        if (altPressed) save_snap(7);
+        if (ctrlPressed) save_snap(7);
         else restore_snap(7);
         f8Pressed = false;
     } else if (f10Pressed) {
@@ -644,26 +646,29 @@ static bool m_prompt(const char* txt) {
     draw_button((MAX_WIDTH - 60) / 2 + 16, 12, 11, "Yes", yes);
     draw_button((MAX_WIDTH - 60) / 2 + 35, 12, 10, "No", !yes);
     while(1) {
-        if (is_dendy_joystick) {
-            nespad_read();
-            if(nespad_state & DPAD_UP) {
-                nespad_state &= ~DPAD_UP;
-                upPressed = true;
-            } else if(nespad_state & DPAD_DOWN) {
-                nespad_state &= ~DPAD_DOWN;
-                downPressed = true;
-            } else if (nespad_state & DPAD_START) {
-                nespad_state &= ~DPAD_START;
-                enterPressed = true;
-            } else if (nespad_state & DPAD_LEFT) {
-                nespad_state &= ~DPAD_LEFT;
-                leftPressed = true;
-            } else if (nespad_state & DPAD_RIGHT) {
-                nespad_state &= ~DPAD_RIGHT;
-                rightPressed = true;
-            } else if (nespad_state & DPAD_SELECT) {
-                nespad_state &= ~DPAD_SELECT;
-                tabPressed = true;
+        if (is_dendy_joystick || is_kbd_joystick) {
+            if (is_dendy_joystick) nespad_read();
+            if (nespad_state_delay > 0) {
+                nespad_state_delay--;
+                sleep_ms(1);
+            }
+            else {
+                nespad_state_delay = DPAD_STATE_DELAY;
+                if(nespad_state & DPAD_UP) {
+                    upPressed = true;
+                } else if(nespad_state & DPAD_DOWN) {
+                    downPressed = true;
+                } else if (nespad_state & DPAD_A) {
+                    enterPressed = true;
+                } else if (nespad_state & DPAD_B) {
+                    escPressed = true;
+                } else if (nespad_state & DPAD_LEFT) {
+                    leftPressed = true;
+                } else if (nespad_state & DPAD_RIGHT) {
+                    rightPressed = true;
+                } else if (nespad_state & DPAD_SELECT) {
+                    tabPressed = true;
+                }
             }
         }
         if (enterPressed) {
@@ -739,6 +744,8 @@ static void m_delete_file(uint8_t cmd) {
             const lines_t lines = { 3, 2, lns };
             draw_box((MAX_WIDTH - 60) / 2, 7, 60, 10, "Error", &lines);
             sleep_ms(2500);
+        } else {
+            psp->indexes[psp->level].selected_file_idx--;
         }
     }
     gpio_put(PICO_DEFAULT_LED_PIN, false);
@@ -969,8 +976,8 @@ static void m_info(uint8_t cmd) {
         { 1, " - Ctrl + F10       - default BK-0011 pallete" },
         { 1, " - F11              - adjust brightness" },
         { 1, " - F12              - Switch B/W 512x256 to Color 256x256 and back" },
-        { 1, " - Alt  + F1..F8    - fast save a snapshot (BK\\SNAP[1..8].BKE)" },
-        { 1, " - Ctrl + F1..F8    - fast restore from related snapshot" },
+        { 1, " - Ctrl + F1..F8    - fast save a snapshot (BK\\SNAP[1..8].BKE)" },
+        { 1, " - Alt  + F1..F8    - fast restore from related snapshot" },
         { 1, " - Ctrl + F11       - slower emulation (default emulation is about to BK on 3 MHz)" },
         { 1, " - Ctrl + F12       - faster emulation" },
         { 1, " - Ctrl + \"+\"       - increase volume" },
@@ -986,7 +993,16 @@ static void m_info(uint8_t cmd) {
     lines_t lines = { 40, 0, plns };
     draw_box(5, 2, MAX_WIDTH - 15, MAX_HEIGHT - 6, "Help", &lines);
     enterPressed = escPressed = false;
-    while(!escPressed && !enterPressed) { }
+    nespad_state_delay = DPAD_STATE_DELAY;
+    while(!escPressed && !enterPressed) {
+        if (is_dendy_joystick || is_kbd_joystick) {
+            if (is_dendy_joystick) nespad_read();
+            if (nespad_state && !(nespad_state & DPAD_START) && !(nespad_state & DPAD_SELECT)) {
+                nespad_state_delay = DPAD_STATE_DELAY;
+                break;
+            }
+        }
+    }
     redraw_window();
 }
 
@@ -1089,6 +1105,7 @@ static inline void turn_usb_off(uint8_t cmd) {
 }
 
 static void turn_usb_on(uint8_t cmd) {
+    if (usb_started) return;
     init_pico_usb_drive();
     usb_started = true;
     // do not Exit in usb mode
@@ -1239,10 +1256,15 @@ static char selected_file_path[260];
 static inline void fill_panel(file_panel_desc_t* p) {
     if (!SD_CARD_AVAILABLE) return;
     collect_files(p);
+    indexes_t* pp = &p->indexes[p->level];
+    if (pp->selected_file_idx < FIRST_FILE_LINE_ON_PANEL_Y)
+        pp->selected_file_idx = FIRST_FILE_LINE_ON_PANEL_Y;
+    if (pp->start_file_offset < 0)
+        pp->start_file_offset = 0;
     int y = 1;
     p->files_number = 0;
-    int start_file_offset = p->indexes[p->level].start_file_offset;
-    int selected_file_idx = p->indexes[p->level].selected_file_idx;
+    int start_file_offset = pp->start_file_offset;
+    int selected_file_idx = pp->selected_file_idx;
     if (start_file_offset == 0 && strlen(p->path) > 1) {
         draw_label(p->left + 1, y, p->width - 2, "..", p == psp && selected_file_idx == y, true);
         y++;
@@ -1647,30 +1669,32 @@ static uint8_t repeat_cnt = 0;
 
 static inline void work_cycle() {
     while(1) {
-        if (is_dendy_joystick) {
-            nespad_read(); // TODO: with kbd_joy
-            if(nespad_state & DPAD_UP) {
-                nespad_state &= ~DPAD_UP;
-                handle_up_pressed();
-            } else if(nespad_state & DPAD_DOWN) {
-                nespad_state &= ~DPAD_DOWN;
-                handle_down_pressed();
-            } else if (nespad_state & DPAD_START) {
-                nespad_state &= ~DPAD_START;
-                enter_pressed();
-            } else if (nespad_state & DPAD_LEFT) {
-                nespad_state &= ~DPAD_LEFT;
-                mark_to_exit(0);
-            } else if (nespad_state & DPAD_SELECT) {
-                nespad_state &= ~DPAD_SELECT;
-                left_panel_make_active = !left_panel_make_active;
-            } else if (nespad_state & DPAD_A) {
-                nespad_state &= ~DPAD_A;
-                conf_it(0);
-            } else if (nespad_state & DPAD_B) {
-                nespad_state &= ~DPAD_B;
-                reset(0);
-                return;
+        if (is_dendy_joystick || is_kbd_joystick) {
+            if (is_dendy_joystick) nespad_read();
+            if (nespad_state_delay > 0) {
+                nespad_state_delay--;
+                sleep_ms(1);
+            }
+            else {
+                nespad_state_delay = DPAD_STATE_DELAY;
+                if(nespad_state & DPAD_UP) {
+                    handle_up_pressed();
+                } else if(nespad_state & DPAD_DOWN) {
+                    handle_down_pressed();
+                } else if (nespad_state & DPAD_START) {
+                    enter_pressed();
+                } else if ((nespad_state & DPAD_A) && (nespad_state & DPAD_START)) {
+                    turn_usb_on(0);
+                } else if ((nespad_state & DPAD_B) && (nespad_state & DPAD_SELECT)) {
+                    mark_to_exit(0);
+                } else if ((nespad_state & DPAD_LEFT) || (nespad_state & DPAD_RIGHT)) {
+                    left_panel_make_active = !left_panel_make_active;
+                } else if ((nespad_state & DPAD_A) && (nespad_state & DPAD_SELECT)) {
+                    conf_it(0);
+                } else if ((nespad_state & DPAD_B) && (nespad_state & DPAD_START)) {
+                    reset(0);
+                    return;
+                }
             }
         }
         if (ctrlPressed && altPressed && delPressed) {
@@ -1829,85 +1853,106 @@ inline static void start_manager() {
 
 inline static void handleJoystickEmulation(uint8_t sc) { // core 1
     if (!is_kbd_joystick) return;
-    register uint16_t t = Device_Data.SysRegs.RdReg177714;
     switch(sc) {
-        case 0x1E: // A
-            t |= 1;
+        case 0x1E: // A DPAD_A 
+            nespad_state |= DPAD_A;
             break;
         case 0x9E:
-            t &= ~1;
+            nespad_state &= ~DPAD_A;
             break;
         case 0x11: // W
-            t |= 2;
+            nespad_state2 |= DPAD_A;
             break;
         case 0x91:
-            t &= ~2;
+            nespad_state2 &= ~DPAD_A;
             break;
-        case 0x20: // D
-            t |= 4;
+        case 0x20: // D START
+            nespad_state |= DPAD_START;
             break;
         case 0xA0:
-            t &= ~4;
+            nespad_state &= ~DPAD_START;
             break;
-        case 0x1F: // S
-            t |= 8;
+        case 0x1F: // S SELECT 
+            nespad_state |= DPAD_SELECT;
             break;
         case 0x9F:
-            t &= ~8;
+            nespad_state &= ~DPAD_SELECT;
             break;
         case 0x2C: // Z
-            t |= 16;
+            nespad_state2 |= DPAD_B;
             break;
         case 0xAC:
-            t &= ~16;
+            nespad_state2 &= ~DPAD_B;
             break;
         case 0x2D: // X
-            t |= 32;
+            nespad_state2 |= DPAD_SELECT;
             break;
         case 0xAD:
-            t &= ~32;
+            nespad_state2 &= ~DPAD_SELECT;
             break;
         case 0x18: // O
-            t |= 64;
+            nespad_state2 |= DPAD_START;
             break;
         case 0x98:
-            t &= ~64;
+            nespad_state2 &= ~DPAD_START;
             break;
         case 0x25: // K
-            t |= 128;
+            nespad_state2 |= DPAD_UP;
             break;
         case 0xA5:
-            t &= ~128;
+            nespad_state2 &= ~DPAD_UP;
             break;
         case 0x27: // ;
-            t |= 256;
+            nespad_state |= DPAD_DOWN;
             break;
         case 0xA7:
-            t &= ~256;
+            nespad_state &= ~DPAD_DOWN;
             break;
         case 0x26: // L
-            t |= 512;
+            nespad_state |= DPAD_LEFT;
             break;
         case 0xA6:
-            t &= ~512;
+            nespad_state &= ~DPAD_LEFT;
             break;
-        case 0x33: // <
-            t |= 1024;
+        case 0x33: // ,
+            nespad_state |= DPAD_RIGHT;
             break;
         case 0xB3:
-            t &= ~1024;
+            nespad_state &= ~DPAD_RIGHT;
             break;
-        case 0x34: // >
-            t |= 2048;
+        case 0x34: // .
+            nespad_state2 |= DPAD_DOWN;
             break;
         case 0xB4:
-            t &= ~2048;
+            nespad_state2 &= ~DPAD_DOWN;
             break;
-            // TODO: QEi[
+        case 0x10: // Q DPAD_B
+            nespad_state |= DPAD_B;
+            break;
+        case 0x90:
+            nespad_state &= ~DPAD_B;
+            break;
+        case 0x12: // E
+            nespad_state2 |= DPAD_LEFT;
+            break;
+        case 0x92:
+            nespad_state2 &= ~DPAD_LEFT;
+            break;
+        case 0x17: // I
+            nespad_state2 |= DPAD_RIGHT;
+            break;
+        case 0x97:
+            nespad_state2 &= ~DPAD_RIGHT;
+            break;
+        case 0x19: // P
+            nespad_state |= DPAD_UP;
+            break;
+        case 0x99:
+            nespad_state &= ~DPAD_UP;
+            break;
         default:
             return;
     }
-    Device_Data.SysRegs.RdReg177714 = t;
 }
 
 bool handleScancode(uint32_t ps2scancode) { // core 1
@@ -2173,10 +2218,10 @@ int if_manager(bool force) {
     if (manager_started) {
         return tormoz;
     }
-    if (is_dendy_joystick) {
-        nespad_read(); // TODO: with kbd_joy
-        if(nespad_state & (DPAD_START | DPAD_SELECT)) {
-            nespad_state = 0;
+    if (is_dendy_joystick || is_kbd_joystick) {
+        if (is_dendy_joystick) nespad_read();
+        if((nespad_state & DPAD_START) && (nespad_state & DPAD_SELECT)) {
+            nespad_state_delay = DPAD_STATE_DELAY;
             force = true;
         } else {
             Device_Data.SysRegs.RdReg177714 = ((uint16_t)nespad_state2 << 8 | nespad_state);
