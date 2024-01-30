@@ -18,6 +18,7 @@ extern "C" {
 
 extern "C" {
 #include "nespad.h"
+#include "util_Wii_Joy.h"
 #include "vga.h"
 #include "ps2.h"
 #include "usb.h"
@@ -248,6 +249,15 @@ static void init_fs() {
         insertdisk(2, 819200, 0, "\\BK\\hdd0.img");
         insertdisk(3, 819200, 0, "\\BK\\hdd1.img"); // TODO: why not attached?
         read_config("\\BK\\bk.conf");
+    }
+}
+
+inline static void init_wii() {
+    if (Init_Wii_Joystick()) {
+        Wii_decode_joy();
+   //     data_joy = map_to_nes(&Wii_joy);
+   //     old_data_joy = data_joy;
+        logMsg("Found WII joystick");
     }
 }
 
