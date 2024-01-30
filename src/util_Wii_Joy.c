@@ -2,9 +2,113 @@
 #include <string.h>
 #include "inttypes.h"
 #include <pico/stdlib.h>
-#include "hardware/i2c.h"
 #include "hardware/gpio.h"
 #include "util_Wii_Joy.h"
+
+inline static void i2c_write_init(i2c_ctx_t *ctx, i2c_inst_t *i2c, uint8_t addr, const uint8_t *src, size_t len) {
+    invalid_params_if(I2C, addr >= 0x80); // 7-bit addresses
+    invalid_params_if(I2C, i2c_reserved_addr(addr));
+    // Synopsys hw accepts start/stop flags alongside data items in the same
+    // FIFO word, so no 0 byte transfers.
+    invalid_params_if(I2C, len == 0);
+    invalid_params_if(I2C, ((int)len) < 0);
+	ctx->i2c = i2c;
+	ctx->src = src;
+    i2c->hw->enable = 0;
+    i2c->hw->tar = addr;
+    i2c->hw->enable = 1;
+    ctx->abort = false;
+    ctx->abort_reason = 0;
+    ctx->byte_ctr = 0;
+    ctx->ilen = (int)len;
+	ctx->stage = 1;
+}
+
+inline static void i2c_write_stage1(i2c_ctx_t *ctx) {
+	if (ctx->byte_ctr >= ctx->ilen) {
+		ctx->stage = 4;
+		return;
+	}
+    bool first = ctx->byte_ctr == 0;
+    bool last = ctx->byte_ctr == ctx->ilen - 1;
+    ctx->i2c->hw->data_cmd =
+                bool_to_bit(first && ctx->i2c->restart_on_next) << I2C_IC_DATA_CMD_RESTART_LSB |
+                bool_to_bit(last) << I2C_IC_DATA_CMD_STOP_LSB |
+                *ctx->src++;
+	//tight_loop_contents();
+    if(!(ctx->i2c->hw->raw_intr_stat & I2C_IC_RAW_INTR_STAT_TX_EMPTY_BITS)) {
+		ctx->stage = 2;
+		return;
+	}
+    ++ctx->byte_ctr;
+	ctx->stage = 1;
+}
+
+inline static void i2c_write_stage2(i2c_ctx_t *ctx) {
+	//tight_loop_contents();
+    if(!(ctx->i2c->hw->raw_intr_stat & I2C_IC_RAW_INTR_STAT_TX_EMPTY_BITS)) {
+		ctx->stage = 2;
+		return;
+	}
+    ctx->abort_reason = ctx->i2c->hw->tx_abrt_source;
+    if (ctx->abort_reason) {
+        // Note clearing the abort flag also clears the reason, and
+        // this instance of flag is clear-on-read! Note also the
+        // IC_CLR_TX_ABRT register always reads as 0.
+        ctx->i2c->hw->clr_tx_abrt;
+        ctx->abort = true;
+    }
+	bool last = ctx->byte_ctr == ctx->ilen - 1;
+    if (ctx->abort || last) {
+        // If the transaction was aborted or if it completed
+        // successfully wait until the STOP condition has occured.
+        // TODO Could there be an abort while waiting for the STOP
+        // condition here? If so, additional code would be needed here
+        // to take care of the abort.
+		if (!(ctx->i2c->hw->raw_intr_stat & I2C_IC_RAW_INTR_STAT_STOP_DET_BITS)) {
+	    	ctx->stage = 3;
+	    	return;
+		}
+        // If there was a timeout, don't attempt to do anything else.
+        ctx->i2c->hw->clr_stop_det;
+    }
+    ctx->stage = ctx->abort ? 4 : 1;
+}
+
+inline static void i2c_write_stage3(i2c_ctx_t *ctx) {
+	if (!(ctx->i2c->hw->raw_intr_stat & I2C_IC_RAW_INTR_STAT_STOP_DET_BITS)) {
+	   	ctx->stage = 3;
+	   	return;
+	}
+    // If there was a timeout, don't attempt to do anything else.
+    ctx->i2c->hw->clr_stop_det;
+    ctx->stage = ctx->abort ? 4 : 1;
+}
+
+inline static int i2c_write_stage4(i2c_ctx_t *ctx) {
+    int rval;
+    // A lot of things could have just happened due to the ingenious and
+    // creative design of I2C. Try to figure things out.
+    if (ctx->abort) {
+        if (!ctx->abort_reason || ctx->abort_reason & I2C_IC_TX_ABRT_SOURCE_ABRT_7B_ADDR_NOACK_BITS) {
+            // No reported errors - seems to happen if there is nothing connected to the bus.
+            // Address byte not acknowledged
+            rval = PICO_ERROR_GENERIC;
+        } else if (ctx->abort_reason & I2C_IC_TX_ABRT_SOURCE_ABRT_TXDATA_NOACK_BITS) {
+            // Address acknowledged, some data not acknowledged
+            rval = ctx->byte_ctr;
+        } else {
+            //panic("Unknown abort from I2C instance @%08x: %08x\n", (uint32_t) i2c->hw, abort_reason);
+            rval = PICO_ERROR_GENERIC;
+        }
+    } else {
+        rval = ctx->byte_ctr;
+    }
+    // nostop means we are now at the end of a *message* but not the end of a *transfer*
+    ctx->i2c->restart_on_next = false;
+	ctx->stage = 5;
+	return rval;
+}
 
 struct WIIController Wii_joy = { 0 };
 
@@ -251,8 +355,29 @@ void Deinit_Wii_Joystick(){
 	gpio_disable_pulls(WII_SCL_PIN);  	
 }
 
-bool Wii_decode_joy1() {
-	i2c_write_blocking(WII_PORT, WII_ADDRESS, 0x00, 1, false);
+bool Wii_decode_joy1(i2c_ctx_t* ctx) {
+	switch (ctx->stage)
+	{
+	case 0:
+		i2c_write_init(ctx, WII_PORT, WII_ADDRESS, 0x00, 1);
+		i2c_write_stage1(ctx);
+		break;
+	case 1:
+		i2c_write_stage1(ctx);
+		break;
+	case 2:
+		i2c_write_stage2(ctx);
+		break;
+	case 3:
+		i2c_write_stage3(ctx);
+		break;
+	case 4:
+		i2c_write_stage4(ctx);
+		break;
+	default:
+		return false;
+	}
+	return true;
 }
 
 bool Wii_decode_joy2() {
@@ -367,11 +492,4 @@ uint8_t map_to_nes(struct WIIController *tempData){
 	if (tempData->ButtonDown)	{ result|=0x04;}
 	if (tempData->ButtonUp)		{ result|=0x08;}
 	return result;
-}
-
-bool Wii_decode_joy() {
-	busy_wait_us(200);
-	Wii_decode_joy1();
-	busy_wait_us(200);
-	Wii_decode_joy2();
 }

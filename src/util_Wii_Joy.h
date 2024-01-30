@@ -10,6 +10,7 @@
 */
 #pragma once
 #include "inttypes.h"
+#include "hardware/i2c.h"
 
 #define WII_PORT (i2c1)
 #define WII_CLOCK (100000) //4000
@@ -53,9 +54,21 @@ extern struct WIIController Wii_joy;
 bool is_WII_Init();
 bool Init_Wii_Joystick();
 void Deinit_Wii_Joystick();
-bool Wii_decode_joy();
-bool Wii_decode_joy1();
 bool Wii_decode_joy2();
 void Wii_clear_old();
 void Wii_debug(struct WIIController *tempData);
 uint8_t map_to_nes(struct WIIController *tempData);
+
+typedef struct i2c_ctx {
+    i2c_inst_t *i2c;
+	  const uint8_t *src;
+    bool abort;
+    uint32_t abort_reason;
+    int byte_ctr;
+    int ilen;
+	  int stage;
+} i2c_ctx_t;
+
+bool Wii_decode_joy1(i2c_ctx_t* ctx);
+
+
