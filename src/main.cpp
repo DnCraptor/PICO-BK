@@ -252,15 +252,6 @@ static void init_fs() {
     }
 }
 
-inline static void init_wii() {
-    if (Init_Wii_Joystick()) {
-        Wii_decode_joy();
-   //     data_joy = map_to_nes(&Wii_joy);
-   //     old_data_joy = data_joy;
-        logMsg("Found WII joystick");
-    }
-}
-
 int main() {
 #if (OVERCLOCKING > 270)
     hw_set_bits(&vreg_and_chip_reset_hw->vreg, VREG_AND_CHIP_RESET_VREG_VSEL_BITS);
@@ -291,8 +282,15 @@ int main() {
         sleep_ms(23);
         gpio_put(PICO_DEFAULT_LED_PIN, false);
     }
-
-    nespad_begin(clock_get_hz(clk_sys) / 1000, NES_GPIO_CLK, NES_GPIO_DATA, NES_GPIO_LAT);
+    #ifdef USE_WII
+    if (!Init_Wii_Joystick()) {
+    #endif
+        #ifdef USE_NESPAD
+        nespad_begin(clock_get_hz(clk_sys) / 1000, NES_GPIO_CLK, NES_GPIO_DATA, NES_GPIO_LAT);
+        #endif
+    #ifdef USE_WII
+    }
+    #endif
     keyboard_init();
 
     sem_init(&vga_start_semaphore, 0, 1);

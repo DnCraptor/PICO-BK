@@ -50,6 +50,7 @@ struct WIIController {
 
 extern struct WIIController Wii_joy;
 
+bool is_WII_Init();
 bool Init_Wii_Joystick();
 void Deinit_Wii_Joystick();
 bool Wii_decode_joy();

@@ -9,6 +9,9 @@
 struct WIIController Wii_joy = { 0 };
 
 bool WII_Init = false;
+bool is_WII_Init() {
+	return WII_Init;
+}
 uint8_t WII_Data[WII_BYTE_COUNT];
 uint8_t WII_Data_Old[WII_BYTE_COUNT];
 uint8_t WII_Calibrate[WII_CONFIG_COUNT];
