@@ -54,6 +54,8 @@ bool is_WII_Init();
 bool Init_Wii_Joystick();
 void Deinit_Wii_Joystick();
 bool Wii_decode_joy();
+bool Wii_decode_joy1();
+bool Wii_decode_joy2();
 void Wii_clear_old();
 void Wii_debug(struct WIIController *tempData);
 uint8_t map_to_nes(struct WIIController *tempData);

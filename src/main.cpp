@@ -81,9 +81,15 @@ void inInit(uint gpio) {
 
 #ifdef USE_WII
 static repeating_timer_t Wii_timer;
+static bool Wii_stage = false;
 static bool __not_in_flash_func(Wii_Joystick_Timer_CB)(repeating_timer_t *rt) {
-    if (is_WII_Init)
-        Wii_decode_joy();
+    if (is_WII_Init) {
+        if (Wii_stage)
+            Wii_decode_joy2();
+        else
+            Wii_decode_joy1();
+        Wii_stage = !Wii_stage;
+    }
     return true;
 }
 #endif
@@ -302,7 +308,7 @@ int main() {
         #endif
     #ifdef USE_WII
     } else {
-        add_repeating_timer_us(450, Wii_Joystick_Timer_CB, NULL, &Wii_timer);
+        add_repeating_timer_us(200, Wii_Joystick_Timer_CB, NULL, &Wii_timer);
     }
     #endif
     DBGM_PRINT(("Before keyboard_init"));

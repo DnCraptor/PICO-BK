@@ -251,12 +251,13 @@ void Deinit_Wii_Joystick(){
 	gpio_disable_pulls(WII_SCL_PIN);  	
 }
 
-bool Wii_decode_joy(){
+bool Wii_decode_joy1() {
+	i2c_write_blocking(WII_PORT, WII_ADDRESS, 0x00, 1, false);
+}
+
+bool Wii_decode_joy2() {
 	uint8_t result;
 	bool decode = false;
-	busy_wait_us(200);
-	i2c_write_blocking(WII_PORT, WII_ADDRESS, 0x00, 1, false);	
-	busy_wait_us(200);
 	result = i2c_read_blocking(WII_PORT, WII_ADDRESS, &WII_Data[0], WII_BYTE_COUNT, false);
 	if(result>=WII_BYTE_COUNT){
 		if((WII_Data[0]==0x00)&&(WII_Data[1]==0x00)&&(WII_Data[2]==0x00)&&(WII_Data[3]==0x00)) return false;
@@ -368,4 +369,9 @@ uint8_t map_to_nes(struct WIIController *tempData){
 	return result;
 }
 
-
+bool Wii_decode_joy() {
+	busy_wait_us(200);
+	Wii_decode_joy1();
+	busy_wait_us(200);
+	Wii_decode_joy2();
+}
