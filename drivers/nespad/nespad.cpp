@@ -79,7 +79,6 @@ bool nespad_begin(uint32_t cpu_khz, uint8_t clkPin, uint8_t dataPin, uint8_t lat
 void nespad_read() {
   #ifdef USE_WII
   if (is_WII_Init()) {
-      Wii_decode_joy();
       nespad_state = map_to_nes(&Wii_joy);
       return;
   }

@@ -30,7 +30,11 @@ const uint8_t set_lores_cmd[2]={0xFE,0x01};
 
 //const uint8_t init_data[] = { 0xF0, 0x55, 0xFB, 0x00, 0xFE, 0x03 };
 
+#ifdef MNGR_DEBUG
+#define printf(...) { char tmp[80]; snprintf(tmp, 80, __VA_ARGS__); logMsg(tmp); }
+#else
 #define printf(...) {}
+#endif
 
 bool controller_decode_bytes_uncompressed(uint8_t *buf, size_t len, struct WIIController *tempData){ //mode 3
 	
@@ -147,12 +151,17 @@ bool controller_decode_bytes_nunchuck(uint8_t *buf, size_t len, struct WIIContro
 	return true;
 }
 
-bool Init_Wii_Joystick(){
+bool Init_Wii_Joystick() {
 	uint8_t result;
+	printf("Init_Wii_Joystick0");
 	i2c_init(WII_PORT, WII_CLOCK);
+	printf("Init_Wii_Joystick1");
 	gpio_set_function(WII_SDA_PIN, GPIO_FUNC_I2C);
+	printf("Init_Wii_Joystick2");
 	gpio_set_function(WII_SCL_PIN, GPIO_FUNC_I2C);
+	printf("Init_Wii_Joystick3");
 	gpio_pull_up(WII_SDA_PIN);
+	printf("Init_Wii_Joystick4");
 	gpio_pull_up(WII_SCL_PIN);
 	
 	printf("Begin Wii Init\n");
