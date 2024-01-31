@@ -16,7 +16,7 @@ extern uint8_t nespad_state2;    // NES Joystick1
 extern bool nespad_available;
 extern volatile bool is_dendy_joystick;
 extern volatile bool is_kbd_joystick;
-#define DPAD_STATE_DELAY 100
+#define DPAD_STATE_DELAY 200
 extern int nespad_state_delay;
 
 bool nespad_begin(uint32_t cpu_khz, uint8_t clkPin, uint8_t dataPin, uint8_t latPin);
