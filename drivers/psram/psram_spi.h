@@ -48,6 +48,8 @@ SOFTWARE.
 
 #pragma once
 
+#ifdef PSRAM
+
 #include "hardware/pio.h"
 #include "hardware/gpio.h"
 #include "hardware/timer.h"
@@ -619,3 +621,5 @@ uint16_t read16psram(uint32_t addr32);
 #ifdef __cplusplus
 }
 #endif
+
+#endif // PSRAM

@@ -1853,6 +1853,7 @@ inline static void start_manager() {
 
 inline static void handleJoystickEmulation(uint8_t sc) { // core 1
     if (!is_kbd_joystick) return;
+    DBGM_PRINT(("handleJoystickEmulation: %02Xh", sc));
     switch(sc) {
         case 0x1E: // A DPAD_A 
             nespad_state |= DPAD_A;
@@ -1914,10 +1915,10 @@ inline static void handleJoystickEmulation(uint8_t sc) { // core 1
         case 0xA6:
             nespad_state &= ~DPAD_LEFT;
             break;
-        case 0x33: // ,
+        case 0x28: // ,(")
             nespad_state |= DPAD_RIGHT;
             break;
-        case 0xB3:
+        case 0xA8:
             nespad_state &= ~DPAD_RIGHT;
             break;
         case 0x34: // .

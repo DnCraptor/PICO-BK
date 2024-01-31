@@ -145,15 +145,19 @@ target_compile_definitions(${PROJECT_NAME} PRIVATE
         NES_GPIO_DATA=16
         NES_GPIO_LAT=15
 
-        PSRAM
-        # PSRAM_MUTEX=1
-        PSRAM_SPINLOCK=1
-        PSRAM_ASYNC=1
+        USE_WII
+        WII_SDA_PIN=14
+        WII_SCL_PIN=15
 
-        PSRAM_PIN_CS=18
-        PSRAM_PIN_SCK=19
-        PSRAM_PIN_MOSI=20
-        PSRAM_PIN_MISO=21
+       # PSRAM
+        # PSRAM_MUTEX=1
+       # PSRAM_SPINLOCK=1
+       # PSRAM_ASYNC=1
+
+       # PSRAM_PIN_CS=18
+       # PSRAM_PIN_SCK=19
+       # PSRAM_PIN_MOSI=20
+       # PSRAM_PIN_MISO=21
 
         LOAD_WAV_PIO=22
         LOAD_WAV_2_COVOX=1

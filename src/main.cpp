@@ -18,6 +18,7 @@ extern "C" {
 
 extern "C" {
 #include "nespad.h"
+#include "util_Wii_Joy.h"
 #include "vga.h"
 #include "ps2.h"
 #include "usb.h"
@@ -77,6 +78,16 @@ void inInit(uint gpio) {
     gpio_set_dir(gpio, GPIO_IN);
     gpio_pull_up(gpio);
 }
+
+#ifdef USE_WII
+static repeating_timer_t Wii_timer;
+static bool __not_in_flash_func(Wii_Joystick_Timer_CB)(repeating_timer_t *rt) {
+    if (is_WII_Init()) {
+        Wii_decode_joy();
+    }
+    return true;
+}
+#endif
 
 #ifdef SOUND_SYSTEM
 static repeating_timer_t timer;
@@ -272,6 +283,7 @@ int main() {
     inInit(LOAD_WAV_PIO);
 #endif
 
+    DBGM_PRINT(("gpio_init(PICO_DEFAULT_LED_PIN)"));
     gpio_init(PICO_DEFAULT_LED_PIN);
     gpio_set_dir(PICO_DEFAULT_LED_PIN, GPIO_OUT);
 
@@ -281,8 +293,20 @@ int main() {
         sleep_ms(23);
         gpio_put(PICO_DEFAULT_LED_PIN, false);
     }
-
-    nespad_begin(clock_get_hz(clk_sys) / 1000, NES_GPIO_CLK, NES_GPIO_DATA, NES_GPIO_LAT);
+    DBGM_PRINT(("Before Init_Wii_Joystick"));
+    #ifdef USE_WII
+    if (!Init_Wii_Joystick()) {
+    #endif
+        #ifdef USE_NESPAD
+        DBGM_PRINT(("Before nespad_begin"));
+        nespad_begin(clock_get_hz(clk_sys) / 1000, NES_GPIO_CLK, NES_GPIO_DATA, NES_GPIO_LAT);
+        #endif
+    #ifdef USE_WII
+    } else {
+        add_repeating_timer_ms(60, Wii_Joystick_Timer_CB, NULL, &Wii_timer);
+    }
+    #endif
+    DBGM_PRINT(("Before keyboard_init"));
     keyboard_init();
 
     sem_init(&vga_start_semaphore, 0, 1);

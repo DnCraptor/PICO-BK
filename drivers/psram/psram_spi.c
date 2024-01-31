@@ -1,5 +1,5 @@
 #include "psram_spi.h"
-
+#ifdef PSRAM
 static psram_spi_inst_t psram_spi;
 extern bool PSRAM_AVAILABLE;
 
@@ -219,3 +219,4 @@ int test_psram(psram_spi_inst_t* psram_spi, int increment) {
     printf("32 bit: PSRAM read 1MB in %d us, %d B/s (target 1411200 B/s)\n", psram_elapsed, (uint32_t)psram_speed);
     return 0;
 }
+#endif // PSRAM
