@@ -178,8 +178,9 @@ inline static bool AppendDirNum(uint8_t nNum) {
 	return bRet;
 }
 
+static FIL fil;
+
 inline static bool read_cat(const PARSE_RESULT_C& parse_result) {
-	FIL fil;
 	if (f_open(&fil, parse_result.strName, FA_READ | FA_WRITE) == FR_OK) {
 		m_bFileROMode = false;
 	} else if (f_open(&fil, parse_result.strName, FA_READ) != FR_OK) {
@@ -264,7 +265,7 @@ void mkdos_review(const PARSE_RESULT_C& parse_result, int curr_dir_num) {
 }
 
 // оптимизация каталога - объединение смежных дырок
-bool OptimizeCatalog() {
+inline static bool OptimizeCatalog() {
 	int nUsedBlocs = 0;
 	unsigned int p = 0;
 	while (p <= m_nMKLastCatRecord) {
@@ -300,14 +301,26 @@ bool OptimizeCatalog() {
 	return true;
 }
 
-
-bool WriteCurrentDir() {
+inline static bool WriteCurrentDir() {
 	OptimizeCatalog();
-	if (!SeektoBlkWriteData(0, m_pCatBuffer, m_nCatSize)) // сохраняем каталог как есть
-	{
-		return false;
-	}
-	return true;
+	if (f_lseek(&fil, 0) != FR_OK) return false;
+	UINT bw;
+	return f_write(&fil, m_pCatBuffer, m_nCatSize, &bw) == FR_OK;
+}
+
+inline static bool SeekToBlock(size_t lba) {
+	lba *= BLOCK_SIZE;
+    return f_lseek(&fil, lba) == FR_OK;
+}
+
+inline static bool ReadData(uint8_t *pBuff, size_t sz) {
+	UINT br;
+    return f_read(&fil, pBuff, sz, &br) == FR_OK;
+}
+
+inline static bool WriteData(uint8_t *pBuff, size_t sz) {
+	UINT br;
+    return f_write(&fil, pBuff, sz, &br) == FR_OK;
 }
 
 // сквизирование диска
@@ -342,25 +355,30 @@ bool Squeeze() {
 				memset(&m_pDiskCat[m_nMKLastCatRecord--], 0, sizeof(MKDosFileRecord));
 				continue; // и всё сначала
 			}
-
-			size_t nBufSize = size_t(m_pDiskCat[n].len_blk) * m_nBlockSize;
-			auto pBuf = std::vector<uint8_t>(nBufSize);
-			if (pBuf.data()) {
+			size_t nBufSize = size_t(m_pDiskCat[n].len_blk) * BLOCK_SIZE;
+			auto pBuf = new uint8_t[nBufSize];
+			if (pBuf) {
 				if (SeekToBlock(m_pDiskCat[n].start_block)) {
-					if (!ReadData(pBuf.data(), nBufSize)) {
+					if (!ReadData(pBuf, nBufSize)) {
 						m_nLastErrorNumber = IMAGE_ERROR::IMAGE_CANNOT_READ;
 						bRet = false;
+						delete pBuf;
 						break;
 					}
 					if (SeekToBlock(m_pDiskCat[p].start_block)) {
-						if (!WriteData(pBuf.data(), nBufSize)) {
+						if (!WriteData(pBuf, nBufSize)) {
 							m_nLastErrorNumber = IMAGE_ERROR::IMAGE_CANNOT_READ;
 							bRet = false;
+							delete pBuf;
 							break;
 						}
 						// теперь надо записи местами поменять.
-						std::swap(m_pDiskCat[p], m_pDiskCat[n]); // обменяем записи целиком
-						std::swap(m_pDiskCat[p].start_block, m_pDiskCat[n].start_block); // начальные блоки вернём как было.
+						MKDosFileRecord t = m_pDiskCat[n]; // обменяем записи целиком
+						m_pDiskCat[n] = m_pDiskCat[p];
+						m_pDiskCat[p] = t;
+                        uint16_t tt =  m_pDiskCat[n].start_block; // начальные блоки вернём как было.
+						m_pDiskCat[n].start_block = m_pDiskCat[p].start_block;
+						m_pDiskCat[p].start_block = tt;
 						m_pDiskCat[n].start_block = m_pDiskCat[p].start_block + m_pDiskCat[p].len_blk;
 					} else {
 						bRet = false;
@@ -368,6 +386,7 @@ bool Squeeze() {
 				} else {
 					bRet = false;
 				}
+				delete pBuf;
 			} else {
 				m_nLastErrorNumber = IMAGE_ERROR::NOT_ENOUGHT_MEMORY;
 				bRet = false;
@@ -390,7 +409,7 @@ void ConvertAbstractToRealRecord(BKDirDataItem *pFR, bool bRenameOnly = false) {
 			memset(pRec, 0, sizeof(MKDosFileRecord));
 		}
 		// надо сформировать мкдосную запись из абстрактной
-		std::wstring strMKName = pFR->strName.stem().wstring();
+		char* strMKName = pFR->strName;
 		std::wstring strMKExt = strUtil::CropStr(pFR->strName.extension().wstring(), 4); // включая точку
 		size_t nNameLen = (14 - strMKExt.length()); // допустимая длина имени
 		if (strMKName.length() > nNameLen) // если имя длиньше
