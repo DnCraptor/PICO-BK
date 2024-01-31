@@ -303,7 +303,7 @@ int main() {
         #endif
     #ifdef USE_WII
     } else {
-        add_repeating_timer_ms(30, Wii_Joystick_Timer_CB, NULL, &Wii_timer);
+        add_repeating_timer_ms(60, Wii_Joystick_Timer_CB, NULL, &Wii_timer);
     }
     #endif
     DBGM_PRINT(("Before keyboard_init"));
