@@ -400,6 +400,30 @@ bool Squeeze() {
 	return bRet;
 }
 
+inline static size_t ext(const char* strMKName, size_t sz, char* strMKExt) { // включая точку
+    size_t i = sz - 1;
+    while(i > 0 && strMKName[i--] != '.');
+	if (i > 0) {
+	    strncpy(strMKExt, strMKName + i, 5);
+		return strnlen(strMKExt, 4);
+	} else {
+		strMKExt[0] = 0;
+		return 0;
+	}
+}
+
+		// размер проги выровняем по границе блока, сперцифичного для заданной ОС
+		int             EvenSizeByBlock_l(int length)
+		{
+			return length ? (((length - 1) | (BLOCK_SIZE - 1)) + 1) : 0;
+		}
+
+		// размер проги в размерах блока, сперцифичного для заданной ОС
+		int             ByteSizeToBlockSize_l(int length)
+		{
+			return EvenSizeByBlock_l(length) / BLOCK_SIZE;
+		}
+
 void ConvertAbstractToRealRecord(BKDirDataItem *pFR, bool bRenameOnly = false) {
 	auto pRec = reinterpret_cast<MKDosFileRecord *>(pFR->pSpecificData); // Вот эту запись надо добавить
 	// преобразовывать будем только если там ещё не сформирована реальная запись.
@@ -409,24 +433,25 @@ void ConvertAbstractToRealRecord(BKDirDataItem *pFR, bool bRenameOnly = false) {
 			memset(pRec, 0, sizeof(MKDosFileRecord));
 		}
 		// надо сформировать мкдосную запись из абстрактной
-		char* strMKName = pFR->strName;
-		std::wstring strMKExt = strUtil::CropStr(pFR->strName.extension().wstring(), 4); // включая точку
-		size_t nNameLen = (14 - strMKExt.length()); // допустимая длина имени
-		if (strMKName.length() > nNameLen) // если имя длиньше
-		{
-			strMKName = strUtil::CropStr(strMKName, nNameLen); // обрезаем
-		}
-		strMKName += strMKExt; // прицепляем расширение
+		size_t sz = strnlen(pFR->strName, 16);
+		char strMKExt[5];
+		size_t strMKExt_len = ext(pFR->strName, sz, strMKExt);
+		size_t nNameLen = (14 - strMKExt_len); // допустимая длина имени
+		char strMKName[15];
+		size_t cpz = nNameLen < sz ? nNameLen : sz;
+		memcpy(strMKName, pFR->strName, cpz);
+        if (strMKExt_len) memcpy(strMKName + cpz, strMKExt, strMKExt_len); // прицепляем расширение
+		strMKName[cpz + strMKExt_len] = 0;
 		if (pFR->nAttr & FR_ATTR::DIRECTORY) {
-			std::wstring strDir = strUtil::CropStr(pFR->strName, 13);
-			imgUtil::UNICODEtoBK(strDir, pRec->name + 1, 13, true);
+		//	std::wstring strDir = strUtil::CropStr(pFR->strName, 13); /// ???
+		//	imgUtil::UNICODEtoBK(strDir, pRec->name + 1, 13, true);
 			if (!bRenameOnly) {
 				pRec->name[0] = 0177; // признак каталога
 				pRec->status = pFR->nDirNum;
 				pRec->dir_num = m_sDiskCat.nCurrDirNum; // номер текущего открытого подкаталога
 			}
 		} else {
-			imgUtil::UNICODEtoBK(strMKName, pRec->name, 14, true);
+		//	imgUtil::UNICODEtoBK(strMKName, pRec->name, 14, true);
 			pRec->address = pFR->nAddress; // возможно, если мы сохраняем бин файл, адрес будет браться оттуда
 			if (!bRenameOnly) {
 				if (pFR->nAttr & FR_ATTR::PROTECTED) {
