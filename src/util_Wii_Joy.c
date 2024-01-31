@@ -5,6 +5,7 @@
 #include "hardware/i2c.h"
 #include "hardware/gpio.h"
 #include "util_Wii_Joy.h"
+#include "nespad.h"
 
 struct WIIController Wii_joy = { 0 };
 
@@ -334,7 +335,7 @@ void Wii_debug(struct WIIController *tempData){
 }
 
 uint8_t map_to_nes(struct WIIController *tempData){
-	memcpy(&WII_Data_Old[0],&WII_Data[0],6);
+	memcpy(&WII_Data_Old[0], &WII_Data[0],6);
 	uint8_t result = 0;
 	/*
 		if (tempData->ButtonHome)	{ printf("\tButtonHome");}
@@ -343,29 +344,29 @@ uint8_t map_to_nes(struct WIIController *tempData){
 		if (tempData->ButtonZL)		{ printf("\tButtonZL");}
 		if (tempData->ButtonZR)		{ printf("\tButtonZR");}
 	*/
-	if (tempData->ButtonStart)	{ result|=0x80;}
-	if (tempData->ButtonSelect)	{ result|=0x40;}
+	if (tempData->ButtonStart)	{ result |= DPAD_START;  }
+	if (tempData->ButtonSelect)	{ result |= DPAD_SELECT; }
 	
 	//if (tempData->ButtonX)	{ result|=0x20;}
 	//if (tempData->ButtonY)	{ result|=0x10;}
 	
-	if (tempData->ButtonA)		{ result|=0x20;}
-	if (tempData->ButtonB)		{ result|=0x10;}
+	if (tempData->ButtonA)		{ result |= DPAD_A; }
+	if (tempData->ButtonB)		{ result |= DPAD_B; }
 	
-	if(tempData->LeftX>WII_LEFT_HALF)	   { result|=0x01;} //right
-	if(tempData->LeftX<(0-WII_LEFT_HALF))   { result|=0x02;} //left
-	if(tempData->LeftY>WII_LEFT_HALF)	   { result|=0x08;} //up
-	if(tempData->LeftY<(0-WII_LEFT_HALF))   { result|=0x04;} //down
+	if(tempData->LeftX>WII_LEFT_HALF)	   { result |= DPAD_RIGHT; } //right
+	if(tempData->LeftX<(0-WII_LEFT_HALF))  { result |= DPAD_LEFT;  } //left
+	if(tempData->LeftY>WII_LEFT_HALF)	   { result |= DPAD_UP;    } //up
+	if(tempData->LeftY<(0-WII_LEFT_HALF))  { result |= DPAD_DOWN;  } //down
 	
 	//if(tempData->RightX>WII_RIGHT_HALF)	   { result|=0x20;} //A
 	//if(tempData->RightX<(0-WII_RIGHT_HALF))   { result|=0x02;} //Y
 	//if(tempData->RightY>WII_RIGHT_HALF)	   { result|=0x08;} //X
 	//if(tempData->RightY<(0-WII_RIGHT_HALF))   { result|=0x10;} //B
 	
-	if (tempData->ButtonRight)	{ result|=0x01;}
-	if (tempData->ButtonLeft)	{ result|=0x02;}
-	if (tempData->ButtonDown)	{ result|=0x04;}
-	if (tempData->ButtonUp)		{ result|=0x08;}
+	if (tempData->ButtonRight)	{ result |= DPAD_RIGHT; }
+	if (tempData->ButtonLeft)	{ result |= DPAD_LEFT;  }
+	if (tempData->ButtonDown)	{ result |= DPAD_DOWN;  }
+	if (tempData->ButtonUp)		{ result |= DPAD_UP;    }
 	return result;
 }
 
