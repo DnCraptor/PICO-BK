@@ -8,5 +8,6 @@
 #include "disk_img.h"
 
 void mkdos_review(const PARSE_RESULT_C& parse_result, int curr_dir_num);
+void mkdos_mkdir(const PARSE_RESULT_C& parse_result, int curr_dir_num, char* name);
 
 #endif

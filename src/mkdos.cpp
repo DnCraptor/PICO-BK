@@ -190,14 +190,12 @@ inline static bool read_cat(const PARSE_RESULT_C& parse_result) {
 	}
 	UINT br;
 	if (f_read(&fil, m_pCatBuffer, sizeof m_pCatBuffer, &br) != FR_OK) {
-		f_close(&fil);
 		return false;
 	}
-	f_close(&fil);
 	return true;
-} 
+}
 
-void mkdos_review(const PARSE_RESULT_C& parse_result, int curr_dir_num) {
+inline static bool mkdos_init(const PARSE_RESULT_C& parse_result, int curr_dir_num) {
     m_pDiskCat = reinterpret_cast<MKDosFileRecord *>(m_pCatBuffer + FMT_MKDOS_CAT_BEGIN); // каталог диска
 	m_nMKCatSize = MKDOS_CAT_RECORD_SIZE;
 	m_nMKLastCatRecord = m_nMKCatSize - 1;
@@ -210,12 +208,19 @@ void mkdos_review(const PARSE_RESULT_C& parse_result, int curr_dir_num) {
 	m_sDiskCat.bHasDir = true;
 	m_sDiskCat.nMaxDirNum = 0177;
     if (!read_cat(parse_result)) {
-		return;
+		f_close(&fil);
+		return false;
 	}
-	int files_count = 0;
-	int files_total = *(reinterpret_cast<uint16_t *>(&m_pCatBuffer[FMT_MKDOS_CAT_RECORD_NUMBER])); // читаем общее кол-во файлов. (НЕ записей!)
 	m_sDiskCat.nDataBegin = *(reinterpret_cast<uint16_t *>(&m_pCatBuffer[FMT_MKDOS_FIRST_FILE_BLOCK])); // блок начала данных
 	m_sDiskCat.nTotalRecs = m_nMKCatSize; // это у нас объём каталога, из него надо будет вычесть общее количество записей
+	f_close(&fil);
+	return true;
+}
+
+void mkdos_review(const PARSE_RESULT_C& parse_result, int curr_dir_num) {
+    if (!mkdos_init(parse_result, curr_dir_num)) return;
+	int files_count = 0;
+	int files_total = *(reinterpret_cast<uint16_t *>(&m_pCatBuffer[FMT_MKDOS_CAT_RECORD_NUMBER])); // читаем общее кол-во файлов. (НЕ записей!)
 	int used_size = 0;
 	BKDirDataItem AFR; // экземпляр абстрактной записи
 	auto pRec = reinterpret_cast<MKDosFileRecord *>(AFR.pSpecificData); // а в ней копия оригинальной записи
@@ -412,19 +417,17 @@ inline static size_t ext(const char* strMKName, size_t sz, char* strMKExt) { // 
 	}
 }
 
-		// размер проги выровняем по границе блока, сперцифичного для заданной ОС
-		int             EvenSizeByBlock_l(int length)
-		{
-			return length ? (((length - 1) | (BLOCK_SIZE - 1)) + 1) : 0;
-		}
+// размер проги выровняем по границе блока, сперцифичного для заданной ОС
+inline static int EvenSizeByBlock_l(int length) {
+	return length ? (((length - 1) | (BLOCK_SIZE - 1)) + 1) : 0;
+}
 
-		// размер проги в размерах блока, сперцифичного для заданной ОС
-		int             ByteSizeToBlockSize_l(int length)
-		{
-			return EvenSizeByBlock_l(length) / BLOCK_SIZE;
-		}
+// размер проги в размерах блока, сперцифичного для заданной ОС
+inline static int ByteSizeToBlockSize_l(int length) {
+	return EvenSizeByBlock_l(length) / BLOCK_SIZE;
+}
 
-void ConvertAbstractToRealRecord(BKDirDataItem *pFR, bool bRenameOnly = false) {
+inline static void ConvertAbstractToRealRecord(BKDirDataItem *pFR, bool bRenameOnly = false) {
 	auto pRec = reinterpret_cast<MKDosFileRecord *>(pFR->pSpecificData); // Вот эту запись надо добавить
 	// преобразовывать будем только если там ещё не сформирована реальная запись.
 	if (pFR->nSpecificDataLength == 0 || bRenameOnly) {
@@ -471,7 +474,60 @@ IMAGE_ERROR MkDosErrorNumber() {
 	return m_nLastErrorNumber;
 }
 
-bool MkDosCreateDir(BKDirDataItem *pFR) {
+		/* поиск заданной записи в каталоге.
+		если bFull==false делается поиск по имени
+		если bFull==true делается поиск по имени и другим параметрам
+		выход: -1 если не найдено,
+		номер записи в каталоге - если найдено.
+		*/
+inline static int FindRecord2(MKDosFileRecord *pRec, bool bFull) {
+	int nIndex = -1;
+	for (unsigned int i = 0; i < m_nMKLastCatRecord; ++i) {
+		if ((m_pDiskCat[i].status == 0377) || (m_pDiskCat[i].status == 0200)) {
+			// если удалённый файл - дырка, то игнорируем
+			continue;
+		}
+		if (m_pDiskCat[i].dir_num == m_sDiskCat.nCurrDirNum) // проверяем только в текущей директории
+		{
+			if (memcmp(pRec->name, m_pDiskCat[i].name, 14) == 0)  // проверим имя
+			{
+				if (bFull) {
+					if (pRec->name[0] == 0177) // если директория
+					{
+						if (m_pDiskCat[i].status == pRec->status) // то проверяем номер директории
+						{
+							nIndex = static_cast<int>(i);
+							break;
+						}
+					}
+					else // если файл - то проверяем параметры файла
+					{
+						if (m_pDiskCat[i].dir_num == pRec->dir_num) {
+							nIndex = static_cast<int>(i);
+							break;
+						}
+					}
+				} else {
+					nIndex = static_cast<int>(i);
+					break;
+				}
+			}
+		}
+	}
+	return nIndex;
+}
+
+inline static uint8_t AssignNewDirNum() {
+	for (uint8_t i = 1; i < m_sDiskCat.nMaxDirNum; ++i) {
+		if (m_sDiskCat.arDirNums[i] == 0) {
+			m_sDiskCat.arDirNums[i] = 1;
+			return i;
+		}
+	}
+	return 0;
+}
+
+inline static bool MkDosCreateDir(BKDirDataItem *pFR) {
 	bool bRet = false;
 	if (m_bFileROMode) {
 		// Если образ открылся только для чтения,
@@ -485,7 +541,7 @@ bool MkDosCreateDir(BKDirDataItem *pFR) {
 	if (pFR->nAttr & FR_ATTR::DIRECTORY) {
 		ConvertAbstractToRealRecord(pFR);
 		auto pRec = reinterpret_cast<MKDosFileRecord *>(pFR->pSpecificData); // Вот эту запись надо добавить
-		pFR->nDirBelong = pRec->dir_num = m_sDiskCat.nCurrDirNum; // номер текущего открытого подкаталога
+	///	pFR->nDirBelong = pRec->dir_num = m_sDiskCat.nCurrDirNum; // номер текущего открытого подкаталога
 		// проверим, вдруг такая директория уже есть
 		int nInd = FindRecord2(pRec, false); // мы тут не знаем номер директории. мы можем только по имени проверить.
 		if (nInd >= 0) {
@@ -548,3 +604,17 @@ bool MkDosCreateDir(BKDirDataItem *pFR) {
 	}
 	return bRet;
 }
+
+void mkdos_mkdir(const PARSE_RESULT_C& parse_result, int curr_dir_num, char* name) {
+    if (!mkdos_init(parse_result, curr_dir_num)) {
+		f_close(&fil);
+		return;
+	}
+	BKDirDataItem itm = { 0 };
+	strncpy(itm.strName, name, 16);
+	itm.nRecType = BKDirDataItem::RECORD_TYPE::DIRECTORY;
+	itm.nDirBelong = curr_dir_num;
+	MkDosCreateDir(&itm);
+	f_close(&fil);
+}
+
