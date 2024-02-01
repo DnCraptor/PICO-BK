@@ -859,19 +859,20 @@ static char scan_code_2_cp866[0x80] = {
     'B', 'N', 'M', ',', '.', '/',  0 , '*',  0 , ' ',  0 , 0 ,  0 , 0,  0 , 0,  0 , 0
 };
 */
+bool ImgAddObject(const char* pFileName, int curr_dir_num, bool folder, bool bExistDir);
 static void m_mk_dir(uint8_t cmd) {
-#if EXT_DRIVES_MOUNT
-    if (psp->in_dos) {
-        // TODO:
-        do_nothing(cmd);
-        return;
-    }
-#endif
     char dir[256];
-    construct_full_name(dir, psp->path, "_");
+    #if EXT_DRIVES_MOUNT
+    if (psp->in_dos) {
+        dir[0] = '_';
+        dir[1] = 0;
+    } else
+    #endif
+        construct_full_name(dir, psp->path, "_");
     size_t len = strnlen(dir, 256) - 1;
     draw_panel(20, MAX_HEIGHT / 2 - 20, MAX_WIDTH - 40, 5, "DIR NAME", 0);
     draw_label(22, MAX_HEIGHT / 2 - 18, MAX_WIDTH - 44, dir, true, true);
+    size_t max_dir_len = psp->in_dos ? 14 : MAX_WIDTH - 44;
     while(1) {
         if (escPressed) {
             escPressed = false;
@@ -896,7 +897,7 @@ static void m_mk_dir(uint8_t cmd) {
         if (!sc || sc >= 0x80) continue;
         char c = scan_code_2_cp866[sc]; // TODO: shift, caps lock, alt, rus...
         if (!c) continue;
-        if (len + 2 == MAX_WIDTH - 44) continue;
+        if (len + 2 == max_dir_len) continue;
         dir[len++] = c;
         dir[len] = '_';
         dir[len + 1] = 0;
@@ -904,7 +905,12 @@ static void m_mk_dir(uint8_t cmd) {
     }
     if (len) {
         dir[len] = 0;
-        f_mkdir(dir);
+        #if EXT_DRIVES_MOUNT
+        if (psp->in_dos) {
+            ImgAddObject(dir, psp->indexes[psp->level].dir_num, true, false);
+        } else
+        #endif
+            f_mkdir(dir);
     }
     scan_code_cleanup();
     redraw_window();
