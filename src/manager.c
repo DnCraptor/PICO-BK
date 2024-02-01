@@ -903,8 +903,10 @@ static void m_mk_dir(uint8_t cmd) {
         dir[len + 1] = 0;
         draw_label(22, MAX_HEIGHT / 2 - 18, MAX_WIDTH - 44, dir, true, true);
     }
+    DBGM_PRINT(("m_mk_dir len: %d", len));
     if (len) {
         dir[len] = 0;
+        DBGM_PRINT(("m_mk_dir dir: %s; psp->in_dos: %d", dir, psp->in_dos));
         #if EXT_DRIVES_MOUNT
         if (psp->in_dos) {
             ImgAddObject(dir, psp->indexes[psp->level].dir_num, true, false);
@@ -1963,7 +1965,7 @@ inline static void handleJoystickEmulation(uint8_t sc) { // core 1
 }
 
 bool handleScancode(uint32_t ps2scancode) { // core 1
-    DBGM_PRINT(("handleScancode: %08Xh", ps2scancode));
+///    DBGM_PRINT(("handleScancode: %08Xh", ps2scancode));
     handleJoystickEmulation((uint8_t)ps2scancode);
     lastCleanableScanCode = ps2scancode;
     switch (ps2scancode) {

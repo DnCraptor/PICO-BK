@@ -682,6 +682,7 @@ inline static IMAGE_ERROR GetErrorNumber() {
 // сюда принимаем структуру sendfiledata и делаем из неё AbstractFileRecord
 // bExistDir - флаг, когда мы пытаемся создать уже существующую директорию, - игнорировать ошибку
 extern "C" bool ImgAddObject(const char* pFileName, int curr_dir_num, bool folder, bool bExistDir) {
+	DBGM_PRINT(("ImgAddObject"));
 	//ADDOP_RESULT ret;
 	if (is_browse_os_supported()) {
 	//	ret.bFatal = true;

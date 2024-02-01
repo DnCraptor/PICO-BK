@@ -5,6 +5,7 @@
 #include "stdint.h"
 extern "C" {
 	#include "ff.h"
+	#include "debug.h"
 }
 
 #pragma pack(push)
@@ -271,6 +272,7 @@ void mkdos_review(const PARSE_RESULT_C& parse_result, int curr_dir_num) {
 
 // оптимизация каталога - объединение смежных дырок
 inline static bool OptimizeCatalog() {
+	DBGM_PRINT(("OptimizeCatalog"));
 	int nUsedBlocs = 0;
 	unsigned int p = 0;
 	while (p <= m_nMKLastCatRecord) {
@@ -307,6 +309,7 @@ inline static bool OptimizeCatalog() {
 }
 
 inline static bool WriteCurrentDir() {
+	DBGM_PRINT(("WriteCurrentDir"));
 	OptimizeCatalog();
 	if (f_lseek(&fil, 0) != FR_OK) return false;
 	UINT bw;
@@ -428,6 +431,7 @@ inline static int ByteSizeToBlockSize_l(int length) {
 }
 
 inline static void ConvertAbstractToRealRecord(BKDirDataItem *pFR, bool bRenameOnly = false) {
+	DBGM_PRINT(("ConvertAbstractToRealRecord"));
 	auto pRec = reinterpret_cast<MKDosFileRecord *>(pFR->pSpecificData); // Вот эту запись надо добавить
 	// преобразовывать будем только если там ещё не сформирована реальная запись.
 	if (pFR->nSpecificDataLength == 0 || bRenameOnly) {
@@ -474,12 +478,12 @@ IMAGE_ERROR MkDosErrorNumber() {
 	return m_nLastErrorNumber;
 }
 
-		/* поиск заданной записи в каталоге.
-		если bFull==false делается поиск по имени
-		если bFull==true делается поиск по имени и другим параметрам
-		выход: -1 если не найдено,
-		номер записи в каталоге - если найдено.
-		*/
+/* поиск заданной записи в каталоге.
+если bFull==false делается поиск по имени
+если bFull==true делается поиск по имени и другим параметрам
+выход: -1 если не найдено,
+номер записи в каталоге - если найдено.
+*/
 inline static int FindRecord2(MKDosFileRecord *pRec, bool bFull) {
 	int nIndex = -1;
 	for (unsigned int i = 0; i < m_nMKLastCatRecord; ++i) {
@@ -528,14 +532,17 @@ inline static uint8_t AssignNewDirNum() {
 }
 
 inline static bool MkDosCreateDir(BKDirDataItem *pFR) {
+	DBGM_PRINT(("MkDosCreateDir"));
 	bool bRet = false;
 	if (m_bFileROMode) {
 		// Если образ открылся только для чтения,
 		m_nLastErrorNumber = IMAGE_ERROR::IMAGE_WRITE_PROTECRD;
+		DBGM_PRINT(("IMAGE_ERROR::IMAGE_WRITE_PROTECRD"));
 		return bRet; // то записать в него мы ничего не сможем.
 	}
 	if (m_sDiskCat.nFreeRecs <= 0) {
 		m_nLastErrorNumber = IMAGE_ERROR::FS_CAT_FULL;
+		DBGM_PRINT(("IMAGE_ERROR::FS_CAT_FULL"));
 		return false;
 	}
 	if (pFR->nAttr & FR_ATTR::DIRECTORY) {
@@ -546,6 +553,7 @@ inline static bool MkDosCreateDir(BKDirDataItem *pFR) {
 		int nInd = FindRecord2(pRec, false); // мы тут не знаем номер директории. мы можем только по имени проверить.
 		if (nInd >= 0) {
 			m_nLastErrorNumber = IMAGE_ERROR::FS_DIR_EXIST;
+			DBGM_PRINT(("IMAGE_ERROR::FS_DIR_EXIST"));
 			pFR->nDirNum = m_pDiskCat[nInd].status; // и заодно узнаем номер директории
 		} else {
 			unsigned int nIndex = 0;
@@ -572,6 +580,7 @@ inline static bool MkDosCreateDir(BKDirDataItem *pFR) {
 				pFR->nDirNum = pRec->status = AssignNewDirNum(); // назначаем номер директории.
 				if (pFR->nDirNum == 0) {
 					m_nLastErrorNumber = IMAGE_ERROR::FS_DIRNUM_FULL;
+					DBGM_PRINT(("IMAGE_ERROR::FS_DIRNUM_FULL"));
 				}
 				// если ошибок не произошло, сохраним результаты
 				if (bHole) {
@@ -597,17 +606,21 @@ inline static bool MkDosCreateDir(BKDirDataItem *pFR) {
 				m_sDiskCat.nFreeRecs--;
 			} else {
 				m_nLastErrorNumber = IMAGE_ERROR::FS_CAT_FULL;
+				DBGM_PRINT(("IMAGE_ERROR::FS_CAT_FULL"));
 			}
 		}
 	} else {
 		m_nLastErrorNumber = IMAGE_ERROR::FS_IS_NOT_DIR;
+		DBGM_PRINT(("IMAGE_ERROR::FS_IS_NOT_DIR"));
 	}
 	return bRet;
 }
 
 bool mkdos_mkdir(const PARSE_RESULT_C& parse_result, BKDirDataItem& itm) {
+	DBGM_PRINT(("mkdos_mkdir"));
     if (!mkdos_init(parse_result, itm.nDirBelong)) {
 		f_close(&fil);
+		DBGM_PRINT(("mkdos_mkdir mkdos_init failed"));
 		return false;
 	}
 	//BKDirDataItem itm = { 0 };
@@ -615,6 +628,7 @@ bool mkdos_mkdir(const PARSE_RESULT_C& parse_result, BKDirDataItem& itm) {
 	//itm.nRecType = BKDirDataItem::RECORD_TYPE::DIRECTORY;
 	//itm;
 	bool res = MkDosCreateDir(&itm);
+	DBGM_PRINT(("mkdos_mkdir MkDosCreateDir: %d", res));
 	f_close(&fil);
 	return res;
 }

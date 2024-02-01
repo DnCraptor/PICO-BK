@@ -136,34 +136,34 @@ static FATFS fatfs;
 inline static int parse_conf_word(const char* buf, const char* param, size_t plen, size_t lim) {
     char b[16];
     const char* pc = strnstr(buf, param, lim);
-    DBGM_PRINT(("param %s pc: %08Xh", param, pc));
+    //DBGM_PRINT(("param %s pc: %08Xh", param, pc));
     if (pc) {
         pc += plen - 1;
         const char* pc2 = strnstr(pc, "\r\n", lim - (pc - buf));
-        DBGM_PRINT(("param %s \\r\\n pc: %08Xh pc2: %08Xh", param, pc, pc2));
+        //DBGM_PRINT(("param %s \\r\\n pc: %08Xh pc2: %08Xh", param, pc, pc2));
         if (pc2) {
             memcpy(b, pc, pc2 - pc);
             b[pc2 - pc] = 0;
-            DBGM_PRINT(("param %s b: %s atoi(b): %d", param, b, atoi(b)));
+            //DBGM_PRINT(("param %s b: %s atoi(b): %d", param, b, atoi(b)));
             return atoi(b);
         }
         pc2 = strnstr(pc, ";", lim - (pc - buf));
-        DBGM_PRINT(("param %s ; pc2: %08Xh", param, pc2));
+        //DBGM_PRINT(("param %s ; pc2: %08Xh", param, pc2));
         if (pc2) {
             memcpy(b, pc, pc2 - pc);
             b[pc2 - pc] = 0;
-            DBGM_PRINT(("param %s b: %s atoi(b): %d", param, b, atoi(b)));
+            //DBGM_PRINT(("param %s b: %s atoi(b): %d", param, b, atoi(b)));
             return atoi(b);
         }
         pc2 = strnstr(pc, "\n", lim - (pc - buf));
-        DBGM_PRINT(("param %s \\n pc2: %08Xh", param, pc2));
+        //DBGM_PRINT(("param %s \\n pc2: %08Xh", param, pc2));
         if (pc2) {
             memcpy(b, pc, pc2 - pc);
             b[pc2 - pc] = 0;
-            DBGM_PRINT(("param %s b: %s atoi(b): %d", param, b, atoi(b)));
+            //DBGM_PRINT(("param %s b: %s atoi(b): %d", param, b, atoi(b)));
             return atoi(b);
         }
-        DBGM_PRINT(("param %s pc: %d atoi(pc): %d", param, pc, atoi(pc)));
+        //DBGM_PRINT(("param %s pc: %d atoi(pc): %d", param, pc, atoi(pc)));
         return atoi(pc);
     }
     return -100;
@@ -186,7 +186,7 @@ inline static void read_config(const char* path) {
         f_close(&fil);
         return;
     }
-    DBGM_PRINT(("f_read %s passed. br: %d", br));
+    DBGM_PRINT(("f_read %s passed. br: %d", path, br));
     const char p0[] = "mode:";
     int mode = parse_conf_word(buf, p0, sizeof(p0), 256);
     if (mode >= 0 && mode <= BK_0011M) {

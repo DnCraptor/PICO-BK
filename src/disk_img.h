@@ -185,7 +185,7 @@ enum class ADD_ERROR : int {
 	IMAGE_ERROR,    // ошибку смотри в nImageErrorNumber
 	NUMBERS
 };
-
+/*
 struct ADDOP_RESULT {
 	bool            bFatal;     // флаг необходимости прервать работу.
 	ADD_ERROR       nError;     // номер ошибки в результате добавления объекта в образ
@@ -201,4 +201,5 @@ struct ADDOP_RESULT {
 	}
 };
 ADDOP_RESULT ImgAddObject(const PARSE_RESULT_C& parse_result, const char* pFileName, int curr_dir_num, bool folder, bool bExistDir = false);
+*/
 #endif
