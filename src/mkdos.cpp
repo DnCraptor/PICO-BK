@@ -605,16 +605,16 @@ inline static bool MkDosCreateDir(BKDirDataItem *pFR) {
 	return bRet;
 }
 
-void mkdos_mkdir(const PARSE_RESULT_C& parse_result, int curr_dir_num, char* name) {
-    if (!mkdos_init(parse_result, curr_dir_num)) {
+bool mkdos_mkdir(const PARSE_RESULT_C& parse_result, BKDirDataItem& itm) {
+    if (!mkdos_init(parse_result, itm.nDirBelong)) {
 		f_close(&fil);
-		return;
+		return false;
 	}
-	BKDirDataItem itm = { 0 };
-	strncpy(itm.strName, name, 16);
-	itm.nRecType = BKDirDataItem::RECORD_TYPE::DIRECTORY;
-	itm.nDirBelong = curr_dir_num;
-	MkDosCreateDir(&itm);
+	//BKDirDataItem itm = { 0 };
+	//strncpy(itm.strName, name, 16);
+	//itm.nRecType = BKDirDataItem::RECORD_TYPE::DIRECTORY;
+	//itm;
+	bool res = MkDosCreateDir(&itm);
 	f_close(&fil);
+	return res;
 }
-

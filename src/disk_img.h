@@ -169,4 +169,36 @@ enum class IMAGE_ERROR : int
 	NUMBERS
 };
 
+/*
+Класс, где будут все основные методы для работы с образом.
+Открытие образа, закрытие,
+добавление файлов/директорий (групповое)
+удаление файлов/директорий (групповое и рекурсивное)
+создание директорий
+извлечение файлов и преобразование форматов
+*/
+enum class ADD_ERROR : int {
+	OK_NOERROR = 0, // нет ошибок
+	IMAGE_NOT_OPEN, // файл образа не открыт
+	FILE_TOO_LARGE, // файл слишком большой
+	USER_CANCEL,    // операция отменена пользователем
+	IMAGE_ERROR,    // ошибку смотри в nImageErrorNumber
+	NUMBERS
+};
+
+struct ADDOP_RESULT {
+	bool            bFatal;     // флаг необходимости прервать работу.
+	ADD_ERROR       nError;     // номер ошибки в результате добавления объекта в образ
+	IMAGE_ERROR     nImageErrorNumber; // номер ошибки в результате операций с образом
+	BKDirDataItem   afr;        // экземпляр абстрактной записи, которая вызвала ошибку.
+	// Она нам нужна будет для последующей обработки ошибок
+	ADDOP_RESULT()
+		: bFatal(false)
+		, nError(ADD_ERROR::OK_NOERROR)
+		, nImageErrorNumber(IMAGE_ERROR::OK_NOERRORS)
+	{
+		afr.clear();
+	}
+};
+ADDOP_RESULT ImgAddObject(const PARSE_RESULT_C& parse_result, const char* pFileName, int curr_dir_num, bool folder, bool bExistDir = false);
 #endif

@@ -649,6 +649,7 @@ extern "C" void detect_os_type(const char* path, char* os_type, size_t sz) {
 }
 
 #if EXT_DRIVES_MOUNT
+void mkdos_review(const PARSE_RESULT_C& parse_result, int curr_dir_num);
 extern "C" bool mount_img(const char* path, int curr_dir_num) {
     DBGM_PRINT(("mount_img: %s dir_num: %d", path, curr_dir_num));
     if ( !is_browse_os_supported() ) {
@@ -660,46 +661,12 @@ extern "C" bool mount_img(const char* path, int curr_dir_num) {
 	return true;
 }
 
-/*
-Класс, где будут все основные методы для работы с образом.
-Открытие образа, закрытие,
-добавление файлов/директорий (групповое)
-удаление файлов/директорий (групповое и рекурсивное)
-создание директорий
-извлечение файлов и преобразование форматов
-*/
-enum class ADD_ERROR : int
-{
-	OK_NOERROR = 0, // нет ошибок
-	IMAGE_NOT_OPEN, // файл образа не открыт
-	FILE_TOO_LARGE, // файл слишком большой
-	USER_CANCEL,    // операция отменена пользователем
-	IMAGE_ERROR,    // ошибку смотри в nImageErrorNumber
-	NUMBERS
-};
-
-struct ADDOP_RESULT
-{
-	bool            bFatal;     // флаг необходимости прервать работу.
-	ADD_ERROR       nError;     // номер ошибки в результате добавления объекта в образ
-	IMAGE_ERROR     nImageErrorNumber; // номер ошибки в результате операций с образом
-	BKDirDataItem   afr;        // экземпляр абстрактной записи, которая вызвала ошибку.
-	// Она нам нужна будет для последующей обработки ошибок
-	ADDOP_RESULT()
-		: bFatal(false)
-		, nError(ADD_ERROR::OK_NOERROR)
-		, nImageErrorNumber(IMAGE_ERROR::OK_NOERRORS)
-	{
-		afr.clear();
-	}
-};
-
-bool MkDosCreateDir(BKDirDataItem *pFR);
-inline static bool CreateDir(BKDirDataItem *pFR) {
+bool mkdos_mkdir(const PARSE_RESULT_C& parse_result, BKDirDataItem& itm);
+inline static bool CreateDir(BKDirDataItem& itm) {
 	if (is_browse_os_supported()) {
 		return false;
 	}
-	return MkDosCreateDir(pFR);
+	return mkdos_mkdir(parse_result, itm);
 }
 
 IMAGE_ERROR MkDosErrorNumber();
@@ -714,13 +681,14 @@ inline static IMAGE_ERROR GetErrorNumber() {
 // разных возникающих ситуаций
 // сюда принимаем структуру sendfiledata и делаем из неё AbstractFileRecord
 // bExistDir - флаг, когда мы пытаемся создать уже существующую директорию, - игнорировать ошибку
-ADDOP_RESULT AddObject(const char* pFileName, bool folder, bool bExistDir = false) {
-	ADDOP_RESULT ret;
+extern "C" bool ImgAddObject(const char* pFileName, int curr_dir_num, bool folder, bool bExistDir) {
+	//ADDOP_RESULT ret;
 	if (is_browse_os_supported()) {
-		ret.bFatal = true;
-		ret.nImageErrorNumber = IMAGE_ERROR::IMAGE_TYPE_IS_UNSUPPORTED;
-		ret.nError = ADD_ERROR::IMAGE_ERROR;
-		return ret;
+	//	ret.bFatal = true;
+	//	ret.nImageErrorNumber = IMAGE_ERROR::IMAGE_TYPE_IS_UNSUPPORTED;
+	//	ret.nError = ADD_ERROR::IMAGE_ERROR;
+	//	return ret;
+	    return false;
 	}
 /*	if (!m_pFloppyImage)
 	{
@@ -740,7 +708,8 @@ ADDOP_RESULT AddObject(const char* pFileName, bool folder, bool bExistDir = fals
 	if (folder)	{
 		AFR.nAttr |= FR_ATTR::DIRECTORY;
 		AFR.nRecType = BKDirDataItem::RECORD_TYPE::DIRECTORY;
-		if (CreateDir(&AFR) || bExistDir) {
+		AFR.nDirBelong = curr_dir_num;
+		if (CreateDir(AFR) || bExistDir) {
 	/***		if (!ChangeDir(&AFR)) {
 				// ошибка изменения директории:
 				// IMAGE_ERROR::FS_NOT_SUPPORT_DIRS
@@ -763,7 +732,7 @@ ADDOP_RESULT AddObject(const char* pFileName, bool folder, bool bExistDir = fals
 			// IMAGE_ERROR::FS_NOT_SUPPORT_DIRS - два варианта: игнорировать, остановиться
 			// IMAGE_ERROR::CANNOT_WRITE_FILE
 			// IMAGE_ERROR::FS_DIR_EXIST - такая директория уже существует, два варианта: игнорировать, остановиться
-			ret.nImageErrorNumber = GetErrorNumber();
+		/*	ret.nImageErrorNumber = GetErrorNumber();
 			// обрабатывать теперь
 			ret.nError = ADD_ERROR::IMAGE_ERROR;
 			switch (ret.nImageErrorNumber) {
@@ -774,7 +743,8 @@ ADDOP_RESULT AddObject(const char* pFileName, bool folder, bool bExistDir = fals
 				default:
 					ret.bFatal = true;
 					break;
-			}
+			}*/
+			return false;
 		}
 	} else {
 /***		AFR.nRecType = BKDirDataItem::RECORD_TYPE::FILE;
@@ -877,7 +847,8 @@ l_sque_retries:
 			}
 		}**/
 	}
-	ret.afr = AFR;
-	return ret;
+	//ret.afr = AFR;
+	//return ret;
+	return true;
 }
 #endif
