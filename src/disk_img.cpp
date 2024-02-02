@@ -4,7 +4,7 @@
 #include "disk_img.h"
 #include "mkdos.h"
 extern "C" {
-#define DBGM_PRINT(X)
+#include "debug.h"
 #include "stdint.h"
 #include "string.h"
 #include "ff.h"
