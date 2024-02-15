@@ -84,24 +84,25 @@ pico_set_program_version(pico-bk "test")
             hardware_clocks
             hardware_pwm
             hardware_flash
+
+            tinyusb_board
+            tinyusb_device
     )
 #    target_link_options(${PROJECT_NAME} PRIVATE "LINKER:--script=${CMAKE_CURRENT_LIST_DIR}/memmap.ld")
 #    set_target_properties(${PROJECT_NAME} PROPERTIES LINK_DEPENDS ${CMAKE_CURRENT_LIST_DIR}/memmap.ld)
     target_link_options(${PROJECT_NAME} PRIVATE -Xlinker --print-memory-usage)
 
-    family_configure_device_example(${PROJECT_NAME} noos)
-
     target_sources(${PROJECT_NAME} PUBLIC
-            ${CMAKE_CURRENT_SOURCE_DIR}/drivers/usb/usb.c
-            ${CMAKE_CURRENT_SOURCE_DIR}/drivers/usb/msc_disk.c
-            ${CMAKE_CURRENT_SOURCE_DIR}/drivers/usb/usb_descriptors.c
+    #        ${CMAKE_CURRENT_SOURCE_DIR}/drivers/usb/usb.c
+    #        ${CMAKE_CURRENT_SOURCE_DIR}/drivers/usb/msc_disk.c
+    #        ${CMAKE_CURRENT_SOURCE_DIR}/drivers/usb/usb_descriptors.c
             ${CMAKE_CURRENT_SOURCE_DIR}/soft/EmuAPP/src/Overlays/Init/CPU_i.c
     )
     target_include_directories(${PROJECT_NAME} PRIVATE
             ${CMAKE_CURRENT_SOURCE_DIR}/src
 #            ${CMAKE_CURRENT_SOURCE_DIR}/src/imgos
             ${CMAKE_CURRENT_SOURCE_DIR}/disks
-            ${CMAKE_CURRENT_SOURCE_DIR}/drivers/usb
+    #        ${CMAKE_CURRENT_SOURCE_DIR}/drivers/usb
             ${CMAKE_CURRENT_SOURCE_DIR}/soft/EmuAPP/src
             ${CMAKE_CURRENT_SOURCE_DIR}/soft/EmuAPP/src/Overlays/Emu
             ${CMAKE_CURRENT_SOURCE_DIR}/soft/EmuAPP/src/Overlays/Init

@@ -52,7 +52,7 @@ void led_blinking_task(void);
 void cdc_task(void);
 
 /*------------- MAIN -------------*/
-void init_pico_usb_drive() {
+inline void init_pico_usb_drive() {
     set_tud_msc_ejected(false);
     board_init();
     // init device stack on configured roothub port
@@ -62,10 +62,22 @@ void init_pico_usb_drive() {
     }
 }
 
-void pico_usb_drive_heartbeat() {
+inline void pico_usb_drive_heartbeat() {
     tud_task(); // tinyusb device task
     led_blinking_task();
     cdc_task();
+}
+
+void in_flash_drive() {
+  init_pico_usb_drive();
+  while(!tud_msc_ejected()) {
+    pico_usb_drive_heartbeat();
+    //if_swap_drives();
+  }
+  for (int i = 0; i < 10; ++i) { // sevaral hb till end of cycle, TODO: care eject
+    pico_usb_drive_heartbeat();
+    sleep_ms(50);
+  }
 }
 
 //--------------------------------------------------------------------+
@@ -96,7 +108,7 @@ void tud_resume_cb(void) {
 
 // Invoked to determine max LUN
 uint8_t tud_msc_get_maxlun_cb(void) {
-  return 1; //4;
+  return 1;
 }
 
 //--------------------------------------------------------------------+

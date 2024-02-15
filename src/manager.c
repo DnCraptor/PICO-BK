@@ -2,7 +2,7 @@
 #include "manager.h"
 #include "emulator.h"
 #include "vga.h"
-#include "usb.h"
+//#include "usb.h"
 #include "pico-vision.h"
 #include "CPU.h"
 #include "CPU_i.h"

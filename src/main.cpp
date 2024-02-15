@@ -21,12 +21,13 @@ extern "C" {
 #include "util_Wii_Joy.h"
 #include "vga.h"
 #include "ps2.h"
-#include "usb.h"
+//#include "usb.h"
 #include "CPU.h"
 #include "main_i.h"
 #include "emu_e.h"
 #include "aySoundSoft.h"
 #include <stdlib.h>
+#include "fdd.h"
 }
 
 volatile config_em_t g_conf {

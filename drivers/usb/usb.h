@@ -5,12 +5,6 @@
 #include "ff.h"
 #include "diskio.h"
 
-char* fdd0_rom();
-size_t fdd0_sz();
-
-char* fdd1_rom();
-size_t fdd1_sz();
-
 void init_pico_usb_drive();
 void pico_usb_drive_heartbeat();
 

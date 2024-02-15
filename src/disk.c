@@ -2,6 +2,24 @@
 // Created by xrip on 23.10.2023.
 //
 #include "emulator.h"
+#include "MKDOS318B.h"
+#include "FDD0.h"
+
+size_t fdd0_sz() {
+    return sizeof FDD0;
+}
+
+size_t fdd1_sz() {
+    return sizeof MKDOS318B;
+}
+
+char* fdd0_rom() {
+    return FDD0;
+}
+
+char* fdd1_rom() {
+    return MKDOS318B;
+}
 
 uint8_t bootdrive, hdcount, fdcount;
 
