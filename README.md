@@ -6,29 +6,25 @@ Based on:
 Сделан на основе эмулятора для ESP8266 https://github.com/konst-st/BK8266
 
 # Hardware needed
-To get it working you should have an Murmulator (development) board with VGA output. Schematics available here at https://github.com/AlexEkb4ever/MURMULATOR_classical_scheme
+Данные исходники тестировались только с ZX Murmulator devboard с VGA выходом.<br/>
+Схема простейшего мурмулятора доступна тут: https://github.com/AlexEkb4ever/MURMULATOR_classical_scheme<br/>
 ![Murmulator Schematics](https://github.com/javavi/pico-infonesPlus/blob/main/assets/Murmulator-1_BSchem.JPG)
-
-Extra PSRAM support (для ещё незаконченной СМК-512) on pi pico pins:
-* PSRAM_PIN_CS=18
-* PSRAM_PIN_SCK=19
-* PSRAM_PIN_MOSI=20
-* PSRAM_PIN_MISO=21
-![RAM extention](/psram.jpg)
 
 # Эмулятор К1801ВМ1
 Эмулятор цельнотянутый с https://github.com/konst-st/BK8266/tree/BK0011M.<br/>
 Кое чего подсмотрено из эмулятора Юрия Калмыкова http://gid.pdp-11.ru<br/>
+Эмулятор процессора работает в режиме К1801ВМ1 (без "Г")<br/>
 
 Эмулятор пока использует только ОЗУ RP2040 (из которых 128 кБ выделено под ОЗУ БК0011М).<br/>
-ПЗУ БК11М содержится во флэш (используется встроеннное кэширование пики).<br/>
-Эмулятор звукового сопроцессора AY-3-8910 в варианте TurboSound на одном чипе.<br/>
+ПЗУ БК 0010 монитор / БК 0011М БОС содержится во флэш (используется встроеннное кэширование пики).<br/>
+Поддерживается эмулятор звукового сопроцессора AY-3-8910 в варианте TurboSound на одном чипе (моно).<br/>
 Эмулятор Covox гибридный - основная часть (моно) на старндартном регистре параллельного порта с loopback. Также реализован стерео вариант на наборе регистров от AZБК, но без ПДП.<br/>
 
 Пока не реализовано:
 <ul>
 <li>Прерывание по вектору 14 после выполнения каждой команды при установленном в PSW бите T (трассировка).</li>
 <li>Прерывание от таймера БК-0011М (50 Гц).</li>
+<li>Планируется поддержка СМК-512 на отдельном PSRAM чипе, см. ZX Murmulator начиная с версии 1.3</li>
 </ul>
 
 # Периферия
