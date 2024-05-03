@@ -8,7 +8,10 @@ Based on:
 # Hardware needed
 Данные исходники тестировались только с ZX Murmulator devboard с VGA выходом.<br/>
 Схема простейшего мурмулятора доступна тут: https://github.com/AlexEkb4ever/MURMULATOR_classical_scheme<br/>
-![Murmulator Schematics](https://github.com/javavi/pico-infonesPlus/blob/main/assets/Murmulator-1_BSchem.JPG)
+![Murmulator Schematics](https://github.com/javavi/pico-infonesPlus/blob/main/assets/Murmulator-1_BSchem.JPG)<br/>
+[S]VGA monitor с поддержкой режима 1024*768 60Гц<br>
+Вывод осуществляется с удвоением точек 512x2->1024 и с утроением линий 256x3->768 в Ч.Б режиме и<br>
+с учетверением точек 256x4->1024 и с утроением линий 256x3->768 в цветном.<br>
 
 # Эмулятор К1801ВМ1
 Эмулятор цельнотянутый с https://github.com/konst-st/BK8266/tree/BK0011M.<br/>
@@ -105,10 +108,10 @@ Based on:
 
 Клавиши эмулятора:
 <ul>
-<li>Ctrl + Alt + Del - Reset ВМ1 CPU, RAM clenup, set default pages, deafult speed, init system registers</li>
+<li>Ctrl + Alt + Del - Reset ВМ1 CPU, RAM cleanup, set default pages, deafult speed, init system registers</li>
 <li>Print Screen - Reset RP2040 CPU</li>
-<li>Esc - выход в файловый менеджер эмулятора (частично функционально)</li>
-<li>F10 - Циклическое переключение палитры для подбора удобной для игры (если это поленился сделать разработчик)</li>
+<li>Esc - выход в файловый менеджер эмулятора</li>
+<li>F10 - Циклическое переключение палитры для подбора удобной для игры (если это поленился сделать разработчик оной)</li>
 <li>Alt  + F10 - Установить нулевую палитру (нативную палитру БК-0010[-01])</li>
 <li>Ctrl + F10 - Установить 15-ую палитру (нативную палитру БК-0011М)</li>
 <li>F11 - Снижение яркости (сочности) цветов</li>
@@ -122,17 +125,17 @@ Based on:
 <li>Ctrl + "-" - уменьшить громкость</li>
 <li>Ctrl + Alt + "+" - увеличить громкость обратной шипелки (при загрузке с магнитофона)</li>
 <li>Ctrl + Alt + "-" - уменьшить громкость обратной шипелки (при загрузке с магнитофона)</li>
-<li>Ctrl + Tab + "+" - увеличить частоту микроконтроллера</li>
-<li>Ctrl + Tab + "-" - уменьшить частоту микроконтроллера</li>
+<li>Ctrl + Tab + "+" - увеличить собственную частоту микроконтроллера RP204</li>
+<li>Ctrl + Tab + "-" - уменьшить собственную частоту микроконтроллера RP204</li>
 <li>Ctrl + Tab + "A" - AY-3-8910 вкл / выкл</li>
 <li>Ctrl + Tab + "C" - Covox вкл / выкл</li>
-<li>Ctrl + Tab + Backspace - перемонтировать fdd0.img и fdd1.img (поменяв их местами)</li>
+<li>Ctrl + Tab + Backspace - перемонтировать fdd0.img и fdd1.img, поменяв их местами</li>
 <li>Num Lock - переключение клавиш в режим джойстика (не тестировалось)</li>
 </ul>
 
 Клавиши менеджера:
 <ul>
-<li>Ctrl + Alt + Del - Reset ВМ1 CPU, RAM clenup, set default pages, deafult speed, init system registers</li>
+<li>Ctrl + Alt + Del - Reset ВМ1 CPU, RAM cleanup, set default pages, deafult speed, init system registers</li>
 <li>Up / PageUp - Вверх</li>
 <li>Down / PageDown - Вниз</li>
 <li>Enter - запустить BIN файл, зайти в папку или смонтировать IMG/BKD файл, и выйти из манагера с ресетом (если не выбрано "BK-0010 + КНГМД 16k", то автоматически выбирается "BK-0011М + КНГМД", для режима "BK-0010 + КНГМД 16k" работает клавиатурный скрипт, который автоматическик набирает "S160000 Enter" для запуска КНГМД), запуск BKE-снэпшотов.</li>
