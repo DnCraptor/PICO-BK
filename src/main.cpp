@@ -7,7 +7,9 @@ extern "C" {
 
 #include "disk_img.h"
 #include <pico/time.h>
+#include <pico/sem.h>
 #include <pico/multicore.h>
+#include <pico.h>
 #include <hardware/pwm.h>
 #include "hardware/clocks.h"
 #include <pico/stdlib.h>
@@ -61,7 +63,7 @@ void PWM_init_pin(uint8_t pinN, uint16_t max_lvl) {
 #if NESPAD_ENABLED
 int timer_period = 54925;
 #endif
-struct semaphore vga_start_semaphore;
+static semaphore_t vga_start_semaphore;
 /* Renderer loop on Pico's second core */
 void __time_critical_func(render_core)() {
     graphics_init();
@@ -264,7 +266,7 @@ static void init_fs() {
 
 int main() {
 #if (OVERCLOCKING > 270)
-    hw_set_bits(&vreg_and_chip_reset_hw->vreg, VREG_AND_CHIP_RESET_VREG_VSEL_BITS);
+    vreg_set_voltage(VREG_VOLTAGE_1_40);
     sleep_ms(33);
     set_sys_clock_khz(OVERCLOCKING * 1000, true);
 #else

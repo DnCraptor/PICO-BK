@@ -635,17 +635,17 @@ inline static const char* GetOSName(const IMAGE_TYPE t) {
 }
 
 extern "C" void detect_os_type(const char* path, char* os_type, size_t sz) {
-    try {
+///    try {
         ParseImage(path, parse_result);
 		snprintf(os_type, sz, "%d KB %s%s",
 		         parse_result.nImageSize >> 10,
 				 GetOSName(parse_result.imageOSType),
 				 parse_result.bImageBootable ? " [bootable]" : "");
         DBGM_PRINT(("detect_os_type: %s %s", path, os_type));
-    } catch(...) {
-        DBGM_PRINT(("detect_os_type: %s FAILED", path));
-        strncpy(os_type, "DETECT OS TYPE FAILED", sz);
-    }
+///    } catch(...) {
+///        DBGM_PRINT(("detect_os_type: %s FAILED", path));
+///        strncpy(os_type, "DETECT OS TYPE FAILED", sz);
+///    }
 }
 
 #if EXT_DRIVES_MOUNT
