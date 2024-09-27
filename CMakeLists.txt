@@ -1,3 +1,17 @@
+# == DO NEVER EDIT THE NEXT LINES for Raspberry Pi Pico VS Code Extension to work ==
+if(WIN32)
+    set(USERHOME $ENV{USERPROFILE})
+else()
+    set(USERHOME $ENV{HOME})
+endif()
+set(sdkVersion 2.0.0)
+set(toolchainVersion 13_2_Rel1)
+set(picotoolVersion 2.0.0)
+set(picoVscode ${USERHOME}/.pico-sdk/cmake/pico-vscode.cmake)
+if (EXISTS ${picoVscode})
+    include(${picoVscode})
+endif()
+# ====================================================================================
 cmake_minimum_required(VERSION 3.22)
 set(PICO_CXX_ENABLE_EXCEPTIONS 1)
 include(pico_sdk_import.cmake)
@@ -22,8 +36,8 @@ set(CMAKE_C_FLAGS   "${CMAKE_C_FLAGS}   -ffunction-sections -fdata-sections -O2"
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -ffunction-sections -fdata-sections -O2")
 
 #add_compile_definitions(${PROJECT_NAME} NO_GRAPHICS)
-set(FAMILY rp2040)
-set(BOARD pico_sdk)
+#set(FAMILY rp2040)
+#set(BOARD pico_sdk)
 add_subdirectory(drivers/vga-nextgen)
 add_subdirectory(drivers/ps2)
 add_subdirectory(drivers/fatfs)
@@ -53,9 +67,9 @@ pico_set_program_version(pico-bk "test")
 
         target_compile_definitions(${PROJECT_NAME} PRIVATE OVERCLOCKING=${OVERCLOCKING})
 
-        pico_define_boot_stage2(slower_boot2 ${PICO_DEFAULT_BOOT_STAGE2_FILE})
-        target_compile_definitions(slower_boot2 PRIVATE PICO_FLASH_SPI_CLKDIV=4)
-        pico_set_boot_stage2(${PROJECT_NAME} slower_boot2)
+#        pico_define_boot_stage2(slower_boot2 ${PICO_DEFAULT_BOOT_STAGE2_FILE})
+#        target_compile_definitions(slower_boot2 PRIVATE PICO_FLASH_SPI_CLKDIV=4)
+#        pico_set_boot_stage2(${PROJECT_NAME} slower_boot2)
 
         message(STATUS "==================================")
         message(STATUS "Overclocking ${OVERCLOCKING}MHz enabled")
@@ -84,6 +98,7 @@ pico_set_program_version(pico-bk "test")
             hardware_clocks
             hardware_pwm
             hardware_flash
+            stdc++
     )
 #    target_link_options(${PROJECT_NAME} PRIVATE "LINKER:--script=${CMAKE_CURRENT_LIST_DIR}/memmap.ld")
 #    set_target_properties(${PROJECT_NAME} PROPERTIES LINK_DEPENDS ${CMAKE_CURRENT_LIST_DIR}/memmap.ld)

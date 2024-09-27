@@ -1,6 +1,6 @@
 #pragma once
+#include <pico.h>
 #include "inttypes.h" 
-#include "pico/platform.h"
 #include "config_em.h"
 
 #define FAST_FUNC __time_critical_func

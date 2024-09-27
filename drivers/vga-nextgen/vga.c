@@ -220,6 +220,7 @@ inline static void dma_handler_VGA_impl() {
         dma_channel_set_read_addr(dma_chan_ctrl, output_buffer, false);
         return;
     };
+    //зона прорисовки изображения
     int addr_in_buf = 64 * (y + g_conf.shift_y - 0330);
     while (addr_in_buf < 0) addr_in_buf += 16 << 10;
     while (addr_in_buf >= 16 << 10) addr_in_buf -= 16 << 10;

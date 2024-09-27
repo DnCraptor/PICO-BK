@@ -1,6 +1,7 @@
-#include "ps2.h"
 #include <pico/stdlib.h>
 #include <stdbool.h>
+#include <stdint.h>
+#include "ps2.h"
 #include "string.h"
 #include "hardware/irq.h"
 
