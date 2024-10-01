@@ -145,7 +145,7 @@ target_compile_definitions(${PROJECT_NAME} PRIVATE
         NES_GPIO_DATA=16
         NES_GPIO_LAT=15
 
-        USE_WII
+        # USE_WII
         WII_SDA_PIN=14
         WII_SCL_PIN=15
 
