@@ -1,7 +1,7 @@
 #ifndef ROM10_H_INCLUDE
 #define ROM10_H_INCLUDE
 
-#include <pico/platform.h>
+#include <pico.h>
 
 const unsigned static char __in_flash() __aligned(4096) ROM10[] = {
 // monitor10.rom

@@ -1,4 +1,4 @@
-#include <pico/platform.h>
+#include <pico/pico.h>
 
 const unsigned static char __in_flash() __aligned(4096) ROM10FOCAL[] = {
 // Focal

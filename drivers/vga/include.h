@@ -113,7 +113,7 @@ typedef unsigned char Bool;
 #include "pico/stdlib.h"
 #include "pico/multicore.h"
 #include "pico/sync.h"
-#include "pico/platform.h"
+#include <pico/pico.h>
 #include "pico/sem.h"
 #include "pico/util/queue.h"
 #include "hardware/clocks.h"

@@ -149,6 +149,11 @@ static void mark_to_exit(uint8_t cmd) {
     if (!usb_started) // TODO: USB in emulation mode
         mark_to_exit_flag = true;
 }
+static void return_to_mos(uint8_t cmd) {
+    f_unlink(MOS_FILE);
+    watchdog_enable(1, true);
+    while (true);
+}
 
 static inline void fill_panel(file_panel_desc_t* p);
 
@@ -1046,7 +1051,7 @@ static fn_1_12_tbl_t fn_1_12_tbl_ctrl = {
     ' ', '7', " Find ", do_nothing,
     ' ', '8', " Del  ", m_delete_file,
     ' ', '9', " Swap ", swap_drives,
-    '1', '0', " Exit ", mark_to_exit,
+    '1', '0', " M-OS ", return_to_mos,
     '1', '1', "EmMODE", switch_mode,
     '1', '2', " B/W  ", switch_color
 };

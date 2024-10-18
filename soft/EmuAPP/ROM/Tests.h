@@ -1,4 +1,4 @@
-#include <pico/platform.h>
+#include <pico.h>
 
 const static unsigned char __in_flash() __aligned(4096) TESTS_ROM[] = {
 // 0010 tests
