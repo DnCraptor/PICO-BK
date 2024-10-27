@@ -222,8 +222,10 @@ uint32_t ps2get_raw_code() {
     switch (ps2buffer[0]) {
         case 0xF0:
         case 0xE0:
-        case 0xE1:
             len = 2;
+            break;
+        case 0xE1:
+            len = 8;
             break;
         default:
             len = 1;
@@ -245,6 +247,13 @@ uint32_t ps2get_raw_code() {
     if (len == 3) {
         retval = (ps2buffer[1] << 8) | ps2buffer[2] | 0x100; // mark 3 bytes in separate bit
     }
+    if (len == 8){
+        if ((ps2buffer[0]==0xE1) && (ps2buffer[1]==0x14) && (ps2buffer[2]==0x77) && (ps2buffer[3]==0xE1) && 
+            (ps2buffer[4]==0xF0) &&(ps2buffer[5]==0x14) &&(ps2buffer[6]==0xF0) && (ps2buffer[7]==0x77))
+            {           
+              retval=  0x214;
+            }
+        }
     for (i = len; i < KBD_BUFFER_SIZE; i++) {
         ps2buffer[i - len] = ps2buffer[i];
     }
@@ -264,8 +273,10 @@ uint32_t ps2getcode() {
     switch (ps2buffer[0]) {
         case 0xF0:
         case 0xE0:
-        case 0xE1:
             len = 2;
+            break;
+        case 0xE1:
+            len = 8;
             break;
         default:
             len = 1;
@@ -288,6 +299,13 @@ uint32_t ps2getcode() {
     if (len == 3) {
         if ((ps2buffer[0] == 0xE0) && (ps2buffer[1] == 0xF0)) retval = ps2_to_xt_2(ps2buffer[2]) | 0x80;
     }
+    if (len == 8){
+        if ((ps2buffer[0]==0xE1) && (ps2buffer[1]==0x14) && (ps2buffer[2]==0x77) && (ps2buffer[3]==0xE1) && 
+            (ps2buffer[4]==0xF0) &&(ps2buffer[5]==0x14) &&(ps2buffer[6]==0xF0) && (ps2buffer[7]==0x77))
+            {           
+              retval =  0x214;
+            }
+        }
     //end translate code
     if (manager_started) {
         for (i = len; i < KBD_BUFFER_SIZE; i++) {

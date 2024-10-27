@@ -610,6 +610,20 @@ static TCPU_Arg AT_OVL CPU_GetArgAdrB (uint_fast8_t SrcCode)
     return 0;
 }
 
+void CPU_Iot100 (void)
+{
+    TCPU_Arg ArgS;
+    TCPU_Psw Psw = PSW;
+    CPU_INST_INTERRUPT (0100);
+    CPU_CALC_TIMING (CPU_TIMING_IOT);
+
+BusFault:
+
+    return;
+}
+
+
+
 void AT_OVL CPU_Stop (void)
 {
     TCPU_Arg ArgS;
@@ -625,6 +639,8 @@ void AT_OVL CPU_Stop (void)
     CPU_CALC_TIMING (CPU_TIMING_STOP);
     return;
 }
+
+
 
 #include "fdd.h"
 #include "CPU_i.h"
