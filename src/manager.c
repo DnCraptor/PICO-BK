@@ -151,8 +151,8 @@ static void mark_to_exit(uint8_t cmd) {
 }
 static void return_to_mos(uint8_t cmd) {
     f_unlink(MOS_FILE);
-    watchdog_enable(1, true);
-    while (true);
+    watchdog_enable(100, true);
+    while (true) sleep_ms(100);
 }
 
 static inline void fill_panel(file_panel_desc_t* p);
