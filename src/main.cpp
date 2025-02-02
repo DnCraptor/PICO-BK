@@ -174,6 +174,23 @@ inline static int parse_conf_word(const char* buf, const char* param, size_t ple
 extern "C" bool is_swap_wins_enabled;
 extern "C" volatile bool is_dendy_joystick;
 extern "C" volatile bool is_kbd_joystick;
+extern "C" uint8_t kbdpad1_A;
+extern "C" uint8_t kbdpad2_A;
+extern "C" uint8_t kbdpad1_B;
+extern "C" uint8_t kbdpad2_B;
+extern "C" uint8_t kbdpad1_START;
+extern "C" uint8_t kbdpad2_START;
+extern "C" uint8_t kbdpad1_SELECT;
+extern "C" uint8_t kbdpad2_SELECT;
+extern "C" uint8_t kbdpad1_UP;
+extern "C" uint8_t kbdpad2_UP;
+extern "C" uint8_t kbdpad1_DOWN;
+extern "C" uint8_t kbdpad2_DOWN;
+extern "C" uint8_t kbdpad1_LEFT;
+extern "C" uint8_t kbdpad2_LEFT;
+extern "C" uint8_t kbdpad1_RIGHT;
+extern "C" uint8_t kbdpad2_RIGHT;
+
 
 inline static void read_config(const char* path) {
     FIL fil;
@@ -234,6 +251,48 @@ inline static void read_config(const char* path) {
     if (mode >= 0 && mode <= 1) {
         is_kbd_joystick = (bool)mode;
     }
+    const char p9[] = "kbdpad1_A:";
+    mode = parse_conf_word(buf, p9, sizeof(p9), 256);
+    if (mode >= 0 && mode < 0x80)  kbdpad1_A = mode;
+    const char p10[] = "kbdpad2_A:";
+    mode = parse_conf_word(buf, p10, sizeof(p10), 256);
+    if (mode >= 0 && mode < 0x80)  kbdpad2_A = mode;
+    const char p11[] = "kbdpad1_B:";
+    mode = parse_conf_word(buf, p11, sizeof(p11), 256);
+    if (mode >= 0 && mode < 0x80)  kbdpad1_B = mode;
+    const char p12[] = "kbdpad2_B:";
+    mode = parse_conf_word(buf, p12, sizeof(p12), 256);
+    if (mode >= 0 && mode < 0x80)  kbdpad2_B = mode;
+    const char p13[] = "kbdpad1_START:";
+    mode = parse_conf_word(buf, p13, sizeof(p13), 256);
+    if (mode >= 0 && mode < 0x80)  kbdpad1_START = mode;
+    const char p14[] = "kbdpad2_START:";
+    mode = parse_conf_word(buf, p14, sizeof(p14), 256);
+    if (mode >= 0 && mode < 0x80)  kbdpad2_START = mode;
+    const char p15[] = "kbdpad1_SELECT:";
+    mode = parse_conf_word(buf, p15, sizeof(p15), 256);
+    if (mode >= 0 && mode < 0x80)  kbdpad1_SELECT = mode;
+    const char p16[] = "kbdpad2_SELECT:";
+    mode = parse_conf_word(buf, p16, sizeof(p16), 256);
+    if (mode >= 0 && mode < 0x80)  kbdpad2_SELECT = mode;
+    const char p17[] = "kbdpad1_UP:";
+    mode = parse_conf_word(buf, p17, sizeof(p17), 256);
+    if (mode >= 0 && mode < 0x80)  kbdpad1_UP = mode;
+    const char p18[] = "kbdpad2_UP:";
+    mode = parse_conf_word(buf, p18, sizeof(p18), 256);
+    if (mode >= 0 && mode < 0x80)  kbdpad2_UP = mode;
+    const char p19[] = "kbdpad1_DOWN:";
+    mode = parse_conf_word(buf, p19, sizeof(p19), 256);
+    if (mode >= 0 && mode < 0x80)  kbdpad1_DOWN = mode;
+    const char p20[] = "kbdpad2_DOWN:";
+    mode = parse_conf_word(buf, p20, sizeof(p20), 256);
+    if (mode >= 0 && mode < 0x80)  kbdpad2_DOWN = mode;
+    const char p21[] = "kbdpad1_LEFT:";
+    mode = parse_conf_word(buf, p21, sizeof(p21), 256);
+    if (mode >= 0 && mode < 0x80)  kbdpad1_LEFT = mode;
+    const char p22[] = "kbdpad2_LEFT:";
+    mode = parse_conf_word(buf, p22, sizeof(p22), 256);
+    if (mode >= 0 && mode < 0x80)  kbdpad2_LEFT = mode;
     f_close(&fil);
 }
 

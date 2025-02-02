@@ -68,6 +68,23 @@ static volatile uint32_t lastCleanableScanCode = 0;
 static uint32_t lastSavedScanCode = 0;
 int nespad_state_delay = DPAD_STATE_DELAY;
 
+uint8_t kbdpad1_A = 0x1E; // A
+uint8_t kbdpad2_A = 0x11; // W
+uint8_t kbdpad1_B = 0x10; // Q
+uint8_t kbdpad2_B = 0x2C; // Z
+uint8_t kbdpad1_START = 0x20; // D
+uint8_t kbdpad2_START = 0x18; // O
+uint8_t kbdpad1_SELECT = 0x1F; // S
+uint8_t kbdpad2_SELECT = 0x2D; // X
+uint8_t kbdpad1_UP = 0x19; // P
+uint8_t kbdpad2_UP = 0x25; // K
+uint8_t kbdpad1_DOWN = 0x27; // ;
+uint8_t kbdpad2_DOWN = 0x34; // .
+uint8_t kbdpad1_LEFT = 0x26; // L
+uint8_t kbdpad2_LEFT = 0x12; // E
+uint8_t kbdpad1_RIGHT = 0x28; // ,(")
+uint8_t kbdpad2_RIGHT = 0x17; // I
+
 inline static void scan_code_processed() {
   if (lastCleanableScanCode) {
       lastSavedScanCode = lastCleanableScanCode;
@@ -360,7 +377,8 @@ static void conf_it(uint8_t cmd) {
             f_open(&fil, "\\BK\\bk.conf", FA_CREATE_ALWAYS | FA_WRITE);
             char buf[256];
             snprintf(buf, 256,
-             "mode:%d\r\nis_covox_on:%d\r\nis_AY_on:%d\r\ncolor_mode:%d\r\nsnd_volume:%d\r\ngraphics_pallette_idx:%d\r\nis_swap_wins_enabled:%d\r\nis_dendy_joystick:%d\r\nis_kbd_joystick:%d",
+             "mode:%d\r\nis_covox_on:%d\r\nis_AY_on:%d\r\ncolor_mode:%d\r\nsnd_volume:%d\r\n"
+             "graphics_pallette_idx:%d\r\nis_swap_wins_enabled:%d\r\nis_dendy_joystick:%d\r\nis_kbd_joystick:%d\r\n",
                 g_conf.bk0010mode,
                 g_conf.is_covox_on,
                 g_conf.is_AY_on,
@@ -372,6 +390,46 @@ static void conf_it(uint8_t cmd) {
                 is_kbd_joystick
             );
             UINT bw;
+            f_write(&fil, buf, strlen(buf), &bw);
+            snprintf(buf, 256,
+             "kbdpad1_A:%d\r\n"
+             "kbdpad2_A:%d\r\n"
+             "kbdpad1_B:%d\r\n"
+             "kbdpad2_B:%d\r\n"
+             "kbdpad1_START:%d\r\n"
+             "kbdpad2_START:%d\r\n"
+             "kbdpad1_SELECT:%d\r\n"
+             "kbdpad2_SELECT:%d\r\n"
+             "kbdpad1_UP:%d\r\n"
+             "kbdpad2_UP:%d\r\n"
+             ,
+                kbdpad1_A,
+                kbdpad2_A,
+                kbdpad1_B,
+                kbdpad2_B,
+                kbdpad1_START,
+                kbdpad2_START,
+                kbdpad1_SELECT,
+                kbdpad2_SELECT,
+                kbdpad1_UP,
+                kbdpad2_UP
+            );
+            f_write(&fil, buf, strlen(buf), &bw);
+            snprintf(buf, 256,
+             "kbdpad1_DOWN:%d\r\n"
+             "kbdpad2_DOWN:%d\r\n"
+             "kbdpad1_LEFT:%d\r\n"
+             "kbdpad2_LEFT:%d\r\n"
+             "kbdpad1_RIGHT:%d\r\n"
+             "kbdpad2_RIGHT:%d\r\n"
+             ,
+                kbdpad1_DOWN,
+                kbdpad2_DOWN,
+                kbdpad1_LEFT,
+                kbdpad2_LEFT,
+                kbdpad1_RIGHT,
+                kbdpad2_RIGHT
+            );
             f_write(&fil, buf, strlen(buf), &bw);
             f_close(&fil);
             break;
@@ -1860,106 +1918,38 @@ static uint8_t kbdpad_state2 = 0;  // Joystick 2
 inline static void handleJoystickEmulation(uint8_t sc) { // core 1
     if (!is_kbd_joystick) return;
     DBGM_PRINT(("handleJoystickEmulation: %02Xh", sc));
-    switch(sc) {
-        case 0x1E: // A DPAD_A 
-            kbdpad_state |= DPAD_A;
-            break;
-        case 0x9E:
-            kbdpad_state &= ~DPAD_A;
-            break;
-        case 0x11: // W
-            kbdpad_state2 |= DPAD_A;
-            break;
-        case 0x91:
-            kbdpad_state2 &= ~DPAD_A;
-            break;
-        case 0x20: // D START
-            kbdpad_state |= DPAD_START;
-            break;
-        case 0xA0:
-            kbdpad_state &= ~DPAD_START;
-            break;
-        case 0x1F: // S SELECT 
-            kbdpad_state |= DPAD_SELECT;
-            break;
-        case 0x9F:
-            kbdpad_state &= ~DPAD_SELECT;
-            break;
-        case 0x2C: // Z
-            kbdpad_state2 |= DPAD_B;
-            break;
-        case 0xAC:
-            kbdpad_state2 &= ~DPAD_B;
-            break;
-        case 0x2D: // X
-            kbdpad_state2 |= DPAD_SELECT;
-            break;
-        case 0xAD:
-            kbdpad_state2 &= ~DPAD_SELECT;
-            break;
-        case 0x18: // O
-            kbdpad_state2 |= DPAD_START;
-            break;
-        case 0x98:
-            kbdpad_state2 &= ~DPAD_START;
-            break;
-        case 0x25: // K
-            kbdpad_state2 |= DPAD_UP;
-            break;
-        case 0xA5:
-            kbdpad_state2 &= ~DPAD_UP;
-            break;
-        case 0x27: // ;
-            kbdpad_state |= DPAD_DOWN;
-            break;
-        case 0xA7:
-            kbdpad_state &= ~DPAD_DOWN;
-            break;
-        case 0x26: // L
-            kbdpad_state |= DPAD_LEFT;
-            break;
-        case 0xA6:
-            kbdpad_state &= ~DPAD_LEFT;
-            break;
-        case 0x28: // ,(")
-            kbdpad_state |= DPAD_RIGHT;
-            break;
-        case 0xA8:
-            kbdpad_state &= ~DPAD_RIGHT;
-            break;
-        case 0x34: // .
-            kbdpad_state2 |= DPAD_DOWN;
-            break;
-        case 0xB4:
-            kbdpad_state2 &= ~DPAD_DOWN;
-            break;
-        case 0x10: // Q DPAD_B
-            kbdpad_state |= DPAD_B;
-            break;
-        case 0x90:
-            kbdpad_state &= ~DPAD_B;
-            break;
-        case 0x12: // E
-            kbdpad_state2 |= DPAD_LEFT;
-            break;
-        case 0x92:
-            kbdpad_state2 &= ~DPAD_LEFT;
-            break;
-        case 0x17: // I
-            kbdpad_state2 |= DPAD_RIGHT;
-            break;
-        case 0x97:
-            kbdpad_state2 &= ~DPAD_RIGHT;
-            break;
-        case 0x19: // P
-            kbdpad_state |= DPAD_UP;
-            break;
-        case 0x99:
-            kbdpad_state &= ~DPAD_UP;
-            break;
-        default:
-            return;
-    }
+         if (sc == kbdpad1_A)               kbdpad_state  |=  DPAD_A;
+    else if (sc == kbdpad1_A + 0x80)        kbdpad_state  &= ~DPAD_A;
+    else if (sc == kbdpad2_A)               kbdpad_state2 |=  DPAD_A;
+    else if (sc == kbdpad2_A + 0x80)        kbdpad_state2 &= ~DPAD_A;
+    else if (sc == kbdpad1_B)               kbdpad_state  |=  DPAD_B;
+    else if (sc == kbdpad1_B + 0x80)        kbdpad_state  &= ~DPAD_B;
+    else if (sc == kbdpad2_B)               kbdpad_state2 |=  DPAD_B;
+    else if (sc == kbdpad2_B + 0x80)        kbdpad_state2 &= ~DPAD_B;
+    else if (sc == kbdpad1_START)           kbdpad_state  |=  DPAD_START;
+    else if (sc == kbdpad1_START + 0x80)    kbdpad_state  &= ~DPAD_START;
+    else if (sc == kbdpad2_START)           kbdpad_state2 |=  DPAD_START;
+    else if (sc == kbdpad2_START + 0x80)    kbdpad_state2 &= ~DPAD_START;
+    else if (sc == kbdpad1_SELECT)          kbdpad_state  |=  DPAD_SELECT;
+    else if (sc == kbdpad1_SELECT + 0x80)   kbdpad_state  &= ~DPAD_SELECT;
+    else if (sc == kbdpad2_SELECT)          kbdpad_state2 |=  DPAD_SELECT;
+    else if (sc == kbdpad2_SELECT + 0x80)   kbdpad_state2 &= ~DPAD_SELECT;
+    else if (sc == kbdpad1_UP)              kbdpad_state  |=  DPAD_UP;
+    else if (sc == kbdpad1_UP + 0x80)       kbdpad_state  &= ~DPAD_UP;
+    else if (sc == kbdpad2_UP)              kbdpad_state2 |=  DPAD_UP;
+    else if (sc == kbdpad2_UP + 0x80)       kbdpad_state2 &= ~DPAD_UP;
+    else if (sc == kbdpad1_DOWN)            kbdpad_state  |=  DPAD_DOWN;
+    else if (sc == kbdpad1_DOWN + 0x80)     kbdpad_state  &= ~DPAD_DOWN;
+    else if (sc == kbdpad2_DOWN)            kbdpad_state2 |=  DPAD_DOWN;
+    else if (sc == kbdpad2_DOWN + 0x80)     kbdpad_state2 &= ~DPAD_DOWN;
+    else if (sc == kbdpad1_LEFT)            kbdpad_state  |=  DPAD_LEFT;
+    else if (sc == kbdpad1_LEFT + 0x80)     kbdpad_state  &= ~DPAD_LEFT;
+    else if (sc == kbdpad2_LEFT)            kbdpad_state2 |=  DPAD_LEFT;
+    else if (sc == kbdpad2_LEFT + 0x80)     kbdpad_state2 &= ~DPAD_LEFT;
+    else if (sc == kbdpad1_RIGHT)           kbdpad_state  |=  DPAD_RIGHT;
+    else if (sc == kbdpad1_RIGHT + 0x80)    kbdpad_state  &= ~DPAD_RIGHT;
+    else if (sc == kbdpad2_RIGHT)           kbdpad_state2 |=  DPAD_RIGHT;
+    else if (sc == kbdpad2_RIGHT + 0x80)    kbdpad_state2 &= ~DPAD_RIGHT;
 }
 
 bool handleScancode(uint32_t ps2scancode) { // core 1
