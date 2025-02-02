@@ -151,8 +151,8 @@ static void mark_to_exit(uint8_t cmd) {
 }
 static void return_to_mos(uint8_t cmd) {
     f_unlink(MOS_FILE);
-    watchdog_enable(100, true);
-    while (true) sleep_ms(100);
+    watchdog_enable(1, true);
+    while (true);
 }
 
 static inline void fill_panel(file_panel_desc_t* p);
@@ -1854,105 +1854,108 @@ inline static void start_manager() {
     restore_video_ram();
 }
 
+static uint8_t kbdpad_state  = 0;  // Joystick 1
+static uint8_t kbdpad_state2 = 0;  // Joystick 2
+
 inline static void handleJoystickEmulation(uint8_t sc) { // core 1
     if (!is_kbd_joystick) return;
     DBGM_PRINT(("handleJoystickEmulation: %02Xh", sc));
     switch(sc) {
         case 0x1E: // A DPAD_A 
-            nespad_state |= DPAD_A;
+            kbdpad_state |= DPAD_A;
             break;
         case 0x9E:
-            nespad_state &= ~DPAD_A;
+            kbdpad_state &= ~DPAD_A;
             break;
         case 0x11: // W
-            nespad_state2 |= DPAD_A;
+            kbdpad_state2 |= DPAD_A;
             break;
         case 0x91:
-            nespad_state2 &= ~DPAD_A;
+            kbdpad_state2 &= ~DPAD_A;
             break;
         case 0x20: // D START
-            nespad_state |= DPAD_START;
+            kbdpad_state |= DPAD_START;
             break;
         case 0xA0:
-            nespad_state &= ~DPAD_START;
+            kbdpad_state &= ~DPAD_START;
             break;
         case 0x1F: // S SELECT 
-            nespad_state |= DPAD_SELECT;
+            kbdpad_state |= DPAD_SELECT;
             break;
         case 0x9F:
-            nespad_state &= ~DPAD_SELECT;
+            kbdpad_state &= ~DPAD_SELECT;
             break;
         case 0x2C: // Z
-            nespad_state2 |= DPAD_B;
+            kbdpad_state2 |= DPAD_B;
             break;
         case 0xAC:
-            nespad_state2 &= ~DPAD_B;
+            kbdpad_state2 &= ~DPAD_B;
             break;
         case 0x2D: // X
-            nespad_state2 |= DPAD_SELECT;
+            kbdpad_state2 |= DPAD_SELECT;
             break;
         case 0xAD:
-            nespad_state2 &= ~DPAD_SELECT;
+            kbdpad_state2 &= ~DPAD_SELECT;
             break;
         case 0x18: // O
-            nespad_state2 |= DPAD_START;
+            kbdpad_state2 |= DPAD_START;
             break;
         case 0x98:
-            nespad_state2 &= ~DPAD_START;
+            kbdpad_state2 &= ~DPAD_START;
             break;
         case 0x25: // K
-            nespad_state2 |= DPAD_UP;
+            kbdpad_state2 |= DPAD_UP;
             break;
         case 0xA5:
-            nespad_state2 &= ~DPAD_UP;
+            kbdpad_state2 &= ~DPAD_UP;
             break;
         case 0x27: // ;
-            nespad_state |= DPAD_DOWN;
+            kbdpad_state |= DPAD_DOWN;
             break;
         case 0xA7:
-            nespad_state &= ~DPAD_DOWN;
+            kbdpad_state &= ~DPAD_DOWN;
             break;
         case 0x26: // L
-            nespad_state |= DPAD_LEFT;
+            kbdpad_state |= DPAD_LEFT;
             break;
         case 0xA6:
-            nespad_state &= ~DPAD_LEFT;
+            kbdpad_state &= ~DPAD_LEFT;
             break;
         case 0x28: // ,(")
-            nespad_state |= DPAD_RIGHT;
+            kbdpad_state |= DPAD_RIGHT;
             break;
         case 0xA8:
-            nespad_state &= ~DPAD_RIGHT;
+            kbdpad_state &= ~DPAD_RIGHT;
             break;
         case 0x34: // .
-            nespad_state2 |= DPAD_DOWN;
+            kbdpad_state2 |= DPAD_DOWN;
             break;
         case 0xB4:
-            nespad_state2 &= ~DPAD_DOWN;
+            kbdpad_state2 &= ~DPAD_DOWN;
             break;
         case 0x10: // Q DPAD_B
-            nespad_state |= DPAD_B;
+            kbdpad_state |= DPAD_B;
             break;
         case 0x90:
-            nespad_state &= ~DPAD_B;
+            kbdpad_state &= ~DPAD_B;
             break;
         case 0x12: // E
-            nespad_state2 |= DPAD_LEFT;
+            kbdpad_state2 |= DPAD_LEFT;
             break;
         case 0x92:
-            nespad_state2 &= ~DPAD_LEFT;
+            kbdpad_state2 &= ~DPAD_LEFT;
             break;
         case 0x17: // I
-            nespad_state2 |= DPAD_RIGHT;
+            kbdpad_state2 |= DPAD_RIGHT;
             break;
         case 0x97:
-            nespad_state2 &= ~DPAD_RIGHT;
+            kbdpad_state2 &= ~DPAD_RIGHT;
             break;
         case 0x19: // P
-            nespad_state |= DPAD_UP;
+            kbdpad_state |= DPAD_UP;
             break;
         case 0x99:
-            nespad_state &= ~DPAD_UP;
+            kbdpad_state &= ~DPAD_UP;
             break;
         default:
             return;
@@ -2228,7 +2231,7 @@ int if_manager(bool force) {
             nespad_state_delay = DPAD_STATE_DELAY;
             force = true;
         } else {
-            Device_Data.SysRegs.RdReg177714 = ((uint16_t)nespad_state2 << 8 | nespad_state);
+            Device_Data.SysRegs.RdReg177714 = ((uint16_t)(nespad_state2 | kbdpad_state2) << 8 | nespad_state | kbdpad_state);
         }
     }
     if (force) {
