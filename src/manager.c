@@ -20,6 +20,8 @@ volatile bool is_dendy_joystick = true;
 static void bottom_line();
 static void redraw_window();
 
+static uint8_t kbdpad_state  = 0;  // Joystick 1
+static uint8_t kbdpad_state2 = 0;  // Joystick 2
 static volatile int tormoz = 6;
 static volatile bool backspacePressed = false;
 volatile bool enterPressed = false;
@@ -220,6 +222,7 @@ void reset(uint8_t cmd) {
     main_init();
     mark_to_exit_flag = true;
     if (g_conf.bk0010mode == BK_FDD) {
+        sleep_ms(500);
         kbd_script_idx = 0;
         add_repeating_timer_ms(200, timer_callback, NULL, &timer);
     }
@@ -361,7 +364,7 @@ static void in_conf() {
     draw_label(38, 20, 1, g_conf.is_covox_on ? b_on : b_off, z_idx == 1, z_idx == 1);
     draw_label(38, 21, 1, g_conf.is_AY_on ? b_on : b_off, z_idx == 2, z_idx == 2);
     draw_label(38, 22, 1, g_conf.color_mode ? b_on : b_off, z_idx == 3, z_idx == 3);
-    char b[8] = { 0 };
+    char b[64] = { 0 };
     snprintf(b, 8, "%d", g_conf.snd_volume);
     draw_label(38, 23, 3, b, z_idx == 4, z_idx == 4);
     snprintf(b, 4, "%d", g_conf.graphics_pallette_idx);
@@ -369,6 +372,27 @@ static void in_conf() {
     draw_label(38, 25, 1, is_swap_wins_enabled ? b_on : b_off, z_idx == 6, z_idx == 6);
     draw_label(38, 26, 1, is_dendy_joystick ? b_on : b_off, z_idx == 7, z_idx == 7);
     draw_label(38, 27, 1, is_kbd_joystick ? b_on : b_off, z_idx == 8, z_idx == 8);
+
+    nespad_state |= kbdpad_state;
+    snprintf(b, 64, "Joy bits #1: %d%d%d%d%d%d%d%d #2: %d%d%d%d%d%d%d%d",
+        (nespad_state >> 7) & 1,
+        (nespad_state >> 6) & 1,
+        (nespad_state >> 5) & 1,
+        (nespad_state >> 4) & 1,
+        (nespad_state >> 3) & 1,
+        (nespad_state >> 2) & 1,
+        (nespad_state >> 1) & 1,
+        nespad_state & 1,
+        (kbdpad_state2 >> 7) & 1,
+        (kbdpad_state2 >> 6) & 1,
+        (kbdpad_state2 >> 5) & 1,
+        (kbdpad_state2 >> 4) & 1,
+        (kbdpad_state2 >> 3) & 1,
+        (kbdpad_state2 >> 2) & 1,
+        (kbdpad_state2 >> 1) & 1,
+        kbdpad_state2 & 1
+    );
+    draw_label(68, 13, 45, b, false, false);
 
     if (is_kbd_joystick) {
         MAX_Z = 24;
@@ -392,7 +416,7 @@ static void in_conf() {
         snprintf(b, 8, "%d", kbdpad2_A);
         draw_label(68, 28, 3, b, z_idx == 17, confEditMode && z_idx == 17);
         snprintf(b, 8, "%d", kbdpad2_B);
-        draw_label(68, 29, 3, b, z_idx == 18, confEditMode && z_idx == 19);
+        draw_label(68, 29, 3, b, z_idx == 18, confEditMode && z_idx == 18);
         snprintf(b, 8, "%d", kbdpad2_START);
         draw_label(68, 30, 3, b, z_idx == 19, confEditMode && z_idx == 19);
         snprintf(b, 8, "%d", kbdpad2_SELECT);
@@ -413,6 +437,7 @@ static void in_conf() {
 static void conf_it(uint8_t cmd) {
     draw_panel(10, 10, MAX_WIDTH - 20, MAX_HEIGHT - 20, "Startup configuration", 0);
     in_conf();
+    uint16_t prev_nespad_state = 0;
     while(1) {
         if (confEditMode && lastCleanableScanCode && lastCleanableScanCode != 0xB9 /* SPACE down */) {
             uint8_t kk = lastCleanableScanCode & 0x7F;
@@ -592,6 +617,10 @@ static void conf_it(uint8_t cmd) {
               break;
             }
             in_conf();
+        }
+        if (nespad_state || kbdpad_state || kbdpad_state2 || prev_nespad_state) {
+            in_conf();
+            prev_nespad_state = ((uint16_t)(nespad_state | kbdpad_state) << 8) | kbdpad_state2;
         }
     }
     redraw_window();
@@ -2014,44 +2043,45 @@ inline static void start_manager() {
     restore_video_ram();
 }
 
-static uint8_t kbdpad_state  = 0;  // Joystick 1
-static uint8_t kbdpad_state2 = 0;  // Joystick 2
-
 inline static void handleJoystickEmulation(uint8_t sc) { // core 1
-    if (!is_kbd_joystick) return;
+    if (!is_kbd_joystick) {
+        kbdpad_state = 0;
+        kbdpad_state2 = 0;
+        return;
+    }
     DBGM_PRINT(("handleJoystickEmulation: %02Xh", sc));
-         if (sc == kbdpad1_A)               kbdpad_state  |=  DPAD_A;
-    else if (sc == kbdpad1_A + 0x80)        kbdpad_state  &= ~DPAD_A;
-    else if (sc == kbdpad2_A)               kbdpad_state2 |=  DPAD_A;
-    else if (sc == kbdpad2_A + 0x80)        kbdpad_state2 &= ~DPAD_A;
-    else if (sc == kbdpad1_B)               kbdpad_state  |=  DPAD_B;
-    else if (sc == kbdpad1_B + 0x80)        kbdpad_state  &= ~DPAD_B;
-    else if (sc == kbdpad2_B)               kbdpad_state2 |=  DPAD_B;
-    else if (sc == kbdpad2_B + 0x80)        kbdpad_state2 &= ~DPAD_B;
-    else if (sc == kbdpad1_START)           kbdpad_state  |=  DPAD_START;
-    else if (sc == kbdpad1_START + 0x80)    kbdpad_state  &= ~DPAD_START;
-    else if (sc == kbdpad2_START)           kbdpad_state2 |=  DPAD_START;
-    else if (sc == kbdpad2_START + 0x80)    kbdpad_state2 &= ~DPAD_START;
-    else if (sc == kbdpad1_SELECT)          kbdpad_state  |=  DPAD_SELECT;
-    else if (sc == kbdpad1_SELECT + 0x80)   kbdpad_state  &= ~DPAD_SELECT;
-    else if (sc == kbdpad2_SELECT)          kbdpad_state2 |=  DPAD_SELECT;
-    else if (sc == kbdpad2_SELECT + 0x80)   kbdpad_state2 &= ~DPAD_SELECT;
-    else if (sc == kbdpad1_UP)              kbdpad_state  |=  DPAD_UP;
-    else if (sc == kbdpad1_UP + 0x80)       kbdpad_state  &= ~DPAD_UP;
-    else if (sc == kbdpad2_UP)              kbdpad_state2 |=  DPAD_UP;
-    else if (sc == kbdpad2_UP + 0x80)       kbdpad_state2 &= ~DPAD_UP;
-    else if (sc == kbdpad1_DOWN)            kbdpad_state  |=  DPAD_DOWN;
-    else if (sc == kbdpad1_DOWN + 0x80)     kbdpad_state  &= ~DPAD_DOWN;
-    else if (sc == kbdpad2_DOWN)            kbdpad_state2 |=  DPAD_DOWN;
-    else if (sc == kbdpad2_DOWN + 0x80)     kbdpad_state2 &= ~DPAD_DOWN;
-    else if (sc == kbdpad1_LEFT)            kbdpad_state  |=  DPAD_LEFT;
-    else if (sc == kbdpad1_LEFT + 0x80)     kbdpad_state  &= ~DPAD_LEFT;
-    else if (sc == kbdpad2_LEFT)            kbdpad_state2 |=  DPAD_LEFT;
-    else if (sc == kbdpad2_LEFT + 0x80)     kbdpad_state2 &= ~DPAD_LEFT;
-    else if (sc == kbdpad1_RIGHT)           kbdpad_state  |=  DPAD_RIGHT;
-    else if (sc == kbdpad1_RIGHT + 0x80)    kbdpad_state  &= ~DPAD_RIGHT;
-    else if (sc == kbdpad2_RIGHT)           kbdpad_state2 |=  DPAD_RIGHT;
-    else if (sc == kbdpad2_RIGHT + 0x80)    kbdpad_state2 &= ~DPAD_RIGHT;
+    if (sc == kbdpad1_A)               kbdpad_state  |=  DPAD_A;
+    if (sc == kbdpad1_A + 0x80)        kbdpad_state  &= ~DPAD_A;
+    if (sc == kbdpad2_A)               kbdpad_state2 |=  DPAD_A;
+    if (sc == kbdpad2_A + 0x80)        kbdpad_state2 &= ~DPAD_A;
+    if (sc == kbdpad1_B)               kbdpad_state  |=  DPAD_B;
+    if (sc == kbdpad1_B + 0x80)        kbdpad_state  &= ~DPAD_B;
+    if (sc == kbdpad2_B)               kbdpad_state2 |=  DPAD_B;
+    if (sc == kbdpad2_B + 0x80)        kbdpad_state2 &= ~DPAD_B;
+    if (sc == kbdpad1_START)           kbdpad_state  |=  DPAD_START;
+    if (sc == kbdpad1_START + 0x80)    kbdpad_state  &= ~DPAD_START;
+    if (sc == kbdpad2_START)           kbdpad_state2 |=  DPAD_START;
+    if (sc == kbdpad2_START + 0x80)    kbdpad_state2 &= ~DPAD_START;
+    if (sc == kbdpad1_SELECT)          kbdpad_state  |=  DPAD_SELECT;
+    if (sc == kbdpad1_SELECT + 0x80)   kbdpad_state  &= ~DPAD_SELECT;
+    if (sc == kbdpad2_SELECT)          kbdpad_state2 |=  DPAD_SELECT;
+    if (sc == kbdpad2_SELECT + 0x80)   kbdpad_state2 &= ~DPAD_SELECT;
+    if (sc == kbdpad1_UP)              kbdpad_state  |=  DPAD_UP;
+    if (sc == kbdpad1_UP + 0x80)       kbdpad_state  &= ~DPAD_UP;
+    if (sc == kbdpad2_UP)              kbdpad_state2 |=  DPAD_UP;
+    if (sc == kbdpad2_UP + 0x80)       kbdpad_state2 &= ~DPAD_UP;
+    if (sc == kbdpad1_DOWN)            kbdpad_state  |=  DPAD_DOWN;
+    if (sc == kbdpad1_DOWN + 0x80)     kbdpad_state  &= ~DPAD_DOWN;
+    if (sc == kbdpad2_DOWN)            kbdpad_state2 |=  DPAD_DOWN;
+    if (sc == kbdpad2_DOWN + 0x80)     kbdpad_state2 &= ~DPAD_DOWN;
+    if (sc == kbdpad1_LEFT)            kbdpad_state  |=  DPAD_LEFT;
+    if (sc == kbdpad1_LEFT + 0x80)     kbdpad_state  &= ~DPAD_LEFT;
+    if (sc == kbdpad2_LEFT)            kbdpad_state2 |=  DPAD_LEFT;
+    if (sc == kbdpad2_LEFT + 0x80)     kbdpad_state2 &= ~DPAD_LEFT;
+    if (sc == kbdpad1_RIGHT)           kbdpad_state  |=  DPAD_RIGHT;
+    if (sc == kbdpad1_RIGHT + 0x80)    kbdpad_state  &= ~DPAD_RIGHT;
+    if (sc == kbdpad2_RIGHT)           kbdpad_state2 |=  DPAD_RIGHT;
+    if (sc == kbdpad2_RIGHT + 0x80)    kbdpad_state2 &= ~DPAD_RIGHT;
 }
 
 bool handleScancode(uint32_t ps2scancode) { // core 1
@@ -2323,7 +2353,7 @@ int if_manager(bool force) {
             nespad_state_delay = DPAD_STATE_DELAY;
             force = true;
         } else {
-            Device_Data.SysRegs.RdReg177714 = ((uint16_t)(nespad_state2 | kbdpad_state2) << 8 | nespad_state | kbdpad_state);
+            Device_Data.SysRegs.RdReg177714 = ((uint16_t)kbdpad_state2 << 8) | nespad_state | kbdpad_state;
         }
     }
     if (force) {
