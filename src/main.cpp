@@ -293,6 +293,12 @@ inline static void read_config(const char* path) {
     const char p22[] = "kbdpad2_LEFT:";
     mode = parse_conf_word(buf, p22, sizeof(p22), 256);
     if (mode >= 0 && mode < 0x80)  kbdpad2_LEFT = mode;
+    const char p23[] = "kbdpad1_RIGHT:";
+    mode = parse_conf_word(buf, p23, sizeof(p23), 256);
+    if (mode >= 0 && mode < 0x80)  kbdpad1_RIGHT = mode;
+    const char p24[] = "kbdpad2_RIGHT:";
+    mode = parse_conf_word(buf, p24, sizeof(p24), 256);
+    if (mode >= 0 && mode < 0x80)  kbdpad2_RIGHT = mode;
     f_close(&fil);
 }
 

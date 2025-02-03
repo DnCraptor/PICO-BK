@@ -426,14 +426,14 @@ static void conf_it(uint8_t cmd) {
                 case 14: kbdpad1_DOWN = kk; break;
                 case 15: kbdpad1_LEFT = kk; break;
                 case 16: kbdpad1_RIGHT = kk; break;
-                case 17: kbdpad1_A = kk; break;
-                case 18: kbdpad1_B = kk; break;
-                case 19: kbdpad1_START = kk; break;
-                case 20: kbdpad1_SELECT = kk; break;
-                case 21: kbdpad1_UP = kk; break;
-                case 22: kbdpad1_DOWN = kk; break;
-                case 23: kbdpad1_LEFT = kk; break;
-                case 24: kbdpad1_RIGHT = kk; break;
+                case 17: kbdpad2_A = kk; break;
+                case 18: kbdpad2_B = kk; break;
+                case 19: kbdpad2_START = kk; break;
+                case 20: kbdpad2_SELECT = kk; break;
+                case 21: kbdpad2_UP = kk; break;
+                case 22: kbdpad2_DOWN = kk; break;
+                case 23: kbdpad2_LEFT = kk; break;
+                case 24: kbdpad2_RIGHT = kk; break;
             }
             confEditMode = false;
             lastCleanableScanCode = false;
