@@ -324,24 +324,25 @@ static void init_fs() {
 }
 
 int main() {
-#if (OVERCLOCKING > 270)
 #if !PICO_RP2040
-    vreg_set_voltage(VREG_VOLTAGE_1_40);
+    volatile uint32_t *qmi_m0_timing=(uint32_t *)0x400d000c;
+    vreg_disable_voltage_limit();
+    vreg_set_voltage(VREG_VOLTAGE_1_60);
+    sleep_ms(33);
+    *qmi_m0_timing = 0x60007204;
+    set_sys_clock_khz(OVERCLOCKING * KHZ, 0);
+    *qmi_m0_timing = 0x60007303;
 #else
     hw_set_bits(&vreg_and_chip_reset_hw->vreg, VREG_AND_CHIP_RESET_VREG_VSEL_BITS);
+    sleep_ms(10);
+    set_sys_clock_khz(OVERCLOCKING * KHZ, true);
 #endif
-    sleep_ms(33);
-    set_sys_clock_khz(OVERCLOCKING * 1000, true);
-#else
-    vreg_set_voltage(VREG_VOLTAGE_1_15);
-    sleep_ms(33);
-    set_sys_clock_khz(270000, true);
-#endif
+
     PWM_init_pin(BEEPER_PIN, (1 << 12) - 1);
-#ifdef SOUND_SYSTEM
+    #ifdef SOUND_SYSTEM
     PWM_init_pin(PWM_PIN0, (1 << 12) - 1);
     PWM_init_pin(PWM_PIN1, (1 << 12) - 1);
-#endif
+    #endif
 
 #if LOAD_WAV_PIO
     //пин ввода звука
