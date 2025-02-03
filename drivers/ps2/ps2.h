@@ -3,6 +3,7 @@
 #include "strings.h"
 #include "stdio.h"
 
+#include <stdint.h>
 #include <stdbool.h>
 
 #define KBD_CLOCK_PIN    (0)
