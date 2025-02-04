@@ -195,16 +195,16 @@ static uint16_t kbd_script[] = { // S160000 Enter
     0x005A,
     0xF05A
 };
-static int kbd_script_idx = 0;
+static volatile int kbd_script_idx = 0;
 static repeating_timer_t timer;
 static bool __not_in_flash_func(timer_callback)(repeating_timer_t *rt) {
     push_script_scan_code(kbd_script[kbd_script_idx++]);
-    bool res = kbd_script_idx < sizeof(kbd_script);
+    bool res = kbd_script_idx < sizeof(kbd_script) / sizeof(uint16_t);;
     if (!res) {
         kbd_script_idx = 0;
         cancel_repeating_timer(&timer);
     }
-    return true;
+    return res;
 }
 
 void reset(uint8_t cmd) {
