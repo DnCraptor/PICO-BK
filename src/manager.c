@@ -373,16 +373,16 @@ static void in_conf() {
     draw_label(38, 26, 1, is_dendy_joystick ? b_on : b_off, z_idx == 7, z_idx == 7);
     draw_label(38, 27, 1, is_kbd_joystick ? b_on : b_off, z_idx == 8, z_idx == 8);
 
-    nespad_state |= kbdpad_state;
+    uint8_t nk = nespad_state | kbdpad_state;
     snprintf(b, 64, "Joy bits #1: %d%d%d%d%d%d%d%d #2: %d%d%d%d%d%d%d%d",
-        (nespad_state >> 7) & 1,
-        (nespad_state >> 6) & 1,
-        (nespad_state >> 5) & 1,
-        (nespad_state >> 4) & 1,
-        (nespad_state >> 3) & 1,
-        (nespad_state >> 2) & 1,
-        (nespad_state >> 1) & 1,
-        nespad_state & 1,
+        (nk >> 7) & 1,
+        (nk >> 6) & 1,
+        (nk >> 5) & 1,
+        (nk >> 4) & 1,
+        (nk >> 3) & 1,
+        (nk >> 2) & 1,
+        (nk >> 1) & 1,
+         nk & 1,
         (kbdpad_state2 >> 7) & 1,
         (kbdpad_state2 >> 6) & 1,
         (kbdpad_state2 >> 5) & 1,
@@ -390,7 +390,7 @@ static void in_conf() {
         (kbdpad_state2 >> 3) & 1,
         (kbdpad_state2 >> 2) & 1,
         (kbdpad_state2 >> 1) & 1,
-        kbdpad_state2 & 1
+         kbdpad_state2 & 1
     );
     draw_label(68, 13, 45, b, false, false);
 
