@@ -199,7 +199,7 @@ static volatile int kbd_script_idx = 0;
 static repeating_timer_t timer;
 static bool __not_in_flash_func(timer_callback)(repeating_timer_t *rt) {
     push_script_scan_code(kbd_script[kbd_script_idx++]);
-    bool res = kbd_script_idx < sizeof(kbd_script) / sizeof(uint16_t);;
+    bool res = kbd_script_idx < sizeof(kbd_script) / sizeof(uint16_t);
     if (!res) {
         kbd_script_idx = 0;
         cancel_repeating_timer(&timer);
@@ -319,6 +319,7 @@ static const line_t bk_mode_lns[] = {
 
 static int MAX_Z = 24;
 static int z_idx = 0;
+static bool blink = false;
 static void in_conf() {
     if (z_idx > 8) {
         draw_label(13, 12, 50, "Use SPACE to start edit, after that any key to set", false, true);
@@ -397,38 +398,38 @@ static void in_conf() {
     if (is_kbd_joystick) {
         MAX_Z = 24;
         snprintf(b, 8, "%d", kbdpad1_A);
-        draw_label(38, 28, 3, b, z_idx == 9, confEditMode && z_idx == 9);
+        draw_label(38, 28, 3, b, !blink && z_idx == 9, confEditMode && z_idx == 9);
         snprintf(b, 8, "%d", kbdpad1_B);
-        draw_label(38, 29, 3, b, z_idx == 10, confEditMode && z_idx == 10);
+        draw_label(38, 29, 3, b, !blink && z_idx == 10, confEditMode && z_idx == 10);
         snprintf(b, 8, "%d", kbdpad1_START);
-        draw_label(38, 30, 3, b, z_idx == 11, confEditMode && z_idx == 11);
+        draw_label(38, 30, 3, b, !blink && z_idx == 11, confEditMode && z_idx == 11);
         snprintf(b, 8, "%d", kbdpad1_SELECT);
-        draw_label(38, 31, 3, b, z_idx == 12, confEditMode && z_idx == 12);
+        draw_label(38, 31, 3, b, !blink && z_idx == 12, confEditMode && z_idx == 12);
         snprintf(b, 8, "%d", kbdpad1_UP);
-        draw_label(38, 32, 3, b, z_idx == 13, confEditMode && z_idx == 13);
+        draw_label(38, 32, 3, b, !blink && z_idx == 13, confEditMode && z_idx == 13);
         snprintf(b, 8, "%d", kbdpad1_DOWN);
-        draw_label(38, 33, 3, b, z_idx == 14, confEditMode && z_idx == 14);
+        draw_label(38, 33, 3, b, !blink && z_idx == 14, confEditMode && z_idx == 14);
         snprintf(b, 8, "%d", kbdpad1_LEFT);
-        draw_label(38, 34, 3, b, z_idx == 15, confEditMode && z_idx == 15);
+        draw_label(38, 34, 3, b, !blink && z_idx == 15, confEditMode && z_idx == 15);
         snprintf(b, 8, "%d", kbdpad1_RIGHT);
-        draw_label(38, 35, 3, b, z_idx == 16, confEditMode && z_idx == 16);
+        draw_label(38, 35, 3, b, !blink && z_idx == 16, confEditMode && z_idx == 16);
 
         snprintf(b, 8, "%d", kbdpad2_A);
-        draw_label(68, 28, 3, b, z_idx == 17, confEditMode && z_idx == 17);
+        draw_label(68, 28, 3, b, !blink && z_idx == 17, confEditMode && z_idx == 17);
         snprintf(b, 8, "%d", kbdpad2_B);
-        draw_label(68, 29, 3, b, z_idx == 18, confEditMode && z_idx == 18);
+        draw_label(68, 29, 3, b, !blink && z_idx == 18, confEditMode && z_idx == 18);
         snprintf(b, 8, "%d", kbdpad2_START);
-        draw_label(68, 30, 3, b, z_idx == 19, confEditMode && z_idx == 19);
+        draw_label(68, 30, 3, b, !blink && z_idx == 19, confEditMode && z_idx == 19);
         snprintf(b, 8, "%d", kbdpad2_SELECT);
-        draw_label(68, 31, 3, b, z_idx == 20, confEditMode && z_idx == 20);
+        draw_label(68, 31, 3, b, !blink && z_idx == 20, confEditMode && z_idx == 20);
         snprintf(b, 8, "%d", kbdpad2_UP);
-        draw_label(68, 32, 3, b, z_idx == 21, confEditMode && z_idx == 21);
+        draw_label(68, 32, 3, b, !blink && z_idx == 21, confEditMode && z_idx == 21);
         snprintf(b, 8, "%d", kbdpad2_DOWN);
-        draw_label(68, 33, 3, b, z_idx == 22, confEditMode && z_idx == 22);
+        draw_label(68, 33, 3, b, !blink && z_idx == 22, confEditMode && z_idx == 22);
         snprintf(b, 8, "%d", kbdpad2_LEFT);
-        draw_label(68, 34, 3, b, z_idx == 23, confEditMode && z_idx == 23);
+        draw_label(68, 34, 3, b, !blink && z_idx == 23, confEditMode && z_idx == 23);
         snprintf(b, 8, "%d", kbdpad2_RIGHT);
-        draw_label(68, 35, 3, b, z_idx == 24, confEditMode && z_idx == 24);
+        draw_label(68, 35, 3, b, !blink && z_idx == 24, confEditMode && z_idx == 24);
     } else {
         MAX_Z = 8;
     }
@@ -468,6 +469,12 @@ static void conf_it(uint8_t cmd) {
             escPressed = false;
             tabPressed = false;
             spacePressed = false;
+            blink = false;
+            in_conf();
+        }
+        if (confEditMode) {
+            blink = !blink;
+            sleep_ms(250);
             in_conf();
         }
         if (is_dendy_joystick || is_kbd_joystick) {
@@ -1164,7 +1171,7 @@ static void m_info(uint8_t cmd) {
         { 1, " " },
         { 1, "Emulation hot keys:" },
         { 1, " - Ctrl + Alt + Del - Reset BM1 CPU, RAM clenup, set default pages, deafult speed, init system registers" },
-        { 1, " - Print Screen     - Reset RP2040 CPU" },
+        { 1, " - Print Screen     - Reset RP2040/RP2350 CPU" },
         { 1, " - F10              - cyclic change pallete" },
         { 1, " - Alt  + F10       - default BK-0010 pallete" },
         { 1, " - Ctrl + F10       - default BK-0011 pallete" },
@@ -1200,11 +1207,23 @@ static void m_info(uint8_t cmd) {
     redraw_window();
 }
 
+static void fast_0010(uint8_t cmd) {
+    g_conf.bk0010mode = BK_FDD;
+    set_bk0010mode(g_conf.bk0010mode);
+    reset(11);
+}
+
+static void fast_0011M(uint8_t cmd) {
+    g_conf.bk0010mode = BK_0011M_FDD;
+    set_bk0010mode(g_conf.bk0010mode);
+    reset(11);
+}
+
 static fn_1_12_tbl_t fn_1_12_tbl = {
     ' ', '1', " Help ", m_info,
-    ' ', '2', " Snap ", save_snap,
-    ' ', '3', " View ", do_nothing,
-    ' ', '4', " Edit ", do_nothing,
+    ' ', '2', " Conf ", conf_it,
+    ' ', '3', " 0010 ", fast_0010,
+    ' ', '4', " 0011M", fast_0011M,
     ' ', '5', " Copy ", m_copy_file,
     ' ', '6', " Move ", m_move_file,
     ' ', '7', "MkDir ", m_mk_dir,
@@ -1217,9 +1236,9 @@ static fn_1_12_tbl_t fn_1_12_tbl = {
 
 static fn_1_12_tbl_t fn_1_12_tbl_alt = {
     ' ', '1', "Right ", do_nothing,
-    ' ', '2', " Conf ", conf_it,
-    ' ', '3', " View ", do_nothing,
-    ' ', '4', " Edit ", do_nothing,
+    ' ', '2', "ReSnap", restore_snap,
+    ' ', '3', " 0010 ", fast_0010,
+    ' ', '4', " 0011M", fast_0011M,
     ' ', '5', " Copy ", m_copy_file,
     ' ', '6', " Move ", m_move_file,
     ' ', '7', " Find ", do_nothing,
@@ -1232,9 +1251,9 @@ static fn_1_12_tbl_t fn_1_12_tbl_alt = {
 
 static fn_1_12_tbl_t fn_1_12_tbl_ctrl = {
     ' ', '1', "Eject ", do_nothing,
-    ' ', '2', "ReSnap", restore_snap,
-    ' ', '3', "Debug ", do_nothing,
-    ' ', '4', " Edit ", do_nothing,
+    ' ', '2', " Snap ", save_snap,
+    ' ', '3', " 0010 ", fast_0010,
+    ' ', '4', " 0011M", fast_0011M,
     ' ', '5', " Copy ", m_copy_file,
     ' ', '6', " Move ", m_move_file,
     ' ', '7', " Find ", do_nothing,
@@ -2090,8 +2109,7 @@ bool handleScancode(uint32_t ps2scancode) { // core 1
     lastCleanableScanCode = ps2scancode;
     switch (ps2scancode) {
       case 0x01: // Esc down
-        escPressed = true;
-        break;
+        escPressed = true; break;
       case 0x81: // Esc up
         escPressed = false; break;
       case 0x4B: // left
