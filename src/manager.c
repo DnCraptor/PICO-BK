@@ -99,6 +99,7 @@ void scan_code_cleanup() {
   lastSavedScanCode = 0;
   lastCleanableScanCode = 0;
 }
+static bool m_prompt(const char* txt, size_t shift_y);
 
 const static const uint8_t PANEL_TOP_Y = 0;
 static const uint8_t TOTAL_SCREEN_LINES = MAX_HEIGHT;
@@ -322,9 +323,9 @@ static int z_idx = 0;
 static bool blink = false;
 static void in_conf() {
     if (z_idx > 8) {
-        draw_label(13, 12, 50, "Use SPACE to start edit, after that any key to set", false, true);
+        draw_label(13, 12, 64, "Use SPACE to start edit, after that any key to set, ESC to exit", false, true);
     } else {
-        draw_label(13, 12, 50, "Use TAB to select, SPACE to change, ENTER to apply", false, true);
+        draw_label(13, 12, 64, "Use TAB to select, SPACE to change, ENTER to apply, ESC to exit", false, true);
     }
     draw_panel(15, 13, 24, 7, "mode:", 0);
     for (int i = 0; i < 5; ++i) {
@@ -503,6 +504,11 @@ static void conf_it(uint8_t cmd) {
         if (escPressed) break;
         if (enterPressed) {
             enterPressed = false;
+            if (!m_prompt("Save and reboot?", 10)) {
+                draw_panel(10, 10, MAX_WIDTH - 20, MAX_HEIGHT - 20, "Startup configuration", 0);
+                in_conf();
+                continue;
+            }
             FIL fil;
             f_open(&fil, "\\BK\\bk.conf", FA_CREATE_ALWAYS | FA_WRITE);
             char buf[256];
@@ -562,7 +568,8 @@ static void conf_it(uint8_t cmd) {
             );
             f_write(&fil, buf, strlen(buf), &bw);
             f_close(&fil);
-            break;
+            reset(2);
+            return;
         }
         if (upPressed) {
             upPressed = false;
@@ -837,15 +844,15 @@ inline static void no_selected_file() {
     redraw_window();
 }
 
-static bool m_prompt(const char* txt) {
+static bool m_prompt(const char* txt, size_t shift_y) {
     const line_t lns[1] = {
         { -1, txt },
     };
     const lines_t lines = { 1, 2, lns };
-    draw_box((MAX_WIDTH - 60) / 2, 7, 60, 10, "Are you sure?", &lines);
+    draw_box((MAX_WIDTH - 60) / 2, 7 + shift_y, 60, 10, "Are you sure?", &lines);
     bool yes = true;
-    draw_button((MAX_WIDTH - 60) / 2 + 16, 12, 11, "Yes", yes);
-    draw_button((MAX_WIDTH - 60) / 2 + 35, 12, 10, "No", !yes);
+    draw_button((MAX_WIDTH - 60) / 2 + 16, 12 + shift_y, 11, "Yes", yes);
+    draw_button((MAX_WIDTH - 60) / 2 + 35, 12 + shift_y, 10, "No", !yes);
     while(1) {
         if (is_dendy_joystick || is_kbd_joystick) {
             if (is_dendy_joystick) nespad_read();
@@ -879,8 +886,8 @@ static bool m_prompt(const char* txt) {
         }
         if (tabPressed || leftPressed || rightPressed) { // TODO: own msgs cycle
             yes = !yes;
-            draw_button((MAX_WIDTH - 60) / 2 + 16, 12, 11, "Yes", yes);
-            draw_button((MAX_WIDTH - 60) / 2 + 35, 12, 10, "No", !yes);
+            draw_button((MAX_WIDTH - 60) / 2 + 16, 12 + shift_y, 11, "Yes", yes);
+            draw_button((MAX_WIDTH - 60) / 2 + 35, 12 + shift_y, 10, "No", !yes);
             tabPressed = leftPressed = rightPressed = false;
             scan_code_cleanup();
         }
@@ -932,7 +939,7 @@ static void m_delete_file(uint8_t cmd) {
     }
     char path[256];
     snprintf(path, 256, "Remove %s %s?", fp->name, fp->fattrib & AM_DIR ? "folder" : "file");
-    if (m_prompt(path)) {
+    if (m_prompt(path, 0)) {
         construct_full_name(path, psp->path, fp->name);
         FRESULT result = fp->fattrib & AM_DIR ? m_unlink_recursive(path) : f_unlink(path);
         if (result != FR_OK) {
@@ -1023,7 +1030,7 @@ static void m_copy_file(uint8_t cmd) {
     char path[256];
     file_panel_desc_t* dsp = psp == &left_panel ? &right_panel : &left_panel;
     snprintf(path, 256, "Copy %s %s to %s?", fp->name, fp->fattrib & AM_DIR ? "folder" : "file", dsp->path);
-    if (m_prompt(path)) { // TODO: ask name
+    if (m_prompt(path, 0)) { // TODO: ask name
         construct_full_name(path, psp->path, fp->name);
         char dest[256];
         construct_full_name(dest, dsp->path, fp->name);
@@ -1128,7 +1135,7 @@ static void m_move_file(uint8_t cmd) {
     char path[256];
     file_panel_desc_t* dsp = psp == &left_panel ? &right_panel : &left_panel;
     snprintf(path, 256, "Move %s %s to %s?", fp->name, fp->fattrib & AM_DIR ? "folder" : "file", dsp->path);
-    if (m_prompt(path)) { // TODO: ask name
+    if (m_prompt(path, 0)) { // TODO: ask name
         construct_full_name(path, psp->path, fp->name);
         char dest[256];
         construct_full_name(dest, dsp->path, fp->name);
@@ -1195,7 +1202,8 @@ static void m_info(uint8_t cmd) {
     draw_box(5, 2, MAX_WIDTH - 15, MAX_HEIGHT - 6, "Help", &lines);
     enterPressed = escPressed = false;
     nespad_state_delay = DPAD_STATE_DELAY;
-    while(!escPressed && !enterPressed) {
+    f1Pressed = true;
+    while(!escPressed && !enterPressed && f1Pressed) {
         if (is_dendy_joystick || is_kbd_joystick) {
             if (is_dendy_joystick) nespad_read();
             if (nespad_state && !(nespad_state & DPAD_START) && !(nespad_state & DPAD_SELECT)) {
@@ -1204,6 +1212,7 @@ static void m_info(uint8_t cmd) {
             }
         }
     }
+    f1Pressed = false;
     redraw_window();
 }
 
