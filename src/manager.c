@@ -222,7 +222,7 @@ void reset(uint8_t cmd) {
     main_init();
     mark_to_exit_flag = true;
     if (g_conf.bk0010mode == BK_FDD) {
-        sleep_ms(500);
+        sleep_ms(1500);
         kbd_script_idx = 0;
         add_repeating_timer_ms(200, timer_callback, NULL, &timer);
     }
