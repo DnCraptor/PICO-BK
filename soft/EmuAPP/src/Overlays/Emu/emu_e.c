@@ -74,7 +74,6 @@ void AT_OVL emu_start () {
             }
             g_conf.Time = getCycleCount ();
             g_conf.T    = Device_Data.CPU_State.Time;
-            DEBUG_PRINT(("Time: %d; T: %d", Time, T));
         }
         else {
             for (Count = 0; Count < 16; Count++) {
@@ -86,12 +85,11 @@ void AT_OVL emu_start () {
                 CPU_RunInstruction ();
                 g_conf.Time = getCycleCount ();
                 g_conf.T    = Device_Data.CPU_State.Time;
-                DEBUG_PRINT(("Time: %d; T: %d", Time, T));
                 g_conf.cycles_cnt1 = cycles_cnt2;
             }
         }
         // Вся периодика
-        DEBUG_PRINT(("RunState: %d", RunState));
+        DEBUG_PRINT(("RunState: %d", g_conf.RunState));
         switch (g_conf.RunState++)
         {
             default:

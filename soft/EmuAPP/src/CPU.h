@@ -8,7 +8,7 @@
 #include "ROM11.h"
 #include "FDDROM.h"
 #include "BOS_N_DISK_327.h"
-#include "bk10_084_focal.h"
+#include "bk10_018_focal.rom.h"
 #include "Tests.h"
 #include "bk11m_330_mstd.h"
 #include "debug.h"
@@ -114,8 +114,8 @@ static inline bool is_bk0011mode() {
 // actually "virtual" pages, just to have some easy to use defines
 #define CPU_PAGE131_MEM_ADR &BOS_N_DISK_327[0x00000] /* bk11m_324_bos.rom */
 #define CPU_PAGE132_MEM_ADR &BOS_N_DISK_327[0x01000] /* bk11m_324_bos.rom */
-#define CPU_PAGE133_MEM_ADR &bk11m_330_mstd[0x00000] /* БК0010М МСТД */
-#define CPU_PAGE134_MEM_ADR &bk11m_330_mstd[0x01000] /* БК0010М МСТД */
+#define CPU_PAGE133_MEM_ADR &bk11m_330_mstd[0x00000] /* БК0011М МСТД */
+#define CPU_PAGE134_MEM_ADR &bk11m_330_mstd[0x01000] /* БК0011М МСТД */
 
 #define CPU_PAGE141_MEM_ADR &ROM10[0x00000] /* monitor 0010-01 */
 #define CPU_PAGE142_MEM_ADR &ROM10[0x01000] /* monitor 0010-01 */
@@ -129,8 +129,8 @@ static inline bool is_bk0011mode() {
 
 #define CPU_PAGE161_MEM_ADR &ROM10[0x00000] /* monitor 0010 */
 #define CPU_PAGE162_MEM_ADR &ROM10[0x01000] /* monitor 0010 */
-#define CPU_PAGE163_MEM_ADR &bk10_084_focal[0x00000] /* Focal 0010 84 */
-#define CPU_PAGE164_MEM_ADR &bk10_084_focal[0x01000] /* Focal 0010 84 */
+#define CPU_PAGE163_MEM_ADR &bk10_018_focal_rom[0x00000] /* Focal 0010 018 */
+#define CPU_PAGE164_MEM_ADR &bk10_018_focal_rom[0x01000] /* Focal 0010 018 */
 
 #define CPU_PAGE171_MEM_ADR 0 // &BK0010_ROM[0x04000] /* not used 8k */
 #define CPU_PAGE172_MEM_ADR 0 // &BK0010_ROM[0x05000] /* not used 8k */

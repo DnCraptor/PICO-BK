@@ -23,7 +23,7 @@ void init_rom() {
             Device_Data.MemPages [11] = CPU_PAGE164_MEM_ADR; // focal 8k
             Device_Data.MemPages [12] = CPU_PAGE171_MEM_ADR; // empty 8k
             Device_Data.MemPages [13] = CPU_PAGE172_MEM_ADR; // empty 8k
-            Device_Data.MemPages [14] = CPU_PAGE173_MEM_ADR; // tests 7.5k
+            Device_Data.MemPages [14] = CPU_PAGE173_MEM_ADR; // tests 8k
             Device_Data.MemPages [15] = CPU_PAGE174_MEM_ADR; // tests 7.5k
             break;
         case BK_0010_01:
@@ -76,7 +76,8 @@ void AT_OVL CPU_Init (void) {
 //  Device_Data.SysRegs.Reg177710   = 0177777;
 //  Device_Data.SysRegs.Reg177712   = 0177400;
     Device_Data.SysRegs.RdReg177714 = 0;
-    Device_Data.SysRegs.RdReg177716 = ((!is_bk0011mode() ? 0100000 : 0140000) & 0177400) | 0300;
+    Device_Data.SysRegs.RdReg177716 = ((!is_bk0011mode() ? 0100000 : 0140000) & 0177400) | 0100;
+    /// 0300;
     Device_Data.SysRegs.WrReg177662  = 047400;
     Device_Data.SysRegs.Wr1Reg177716 = (1 << 12) | 1;
     true_covox = 0;

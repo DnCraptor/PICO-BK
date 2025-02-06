@@ -1,4 +1,4 @@
-#include <pico.h>
+#include <pico/platform.h>
 
 const static unsigned char __in_flash() __aligned(4096) FDDROM[] = {
 // КНГМД

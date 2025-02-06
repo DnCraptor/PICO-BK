@@ -1457,7 +1457,7 @@ void AT_OVL CPU_RunInstruction (void) {
 
   InvalidOpCode:
     DEBUG_PRINT (("  !!!INVALID OPERATION CODE!!!"));
-    CPU_INST_INTERRUPT (04);
+    CPU_INST_INTERRUPT (010);
     PSW = Psw;
     DEBUG_PRINT (("  PSW=%o\n", (int) Psw));
     CPU_CALC_TIMING (CPU_TIMING_INT);

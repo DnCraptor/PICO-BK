@@ -208,6 +208,20 @@ static bool __not_in_flash_func(timer_callback)(repeating_timer_t *rt) {
     return res;
 }
 
+static void InitMemoryValues(uint16_t* pPtr, size_t nMemSize)
+{
+	uint16_t val = 0;
+	uint8_t flag = 0;
+	for (int i = 0; i < (nMemSize >> 1); i++, flag--) {
+		pPtr[i] = val;
+		val = ~val;
+		if (flag == 192) {
+			val = ~val;
+			flag = 0;
+		}
+	}
+}
+
 void reset(uint8_t cmd) {
     f12Pressed = false;
     tormoz = 6;
@@ -217,7 +231,7 @@ void reset(uint8_t cmd) {
 #ifdef AYSOUND
     AY_reset();
 #endif
-    memset(RAM, 0, sizeof RAM);
+    InitMemoryValues(RAM, sizeof RAM);
     graphics_set_page(CPU_PAGE51_MEM_ADR, is_bk0011mode() ? 15 : 0);
     graphics_shift_screen((uint16_t)0330 | 0b01000000000);
     main_init();
