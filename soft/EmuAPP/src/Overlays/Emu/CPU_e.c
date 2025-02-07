@@ -746,7 +746,6 @@ void AT_OVL CPU_RunInstruction (void) {
             case 001: // 000001   WAIT
                     DEBUG_PRINT (("WAIT  "));
                     CPU_CALC_TIMING (CPU_TIMING_WAIT);
-//                  exit (1);
                     break;
 
             case 002: // 000002   RTI
@@ -1457,11 +1456,14 @@ void AT_OVL CPU_RunInstruction (void) {
 
   InvalidOpCode:
     DEBUG_PRINT (("  !!!INVALID OPERATION CODE!!!"));
-    CPU_INST_INTERRUPT (010);
+    if (g_conf.bk0010mode == BK_FDD) {
+        CPU_INST_INTERRUPT (04); /// TODO: fix it
+    } else {
+        CPU_INST_INTERRUPT (010);
+    }
     PSW = Psw;
     DEBUG_PRINT (("  PSW=%o\n", (int) Psw));
     CPU_CALC_TIMING (CPU_TIMING_INT);
-//  exit (1);
     return;
 
   BusFault:

@@ -231,7 +231,7 @@ void reset(uint8_t cmd) {
 #ifdef AYSOUND
     AY_reset();
 #endif
-    InitMemoryValues(RAM, sizeof RAM);
+    InitMemoryValues(RAM, sizeof RAM); // TODO: other chess for 11M
     graphics_set_page(CPU_PAGE51_MEM_ADR, is_bk0011mode() ? 15 : 0);
     graphics_shift_screen((uint16_t)0330 | 0b01000000000);
     main_init();
@@ -326,7 +326,7 @@ static void do_nothing(uint8_t cmd) {
 
 static const line_t bk_mode_lns[] = {
     { 1, " \x81\x8A-0010 + \x8A\x8D\x83\x8C\x84 16K " },
-    { 1, " \x81\x8A-0010 Focal [bugs]" },
+    { 1, " \x81\x8A-0010 Focal + \x8C\x91\x92\x84" },
     { 1, " \x81\x8A-0010-01 Basic 86" },
     { 1, " \x81\x8A-0011M + \x8A\x8D\x83\x8C\x84    " },
     { 1, " \x81\x8A-0011M + \x8C\x91\x92\x84     " }

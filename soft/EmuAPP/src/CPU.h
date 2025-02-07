@@ -7,6 +7,7 @@
 #include "ROM10.h"
 #include "ROM11.h"
 #include "FDDROM.h"
+#include "DISK_326v12.ROM.h"
 #include "BOS_N_DISK_327.h"
 #include "bk10_018_focal.rom.h"
 #include "Tests.h"
@@ -139,6 +140,8 @@ static inline bool is_bk0011mode() {
 
 #define CPU_PAGE191_MEM_ADR 0 // &FDDROM[0x00000] /* not used */
 #define CPU_PAGE192_MEM_ADR 0 // &FDDROM[0x01000] /* not used */
+///#define CPU_PAGE193_MEM_ADR &DISK_326v12_ROM[0x00000]
+///#define CPU_PAGE194_MEM_ADR &DISK_326v12_ROM[0x01000]
 #define CPU_PAGE193_MEM_ADR &FDDROM[0x00000] /* FDD.ROM */
 #define CPU_PAGE194_MEM_ADR &FDDROM[0x01000] /* FDD.ROM */
 
