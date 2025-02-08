@@ -9,10 +9,17 @@ void init_rom() {
         case BK_FDD:
             Device_Data.MemPages [8]  = CPU_PAGE161_MEM_ADR; // monitor 8k
             Device_Data.MemPages [9]  = CPU_PAGE162_MEM_ADR; // monitor 8k
+#if BK_FDD_16K
             Device_Data.MemPages [10] = CPU_PAGE11_MEM_ADR; // W/A RAM from page 1
             Device_Data.MemPages [11] = CPU_PAGE12_MEM_ADR; // W/A
             Device_Data.MemPages [12] = CPU_PAGE13_MEM_ADR; // W/A
             Device_Data.MemPages [13] = CPU_PAGE14_MEM_ADR; // W/A
+#else
+            Device_Data.MemPages [10] = 0;
+            Device_Data.MemPages [11] = 0;
+            Device_Data.MemPages [12] = 0;
+            Device_Data.MemPages [13] = 0;
+#endif
             Device_Data.MemPages [14] = CPU_PAGE193_MEM_ADR; // masked out 8k + fdd rom
             Device_Data.MemPages [15] = CPU_PAGE194_MEM_ADR; // masked out 8k + fdd rom
             break;

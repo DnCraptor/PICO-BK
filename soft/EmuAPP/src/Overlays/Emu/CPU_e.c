@@ -615,7 +615,7 @@ void AT_OVL CPU_Stop (void)
     TCPU_Arg ArgS;
     TCPU_Psw Psw = PSW;
 
-    DEBUG_PRINT (("\nSTOP"));
+    INVALID_PRINT (("\nSTOP"));
 
   BusFault:
 
@@ -738,7 +738,7 @@ void AT_OVL CPU_RunInstruction (void) {
           case 000: switch (OpCode & 077)
           {
             case 000: // 000000   HALT
-                    DEBUG_PRINT (("HALT  "));
+                    INVALID_PRINT (("HALT  "));
                     CPU_INST_INTERRUPT (04);
                     CPU_CALC_TIMING    (CPU_TIMING_HALT);
                     break;
@@ -1455,19 +1455,15 @@ void AT_OVL CPU_RunInstruction (void) {
     return;
 
   InvalidOpCode:
-    DEBUG_PRINT (("  !!!INVALID OPERATION CODE!!!"));
-    if (g_conf.bk0010mode == BK_FDD) {
-        CPU_INST_INTERRUPT (04); /// TODO: fix it
-    } else {
-        CPU_INST_INTERRUPT (010);
-    }
+    INVALID_PRINT (("  !!!INVALID OPERATION CODE!!!"));
+    CPU_INST_INTERRUPT (010);
     PSW = Psw;
-    DEBUG_PRINT (("  PSW=%o\n", (int) Psw));
+    INVALID_PRINT (("  PSW=%o\n", (int) Psw));
     CPU_CALC_TIMING (CPU_TIMING_INT);
     return;
 
   BusFault:
-    DEBUG_PRINT (("\n!!!BUS FAULT!!!"));
+    INVALID_PRINT (("\n!!!BUS FAULT!!!"));
     CPU_INST_INTERRUPT (04);
     PSW = Psw;
     DEBUG_PRINT (("  PSW=%o\n", (int) Psw));

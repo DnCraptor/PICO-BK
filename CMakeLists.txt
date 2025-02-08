@@ -201,9 +201,12 @@ target_compile_definitions(${PROJECT_NAME} PRIVATE
         BUILD_IN_FDD0
         BUILD_IN_FDD1
 
+        BK_FDD_16K=1
+
         # supports only for pico with 4 or more MB flashes
 #        PICO_FLASH_SIZE_BYTES=4194304
 
+        #INVALID_DEBUG=1
         #BOOT_DEBUG=1
         #BOOT_DEBUG_ACC=0xA0000
         #KBD_DEBUG=1

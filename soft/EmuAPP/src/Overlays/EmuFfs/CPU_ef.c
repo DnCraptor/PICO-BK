@@ -285,6 +285,7 @@ TCPU_Arg AT_OVL CPU_WriteW (TCPU_Arg Adr, uint_fast16_t Word) {
         Device_Data.CPU_State.r [CPU_GET_ARG_REG_INDEX (Adr)] = (uint16_t) Word;
         return CPU_ARG_WRITE_OK;
     }
+#if BK_FDD_16K
     if (g_conf.bk0010mode == BK_FDD) {
         if (Adr < 0160000) {
             uintptr_t Page = Device_Data.MemPages[Adr >> 12];
@@ -297,7 +298,9 @@ TCPU_Arg AT_OVL CPU_WriteW (TCPU_Arg Adr, uint_fast16_t Word) {
             return CPU_ARG_WRITE_ERR;
         }
     }
-    else if (Adr < 0140000) {
+    else
+#endif
+    if (Adr < 0140000) {
         uintptr_t Page = Device_Data.MemPages [Adr >> 12];
         auto addr = Page + (Adr & 0x0FFE);
         ///DEBUG_PRINT(("CPU_WriteW(%oo, %oo) Page: %08X (#%d)", Adr, Word, Page, Adr >> 12));
@@ -456,6 +459,7 @@ TCPU_Arg AT_OVL CPU_WriteB (TCPU_Arg Adr, uint_fast8_t Byte) {
         *(uint8_t *) &Device_Data.CPU_State.r [CPU_GET_ARG_REG_INDEX (Adr)] = (uint8_t) Byte;
         return CPU_ARG_WRITE_OK;
     }
+#if BK_FDD_16K
     if (g_conf.bk0010mode == BK_FDD) {
         if (Adr < 0160000) {
             uintptr_t Page = Device_Data.MemPages[Adr >> 12];
@@ -467,6 +471,7 @@ TCPU_Arg AT_OVL CPU_WriteB (TCPU_Arg Adr, uint_fast8_t Byte) {
             return CPU_ARG_WRITE_ERR;
         }       
     }
+#endif
     if (Adr < 0140000) {
         uintptr_t Page = Device_Data.MemPages [Adr >> 12];
         auto addr = Page + ((Adr) & 0x0FFF);

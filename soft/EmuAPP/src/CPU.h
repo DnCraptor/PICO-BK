@@ -7,17 +7,23 @@
 #include "ROM10.h"
 #include "ROM11.h"
 #include "FDDROM.h"
-#include "DISK_326v12.ROM.h"
+///#include "DISK_326.ROM.h"
+///#include "DISK_326v12.ROM.h"
 #include "BOS_N_DISK_327.h"
 #include "bk10_018_focal.rom.h"
 #include "Tests.h"
 #include "bk11m_330_mstd.h"
 #include "debug.h"
 
-#if BOOT_DEBUG || DSK_DEBUG || MNGR_DEBUG || KBD_DEBUG
+#if BOOT_DEBUG || DSK_DEBUG || MNGR_DEBUG || KBD_DEBUG || INVALID_DEBUG
 #include "stdio.h"
 extern void logMsg(char* msg);
 #define printf(...) { char tmp[80]; snprintf(tmp, 80, __VA_ARGS__); logMsg(tmp); }
+#if INVALID_DEBUG
+#define INVALID_PRINT( X) printf X
+#else
+#define INVALID_PRINT( X)
+#endif
 #if BOOT_DEBUG
 #define DEBUG_PRINT( X) printf X
 #else
@@ -32,6 +38,7 @@ extern void logMsg(char* msg);
 #define DEBUG_PRINT( X)
 #define DSK_PRINT( X)
 #define DBGM_PRINT( X)
+#define INVALID_PRINT( X)
 #endif
 #ifdef KBD_DEBUG
 #define KBD_PRINT( X) printf X
@@ -140,6 +147,8 @@ static inline bool is_bk0011mode() {
 
 #define CPU_PAGE191_MEM_ADR 0 // &FDDROM[0x00000] /* not used */
 #define CPU_PAGE192_MEM_ADR 0 // &FDDROM[0x01000] /* not used */
+///#define CPU_PAGE193_MEM_ADR &DISK_326_rom[0x00000]
+///#define CPU_PAGE194_MEM_ADR &DISK_326_rom[0x01000]
 ///#define CPU_PAGE193_MEM_ADR &DISK_326v12_ROM[0x00000]
 ///#define CPU_PAGE194_MEM_ADR &DISK_326v12_ROM[0x01000]
 #define CPU_PAGE193_MEM_ADR &FDDROM[0x00000] /* FDD.ROM */
@@ -227,6 +236,7 @@ static inline bool is_bk0011mode() {
 
 #define CPU_INST_INTERRUPT( Vec)                                                                       \
 {                                                                                                      \
+    INVALID_PRINT (("  (%o)=%o=PC  (%o)=%o=PSW", (int) (Vec), (int) PC, (int) (Vec) + 2, (int) ArgS)); \
     CPU_GET_PSW   (ArgS);                                                                              \
     CPU_INST_PUSH (ArgS);                                                                              \
     CPU_INST_PUSH (PC);                                                                                \
@@ -234,7 +244,7 @@ static inline bool is_bk0011mode() {
     ArgS = CPU_PAGE01_MEM16 [((Vec) >> 1) + 1] & 0377;                                                  \
     CPU_SET_PSW (ArgS);                                                                                \
                                                                                                        \
-    DEBUG_PRINT (("  (%o)=%o=>PC  (%o)=%o=>PSW", (int) (Vec), (int) PC, (int) (Vec) + 2, (int) ArgS)); \
+    INVALID_PRINT (("  (%o)=%o=>PC  (%o)=%o=>PSW", (int) (Vec), (int) PC, (int) (Vec) + 2, (int) ArgS)); \
 }
 
 typedef uint_fast32_t TCPU_Arg;

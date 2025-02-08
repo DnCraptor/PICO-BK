@@ -231,7 +231,8 @@ void reset(uint8_t cmd) {
 #ifdef AYSOUND
     AY_reset();
 #endif
-    InitMemoryValues(RAM, sizeof RAM); // TODO: other chess for 11M
+    InitMemoryValues(RAM, 32 << 10); // TODO: other chess for 11M
+    memset(CPU_PAGE11_MEM_ADR, 0, 0x04000); // W/A for 16K RAM in ROM
     graphics_set_page(CPU_PAGE51_MEM_ADR, is_bk0011mode() ? 15 : 0);
     graphics_shift_screen((uint16_t)0330 | 0b01000000000);
     main_init();

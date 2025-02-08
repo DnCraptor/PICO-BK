@@ -476,12 +476,12 @@ void set_start_debug_line(int _start_debug_line) {
     start_debug_line = _start_debug_line;
 }
 
-#if BOOT_DEBUG || KBD_DEBUG || MNGR_DEBUG || DSK_DEBUG
+#if BOOT_DEBUG || KBD_DEBUG || MNGR_DEBUG || DSK_DEBUG || INVALID_DEBUG
 void logFile(char* msg);
 #endif
 
 void logMsg(char* msg) {
-#if BOOT_DEBUG || KBD_DEBUG || MNGR_DEBUG || DSK_DEBUG
+#if BOOT_DEBUG || KBD_DEBUG || MNGR_DEBUG || DSK_DEBUG || INVALID_DEBUG
     { char tmp[85]; sprintf(tmp, "%s\n", msg); logFile(tmp); }
 #else
     printf("%s\n", msg);

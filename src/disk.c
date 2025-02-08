@@ -290,10 +290,10 @@ bool img_disk_write_sec(int drv, BYTE * buffer, LBA_t lba) {
     return true;
 }
 
-#if BOOT_DEBUG || KBD_DEBUG || MNGR_DEBUG || DSK_DEBUG
+#if BOOT_DEBUG || KBD_DEBUG || MNGR_DEBUG || DSK_DEBUG || INVALID_DEBUG
 void logFile(char* msg) {
     gpio_put(PICO_DEFAULT_LED_PIN, true);
-    f_open(&fileD, "\\BK\\boot.log", FA_WRITE | FA_OPEN_APPEND);
+    f_open(&fileD, "\\bk.log", FA_WRITE | FA_OPEN_APPEND);
     UINT bw;
     f_write(&fileD, msg, strlen(msg), &bw);
     f_close(&fileD);
