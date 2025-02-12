@@ -26,9 +26,16 @@ set(PICO_BOARD pico CACHE STRING "Board type")
 # Pull in Raspberry Pi Pico SDK (must be before project)
 include(pico_sdk_import.cmake)
 
-SET(PROJECT_NAME pico-bk)
-set(FLASH_SIZE 4096)
-SET(BUILD_NAME "${PROJECT_NAME}-${FLASH_SIZE}K")
+#set (MURM2 ON)
+
+SET(PROJECT_NAME p1-bk)
+set(FLASH_SIZE 2048)
+
+IF(MURM2)
+    SET(BUILD_NAME "m2${PROJECT_NAME}")
+ELSE()
+    SET(BUILD_NAME "m1${PROJECT_NAME}")
+ENDIF()
 
 set(OUTPUT_DIR "${CMAKE_SOURCE_DIR}/bin/${CMAKE_BUILD_TYPE}")
 set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY "${OUTPUT_DIR}")
@@ -124,9 +131,6 @@ endif()
 
 set_target_properties(${PROJECT_NAME} PROPERTIES OUTPUT_NAME "${BUILD_NAME}")
 
-pico_enable_stdio_uart(${PROJECT_NAME} 0)
-##pico_enable_stdio_usb(${PROJECT_NAME} 1)
-
 # create map/bin/hex file etc.
 pico_add_extra_outputs(${PROJECT_NAME})
 
@@ -161,18 +165,95 @@ target_sources(${PROJECT_NAME} PUBLIC
     ${CMAKE_CURRENT_SOURCE_DIR}/soft/EmuAPP/src/Overlays/Init/CPU_i.c
 )
 
-target_compile_definitions(${PROJECT_NAME} PRIVATE
+IF(MURM2)
+    target_compile_definitions(${PROJECT_NAME} PRIVATE
         PICO_HEAP_SIZE=0
         USE_ZONE_FOR_MALLOC=1
 
         PICO_DEFAULT_UART_RX_PIN=-1
-        PICO_DEFAULT_UART_TX_PIN=0
+        PICO_DEFAULT_UART_TX_PIN=2
+
+        KBD_CLOCK_PIN=2
+        KBD_DATA_PIN=3
 
         # SDCARD
         SDCARD_PIN_SPI0_CS=5
         SDCARD_PIN_SPI0_SCK=2
         SDCARD_PIN_SPI0_MOSI=3
         SDCARD_PIN_SPI0_MISO=4
+
+        beginVGA_PIN=12
+
+        # NES Gamepad
+        USE_NESPAD
+        NES_GPIO_CLK=20
+        NES_GPIO_LAT=21
+        NES_GPIO_DATA=26
+
+        USE_WII
+        WII_SDA_PIN=20
+        WII_SCL_PIN=21
+
+       # PSRAM
+        # PSRAM_MUTEX=1
+       # PSRAM_SPINLOCK=1
+       # PSRAM_ASYNC=1
+
+       # PSRAM_PIN_CS=18
+       # PSRAM_PIN_SCK=19
+       # PSRAM_PIN_MOSI=20
+       # PSRAM_PIN_MISO=21
+
+        LOAD_WAV_PIO=22
+        LOAD_WAV_2_COVOX=1
+        BEEPER_PIN=9
+        PWM_PIN0=10
+        PWM_PIN1=11
+
+        BUILD_IN_FDD0
+        BUILD_IN_FDD1
+
+        BK_FDD_16K=1
+
+        # supports only for pico with 4 or more MB flashes
+#        PICO_FLASH_SIZE_BYTES=4194304
+
+        #INVALID_DEBUG=1
+        #BOOT_DEBUG=1
+        #BOOT_DEBUG_ACC=0xA0000
+        #KBD_DEBUG=1
+        #MNGR_DEBUG=1
+        #DSK_DEBUG=1
+
+        EXT_DRIVES_MOUNT=1
+
+        SOUND_SYSTEM
+        COVOX
+        AYSOUND
+
+        # select onr of the folowing:
+        #SWAP_BLOCK_1k
+        SWAP_BLOCK_2k
+        #SWAP_BLOCK_4k
+    )
+ELSE()
+    target_compile_definitions(${PROJECT_NAME} PRIVATE
+        PICO_HEAP_SIZE=0
+        USE_ZONE_FOR_MALLOC=1
+
+        PICO_DEFAULT_UART_RX_PIN=-1
+        PICO_DEFAULT_UART_TX_PIN=0
+
+        KBD_CLOCK_PIN=0
+        KBD_DATA_PIN=1
+
+        # SDCARD
+        SDCARD_PIN_SPI0_CS=5
+        SDCARD_PIN_SPI0_SCK=2
+        SDCARD_PIN_SPI0_MOSI=3
+        SDCARD_PIN_SPI0_MISO=4
+
+        beginVGA_PIN=6
 
         # NES Gamepad
         USE_NESPAD
@@ -196,6 +277,8 @@ target_compile_definitions(${PROJECT_NAME} PRIVATE
 
         LOAD_WAV_PIO=22
         LOAD_WAV_2_COVOX=1
+        PWM_PIN0=26
+        PWM_PIN1=27
         BEEPER_PIN=28
 
         BUILD_IN_FDD0
@@ -223,7 +306,8 @@ target_compile_definitions(${PROJECT_NAME} PRIVATE
         #SWAP_BLOCK_1k
         SWAP_BLOCK_2k
         #SWAP_BLOCK_4k
-)
+    )
+ENDIF()
 
 pico_enable_stdio_uart(${PROJECT_NAME} 0)
 pico_enable_stdio_usb(${PROJECT_NAME} 0)

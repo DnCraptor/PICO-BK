@@ -3,7 +3,7 @@
 #include <stdbool.h>
 #include "string.h"
 #include "hardware/irq.h"
-
+#include "debug.h"
 
 volatile int bitcount;
 static uint8_t ps2bufsize = 0;
@@ -211,6 +211,10 @@ uint8_t ps2_to_xt_2(uint32_t val) {
 
 static volatile uint16_t kbd_script_sc = 0;
 
+extern void logMsg(char* msg);
+#define printf(...) { char tmp[80]; snprintf(tmp, 80, __VA_ARGS__); logMsg(tmp); }
+#define DBGM_PRINT( X) printf X
+
 uint32_t ps2get_raw_code() {
     uint32_t retval, i, len;
     if (kbd_script_sc) {
@@ -249,6 +253,7 @@ uint32_t ps2get_raw_code() {
         ps2buffer[i - len] = ps2buffer[i];
     }
     ps2bufsize -= len;
+    DBGM_PRINT(("retval: 0x%04Xh\n", retval));
     return retval;
 }
 

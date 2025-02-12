@@ -483,8 +483,6 @@ void logFile(char* msg);
 void logMsg(char* msg) {
 #if BOOT_DEBUG || KBD_DEBUG || MNGR_DEBUG || DSK_DEBUG || INVALID_DEBUG
     { char tmp[85]; sprintf(tmp, "%s\n", msg); logFile(tmp); }
-#else
-    printf("%s\n", msg);
 #endif
     if (graphics_mode != TEXTMODE_ || manager_started) {
         // log in text mode only

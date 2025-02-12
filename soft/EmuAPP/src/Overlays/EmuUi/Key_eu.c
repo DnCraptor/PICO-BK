@@ -328,10 +328,10 @@ uint_fast16_t AT_OVL Key_Translate (uint_fast16_t CodeAndFlags)
                             Key_Flags = KeyFlags;
                             return ReturnKeyCode (26, KeyFlags);
 
-//      case PS2_PGDN:
-//      case PS2_PGUP:
-//      case PS2_PAUSE:     if ((CodeAndFlags & 0x8000U) == 0) CPU_Stop ();
-//                          return KEY_UNKNOWN;
+      ///  case PS2_PGDN:
+      ///  case PS2_PGUP:
+      ///  case PS2_PAUSE:     if ((CodeAndFlags & 0x8000U) == 0) CPU_Stop ();
+      ///                      return KEY_UNKNOWN;
     }
 
     return KEY_UNKNOWN;

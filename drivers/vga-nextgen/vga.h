@@ -4,7 +4,6 @@
 #include "stdbool.h"
 
 #define PIO_VGA (pio0)
-#define beginVGA_PIN (6)
 #define VGA_DMA_IRQ (DMA_IRQ_0)
 
 enum graphics_mode_t {

@@ -740,6 +740,8 @@ void AT_OVL CPU_RunInstruction (void) {
             case 000: // 000000   HALT
                     INVALID_PRINT (("HALT  "));
                     CPU_INST_INTERRUPT (04);
+                    /// AdrD =   0160002;
+                    ////PC = AdrD;
                     CPU_CALC_TIMING    (CPU_TIMING_HALT);
                     break;
 

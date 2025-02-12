@@ -21,6 +21,7 @@ extern void logMsg(char* msg);
 #define printf(...) { char tmp[80]; snprintf(tmp, 80, __VA_ARGS__); logMsg(tmp); }
 #if INVALID_DEBUG
 #define INVALID_PRINT( X) printf X
+#define DBGM_PRINT( X) printf X
 #else
 #define INVALID_PRINT( X)
 #endif

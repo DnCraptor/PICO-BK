@@ -51,8 +51,6 @@ uint8_t __aligned(4096) TEXT_VIDEO_RAM[VIDEORAM_SIZE] = { 0 };
 uint8_t __aligned(4096) RAM[RAM_SIZE] = { 0 };
 
 pwm_config config = pwm_get_default_config();
-#define PWM_PIN0 (26)
-#define PWM_PIN1 (27)
 
 void PWM_init_pin(uint8_t pinN, uint16_t max_lvl) {
     gpio_set_function(pinN, GPIO_FUNC_PWM);
@@ -310,6 +308,9 @@ static void init_fs() {
         logMsg(tmp);
     } else {
         SD_CARD_AVAILABLE = true;
+        #if BOOT_DEBUG || KBD_DEBUG || MNGR_DEBUG || DSK_DEBUG || INVALID_DEBUG
+        f_unlink("\\bk.log");
+        #endif
     }
 
     DIRECT_RAM_BORDER = PSRAM_AVAILABLE ? RAM_SIZE : (SD_CARD_AVAILABLE ? RAM_PAGE_SIZE : RAM_SIZE);
