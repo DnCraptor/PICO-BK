@@ -54,8 +54,6 @@ add_subdirectory(drivers/sdcard)
 add_subdirectory(drivers/psram)
 add_subdirectory(drivers/vga-nextgen)
 
-#target_compile_definitions(${PROJECT_NAME} PRIVATE VGA)
-
 # INCLUDE FILES THAT SHOULD BE COMPILED:
 file(GLOB_RECURSE SRC "src/*.cpp" "src/*.c" "soft/EmuAPP/src/*.c" "soft/EmuAPP/src/Overlays/Init/*.c"
 #        "drivers/usb/*.c"
@@ -128,8 +126,6 @@ endif ()
 if (PICO_CYW43_SUPPORTED)
     target_link_libraries(pico-bk pico_cyw43_arch_none)
 endif()
-
-set_target_properties(${PROJECT_NAME} PROPERTIES OUTPUT_NAME "${BUILD_NAME}")
 
 # create map/bin/hex file etc.
 pico_add_extra_outputs(${PROJECT_NAME})
@@ -282,7 +278,7 @@ ELSE()
         BEEPER_PIN=28
 
         BUILD_IN_FDD0
-        BUILD_IN_FDD1
+       # BUILD_IN_FDD1
 
         BK_FDD_16K=1
 
@@ -313,3 +309,5 @@ pico_enable_stdio_uart(${PROJECT_NAME} 0)
 pico_enable_stdio_usb(${PROJECT_NAME} 0)
 
 pico_add_extra_outputs(${PROJECT_NAME})
+
+set_target_properties(${PROJECT_NAME} PROPERTIES OUTPUT_NAME "${BUILD_NAME}-VGA-PWM-${OVERCLOCKING}MHz")

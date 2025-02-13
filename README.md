@@ -2,6 +2,8 @@
 Based on: https://github.com/konst-st/BK8266/tree/BK0011M, который базируется на основе эмулятора для ESP8266 https://github.com/konst-st/BK8266
 
 Эмулятор БК-0010(-01)/БК-0011М на Raspberry Pi Pico [2] (RP2040/RP2350)<br/>
+![BK-0010 https://t.me/bk0010_11m/414865/503224](/bk0010-flat-keyboard.jpg)<br/>
+
 
 # Hardware required
 Данные исходники тестировались только с ZX Murmulator devboard с VGA выходом.<br/>
