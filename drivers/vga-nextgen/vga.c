@@ -17,6 +17,8 @@
 #include "ram_page.h"
 
 int pallete_mask = 3; // 11 - 2 bits
+uint8_t volatile vsync;
+uint8_t * vsync_ptr=&vsync;
 
 uint16_t pio_program_VGA_instructions[] = {
     //     .wrap_target
@@ -117,8 +119,13 @@ inline static void dma_handler_VGA_impl() {
         }
 
         //синхросигналы
-        if ((screen_line >= line_VS_begin) && (screen_line <= line_VS_end))
+        if ((screen_line >= line_VS_begin) && (screen_line <= line_VS_end)){
             dma_channel_set_read_addr(dma_chan_ctrl, &lines_pattern[1], false); //VS SYNC
+            if(screen_line == line_VS_begin)
+            {
+               *vsync_ptr=1;
+            }
+        }
         else
             dma_channel_set_read_addr(dma_chan_ctrl, &lines_pattern[0], false);
         return;
