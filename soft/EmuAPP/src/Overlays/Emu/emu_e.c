@@ -14,6 +14,8 @@
 #include "manager.h"
 #include "debug.h"
 
+extern uint8_t * vsync_ptr;
+
 #define AT_OVL __attribute__((section(".ovl3_e.text")))
 
 static int_fast16_t pressed_count = 0;
@@ -100,6 +102,13 @@ void AT_OVL emu_start () {
                 break;
             case 1:
                 //ps2_periodic ();
+                if(is_bk0011mode() && !(Device_Data.SysRegs.WrReg177662 & (1<<14))){
+                    if(*vsync_ptr)
+                    {
+                        *vsync_ptr=0;
+                        CPU_Iot100();
+                    }
+                }
                 break;
             case 2:
                 g_conf.CodeAndFlags = (uint_fast16_t)(ps2get_raw_code() & 0xFFFF); // ps2_read ();
