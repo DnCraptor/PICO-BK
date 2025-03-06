@@ -3,6 +3,5 @@
 
 void CPU_RunInstruction (void);
 void CPU_Stop           (void);
-void CPU_Iot100         (void);
 
 #endif

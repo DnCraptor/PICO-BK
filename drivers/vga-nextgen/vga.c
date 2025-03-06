@@ -92,13 +92,22 @@ void graphics_inc_palleter_offset() {
     if (g_conf.graphics_pallette_idx > 0b1111) g_conf.graphics_pallette_idx = 0;
 }
 
+
 inline static void dma_handler_VGA_impl() {
     dma_hw->ints0 = 1u << dma_chan_ctrl;
     static uint32_t frame_number = 0;
     static uint32_t screen_line = 0;
     static uint8_t* input_buffer = NULL;
     static uint32_t* * prev_output_buffer = 0;
+    static uint32_t screen_lines = 0;
     screen_line++;
+    screen_lines++;
+    static const uint32_t d_lines = 806 * 60 / 50; // 967
+
+    if (screen_lines == d_lines) {
+        screen_lines = 0;
+        *vsync_ptr = 1;
+    }
 
     if (screen_line == N_lines_total) {
         screen_line = 0;
@@ -121,10 +130,6 @@ inline static void dma_handler_VGA_impl() {
         //синхросигналы
         if ((screen_line >= line_VS_begin) && (screen_line <= line_VS_end)){
             dma_channel_set_read_addr(dma_chan_ctrl, &lines_pattern[1], false); //VS SYNC
-            if(screen_line == line_VS_begin)
-            {
-               *vsync_ptr=1;
-            }
         }
         else
             dma_channel_set_read_addr(dma_chan_ctrl, &lines_pattern[0], false);

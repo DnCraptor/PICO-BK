@@ -610,20 +610,6 @@ static TCPU_Arg AT_OVL CPU_GetArgAdrB (uint_fast8_t SrcCode)
     return 0;
 }
 
-void CPU_Iot100 (void)
-{
-    TCPU_Arg ArgS;
-    TCPU_Psw Psw = PSW;
-    CPU_INST_INTERRUPT (0100);
-    CPU_CALC_TIMING (CPU_TIMING_IOT);
-
-BusFault:
-
-    return;
-}
-
-
-
 void AT_OVL CPU_Stop (void)
 {
     TCPU_Arg ArgS;
@@ -639,8 +625,6 @@ void AT_OVL CPU_Stop (void)
     CPU_CALC_TIMING (CPU_TIMING_STOP);
     return;
 }
-
-
 
 #include "fdd.h"
 #include "CPU_i.h"
@@ -707,6 +691,8 @@ void set_bk0010mode(bk_mode_t mode) {
     }
 }
 
+extern uint8_t* vsync_ptr;
+
 void AT_OVL CPU_RunInstruction (void) {
     if ((PC & 0177776) == m_nFDDCatchAddr && is_fdd_suppored()) {
         EmulateFDD();
@@ -720,6 +706,7 @@ void AT_OVL CPU_RunInstruction (void) {
     TCPU_Arg ArgD;
     TCPU_Arg Res;
     TCPU_Psw Psw = PSW;
+
     if ((Psw & 0200) == 0 && (Device_Data.CPU_State.Flags & (CPU_FLAG_KEY_VECTOR_60 | CPU_FLAG_KEY_VECTOR_274))) {
         if (Device_Data.CPU_State.Flags & CPU_FLAG_KEY_VECTOR_60)
         {
@@ -737,6 +724,13 @@ void AT_OVL CPU_RunInstruction (void) {
             CPU_CALC_TIMING    (CPU_TIMING_INT);
             goto Exit;
         }
+    }
+
+    if (*vsync_ptr && is_bk0011mode() && !(Device_Data.SysRegs.WrReg177662 & (1 << 14))) {
+        *vsync_ptr = 0;
+        CPU_INST_INTERRUPT (0100);
+        CPU_CALC_TIMING (CPU_TIMING_IOT);
+        goto Exit;
     }
 
     DEBUG_PRINT (("%06o: ", (int) PC));
