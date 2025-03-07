@@ -726,11 +726,14 @@ void AT_OVL CPU_RunInstruction (void) {
         }
     }
 
-    if (*vsync_ptr && is_bk0011mode() && !(Device_Data.SysRegs.WrReg177662 & (1 << 14))) {
+    if (*vsync_ptr) { // 50 Hz interrupt
         *vsync_ptr = 0;
-        CPU_INST_INTERRUPT (0100);
-        CPU_CALC_TIMING (CPU_TIMING_IOT);
-        goto Exit;
+        if ((Psw & 0200) == 0 && is_bk0011mode() && !(Device_Data.SysRegs.WrReg177662 & (1 << 14))) {
+            DEBUG_PRINT (("               INTERRUPT VEC=100"));
+            CPU_INST_INTERRUPT (0100);
+            CPU_CALC_TIMING (CPU_TIMING_IOT);
+            goto Exit;
+        }
     }
 
     DEBUG_PRINT (("%06o: ", (int) PC));
