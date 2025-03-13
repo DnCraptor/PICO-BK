@@ -78,7 +78,7 @@ bool word_to_drive(uint8_t drive, size_t pos, uint16_t word) {
     FRESULT r = f_lseek(f, pos);
     if (r != FR_OK) return false;
     UINT bw;
-    r = f_read(f, &word, 2, &bw);
+    r = f_write(f, &word, 2, &bw);
     if (r != FR_OK) return false;
     gpio_put(PICO_DEFAULT_LED_PIN, false);
     return true;
