@@ -7,15 +7,15 @@ set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 # Initialise pico_sdk from installed location
 # (note this can come from environment, CMake cache etc)
 
-# == DO NEVER EDIT THE NEXT LINES for Raspberry Pi Pico VS Code Extension to work ==
+# == DO NOT EDIT THE FOLLOWING LINES for the Raspberry Pi Pico VS Code Extension to work ==
 if(WIN32)
     set(USERHOME $ENV{USERPROFILE})
 else()
     set(USERHOME $ENV{HOME})
 endif()
-set(sdkVersion 2.0.0)
-set(toolchainVersion 13_2_Rel1)
-set(picotoolVersion 2.0.0)
+set(sdkVersion 2.1.1)
+set(toolchainVersion 14_2_Rel1)
+set(picotoolVersion 2.1.1)
 set(picoVscode ${USERHOME}/.pico-sdk/cmake/pico-vscode.cmake)
 if (EXISTS ${picoVscode})
     include(${picoVscode})
@@ -165,11 +165,16 @@ target_compile_definitions(${PROJECT_NAME} PRIVATE
         PICO_DEFAULT_UART_RX_PIN=-1
         PICO_DEFAULT_UART_TX_PIN=0
 
+        KBD_CLOCK_PIN=0
+        KBD_DATA_PIN=1
+
         # SDCARD
         SDCARD_PIN_SPI0_CS=5
         SDCARD_PIN_SPI0_SCK=2
         SDCARD_PIN_SPI0_MOSI=3
         SDCARD_PIN_SPI0_MISO=4
+
+        beginVGA_PIN=6
 
         # NES Gamepad
         USE_NESPAD
@@ -193,6 +198,8 @@ target_compile_definitions(${PROJECT_NAME} PRIVATE
 
         LOAD_WAV_PIO=22
         LOAD_WAV_2_COVOX=1
+        PWM_PIN0=26
+        PWM_PIN1=27
         BEEPER_PIN=28
 
         BUILD_IN_FDD0

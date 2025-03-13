@@ -51,8 +51,6 @@ uint8_t __aligned(4096) TEXT_VIDEO_RAM[VIDEORAM_SIZE] = { 0 };
 uint8_t __aligned(4096) RAM[RAM_SIZE] = { 0 };
 
 pwm_config config = pwm_get_default_config();
-#define PWM_PIN0 (26)
-#define PWM_PIN1 (27)
 
 void PWM_init_pin(uint8_t pinN, uint16_t max_lvl) {
     gpio_set_function(pinN, GPIO_FUNC_PWM);
@@ -174,6 +172,23 @@ inline static int parse_conf_word(const char* buf, const char* param, size_t ple
 extern "C" bool is_swap_wins_enabled;
 extern "C" volatile bool is_dendy_joystick;
 extern "C" volatile bool is_kbd_joystick;
+extern "C" uint8_t kbdpad1_A;
+extern "C" uint8_t kbdpad2_A;
+extern "C" uint8_t kbdpad1_B;
+extern "C" uint8_t kbdpad2_B;
+extern "C" uint8_t kbdpad1_START;
+extern "C" uint8_t kbdpad2_START;
+extern "C" uint8_t kbdpad1_SELECT;
+extern "C" uint8_t kbdpad2_SELECT;
+extern "C" uint8_t kbdpad1_UP;
+extern "C" uint8_t kbdpad2_UP;
+extern "C" uint8_t kbdpad1_DOWN;
+extern "C" uint8_t kbdpad2_DOWN;
+extern "C" uint8_t kbdpad1_LEFT;
+extern "C" uint8_t kbdpad2_LEFT;
+extern "C" uint8_t kbdpad1_RIGHT;
+extern "C" uint8_t kbdpad2_RIGHT;
+
 
 inline static void read_config(const char* path) {
     FIL fil;
@@ -234,6 +249,54 @@ inline static void read_config(const char* path) {
     if (mode >= 0 && mode <= 1) {
         is_kbd_joystick = (bool)mode;
     }
+    const char p9[] = "kbdpad1_A:";
+    mode = parse_conf_word(buf, p9, sizeof(p9), 256);
+    if (mode >= 0 && mode < 0x80)  kbdpad1_A = mode;
+    const char p10[] = "kbdpad2_A:";
+    mode = parse_conf_word(buf, p10, sizeof(p10), 256);
+    if (mode >= 0 && mode < 0x80)  kbdpad2_A = mode;
+    const char p11[] = "kbdpad1_B:";
+    mode = parse_conf_word(buf, p11, sizeof(p11), 256);
+    if (mode >= 0 && mode < 0x80)  kbdpad1_B = mode;
+    const char p12[] = "kbdpad2_B:";
+    mode = parse_conf_word(buf, p12, sizeof(p12), 256);
+    if (mode >= 0 && mode < 0x80)  kbdpad2_B = mode;
+    const char p13[] = "kbdpad1_START:";
+    mode = parse_conf_word(buf, p13, sizeof(p13), 256);
+    if (mode >= 0 && mode < 0x80)  kbdpad1_START = mode;
+    const char p14[] = "kbdpad2_START:";
+    mode = parse_conf_word(buf, p14, sizeof(p14), 256);
+    if (mode >= 0 && mode < 0x80)  kbdpad2_START = mode;
+    const char p15[] = "kbdpad1_SELECT:";
+    mode = parse_conf_word(buf, p15, sizeof(p15), 256);
+    if (mode >= 0 && mode < 0x80)  kbdpad1_SELECT = mode;
+    const char p16[] = "kbdpad2_SELECT:";
+    mode = parse_conf_word(buf, p16, sizeof(p16), 256);
+    if (mode >= 0 && mode < 0x80)  kbdpad2_SELECT = mode;
+    const char p17[] = "kbdpad1_UP:";
+    mode = parse_conf_word(buf, p17, sizeof(p17), 256);
+    if (mode >= 0 && mode < 0x80)  kbdpad1_UP = mode;
+    const char p18[] = "kbdpad2_UP:";
+    mode = parse_conf_word(buf, p18, sizeof(p18), 256);
+    if (mode >= 0 && mode < 0x80)  kbdpad2_UP = mode;
+    const char p19[] = "kbdpad1_DOWN:";
+    mode = parse_conf_word(buf, p19, sizeof(p19), 256);
+    if (mode >= 0 && mode < 0x80)  kbdpad1_DOWN = mode;
+    const char p20[] = "kbdpad2_DOWN:";
+    mode = parse_conf_word(buf, p20, sizeof(p20), 256);
+    if (mode >= 0 && mode < 0x80)  kbdpad2_DOWN = mode;
+    const char p21[] = "kbdpad1_LEFT:";
+    mode = parse_conf_word(buf, p21, sizeof(p21), 256);
+    if (mode >= 0 && mode < 0x80)  kbdpad1_LEFT = mode;
+    const char p22[] = "kbdpad2_LEFT:";
+    mode = parse_conf_word(buf, p22, sizeof(p22), 256);
+    if (mode >= 0 && mode < 0x80)  kbdpad2_LEFT = mode;
+    const char p23[] = "kbdpad1_RIGHT:";
+    mode = parse_conf_word(buf, p23, sizeof(p23), 256);
+    if (mode >= 0 && mode < 0x80)  kbdpad1_RIGHT = mode;
+    const char p24[] = "kbdpad2_RIGHT:";
+    mode = parse_conf_word(buf, p24, sizeof(p24), 256);
+    if (mode >= 0 && mode < 0x80)  kbdpad2_RIGHT = mode;
     f_close(&fil);
 }
 
@@ -245,6 +308,9 @@ static void init_fs() {
         logMsg(tmp);
     } else {
         SD_CARD_AVAILABLE = true;
+        #if BOOT_DEBUG || KBD_DEBUG || MNGR_DEBUG || DSK_DEBUG || INVALID_DEBUG
+        f_unlink("\\bk.log");
+        #endif
     }
 
     DIRECT_RAM_BORDER = PSRAM_AVAILABLE ? RAM_SIZE : (SD_CARD_AVAILABLE ? RAM_PAGE_SIZE : RAM_SIZE);
@@ -265,20 +331,25 @@ static void init_fs() {
 }
 
 int main() {
-#if (OVERCLOCKING > 270)
-    vreg_set_voltage(VREG_VOLTAGE_1_40);
+#if !PICO_RP2040
+    volatile uint32_t *qmi_m0_timing=(uint32_t *)0x400d000c;
+    vreg_disable_voltage_limit();
+    vreg_set_voltage(VREG_VOLTAGE_1_60);
     sleep_ms(33);
-    set_sys_clock_khz(OVERCLOCKING * 1000, true);
+    *qmi_m0_timing = 0x60007204;
+    set_sys_clock_khz(OVERCLOCKING * KHZ, 0);
+    *qmi_m0_timing = 0x60007303;
 #else
-    vreg_set_voltage(VREG_VOLTAGE_1_15);
-    sleep_ms(33);
-    set_sys_clock_khz(270000, true);
+    hw_set_bits(&vreg_and_chip_reset_hw->vreg, VREG_AND_CHIP_RESET_VREG_VSEL_BITS);
+    sleep_ms(10);
+    set_sys_clock_khz(OVERCLOCKING * KHZ, true);
 #endif
+
     PWM_init_pin(BEEPER_PIN, (1 << 12) - 1);
-#ifdef SOUND_SYSTEM
+    #ifdef SOUND_SYSTEM
     PWM_init_pin(PWM_PIN0, (1 << 12) - 1);
     PWM_init_pin(PWM_PIN1, (1 << 12) - 1);
-#endif
+    #endif
 
 #if LOAD_WAV_PIO
     //пин ввода звука

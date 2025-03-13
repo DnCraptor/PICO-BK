@@ -17,6 +17,8 @@
 #include "ram_page.h"
 
 int pallete_mask = 3; // 11 - 2 bits
+uint8_t volatile vsync;
+uint8_t * vsync_ptr=&vsync;
 
 uint16_t pio_program_VGA_instructions[] = {
     //     .wrap_target
@@ -90,13 +92,22 @@ void graphics_inc_palleter_offset() {
     if (g_conf.graphics_pallette_idx > 0b1111) g_conf.graphics_pallette_idx = 0;
 }
 
+
 inline static void dma_handler_VGA_impl() {
     dma_hw->ints0 = 1u << dma_chan_ctrl;
     static uint32_t frame_number = 0;
     static uint32_t screen_line = 0;
     static uint8_t* input_buffer = NULL;
     static uint32_t* * prev_output_buffer = 0;
+    static uint32_t screen_lines = 0;
     screen_line++;
+    screen_lines++;
+    static const uint32_t d_lines = 806 * 60 / 50; // 967
+
+    if (screen_lines == d_lines) {
+        screen_lines = 0;
+        *vsync_ptr = 1;
+    }
 
     if (screen_line == N_lines_total) {
         screen_line = 0;
@@ -117,8 +128,9 @@ inline static void dma_handler_VGA_impl() {
         }
 
         //синхросигналы
-        if ((screen_line >= line_VS_begin) && (screen_line <= line_VS_end))
+        if ((screen_line >= line_VS_begin) && (screen_line <= line_VS_end)){
             dma_channel_set_read_addr(dma_chan_ctrl, &lines_pattern[1], false); //VS SYNC
+        }
         else
             dma_channel_set_read_addr(dma_chan_ctrl, &lines_pattern[0], false);
         return;
@@ -220,7 +232,6 @@ inline static void dma_handler_VGA_impl() {
         dma_channel_set_read_addr(dma_chan_ctrl, output_buffer, false);
         return;
     };
-    //зона прорисовки изображения
     int addr_in_buf = 64 * (y + g_conf.shift_y - 0330);
     while (addr_in_buf < 0) addr_in_buf += 16 << 10;
     while (addr_in_buf >= 16 << 10) addr_in_buf -= 16 << 10;
@@ -477,15 +488,13 @@ void set_start_debug_line(int _start_debug_line) {
     start_debug_line = _start_debug_line;
 }
 
-#if BOOT_DEBUG || KBD_DEBUG || MNGR_DEBUG || DSK_DEBUG
+#if BOOT_DEBUG || KBD_DEBUG || MNGR_DEBUG || DSK_DEBUG || INVALID_DEBUG
 void logFile(char* msg);
 #endif
 
 void logMsg(char* msg) {
-#if BOOT_DEBUG || KBD_DEBUG || MNGR_DEBUG || DSK_DEBUG
+#if BOOT_DEBUG || KBD_DEBUG || MNGR_DEBUG || DSK_DEBUG || INVALID_DEBUG
     { char tmp[85]; sprintf(tmp, "%s\n", msg); logFile(tmp); }
-#else
-    printf("%s\n", msg);
 #endif
     if (graphics_mode != TEXTMODE_ || manager_started) {
         // log in text mode only

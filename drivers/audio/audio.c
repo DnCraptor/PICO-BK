@@ -22,8 +22,6 @@
  * IN THE SOFTWARE.
  */
 
-#define PWM_PIN0 (AUDIO_PWM_PIN&0xfe)
-#define PWM_PIN1 (PWM_PIN0+1)
 
 #include "audio.h"
 

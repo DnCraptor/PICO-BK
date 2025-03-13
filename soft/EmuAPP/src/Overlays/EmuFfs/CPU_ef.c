@@ -91,28 +91,28 @@ void AT_OVL CPU_TimerRun (void)
 }
 
 TCPU_Arg AT_OVL CPU_ReadMemW (TCPU_Arg Adr) {
-    DEBUG_PRINT(("CPU_ReadMemW Adr: %oo (%Xh) Page: (#%d)", Adr, Adr, Adr >> 12));
+    ///DEBUG_PRINT(("CPU_ReadMemW Adr: %oo (%Xh) Page: (#%d)", Adr, Adr, Adr >> 12));
     uint16_t *pReg;
     if (Adr >= 0177130 && is_fdd_suppored()) {
         switch (Adr >> 1) {
             case (0177130 >> 1):
                 Device_Data.SysRegs.RdReg177130 = GetState();
-                DSK_PRINT(("W RdReg177130: %04Xh", Device_Data.SysRegs.RdReg177130));
+                ///DSK_PRINT(("W RdReg177130: %04Xh", Device_Data.SysRegs.RdReg177130));
                 return Device_Data.SysRegs.RdReg177130;
             case (0177132 >> 1):
                 Device_Data.SysRegs.Reg177132 = GetData();
-                DSK_PRINT(("W Reg177132: %04Xh", Device_Data.SysRegs.Reg177132));
+                ///DSK_PRINT(("W Reg177132: %04Xh", Device_Data.SysRegs.Reg177132));
                 return Device_Data.SysRegs.Reg177132;
             }
     }
     if (Adr < CPU_START_IO_ADR) {
         uintptr_t Page = Device_Data.MemPages [(Adr) >> 12];
-        DEBUG_PRINT(("CPU_ReadMemW Adr: %oo (%Xh) Page: %08Xh (#%d)", Adr, Adr, Page, Adr >> 12));
+        ///DEBUG_PRINT(("CPU_ReadMemW Adr: %oo (%Xh) Page: %08Xh (#%d)", Adr, Adr, Page, Adr >> 12));
         if (Page) {
             uintptr_t t = (Page + ((Adr) & 0x0FFE));
-            DEBUG_PRINT(("CPU_ReadMemW (Page + ((Adr) & 0x0FFE)): %08Xh", t));
+            ///DEBUG_PRINT(("CPU_ReadMemW (Page + ((Adr) & 0x0FFE)): %08Xh", t));
             uint16_t r = AnyMem_r_u16 ((uint16_t *)t);
-            DEBUG_PRINT(("CPU_ReadMemW AnyMem_r_u16(%08X): %oo", t, r));
+            ///EBUG_PRINT(("CPU_ReadMemW AnyMem_r_u16(%08X): %oo", t, r));
             return r;
         }
         return CPU_ARG_READ_ERR;
@@ -132,6 +132,14 @@ TCPU_Arg AT_OVL CPU_ReadMemW (TCPU_Arg Adr) {
             pReg = &Device_Data.SysRegs.RdReg177716;
             break;
         }
+        /**
+При чтении регистра 177624 можно определить текущее состояние приёмопередатчика. Основные биты:
+
+Бит 7 (D7, 200₈) – ТЛГ отключен (1, если телетайп не подключен).
+Бит 6 (D6, 100₈) – Передатчик готов (1, если можно передавать данные).
+Бит 0 (D0, 001₈) – Принятые данные готовы (1, если есть новый принятый символ).
+        */
+        case (0177624 >> 1): return 0177777;
         default: return CPU_ARG_READ_ERR;
     }
     return *pReg;
@@ -139,20 +147,20 @@ TCPU_Arg AT_OVL CPU_ReadMemW (TCPU_Arg Adr) {
 
 TCPU_Arg AT_OVL CPU_ReadMemB (TCPU_Arg Adr) {
     uint16_t *pReg;
-    DEBUG_PRINT(("CPU_ReadMemB Adr: %oo (%Xh) Page: (#%d)", Adr, Adr, Adr >> 12));
+   /// DEBUG_PRINT(("CPU_ReadMemB Adr: %oo (%Xh) Page: (#%d)", Adr, Adr, Adr >> 12));
     if (Adr >= 0177130 && is_fdd_suppored()) {
         switch (Adr >> 1) {
             case (0177130 >> 1):
                 Device_Data.SysRegs.RdReg177130 = GetState();
                 if (0177131 == Adr) { // ?
-                    DSK_PRINT(("B RdReg177131: %02Xh", (Device_Data.SysRegs.RdReg177130 >> 8) & 0xff));
+                    ///DSK_PRINT(("B RdReg177131: %02Xh", (Device_Data.SysRegs.RdReg177130 >> 8) & 0xff));
                     return (Device_Data.SysRegs.RdReg177130 >> 8) & 0xff;
                 }
-                DSK_PRINT(("B RdReg177130: %02Xh", Device_Data.SysRegs.RdReg177130 & 0xff));
+                ///DSK_PRINT(("B RdReg177130: %02Xh", Device_Data.SysRegs.RdReg177130 & 0xff));
                 return Device_Data.SysRegs.RdReg177130 & 0xff;
             case (0177132 >> 1):
                 Device_Data.SysRegs.Reg177132 = GetData();
-                DSK_PRINT(("B Reg177132: %04Xh",  Device_Data.SysRegs.Reg177132));
+                ////DSK_PRINT(("B Reg177132: %04Xh",  Device_Data.SysRegs.Reg177132));
                 return Device_Data.SysRegs.Reg177132 & 0xff;
         }
     }
@@ -176,6 +184,14 @@ TCPU_Arg AT_OVL CPU_ReadMemB (TCPU_Arg Adr) {
             pReg = &Device_Data.SysRegs.RdReg177716;
             break;
         }
+        /**
+При чтении регистра 177624 можно определить текущее состояние приёмопередатчика. Основные биты:
+
+Бит 7 (D7, 200₈) – ТЛГ отключен (1, если телетайп не подключен).
+Бит 6 (D6, 100₈) – Передатчик готов (1, если можно передавать данные).
+Бит 0 (D0, 001₈) – Принятые данные готовы (1, если есть новый принятый символ).
+        */
+        case (0177624 >> 1): return 255;
         default: return CPU_ARG_READ_ERR;
     }
     return ((uint8_t *) pReg) [Adr & 1];
@@ -263,17 +279,18 @@ static inline void select_11_page(uint16_t Word) {
 
 TCPU_Arg AT_OVL CPU_WriteW (TCPU_Arg Adr, uint_fast16_t Word) {
     uint_fast16_t PrevWord;
-    DEBUG_PRINT(("CPU_WriteW(%oo, %oo) Page: #%d", Adr, Word, Adr >> 12));
+    ///DEBUG_PRINT(("CPU_WriteW(%oo, %oo) Page: #%d", Adr, Word, Adr >> 12));
     if (CPU_IS_ARG_REG (Adr)) {
-        DEBUG_PRINT(("R%d <= %oo", CPU_GET_ARG_REG_INDEX (Adr), Word));
+        ///DEBUG_PRINT(("R%d <= %oo", CPU_GET_ARG_REG_INDEX (Adr), Word));
         Device_Data.CPU_State.r [CPU_GET_ARG_REG_INDEX (Adr)] = (uint16_t) Word;
         return CPU_ARG_WRITE_OK;
     }
+#if BK_FDD_16K
     if (g_conf.bk0010mode == BK_FDD) {
         if (Adr < 0160000) {
             uintptr_t Page = Device_Data.MemPages[Adr >> 12];
             auto addr = Page + (Adr & 0x0FFE);
-            DEBUG_PRINT(("CPU_WriteW(%oo, %oo) Page: %08X (#%d)", Adr, Word, Page, Adr >> 12));
+            ///DEBUG_PRINT(("CPU_WriteW(%oo, %oo) Page: %08X (#%d)", Adr, Word, Page, Adr >> 12));
             if (Page && addr < CPU_PAGE01_MEM_ADR + RAM_PAGES_SIZE) {
                 AnyMem_w_u16 ((uint16_t *)addr, Word);
                 return CPU_ARG_WRITE_OK;
@@ -281,10 +298,12 @@ TCPU_Arg AT_OVL CPU_WriteW (TCPU_Arg Adr, uint_fast16_t Word) {
             return CPU_ARG_WRITE_ERR;
         }
     }
-    else if (Adr < 0140000) {
+    else
+#endif
+    if (Adr < 0140000) {
         uintptr_t Page = Device_Data.MemPages [Adr >> 12];
         auto addr = Page + (Adr & 0x0FFE);
-        DEBUG_PRINT(("CPU_WriteW(%oo, %oo) Page: %08X (#%d)", Adr, Word, Page, Adr >> 12));
+        ///DEBUG_PRINT(("CPU_WriteW(%oo, %oo) Page: %08X (#%d)", Adr, Word, Page, Adr >> 12));
         if (Page && addr < CPU_PAGE01_MEM_ADR + RAM_PAGES_SIZE) {
             AnyMem_w_u16 ((uint16_t *)addr, Word);
             return CPU_ARG_WRITE_OK;
@@ -294,7 +313,7 @@ TCPU_Arg AT_OVL CPU_WriteW (TCPU_Arg Adr, uint_fast16_t Word) {
     switch (Adr >> 1) {
         case (0177130 >> 1):
             if (is_fdd_suppored()) {
-                DSK_PRINT(("W WrReg177130 <- %04Xh", Word));
+                ///DSK_PRINT(("W WrReg177130 <- %04Xh", Word));
                 Device_Data.SysRegs.WrReg177130 = (uint16_t) Word;
                 SetCommand(Word);
             } else {
@@ -303,7 +322,7 @@ TCPU_Arg AT_OVL CPU_WriteW (TCPU_Arg Adr, uint_fast16_t Word) {
             break;
         case (0177132 >> 1):
             if (is_fdd_suppored()) {
-                DSK_PRINT(("W Reg177132 <- %04Xh", Word));
+                ///DSK_PRINT(("W Reg177132 <- %04Xh", Word));
                 Device_Data.SysRegs.Reg177132 = (uint16_t) Word;
                 WriteData(Word);
             } else {
@@ -411,7 +430,7 @@ TCPU_Arg AT_OVL CPU_WriteW (TCPU_Arg Adr, uint_fast16_t Word) {
             }
             break;
         case (0177716 >> 1):
-            DEBUG_PRINT(("case (0177716 >> 1) on CPU_WriteW - switch pages: %d", (Word >> 12) & 7));
+            ///DEBUG_PRINT(("case (0177716 >> 1) on CPU_WriteW - switch pages: %d", (Word >> 12) & 7));
             if (Word & (1U << 11) && is_bk0011mode()) {
                 select_11_page((uint16_t) Word);
             }
@@ -435,11 +454,12 @@ TCPU_Arg AT_OVL CPU_WriteW (TCPU_Arg Adr, uint_fast16_t Word) {
 TCPU_Arg AT_OVL CPU_WriteB (TCPU_Arg Adr, uint_fast8_t Byte) {
     uint_fast16_t Word;
     uint_fast16_t PrevWord;
-    DEBUG_PRINT(("CPU_WriteB(%08Xh, %oo) Page: #%d", Adr, Word, Adr >> 12));
+    ///DEBUG_PRINT(("CPU_WriteB(%08Xh, %oo) Page: #%d", Adr, Word, Adr >> 12));
     if (CPU_IS_ARG_REG (Adr)) {
         *(uint8_t *) &Device_Data.CPU_State.r [CPU_GET_ARG_REG_INDEX (Adr)] = (uint8_t) Byte;
         return CPU_ARG_WRITE_OK;
     }
+#if BK_FDD_16K
     if (g_conf.bk0010mode == BK_FDD) {
         if (Adr < 0160000) {
             uintptr_t Page = Device_Data.MemPages[Adr >> 12];
@@ -451,6 +471,7 @@ TCPU_Arg AT_OVL CPU_WriteB (TCPU_Arg Adr, uint_fast8_t Byte) {
             return CPU_ARG_WRITE_ERR;
         }       
     }
+#endif
     if (Adr < 0140000) {
         uintptr_t Page = Device_Data.MemPages [Adr >> 12];
         auto addr = Page + ((Adr) & 0x0FFF);
@@ -465,7 +486,7 @@ TCPU_Arg AT_OVL CPU_WriteB (TCPU_Arg Adr, uint_fast8_t Byte) {
     switch (Adr >> 1) {
         case (0177130 >> 1):
             if (is_fdd_suppored()) {
-                DSK_PRINT(("B WrReg177130 <- %04Xh", Word));
+                ///DSK_PRINT(("B WrReg177130 <- %04Xh", Word));
                 Device_Data.SysRegs.WrReg177130 = (uint16_t) Word;
                 SetCommand(Word & 0xFF);
             } else {
@@ -474,7 +495,7 @@ TCPU_Arg AT_OVL CPU_WriteB (TCPU_Arg Adr, uint_fast8_t Byte) {
             break;
         case (0177132 >> 1):
             if (is_fdd_suppored()) {
-                DSK_PRINT(("B Reg177132 <- %04Xh", Word));
+                ///DSK_PRINT(("B Reg177132 <- %04Xh", Word));
                 Device_Data.SysRegs.Reg177132 = (uint16_t) Word;
                 WriteData(Word & 0xFF);
             } else {
@@ -547,7 +568,7 @@ TCPU_Arg AT_OVL CPU_WriteB (TCPU_Arg Adr, uint_fast8_t Byte) {
             break;
         case (0177716 >> 1):
             if (Word & (1U << 11) && is_bk0011mode()) {
-                DBGM_PRINT(("CPU_WriteB -> select_11_page(0%o) ", Word));
+                ///DBGM_PRINT(("CPU_WriteB -> select_11_page(0%o) ", Word));
                 select_11_page((uint16_t) Word);
             }
             else {

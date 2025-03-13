@@ -119,7 +119,8 @@
 #define PS2_KP_9	0x7D
 
 // Special
-#define PS2_PAUSE	0x214
+#define PS2_PAUSE	0xE114 // +77h
+//#define PS2_PAUSE	0x214
 #define PS2_PRINT	0x17C
 
 

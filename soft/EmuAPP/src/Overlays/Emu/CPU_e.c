@@ -615,7 +615,7 @@ void AT_OVL CPU_Stop (void)
     TCPU_Arg ArgS;
     TCPU_Psw Psw = PSW;
 
-    DEBUG_PRINT (("\nSTOP"));
+    INVALID_PRINT (("\nSTOP"));
 
   BusFault:
 
@@ -691,6 +691,8 @@ void set_bk0010mode(bk_mode_t mode) {
     }
 }
 
+extern uint8_t* vsync_ptr;
+
 void AT_OVL CPU_RunInstruction (void) {
     if ((PC & 0177776) == m_nFDDCatchAddr && is_fdd_suppored()) {
         EmulateFDD();
@@ -704,6 +706,7 @@ void AT_OVL CPU_RunInstruction (void) {
     TCPU_Arg ArgD;
     TCPU_Arg Res;
     TCPU_Psw Psw = PSW;
+
     if ((Psw & 0200) == 0 && (Device_Data.CPU_State.Flags & (CPU_FLAG_KEY_VECTOR_60 | CPU_FLAG_KEY_VECTOR_274))) {
         if (Device_Data.CPU_State.Flags & CPU_FLAG_KEY_VECTOR_60)
         {
@@ -723,6 +726,16 @@ void AT_OVL CPU_RunInstruction (void) {
         }
     }
 
+    if (*vsync_ptr) { // 50 Hz interrupt
+        *vsync_ptr = 0;
+        if ((Psw & 0200) == 0 && is_bk0011mode() && !(Device_Data.SysRegs.WrReg177662 & (1 << 14))) {
+            DEBUG_PRINT (("               INTERRUPT VEC=100"));
+            CPU_INST_INTERRUPT (0100);
+            CPU_CALC_TIMING (CPU_TIMING_IOT);
+            goto Exit;
+        }
+    }
+
     DEBUG_PRINT (("%06o: ", (int) PC));
 
     OpCode = CPU_ReadMemW (PC); PC += 2;
@@ -738,15 +751,16 @@ void AT_OVL CPU_RunInstruction (void) {
           case 000: switch (OpCode & 077)
           {
             case 000: // 000000   HALT
-                    DEBUG_PRINT (("HALT  "));
+                    INVALID_PRINT (("HALT  "));
                     CPU_INST_INTERRUPT (04);
+                    /// AdrD =   0160002;
+                    ////PC = AdrD;
                     CPU_CALC_TIMING    (CPU_TIMING_HALT);
                     break;
 
             case 001: // 000001   WAIT
                     DEBUG_PRINT (("WAIT  "));
                     CPU_CALC_TIMING (CPU_TIMING_WAIT);
-//                  exit (1);
                     break;
 
             case 002: // 000002   RTI
@@ -1456,16 +1470,15 @@ void AT_OVL CPU_RunInstruction (void) {
     return;
 
   InvalidOpCode:
-    DEBUG_PRINT (("  !!!INVALID OPERATION CODE!!!"));
-    CPU_INST_INTERRUPT (04);
+    INVALID_PRINT (("  !!!INVALID OPERATION CODE!!!"));
+    CPU_INST_INTERRUPT (010);
     PSW = Psw;
-    DEBUG_PRINT (("  PSW=%o\n", (int) Psw));
+    INVALID_PRINT (("  PSW=%o\n", (int) Psw));
     CPU_CALC_TIMING (CPU_TIMING_INT);
-//  exit (1);
     return;
 
   BusFault:
-    DEBUG_PRINT (("\n!!!BUS FAULT!!!"));
+    INVALID_PRINT (("\n!!!BUS FAULT!!!"));
     CPU_INST_INTERRUPT (04);
     PSW = Psw;
     DEBUG_PRINT (("  PSW=%o\n", (int) Psw));

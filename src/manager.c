@@ -20,6 +20,8 @@ volatile bool is_dendy_joystick = true;
 static void bottom_line();
 static void redraw_window();
 
+static uint8_t kbdpad_state  = 0;  // Joystick 1
+static uint8_t kbdpad_state2 = 0;  // Joystick 2
 static volatile int tormoz = 6;
 static volatile bool backspacePressed = false;
 volatile bool enterPressed = false;
@@ -42,6 +44,7 @@ static volatile bool f11Pressed = false;
 static volatile bool f12Pressed = false;
 static volatile bool tabPressed = false;
 static volatile bool spacePressed = false;
+static volatile bool confEditMode = false;
 volatile bool escPressed = false;
 static volatile bool leftPressed = false;
 static volatile bool rightPressed = false;
@@ -68,6 +71,23 @@ static volatile uint32_t lastCleanableScanCode = 0;
 static uint32_t lastSavedScanCode = 0;
 int nespad_state_delay = DPAD_STATE_DELAY;
 
+uint8_t kbdpad1_A = 0x1E; // A
+uint8_t kbdpad2_A = 0x11; // W
+uint8_t kbdpad1_B = 0x10; // Q
+uint8_t kbdpad2_B = 0x2C; // Z
+uint8_t kbdpad1_START = 0x20; // D
+uint8_t kbdpad2_START = 0x18; // O
+uint8_t kbdpad1_SELECT = 0x1F; // S
+uint8_t kbdpad2_SELECT = 0x2D; // X
+uint8_t kbdpad1_UP = 0x19; // P
+uint8_t kbdpad2_UP = 0x25; // K
+uint8_t kbdpad1_DOWN = 0x27; // ;
+uint8_t kbdpad2_DOWN = 0x34; // .
+uint8_t kbdpad1_LEFT = 0x26; // L
+uint8_t kbdpad2_LEFT = 0x12; // E
+uint8_t kbdpad1_RIGHT = 0x28; // ,(")
+uint8_t kbdpad2_RIGHT = 0x17; // I
+
 inline static void scan_code_processed() {
   if (lastCleanableScanCode) {
       lastSavedScanCode = lastCleanableScanCode;
@@ -79,6 +99,7 @@ void scan_code_cleanup() {
   lastSavedScanCode = 0;
   lastCleanableScanCode = 0;
 }
+static bool m_prompt(const char* txt, size_t shift_y);
 
 const static const uint8_t PANEL_TOP_Y = 0;
 static const uint8_t TOTAL_SCREEN_LINES = MAX_HEIGHT;
@@ -149,6 +170,11 @@ static void mark_to_exit(uint8_t cmd) {
     if (!usb_started) // TODO: USB in emulation mode
         mark_to_exit_flag = true;
 }
+static void return_to_mos(uint8_t cmd) {
+    f_unlink(MOS_FILE);
+    watchdog_enable(1, true);
+    while (true);
+}
 
 static inline void fill_panel(file_panel_desc_t* p);
 
@@ -170,16 +196,30 @@ static uint16_t kbd_script[] = { // S160000 Enter
     0x005A,
     0xF05A
 };
-static int kbd_script_idx = 0;
+static volatile int kbd_script_idx = 0;
 static repeating_timer_t timer;
 static bool __not_in_flash_func(timer_callback)(repeating_timer_t *rt) {
     push_script_scan_code(kbd_script[kbd_script_idx++]);
-    bool res = kbd_script_idx < sizeof(kbd_script);
+    bool res = kbd_script_idx < sizeof(kbd_script) / sizeof(uint16_t);
     if (!res) {
         kbd_script_idx = 0;
         cancel_repeating_timer(&timer);
     }
-    return true;
+    return res;
+}
+
+static void InitMemoryValues(uint16_t* pPtr, size_t nMemSize)
+{
+	uint16_t val = 0;
+	uint8_t flag = 0;
+	for (int i = 0; i < (nMemSize >> 1); i++, flag--) {
+		pPtr[i] = val;
+		val = ~val;
+		if (flag == 192) {
+			val = ~val;
+			flag = 0;
+		}
+	}
 }
 
 void reset(uint8_t cmd) {
@@ -191,12 +231,14 @@ void reset(uint8_t cmd) {
 #ifdef AYSOUND
     AY_reset();
 #endif
-    memset(RAM, 0, sizeof RAM);
+    InitMemoryValues(RAM, 32 << 10); // TODO: other chess for 11M
+    memset(CPU_PAGE11_MEM_ADR, 0, 0x04000); // W/A for 16K RAM in ROM
     graphics_set_page(CPU_PAGE51_MEM_ADR, is_bk0011mode() ? 15 : 0);
     graphics_shift_screen((uint16_t)0330 | 0b01000000000);
     main_init();
     mark_to_exit_flag = true;
     if (g_conf.bk0010mode == BK_FDD) {
+        sleep_ms(1500);
         kbd_script_idx = 0;
         add_repeating_timer_ms(200, timer_callback, NULL, &timer);
     }
@@ -285,14 +327,21 @@ static void do_nothing(uint8_t cmd) {
 
 static const line_t bk_mode_lns[] = {
     { 1, " \x81\x8A-0010 + \x8A\x8D\x83\x8C\x84 16K " },
-    { 1, " \x81\x8A-0010 Focal [bugs]" },
+    { 1, " \x81\x8A-0010 Focal + \x8C\x91\x92\x84" },
     { 1, " \x81\x8A-0010-01 Basic 86" },
     { 1, " \x81\x8A-0011M + \x8A\x8D\x83\x8C\x84    " },
     { 1, " \x81\x8A-0011M + \x8C\x91\x92\x84     " }
 };
 
+static int MAX_Z = 24;
 static int z_idx = 0;
+static bool blink = false;
 static void in_conf() {
+    if (z_idx > 8) {
+        draw_label(13, 12, 64, "Use SPACE to start edit, after that any key to set, ESC to exit", false, true);
+    } else {
+        draw_label(13, 12, 64, "Use TAB to select, SPACE to change, ENTER to apply, ESC to exit", false, true);
+    }
     draw_panel(15, 13, 24, 7, "mode:", 0);
     for (int i = 0; i < 5; ++i) {
         bool selected = g_conf.bk0010mode == i;
@@ -306,25 +355,144 @@ static void in_conf() {
     draw_label(15, 25, 23, " is_swap_wins_enabled:", false, z_idx == 6);
     draw_label(15, 26, 23, "    is_dendy_joystick:", false, z_idx == 7);
     draw_label(15, 27, 23, "      is_kbd_joystick:", false, z_idx == 8);
+
+    if (is_kbd_joystick) {
+        draw_label(15, 28, 23, "            kbdpad1_A:", false, z_idx == 9);
+        draw_label(15, 29, 23, "            kbdpad1_B:", false, z_idx == 10);
+        draw_label(15, 30, 23, "        kbdpad1_START:", false, z_idx == 11);
+        draw_label(15, 31, 23, "       kbdpad1_SELECT:", false, z_idx == 12);
+        draw_label(15, 32, 23, "           kbdpad1_UP:", false, z_idx == 13);
+        draw_label(15, 33, 23, "         kbdpad1_DOWN:", false, z_idx == 14);
+        draw_label(15, 34, 23, "         kbdpad1_LEFT:", false, z_idx == 15);
+        draw_label(15, 35, 23, "        kbdpad1_RIGHT:", false, z_idx == 16);
+
+        draw_label(45, 28, 23, "            kbdpad2_A:", false, z_idx == 17);
+        draw_label(45, 29, 23, "            kbdpad2_B:", false, z_idx == 18);
+        draw_label(45, 30, 23, "        kbdpad2_START:", false, z_idx == 19);
+        draw_label(45, 31, 23, "       kbdpad2_SELECT:", false, z_idx == 20);
+        draw_label(45, 32, 23, "           kbdpad2_UP:", false, z_idx == 21);
+        draw_label(45, 33, 23, "         kbdpad2_DOWN:", false, z_idx == 22);
+        draw_label(45, 34, 23, "         kbdpad2_LEFT:", false, z_idx == 23);
+        draw_label(45, 35, 23, "        kbdpad2_RIGHT:", false, z_idx == 24);
+    }
+
     const static char b_on [2] = { 0xFB, 0 };
     const static char b_off[2] = { 0xB0, 0 };
     draw_label(38, 20, 1, g_conf.is_covox_on ? b_on : b_off, z_idx == 1, z_idx == 1);
     draw_label(38, 21, 1, g_conf.is_AY_on ? b_on : b_off, z_idx == 2, z_idx == 2);
     draw_label(38, 22, 1, g_conf.color_mode ? b_on : b_off, z_idx == 3, z_idx == 3);
-    char b[4] = { 0 };
-    snprintf(b, 4, "%d", g_conf.snd_volume);
-    draw_label(38, 23, 2, b, z_idx == 4, z_idx == 4);
+    char b[64] = { 0 };
+    snprintf(b, 8, "%d", g_conf.snd_volume);
+    draw_label(38, 23, 3, b, z_idx == 4, z_idx == 4);
     snprintf(b, 4, "%d", g_conf.graphics_pallette_idx);
     draw_label(38, 24, 3, b, z_idx == 5, z_idx == 5);
     draw_label(38, 25, 1, is_swap_wins_enabled ? b_on : b_off, z_idx == 6, z_idx == 6);
     draw_label(38, 26, 1, is_dendy_joystick ? b_on : b_off, z_idx == 7, z_idx == 7);
     draw_label(38, 27, 1, is_kbd_joystick ? b_on : b_off, z_idx == 8, z_idx == 8);
+
+    uint8_t nk = nespad_state | kbdpad_state;
+    snprintf(b, 64, "Joy bits #1: %d%d%d%d%d%d%d%d #2: %d%d%d%d%d%d%d%d",
+        (nk >> 7) & 1,
+        (nk >> 6) & 1,
+        (nk >> 5) & 1,
+        (nk >> 4) & 1,
+        (nk >> 3) & 1,
+        (nk >> 2) & 1,
+        (nk >> 1) & 1,
+         nk & 1,
+        (kbdpad_state2 >> 7) & 1,
+        (kbdpad_state2 >> 6) & 1,
+        (kbdpad_state2 >> 5) & 1,
+        (kbdpad_state2 >> 4) & 1,
+        (kbdpad_state2 >> 3) & 1,
+        (kbdpad_state2 >> 2) & 1,
+        (kbdpad_state2 >> 1) & 1,
+         kbdpad_state2 & 1
+    );
+    draw_label(68, 13, 45, b, false, false);
+
+    if (is_kbd_joystick) {
+        MAX_Z = 24;
+        snprintf(b, 8, "%d", kbdpad1_A);
+        draw_label(38, 28, 3, b, !blink && z_idx == 9, confEditMode && z_idx == 9);
+        snprintf(b, 8, "%d", kbdpad1_B);
+        draw_label(38, 29, 3, b, !blink && z_idx == 10, confEditMode && z_idx == 10);
+        snprintf(b, 8, "%d", kbdpad1_START);
+        draw_label(38, 30, 3, b, !blink && z_idx == 11, confEditMode && z_idx == 11);
+        snprintf(b, 8, "%d", kbdpad1_SELECT);
+        draw_label(38, 31, 3, b, !blink && z_idx == 12, confEditMode && z_idx == 12);
+        snprintf(b, 8, "%d", kbdpad1_UP);
+        draw_label(38, 32, 3, b, !blink && z_idx == 13, confEditMode && z_idx == 13);
+        snprintf(b, 8, "%d", kbdpad1_DOWN);
+        draw_label(38, 33, 3, b, !blink && z_idx == 14, confEditMode && z_idx == 14);
+        snprintf(b, 8, "%d", kbdpad1_LEFT);
+        draw_label(38, 34, 3, b, !blink && z_idx == 15, confEditMode && z_idx == 15);
+        snprintf(b, 8, "%d", kbdpad1_RIGHT);
+        draw_label(38, 35, 3, b, !blink && z_idx == 16, confEditMode && z_idx == 16);
+
+        snprintf(b, 8, "%d", kbdpad2_A);
+        draw_label(68, 28, 3, b, !blink && z_idx == 17, confEditMode && z_idx == 17);
+        snprintf(b, 8, "%d", kbdpad2_B);
+        draw_label(68, 29, 3, b, !blink && z_idx == 18, confEditMode && z_idx == 18);
+        snprintf(b, 8, "%d", kbdpad2_START);
+        draw_label(68, 30, 3, b, !blink && z_idx == 19, confEditMode && z_idx == 19);
+        snprintf(b, 8, "%d", kbdpad2_SELECT);
+        draw_label(68, 31, 3, b, !blink && z_idx == 20, confEditMode && z_idx == 20);
+        snprintf(b, 8, "%d", kbdpad2_UP);
+        draw_label(68, 32, 3, b, !blink && z_idx == 21, confEditMode && z_idx == 21);
+        snprintf(b, 8, "%d", kbdpad2_DOWN);
+        draw_label(68, 33, 3, b, !blink && z_idx == 22, confEditMode && z_idx == 22);
+        snprintf(b, 8, "%d", kbdpad2_LEFT);
+        draw_label(68, 34, 3, b, !blink && z_idx == 23, confEditMode && z_idx == 23);
+        snprintf(b, 8, "%d", kbdpad2_RIGHT);
+        draw_label(68, 35, 3, b, !blink && z_idx == 24, confEditMode && z_idx == 24);
+    } else {
+        MAX_Z = 8;
+    }
 }
 
 static void conf_it(uint8_t cmd) {
     draw_panel(10, 10, MAX_WIDTH - 20, MAX_HEIGHT - 20, "Startup configuration", 0);
     in_conf();
+    uint16_t prev_nespad_state = 0;
     while(1) {
+        if (confEditMode && lastCleanableScanCode && lastCleanableScanCode != 0xB9 /* SPACE down */) {
+            uint8_t kk = lastCleanableScanCode & 0x7F;
+            switch (z_idx)
+            {
+                case 9 : kbdpad1_A = kk; break;
+                case 10: kbdpad1_B = kk; break;
+                case 11: kbdpad1_START = kk; break;
+                case 12: kbdpad1_SELECT = kk; break;
+                case 13: kbdpad1_UP = kk; break;
+                case 14: kbdpad1_DOWN = kk; break;
+                case 15: kbdpad1_LEFT = kk; break;
+                case 16: kbdpad1_RIGHT = kk; break;
+                case 17: kbdpad2_A = kk; break;
+                case 18: kbdpad2_B = kk; break;
+                case 19: kbdpad2_START = kk; break;
+                case 20: kbdpad2_SELECT = kk; break;
+                case 21: kbdpad2_UP = kk; break;
+                case 22: kbdpad2_DOWN = kk; break;
+                case 23: kbdpad2_LEFT = kk; break;
+                case 24: kbdpad2_RIGHT = kk; break;
+            }
+            confEditMode = false;
+            lastCleanableScanCode = false;
+            upPressed = false;
+            downPressed = false;
+            enterPressed = false;
+            escPressed = false;
+            tabPressed = false;
+            spacePressed = false;
+            blink = false;
+            in_conf();
+        }
+        if (confEditMode) {
+            blink = !blink;
+            sleep_ms(250);
+            in_conf();
+        }
         if (is_dendy_joystick || is_kbd_joystick) {
             if (is_dendy_joystick) nespad_read();
             if (nespad_state_delay > 0) {
@@ -351,11 +519,17 @@ static void conf_it(uint8_t cmd) {
         if (escPressed) break;
         if (enterPressed) {
             enterPressed = false;
+            if (!m_prompt("Save and reboot?", 10)) {
+                draw_panel(10, 10, MAX_WIDTH - 20, MAX_HEIGHT - 20, "Startup configuration", 0);
+                in_conf();
+                continue;
+            }
             FIL fil;
             f_open(&fil, "\\BK\\bk.conf", FA_CREATE_ALWAYS | FA_WRITE);
             char buf[256];
             snprintf(buf, 256,
-             "mode:%d\r\nis_covox_on:%d\r\nis_AY_on:%d\r\ncolor_mode:%d\r\nsnd_volume:%d\r\ngraphics_pallette_idx:%d\r\nis_swap_wins_enabled:%d\r\nis_dendy_joystick:%d\r\nis_kbd_joystick:%d",
+             "mode:%d\r\nis_covox_on:%d\r\nis_AY_on:%d\r\ncolor_mode:%d\r\nsnd_volume:%d\r\n"
+             "graphics_pallette_idx:%d\r\nis_swap_wins_enabled:%d\r\nis_dendy_joystick:%d\r\nis_kbd_joystick:%d\r\n",
                 g_conf.bk0010mode,
                 g_conf.is_covox_on,
                 g_conf.is_AY_on,
@@ -368,8 +542,49 @@ static void conf_it(uint8_t cmd) {
             );
             UINT bw;
             f_write(&fil, buf, strlen(buf), &bw);
+            snprintf(buf, 256,
+             "kbdpad1_A:%d\r\n"
+             "kbdpad2_A:%d\r\n"
+             "kbdpad1_B:%d\r\n"
+             "kbdpad2_B:%d\r\n"
+             "kbdpad1_START:%d\r\n"
+             "kbdpad2_START:%d\r\n"
+             "kbdpad1_SELECT:%d\r\n"
+             "kbdpad2_SELECT:%d\r\n"
+             "kbdpad1_UP:%d\r\n"
+             "kbdpad2_UP:%d\r\n"
+             ,
+                kbdpad1_A,
+                kbdpad2_A,
+                kbdpad1_B,
+                kbdpad2_B,
+                kbdpad1_START,
+                kbdpad2_START,
+                kbdpad1_SELECT,
+                kbdpad2_SELECT,
+                kbdpad1_UP,
+                kbdpad2_UP
+            );
+            f_write(&fil, buf, strlen(buf), &bw);
+            snprintf(buf, 256,
+             "kbdpad1_DOWN:%d\r\n"
+             "kbdpad2_DOWN:%d\r\n"
+             "kbdpad1_LEFT:%d\r\n"
+             "kbdpad2_LEFT:%d\r\n"
+             "kbdpad1_RIGHT:%d\r\n"
+             "kbdpad2_RIGHT:%d\r\n"
+             ,
+                kbdpad1_DOWN,
+                kbdpad2_DOWN,
+                kbdpad1_LEFT,
+                kbdpad2_LEFT,
+                kbdpad1_RIGHT,
+                kbdpad2_RIGHT
+            );
+            f_write(&fil, buf, strlen(buf), &bw);
             f_close(&fil);
-            break;
+            reset(2);
+            return;
         }
         if (upPressed) {
             upPressed = false;
@@ -385,19 +600,23 @@ static void conf_it(uint8_t cmd) {
             if (z_idx == 0) {
                 if (g_conf.bk0010mode < 4) g_conf.bk0010mode++;
             } else {
-                if (++z_idx > 8) z_idx = 8;
+                if (++z_idx > MAX_Z) z_idx = MAX_Z;
             }
             in_conf();
         }
         if (tabPressed) {
             tabPressed = false;
             z_idx++;
-            if (z_idx > 8) z_idx = 0;
+            if (z_idx > MAX_Z) z_idx = 0;
             in_conf();
         }
         if (spacePressed) {
             spacePressed = false;
-            switch (z_idx)
+            if (z_idx > 8) {
+                confEditMode = true;
+                lastCleanableScanCode = 0;
+            }
+            else switch (z_idx)
             {
             case 1:
               g_conf.is_covox_on = !g_conf.is_covox_on;
@@ -427,6 +646,10 @@ static void conf_it(uint8_t cmd) {
               break;
             }
             in_conf();
+        }
+        if (nespad_state || kbdpad_state || kbdpad_state2 || prev_nespad_state) {
+            in_conf();
+            prev_nespad_state = ((uint16_t)(nespad_state | kbdpad_state) << 8) | kbdpad_state2;
         }
     }
     redraw_window();
@@ -636,15 +859,15 @@ inline static void no_selected_file() {
     redraw_window();
 }
 
-static bool m_prompt(const char* txt) {
+static bool m_prompt(const char* txt, size_t shift_y) {
     const line_t lns[1] = {
         { -1, txt },
     };
     const lines_t lines = { 1, 2, lns };
-    draw_box((MAX_WIDTH - 60) / 2, 7, 60, 10, "Are you sure?", &lines);
+    draw_box((MAX_WIDTH - 60) / 2, 7 + shift_y, 60, 10, "Are you sure?", &lines);
     bool yes = true;
-    draw_button((MAX_WIDTH - 60) / 2 + 16, 12, 11, "Yes", yes);
-    draw_button((MAX_WIDTH - 60) / 2 + 35, 12, 10, "No", !yes);
+    draw_button((MAX_WIDTH - 60) / 2 + 16, 12 + shift_y, 11, "Yes", yes);
+    draw_button((MAX_WIDTH - 60) / 2 + 35, 12 + shift_y, 10, "No", !yes);
     while(1) {
         if (is_dendy_joystick || is_kbd_joystick) {
             if (is_dendy_joystick) nespad_read();
@@ -678,8 +901,8 @@ static bool m_prompt(const char* txt) {
         }
         if (tabPressed || leftPressed || rightPressed) { // TODO: own msgs cycle
             yes = !yes;
-            draw_button((MAX_WIDTH - 60) / 2 + 16, 12, 11, "Yes", yes);
-            draw_button((MAX_WIDTH - 60) / 2 + 35, 12, 10, "No", !yes);
+            draw_button((MAX_WIDTH - 60) / 2 + 16, 12 + shift_y, 11, "Yes", yes);
+            draw_button((MAX_WIDTH - 60) / 2 + 35, 12 + shift_y, 10, "No", !yes);
             tabPressed = leftPressed = rightPressed = false;
             scan_code_cleanup();
         }
@@ -731,7 +954,7 @@ static void m_delete_file(uint8_t cmd) {
     }
     char path[256];
     snprintf(path, 256, "Remove %s %s?", fp->name, fp->fattrib & AM_DIR ? "folder" : "file");
-    if (m_prompt(path)) {
+    if (m_prompt(path, 0)) {
         construct_full_name(path, psp->path, fp->name);
         FRESULT result = fp->fattrib & AM_DIR ? m_unlink_recursive(path) : f_unlink(path);
         if (result != FR_OK) {
@@ -822,7 +1045,7 @@ static void m_copy_file(uint8_t cmd) {
     char path[256];
     file_panel_desc_t* dsp = psp == &left_panel ? &right_panel : &left_panel;
     snprintf(path, 256, "Copy %s %s to %s?", fp->name, fp->fattrib & AM_DIR ? "folder" : "file", dsp->path);
-    if (m_prompt(path)) { // TODO: ask name
+    if (m_prompt(path, 0)) { // TODO: ask name
         construct_full_name(path, psp->path, fp->name);
         char dest[256];
         construct_full_name(dest, dsp->path, fp->name);
@@ -927,7 +1150,7 @@ static void m_move_file(uint8_t cmd) {
     char path[256];
     file_panel_desc_t* dsp = psp == &left_panel ? &right_panel : &left_panel;
     snprintf(path, 256, "Move %s %s to %s?", fp->name, fp->fattrib & AM_DIR ? "folder" : "file", dsp->path);
-    if (m_prompt(path)) { // TODO: ask name
+    if (m_prompt(path, 0)) { // TODO: ask name
         construct_full_name(path, psp->path, fp->name);
         char dest[256];
         construct_full_name(dest, dsp->path, fp->name);
@@ -970,7 +1193,7 @@ static void m_info(uint8_t cmd) {
         { 1, " " },
         { 1, "Emulation hot keys:" },
         { 1, " - Ctrl + Alt + Del - Reset BM1 CPU, RAM clenup, set default pages, deafult speed, init system registers" },
-        { 1, " - Print Screen     - Reset RP2040 CPU" },
+        { 1, " - Print Screen     - Reset RP2040/RP2350 CPU" },
         { 1, " - F10              - cyclic change pallete" },
         { 1, " - Alt  + F10       - default BK-0010 pallete" },
         { 1, " - Ctrl + F10       - default BK-0011 pallete" },
@@ -994,7 +1217,8 @@ static void m_info(uint8_t cmd) {
     draw_box(5, 2, MAX_WIDTH - 15, MAX_HEIGHT - 6, "Help", &lines);
     enterPressed = escPressed = false;
     nespad_state_delay = DPAD_STATE_DELAY;
-    while(!escPressed && !enterPressed) {
+    f1Pressed = true;
+    while(!escPressed && !enterPressed && f1Pressed) {
         if (is_dendy_joystick || is_kbd_joystick) {
             if (is_dendy_joystick) nespad_read();
             if (nespad_state && !(nespad_state & DPAD_START) && !(nespad_state & DPAD_SELECT)) {
@@ -1003,14 +1227,27 @@ static void m_info(uint8_t cmd) {
             }
         }
     }
+    f1Pressed = false;
     redraw_window();
+}
+
+static void fast_0010(uint8_t cmd) {
+    g_conf.bk0010mode = BK_FDD;
+    set_bk0010mode(g_conf.bk0010mode);
+    reset(11);
+}
+
+static void fast_0011M(uint8_t cmd) {
+    g_conf.bk0010mode = BK_0011M_FDD;
+    set_bk0010mode(g_conf.bk0010mode);
+    reset(11);
 }
 
 static fn_1_12_tbl_t fn_1_12_tbl = {
     ' ', '1', " Help ", m_info,
-    ' ', '2', " Snap ", save_snap,
-    ' ', '3', " View ", do_nothing,
-    ' ', '4', " Edit ", do_nothing,
+    ' ', '2', " Conf ", conf_it,
+    ' ', '3', " 0010 ", fast_0010,
+    ' ', '4', " 0011M", fast_0011M,
     ' ', '5', " Copy ", m_copy_file,
     ' ', '6', " Move ", m_move_file,
     ' ', '7', "MkDir ", m_mk_dir,
@@ -1023,9 +1260,9 @@ static fn_1_12_tbl_t fn_1_12_tbl = {
 
 static fn_1_12_tbl_t fn_1_12_tbl_alt = {
     ' ', '1', "Right ", do_nothing,
-    ' ', '2', " Conf ", conf_it,
-    ' ', '3', " View ", do_nothing,
-    ' ', '4', " Edit ", do_nothing,
+    ' ', '2', "ReSnap", restore_snap,
+    ' ', '3', " 0010 ", fast_0010,
+    ' ', '4', " 0011M", fast_0011M,
     ' ', '5', " Copy ", m_copy_file,
     ' ', '6', " Move ", m_move_file,
     ' ', '7', " Find ", do_nothing,
@@ -1038,15 +1275,15 @@ static fn_1_12_tbl_t fn_1_12_tbl_alt = {
 
 static fn_1_12_tbl_t fn_1_12_tbl_ctrl = {
     ' ', '1', "Eject ", do_nothing,
-    ' ', '2', "ReSnap", restore_snap,
-    ' ', '3', "Debug ", do_nothing,
-    ' ', '4', " Edit ", do_nothing,
+    ' ', '2', " Snap ", save_snap,
+    ' ', '3', " 0010 ", fast_0010,
+    ' ', '4', " 0011M", fast_0011M,
     ' ', '5', " Copy ", m_copy_file,
     ' ', '6', " Move ", m_move_file,
     ' ', '7', " Find ", do_nothing,
     ' ', '8', " Del  ", m_delete_file,
     ' ', '9', " Swap ", swap_drives,
-    '1', '0', " Exit ", mark_to_exit,
+    '1', '0', " M-OS ", return_to_mos,
     '1', '1', "EmMODE", switch_mode,
     '1', '2', " B/W  ", switch_color
 };
@@ -1850,108 +2087,44 @@ inline static void start_manager() {
 }
 
 inline static void handleJoystickEmulation(uint8_t sc) { // core 1
-    if (!is_kbd_joystick) return;
-    DBGM_PRINT(("handleJoystickEmulation: %02Xh", sc));
-    switch(sc) {
-        case 0x1E: // A DPAD_A 
-            nespad_state |= DPAD_A;
-            break;
-        case 0x9E:
-            nespad_state &= ~DPAD_A;
-            break;
-        case 0x11: // W
-            nespad_state2 |= DPAD_A;
-            break;
-        case 0x91:
-            nespad_state2 &= ~DPAD_A;
-            break;
-        case 0x20: // D START
-            nespad_state |= DPAD_START;
-            break;
-        case 0xA0:
-            nespad_state &= ~DPAD_START;
-            break;
-        case 0x1F: // S SELECT 
-            nespad_state |= DPAD_SELECT;
-            break;
-        case 0x9F:
-            nespad_state &= ~DPAD_SELECT;
-            break;
-        case 0x2C: // Z
-            nespad_state2 |= DPAD_B;
-            break;
-        case 0xAC:
-            nespad_state2 &= ~DPAD_B;
-            break;
-        case 0x2D: // X
-            nespad_state2 |= DPAD_SELECT;
-            break;
-        case 0xAD:
-            nespad_state2 &= ~DPAD_SELECT;
-            break;
-        case 0x18: // O
-            nespad_state2 |= DPAD_START;
-            break;
-        case 0x98:
-            nespad_state2 &= ~DPAD_START;
-            break;
-        case 0x25: // K
-            nespad_state2 |= DPAD_UP;
-            break;
-        case 0xA5:
-            nespad_state2 &= ~DPAD_UP;
-            break;
-        case 0x27: // ;
-            nespad_state |= DPAD_DOWN;
-            break;
-        case 0xA7:
-            nespad_state &= ~DPAD_DOWN;
-            break;
-        case 0x26: // L
-            nespad_state |= DPAD_LEFT;
-            break;
-        case 0xA6:
-            nespad_state &= ~DPAD_LEFT;
-            break;
-        case 0x28: // ,(")
-            nespad_state |= DPAD_RIGHT;
-            break;
-        case 0xA8:
-            nespad_state &= ~DPAD_RIGHT;
-            break;
-        case 0x34: // .
-            nespad_state2 |= DPAD_DOWN;
-            break;
-        case 0xB4:
-            nespad_state2 &= ~DPAD_DOWN;
-            break;
-        case 0x10: // Q DPAD_B
-            nespad_state |= DPAD_B;
-            break;
-        case 0x90:
-            nespad_state &= ~DPAD_B;
-            break;
-        case 0x12: // E
-            nespad_state2 |= DPAD_LEFT;
-            break;
-        case 0x92:
-            nespad_state2 &= ~DPAD_LEFT;
-            break;
-        case 0x17: // I
-            nespad_state2 |= DPAD_RIGHT;
-            break;
-        case 0x97:
-            nespad_state2 &= ~DPAD_RIGHT;
-            break;
-        case 0x19: // P
-            nespad_state |= DPAD_UP;
-            break;
-        case 0x99:
-            nespad_state &= ~DPAD_UP;
-            break;
-        default:
-            return;
+    if (!is_kbd_joystick) {
+        kbdpad_state = 0;
+        kbdpad_state2 = 0;
+        return;
     }
+    DBGM_PRINT(("handleJoystickEmulation: %02Xh", sc));
+    if (sc == kbdpad1_A)               kbdpad_state  |=  DPAD_A;
+    if (sc == kbdpad1_A + 0x80)        kbdpad_state  &= ~DPAD_A;
+    if (sc == kbdpad2_A)               kbdpad_state2 |=  DPAD_A;
+    if (sc == kbdpad2_A + 0x80)        kbdpad_state2 &= ~DPAD_A;
+    if (sc == kbdpad1_B)               kbdpad_state  |=  DPAD_B;
+    if (sc == kbdpad1_B + 0x80)        kbdpad_state  &= ~DPAD_B;
+    if (sc == kbdpad2_B)               kbdpad_state2 |=  DPAD_B;
+    if (sc == kbdpad2_B + 0x80)        kbdpad_state2 &= ~DPAD_B;
+    if (sc == kbdpad1_START)           kbdpad_state  |=  DPAD_START;
+    if (sc == kbdpad1_START + 0x80)    kbdpad_state  &= ~DPAD_START;
+    if (sc == kbdpad2_START)           kbdpad_state2 |=  DPAD_START;
+    if (sc == kbdpad2_START + 0x80)    kbdpad_state2 &= ~DPAD_START;
+    if (sc == kbdpad1_SELECT)          kbdpad_state  |=  DPAD_SELECT;
+    if (sc == kbdpad1_SELECT + 0x80)   kbdpad_state  &= ~DPAD_SELECT;
+    if (sc == kbdpad2_SELECT)          kbdpad_state2 |=  DPAD_SELECT;
+    if (sc == kbdpad2_SELECT + 0x80)   kbdpad_state2 &= ~DPAD_SELECT;
+    if (sc == kbdpad1_UP)              kbdpad_state  |=  DPAD_UP;
+    if (sc == kbdpad1_UP + 0x80)       kbdpad_state  &= ~DPAD_UP;
+    if (sc == kbdpad2_UP)              kbdpad_state2 |=  DPAD_UP;
+    if (sc == kbdpad2_UP + 0x80)       kbdpad_state2 &= ~DPAD_UP;
+    if (sc == kbdpad1_DOWN)            kbdpad_state  |=  DPAD_DOWN;
+    if (sc == kbdpad1_DOWN + 0x80)     kbdpad_state  &= ~DPAD_DOWN;
+    if (sc == kbdpad2_DOWN)            kbdpad_state2 |=  DPAD_DOWN;
+    if (sc == kbdpad2_DOWN + 0x80)     kbdpad_state2 &= ~DPAD_DOWN;
+    if (sc == kbdpad1_LEFT)            kbdpad_state  |=  DPAD_LEFT;
+    if (sc == kbdpad1_LEFT + 0x80)     kbdpad_state  &= ~DPAD_LEFT;
+    if (sc == kbdpad2_LEFT)            kbdpad_state2 |=  DPAD_LEFT;
+    if (sc == kbdpad2_LEFT + 0x80)     kbdpad_state2 &= ~DPAD_LEFT;
+    if (sc == kbdpad1_RIGHT)           kbdpad_state  |=  DPAD_RIGHT;
+    if (sc == kbdpad1_RIGHT + 0x80)    kbdpad_state  &= ~DPAD_RIGHT;
+    if (sc == kbdpad2_RIGHT)           kbdpad_state2 |=  DPAD_RIGHT;
+    if (sc == kbdpad2_RIGHT + 0x80)    kbdpad_state2 &= ~DPAD_RIGHT;
 }
 
 bool handleScancode(uint32_t ps2scancode) { // core 1
@@ -1960,8 +2133,7 @@ bool handleScancode(uint32_t ps2scancode) { // core 1
     lastCleanableScanCode = ps2scancode;
     switch (ps2scancode) {
       case 0x01: // Esc down
-        escPressed = true;
-        break;
+        escPressed = true; break;
       case 0x81: // Esc up
         escPressed = false; break;
       case 0x4B: // left
@@ -2223,7 +2395,7 @@ int if_manager(bool force) {
             nespad_state_delay = DPAD_STATE_DELAY;
             force = true;
         } else {
-            Device_Data.SysRegs.RdReg177714 = ((uint16_t)nespad_state2 << 8 | nespad_state);
+            Device_Data.SysRegs.RdReg177714 = ((uint16_t)kbdpad_state2 << 8) | nespad_state | kbdpad_state;
         }
     }
     if (force) {
