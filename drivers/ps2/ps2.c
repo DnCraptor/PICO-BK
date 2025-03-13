@@ -228,9 +228,9 @@ uint32_t ps2get_raw_code() {
         case 0xE0:
             len = 2;
             break;
-/// TODO:        case 0xE1:
-///            len = 8;
-///            break;
+        case 0xE1:
+            len = 8;
+            break;
         default:
             len = 1;
             break;
@@ -280,9 +280,9 @@ uint32_t ps2getcode() {
         case 0xE0:
             len = 2;
             break;
-/// TODO:        case 0xE1:
-///            len = 8;
-///            break;
+        case 0xE1:
+            len = 8;
+            break;
         default:
             len = 1;
             break;
