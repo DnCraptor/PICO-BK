@@ -238,7 +238,9 @@ void reset(uint8_t cmd) {
     main_init();
     mark_to_exit_flag = true;
     if (g_conf.bk0010mode == BK_FDD) {
-        sleep_ms(1500);
+        if (cmd == 255) { // ensure kbd load in time
+            sleep_ms(1500);
+        }
         kbd_script_idx = 0;
         add_repeating_timer_ms(200, timer_callback, NULL, &timer);
     }
@@ -583,7 +585,7 @@ static void conf_it(uint8_t cmd) {
             );
             f_write(&fil, buf, strlen(buf), &bw);
             f_close(&fil);
-            reset(2);
+            reset(255);
             return;
         }
         if (upPressed) {
@@ -770,7 +772,7 @@ inline static void if_video_mode() {
     }
   }
   if (ctrlPressed && altPressed && delPressed) {
-      reset(11);
+      reset(255);
       ctrlPressed = altPressed = delPressed = false;
   }
   if (ctrlPressed || altPressed)
@@ -1234,13 +1236,13 @@ static void m_info(uint8_t cmd) {
 static void fast_0010(uint8_t cmd) {
     g_conf.bk0010mode = BK_FDD;
     set_bk0010mode(g_conf.bk0010mode);
-    reset(11);
+    reset(3);
 }
 
 static void fast_0011M(uint8_t cmd) {
     g_conf.bk0010mode = BK_0011M_FDD;
     set_bk0010mode(g_conf.bk0010mode);
-    reset(11);
+    reset(4);
 }
 
 static fn_1_12_tbl_t fn_1_12_tbl = {

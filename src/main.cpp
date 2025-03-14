@@ -392,7 +392,7 @@ int main() {
 
 //    init_psram();
     init_fs();
-    reset(11);
+    reset(255);
     graphics_set_mode(g_conf.color_mode ? BK_256x256x2 : BK_512x256x1);
 
 #ifdef SOUND_SYSTEM
