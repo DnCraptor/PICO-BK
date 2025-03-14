@@ -134,6 +134,12 @@ void AT_OVL emu_start () {
                     g_conf.RunState = 5;
                     CPU_Stop ();
                 }
+                else if (g_conf.CodeAndFlags == PS2_HOME) {
+                    tormoz = if_manager(true);
+                    g_conf.Key = KEY_UNKNOWN;
+                    g_conf.Time = getCycleCount ();
+                    g_conf.T    = Device_Data.CPU_State.Time;
+                }
                 else {
                     g_conf.Key = Key_Translate (g_conf.CodeAndFlags);
                     KBD_PRINT(("3. CodeAndFlags: %04Xh RdReg177716: %oo Key: %d (%Xh / %oo)",
@@ -149,16 +155,9 @@ void AT_OVL emu_start () {
                         g_conf.LastKey = 0xC00;
                     }
                 } else if (g_conf.Key != KEY_UNKNOWN) {
-                    if (g_conf.Key == KEY_MENU_ESC) {
-                        tormoz = if_manager(true);
-                        g_conf.Time = getCycleCount ();
-                        g_conf.T    = Device_Data.CPU_State.Time;
-                    }
-                    else {
-                        g_conf.LastKey  = ((uint_fast32_t) g_conf.Key << 16) | g_conf.CodeAndFlags;
-                        KBD_PRINT(("4. LastKey: %Xh", g_conf.LastKey));
-                        g_conf.RunState = 6;
-                    }
+                    g_conf.LastKey  = ((uint_fast32_t) g_conf.Key << 16) | g_conf.CodeAndFlags;
+                    KBD_PRINT(("4. LastKey: %Xh", g_conf.LastKey));
+                    g_conf.RunState = 6;
                 }
                 break;
             case 6:

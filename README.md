@@ -110,7 +110,7 @@ Based on: https://github.com/konst-st/BK8266/tree/BK0011M, который баз
 <ul>
 <li>Ctrl + Alt + Del - Reset ВМ1 CPU, RAM cleanup, set default pages, deafult speed, init system registers</li>
 <li>Print Screen - Reset RP2040/RP2350 CPU</li>
-<li>Esc/Home - выход в файловый менеджер эмулятора</li>
+<li>Home - выход в файловый менеджер эмулятора</li>
 <li>F10 - Циклическое переключение палитры для подбора удобной для игры (если это поленился сделать разработчик оной)</li>
 <li>Alt  + F10 - Установить нулевую палитру (нативную палитру БК-0010[-01])</li>
 <li>Ctrl + F10 - Установить 15-ую палитру (нативную палитру БК-0011М)</li>

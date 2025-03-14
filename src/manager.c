@@ -2074,7 +2074,7 @@ inline static void start_manager() {
         draw_window();
         select_left_panel();
         update_menu_color();
-        m_info(0); // F1 TODO: ensure it is not too aggressive
+      ///  m_info(0); // F1 TODO: ensure it is not too aggressive
         work_cycle();
     } else {
         if (switch_mode_dialog(&g_conf.bk0010mode) ) {
