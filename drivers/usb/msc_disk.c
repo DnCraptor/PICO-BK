@@ -27,39 +27,45 @@
 #include "tusb.h"
 #include "usb.h"
 #include "emulator.h"
-#ifdef BUILD_IN_FDD0
+#ifdef BUILD_IN_FDD_GAMES
 #include "FDD0.h"
 #endif
-#ifdef BUILD_IN_FDD1
+#ifdef BUILD_IN_FDD_MKDOS
 #include "MKDOS318B.h"
 #endif
 
 char* fdd0_rom() {
-#ifdef BUILD_IN_FDD0
-  return FDD0;
-#else
-  return 0;
-#endif
+  #ifdef BUILD_IN_FDD_GAMES
+    return BUILD_IN_GAMES;
+  #else
+    #ifdef BUILD_IN_FDD_MKDOS
+      return MKDOS318B;
+    #endif
+    return 0;
+  #endif
 }
 
 char* fdd1_rom() {
-#ifdef BUILD_IN_FDD1
+#ifdef BUILD_IN_FDD_MKDOS
   return MKDOS318B;
 #else
-  return 0;
+  return 819200;
 #endif
 }
 
 size_t fdd0_sz() {
-#ifdef BUILD_IN_FDD0
-  return sizeof FDD0;
-#else
-  return 0;
-#endif
+  #ifdef BUILD_IN_FDD_GAMES
+    return sizeof BUILD_IN_GAMES;
+  #else
+    #ifdef BUILD_IN_FDD_MKDOS
+      return sizeof MKDOS318B;
+    #endif
+    return 819200;
+  #endif
 }
 
 size_t fdd1_sz() {
-#ifdef BUILD_IN_FDD1
+#ifdef BUILD_IN_FDD_MKDOS
   return sizeof MKDOS318B;
 #else
   return 0;
