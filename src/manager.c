@@ -1889,10 +1889,12 @@ static inline void if_sound_control() { // core #0
         g_conf.snd_volume++;
         if(g_conf.snd_volume > 5) g_conf.snd_volume = 5;
         plusPressed = false;
+        saveConf();
     } else if (ctrlPressed && minusPressed && !altPressed) {
         g_conf.snd_volume--;
         if(g_conf.snd_volume < -16) g_conf.snd_volume = -16;
         minusPressed = false;
+        saveConf();
     } else if (ctrlPressed && plusPressed && altPressed) {
         covox_mix = covox_mix << 1 | 01;
         if (covox_mix > 0x3F) covox_mix = 0x3F;
@@ -1903,9 +1905,11 @@ static inline void if_sound_control() { // core #0
     } else if (ctrlPressed && tabPressed && cPressed) {
         g_conf.is_covox_on = !g_conf.is_covox_on;
         cPressed = false;
+        saveConf();
     } else if (ctrlPressed && tabPressed && aPressed) {
         g_conf.is_AY_on = !g_conf.is_AY_on;
         cPressed = false;
+        saveConf();
     }
 }
 
