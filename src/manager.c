@@ -453,6 +453,68 @@ static void in_conf() {
     }
 }
 
+static void saveConf() {
+    FIL fil;
+    f_open(&fil, "\\BK\\bk.conf", FA_CREATE_ALWAYS | FA_WRITE);
+    char buf[256];
+    snprintf(buf, 256,
+     "mode:%d\r\nis_covox_on:%d\r\nis_AY_on:%d\r\ncolor_mode:%d\r\nsnd_volume:%d\r\n"
+     "graphics_pallette_idx:%d\r\nis_swap_wins_enabled:%d\r\nis_dendy_joystick:%d\r\nis_kbd_joystick:%d\r\n",
+        g_conf.bk0010mode,
+        g_conf.is_covox_on,
+        g_conf.is_AY_on,
+        g_conf.color_mode,
+        g_conf.snd_volume,
+        g_conf.graphics_pallette_idx,
+        is_swap_wins_enabled,
+        is_dendy_joystick,
+        is_kbd_joystick
+    );
+    UINT bw;
+    f_write(&fil, buf, strlen(buf), &bw);
+    snprintf(buf, 256,
+     "kbdpad1_A:%d\r\n"
+     "kbdpad2_A:%d\r\n"
+     "kbdpad1_B:%d\r\n"
+     "kbdpad2_B:%d\r\n"
+     "kbdpad1_START:%d\r\n"
+     "kbdpad2_START:%d\r\n"
+     "kbdpad1_SELECT:%d\r\n"
+     "kbdpad2_SELECT:%d\r\n"
+     "kbdpad1_UP:%d\r\n"
+     "kbdpad2_UP:%d\r\n"
+     ,
+        kbdpad1_A,
+        kbdpad2_A,
+        kbdpad1_B,
+        kbdpad2_B,
+        kbdpad1_START,
+        kbdpad2_START,
+        kbdpad1_SELECT,
+        kbdpad2_SELECT,
+        kbdpad1_UP,
+        kbdpad2_UP
+    );
+    f_write(&fil, buf, strlen(buf), &bw);
+    snprintf(buf, 256,
+     "kbdpad1_DOWN:%d\r\n"
+     "kbdpad2_DOWN:%d\r\n"
+     "kbdpad1_LEFT:%d\r\n"
+     "kbdpad2_LEFT:%d\r\n"
+     "kbdpad1_RIGHT:%d\r\n"
+     "kbdpad2_RIGHT:%d\r\n"
+     ,
+        kbdpad1_DOWN,
+        kbdpad2_DOWN,
+        kbdpad1_LEFT,
+        kbdpad2_LEFT,
+        kbdpad1_RIGHT,
+        kbdpad2_RIGHT
+    );
+    f_write(&fil, buf, strlen(buf), &bw);
+    f_close(&fil);
+}
+
 static void conf_it(uint8_t cmd) {
     draw_panel(10, 10, MAX_WIDTH - 20, MAX_HEIGHT - 20, "Startup configuration", 0);
     in_conf();
@@ -526,65 +588,7 @@ static void conf_it(uint8_t cmd) {
                 in_conf();
                 continue;
             }
-            FIL fil;
-            f_open(&fil, "\\BK\\bk.conf", FA_CREATE_ALWAYS | FA_WRITE);
-            char buf[256];
-            snprintf(buf, 256,
-             "mode:%d\r\nis_covox_on:%d\r\nis_AY_on:%d\r\ncolor_mode:%d\r\nsnd_volume:%d\r\n"
-             "graphics_pallette_idx:%d\r\nis_swap_wins_enabled:%d\r\nis_dendy_joystick:%d\r\nis_kbd_joystick:%d\r\n",
-                g_conf.bk0010mode,
-                g_conf.is_covox_on,
-                g_conf.is_AY_on,
-                g_conf.color_mode,
-                g_conf.snd_volume,
-                g_conf.graphics_pallette_idx,
-                is_swap_wins_enabled,
-                is_dendy_joystick,
-                is_kbd_joystick
-            );
-            UINT bw;
-            f_write(&fil, buf, strlen(buf), &bw);
-            snprintf(buf, 256,
-             "kbdpad1_A:%d\r\n"
-             "kbdpad2_A:%d\r\n"
-             "kbdpad1_B:%d\r\n"
-             "kbdpad2_B:%d\r\n"
-             "kbdpad1_START:%d\r\n"
-             "kbdpad2_START:%d\r\n"
-             "kbdpad1_SELECT:%d\r\n"
-             "kbdpad2_SELECT:%d\r\n"
-             "kbdpad1_UP:%d\r\n"
-             "kbdpad2_UP:%d\r\n"
-             ,
-                kbdpad1_A,
-                kbdpad2_A,
-                kbdpad1_B,
-                kbdpad2_B,
-                kbdpad1_START,
-                kbdpad2_START,
-                kbdpad1_SELECT,
-                kbdpad2_SELECT,
-                kbdpad1_UP,
-                kbdpad2_UP
-            );
-            f_write(&fil, buf, strlen(buf), &bw);
-            snprintf(buf, 256,
-             "kbdpad1_DOWN:%d\r\n"
-             "kbdpad2_DOWN:%d\r\n"
-             "kbdpad1_LEFT:%d\r\n"
-             "kbdpad2_LEFT:%d\r\n"
-             "kbdpad1_RIGHT:%d\r\n"
-             "kbdpad2_RIGHT:%d\r\n"
-             ,
-                kbdpad1_DOWN,
-                kbdpad2_DOWN,
-                kbdpad1_LEFT,
-                kbdpad2_LEFT,
-                kbdpad1_RIGHT,
-                kbdpad2_RIGHT
-            );
-            f_write(&fil, buf, strlen(buf), &bw);
-            f_close(&fil);
+            saveConf();
             reset(255);
             return;
         }
@@ -1236,12 +1240,14 @@ static void m_info(uint8_t cmd) {
 static void fast_0010(uint8_t cmd) {
     g_conf.bk0010mode = BK_FDD;
     set_bk0010mode(g_conf.bk0010mode);
+    saveConf();
     reset(3);
 }
 
 static void fast_0011M(uint8_t cmd) {
     g_conf.bk0010mode = BK_0011M_FDD;
     set_bk0010mode(g_conf.bk0010mode);
+    saveConf();
     reset(4);
 }
 
@@ -1372,6 +1378,7 @@ inline static bool switch_mode_dialog(bk_mode_t* pbk0010mode) {
 static void switch_mode(uint8_t cmd) {
     if (switch_mode_dialog(&g_conf.bk0010mode)) {
         set_bk0010mode(g_conf.bk0010mode);
+        saveConf();
         reset(11);
     }
     redraw_window();

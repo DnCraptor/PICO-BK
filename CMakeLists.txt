@@ -21,8 +21,7 @@ set(CMAKE_LIBRARY_OUTPUT_DIRECTORY "${OUTPUT_DIR}")
 set(CMAKE_C_FLAGS   "${CMAKE_C_FLAGS}   -ffunction-sections -fdata-sections -O2")
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -ffunction-sections -fdata-sections -O2")
 
-SET(BUILD_NAME "m1p1-bk-VGA-PWM")
-SET(BUILD_VERION "124")
+SET(BUILD_NAME "m1p1-bk-366MHz-VGA-PWM-124")
 
 #add_compile_definitions(${PROJECT_NAME} NO_GRAPHICS)
 set(FAMILY rp2040)
@@ -203,3 +202,6 @@ pico_enable_stdio_uart(${PROJECT_NAME} 0)
 pico_enable_stdio_usb(${PROJECT_NAME} 0)
 
 pico_add_extra_outputs(${PROJECT_NAME})
+
+set_target_properties(${PROJECT_NAME} PROPERTIES OUTPUT_NAME "${BUILD_NAME}")
+
