@@ -56,24 +56,25 @@ inline static int AnalyseMicrodos(FIL *f, uint8_t *buf)
 	};
 #pragma pack(pop)
 	int nRet = -1;
-	constexpr int nCatSize = 10; // размер каталога - одна сторона нулевой дорожки.
-	char pCatBuffer[nCatSize * BLOCK_SIZE] = { 0 }; // TODO: read one by one
 	if (f_lseek(f, 0) == FR_OK) {
 		// перемещаемся к нулевому сектору
 		UINT br;
-		if (f_read(f, pCatBuffer, sizeof pCatBuffer, &br) == FR_OK)
+		const size_t dp = sizeof(MikrodosFileRecord);
+		char pCatBuffer[0500 + dp] = { 0 };
+		if (f_read(f, pCatBuffer, sizeof(pCatBuffer), &br) == FR_OK)
 		{
-			int nRecNum = *(reinterpret_cast<uint16_t *>(&pCatBuffer[030])); // читаем общее кол-во файлов.
-			auto pDiskCat = reinterpret_cast<MikrodosFileRecord *>(pCatBuffer + 0500); // каталог диска
+			int nRecNum = *(reinterpret_cast<uint16_t*>(&pCatBuffer[030])); // читаем общее кол-во файлов.
+			MikrodosFileRecord* pDiskCat = reinterpret_cast<MikrodosFileRecord*>(pCatBuffer + 0500); // каталог диска
 			int nMKDirFlag = 0;
 			int nAODirFlag = 0;
 			// сканируем каталог и ищем там директории
-			for (int i = 0; i < nRecNum; ++i) {
-				if (pDiskCat[i].name[0] == 0177) {
+			for (size_t i = 0; i < nRecNum; ++i) {
+				if (pDiskCat->name[0] == 0177) {
 					nMKDirFlag++;
-				} else if (pDiskCat[i].name[0] != 0 && pDiskCat[i].len_blk == 0) {
+				} else if (pDiskCat->name[0] != 0 && pDiskCat->len_blk == 0) {
 					nAODirFlag++;
 				}
+				if (f_read(f, pDiskCat, dp, &br) != FR_OK) break;
 			}
 			if (nMKDirFlag && nAODirFlag) {
 				nRet = 0;
@@ -440,12 +441,11 @@ static void ParseImage(const char* fname, PARSE_RESULT_C& ret) {
 				ret.nPartLen = *(reinterpret_cast<uint16_t *>(pSector + 0466));
 				ret.imageOSType = IMAGE_TYPE::NORD;
 			}
-			/* обнаружилась нехорошая привычка AODOS и возможно NORD мимикрировать под MKDOS,
-			так что проверка на него - последней, при этом, т.к. MKDOSу похрен на ячейки 04..012
-			то иногда, если там были признаки аодоса, мкдосный диск принимается за аодосный.
-			но это лучше, чем наоборот, ибо в первом случае просто в имени директории будет глючный символ,
-			а во втором - вообще все директории пропадают.
-			*/
+			// обнаружилась нехорошая привычка AODOS и возможно NORD мимикрировать под MKDOS,
+			// так что проверка на него - последней, при этом, т.к. MKDOSу похрен на ячейки 04..012
+			// то иногда, если там были признаки аодоса, мкдосный диск принимается за аодосный.
+			// но это лучше, чем наоборот, ибо в первом случае просто в имени директории будет глючный символ,
+			// а во втором - вообще все директории пропадают.
 			else if (wSector[0402 / 2] == 051414) {
 				ret.nPartLen = *(reinterpret_cast<uint16_t *>(pSector + 0466));
 				ret.imageOSType = IMAGE_TYPE::MKDOS;
