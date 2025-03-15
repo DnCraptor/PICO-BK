@@ -327,9 +327,17 @@ uint_fast16_t AT_OVL Key_Translate (uint_fast16_t CodeAndFlags)
                             else                        KeyFlags |=  KEY_FLAGS_UP;
                             Key_Flags = KeyFlags;
                             return ReturnKeyCode (26, KeyFlags);
+/*
+------------------------------------------------------------
+!23 ! ВС  !ПЕРЕВОД КУРСОРА!       !    -    !23 !ПЕРЕМЕЩЕНИЕ
+!   !     !В НАЧАЛО ТЕКУ- !       !    А    !   !НИЖНЕЙ ОТ
+!   !     !ЩЕЙ СТРОКИ     !       !    !    !   !КУРСОРА
+!   !     !               !       !         !   !ЧАСТИ ЭКРА-
+!   !     !               !       !         !   !НА ВВЕРХ
+*/
+        case PS2_PGDN:
+        case PS2_PGUP:      return ReturnKeyCode (19, KeyFlags); /// 19d=23o ВС
 
-      ///  case PS2_PGDN:
-      ///  case PS2_PGUP:
       ///  case PS2_PAUSE:     if ((CodeAndFlags & 0x8000U) == 0) CPU_Stop ();
       ///                      return KEY_UNKNOWN;
     }
