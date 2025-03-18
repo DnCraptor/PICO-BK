@@ -1196,6 +1196,7 @@ static void m_info(uint8_t cmd) {
         { 1, " - F7             - BLOCK REDACT" },
         { 1, " - F8             - STEP" },
         { 1, " - F9             - SBROS" },
+        { 1, " - PgUp | PgDown  - BC" },
         { 1, " " },
         { 1, "Emulation hot keys:" },
         { 1, " - Ctrl + Alt + Del - Reset BM1 CPU, RAM clenup, set default pages, deafult speed, init system registers" },
