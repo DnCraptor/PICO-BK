@@ -33,7 +33,7 @@ const color_schema_t* get_color_schema() {
     return pcs;
 }
 
-void draw_panel(int left, int top, int width, int height, char* title, char* bottom) {
+void draw_panel(int left, int top, int width, int height, char* title, char* footer) {
     char line[MAX_WIDTH + 2];
     // top line
     for(int i = 1; i < width - 1; ++i) {
@@ -69,14 +69,15 @@ void draw_panel(int left, int top, int width, int height, char* title, char* bot
     line[width - 1] = 0xBC; // ╝
     line[width]     = 0;
     draw_text(line, left, top + height - 1, pcs->FOREGROUND_FIELD_COLOR, pcs->BACKGROUND_FIELD_COLOR);
-    if (bottom) {
-        int sl = strlen(bottom);
+    draw_shadow(left, top, width, height, pcs->FOREGROUND_SELECTED_COLOR, pcs->FOREGROUND_SELECTED_COLOR);
+    if (footer) {
+        int sl = strlen(footer);
         if (width - 4 < sl) {
-            bottom -= width + 4; // cat bottom
+            footer -= width + 4; // cat bottom
             sl -= width + 4;
         } 
-        int bottom_left = (width - sl) / 2;
-        sprintf(line, " %s ", bottom);
+        int bottom_left = left + (width - sl) / 2;
+        sprintf(line, " %s ", footer);
         draw_text(line, bottom_left, top + height - 1, pcs->FOREGROUND_FIELD_COLOR, pcs->BACKGROUND_FIELD_COLOR);
     }
 }
@@ -108,7 +109,10 @@ void draw_button(int left, int top, int width, const char* txt, bool selected) {
 }
 
 void draw_box(int left, int top, int width, int height, const char* title, const lines_t* plines) {
-    draw_panel(left, top, width, height, title, 0);
+    draw_box_ex(left, top, width, height, title, 0, plines);
+}
+void draw_box_ex(int left, int top, int width, int height, const char* title, const char* bottom, const lines_t* plines) {
+    draw_panel(left, top, width, height, title, bottom);
     int y = top + 1;
     for (int i = y; y < top + height - 1; ++y) {
         draw_label(left + 1, y, width - 2, "", false, false);
@@ -133,9 +137,9 @@ extern volatile bool downPressed;
 void scan_code_cleanup();
 #include "nespad.h"
 
-int draw_selector(int left, int top, int width, int height, const char* title, const lines_t* plines, int selected_line) {
+int draw_selector(int left, int top, int width, int height, const char* title, const lines_t* plines, int selected_line, const char* footer) {
     int s_line = selected_line;
-    draw_panel(left, top, width, height, title, 0);
+    draw_panel(left, top, width, height, title, footer);
     int y = top + 1;
     for (int i = y; y < top + height - 1; ++y) {
         draw_label(left + 1, y, width - 2, "", false, false);

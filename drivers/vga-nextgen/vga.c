@@ -484,6 +484,24 @@ void draw_text(char* string, int x, int y, uint8_t color, uint8_t bgcolor) {
     }
 }
 
+void draw_shadow(int x, int y, int w, int h, uint8_t color, uint8_t bgcolor) {
+    uint8_t* max_t = text_buffer + 2 * text_buffer_width * text_buffer_height;
+    if (y + h < text_buffer_height) {
+        for (int xi = x + 1; xi <= x + w && xi < text_buffer_width; ++xi) {
+            uint8_t* t_buf = text_buffer + text_buffer_width * 2 * (y + h) + 2 * xi + 1;
+            if (t_buf >= max_t) continue;
+            *t_buf = (bgcolor << 4) | (color & 0xF);
+        }
+    }
+    if (x + w < text_buffer_width) {
+        for (int yi = y + 1; yi < y + h && y < text_buffer_height; ++yi) {
+            uint8_t* t_buf = text_buffer + text_buffer_width * 2 * yi + 2 * (x + w) + 1;
+            if (t_buf >= max_t) continue;
+            *t_buf = (bgcolor << 4) | (color & 0xF);
+        }
+    }
+}
+
 void set_start_debug_line(int _start_debug_line) {
     start_debug_line = _start_debug_line;
 }

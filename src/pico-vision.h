@@ -61,5 +61,6 @@ typedef struct lines {
 } lines_t;
 
 void draw_box(int left, int top, int width, int height, const char* title, const lines_t* plines);
+void draw_box_ex(int left, int top, int width, int height, const char* title, const char* bottom, const lines_t* plines);
 
-int draw_selector(int left, int top, int width, int height, const char* title, const lines_t* plines, int selected_line);
+int draw_selector(int left, int top, int width, int height, const char* title, const lines_t* plines, int selected_line, const char* footer);
