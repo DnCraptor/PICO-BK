@@ -1749,7 +1749,7 @@ static inline bool run_img(char* path) {
         if (psp->in_dos || !is_browse_os_supported()) {
             // TODO:
             do_nothing(0);
-            return;
+            return false;
         }
         strncpy(psp->path, path, 256);
         psp->in_dos = true;
@@ -1775,7 +1775,10 @@ static inline bool run_img(char* path) {
     if ( !is_fdd_suppored() ) {
         set_bk0010mode(BK_0011M_FDD);
     }
-    // TODO: altPressed (just mount)
+    if (altPressed) {
+        redraw_window();
+        return false;
+    }
     reset(0);
     mark_to_exit_flag = true;
     return true;
