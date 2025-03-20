@@ -4,6 +4,8 @@
 
 #define AT_OVL __attribute__((section(".ovl3_i.text")))
 
+extern volatile bool shiftPressed;
+
 void init_rom() {
     switch (g_conf.bk0010mode) {
         case BK_FDD:
@@ -74,7 +76,8 @@ extern volatile uint16_t az_covox_R;
 extern volatile uint16_t az_covox_L;
 
 void AT_OVL CPU_Init (void) {
-    memset (&Device_Data, 0, sizeof (Device_Data));
+    if (!shiftPressed)
+        memset (&Device_Data, 0, sizeof (Device_Data));
 
 //  Device_Data.SysRegs.Reg177660   = 0;
 //  Device_Data.SysRegs.RdReg177662 = 0;
@@ -83,7 +86,7 @@ void AT_OVL CPU_Init (void) {
 //  Device_Data.SysRegs.Reg177710   = 0177777;
 //  Device_Data.SysRegs.Reg177712   = 0177400;
     Device_Data.SysRegs.RdReg177714 = 0;
-    Device_Data.SysRegs.RdReg177716 = ((!is_bk0011mode() ? 0100000 : 0140000) & 0177400) | 0100;
+    Device_Data.SysRegs.RdReg177716 = ((!is_bk0011mode() || shiftPressed ? 0100000 : 0140000) & 0177400) | 0100;
     /// 0300;
     Device_Data.SysRegs.WrReg177662  = 047400;
     Device_Data.SysRegs.Wr1Reg177716 = (1 << 12) | 1;
@@ -116,15 +119,17 @@ void AT_OVL CPU_Init (void) {
     Device_Data.SysRegs.WrReg177130 = 0;
     Device_Data.SysRegs.Reg177132   = 0;
 
-    Device_Data.MemPages [0] = CPU_PAGE01_MEM_ADR; /* RAM Page 0.1 */
-    Device_Data.MemPages [1] = CPU_PAGE02_MEM_ADR; /* RAM Page 0.2 */
-    Device_Data.MemPages [2] = CPU_PAGE03_MEM_ADR; /* RAM Page 0.3 */
-    Device_Data.MemPages [3] = CPU_PAGE04_MEM_ADR; /* RAM Page 0.4 */
-    Device_Data.MemPages [4] = CPU_PAGE51_MEM_ADR; /* RAM Page 4.1 video 0 */
-    Device_Data.MemPages [5] = CPU_PAGE52_MEM_ADR; /* RAM Page 4.2 video 0 */
-    Device_Data.MemPages [6] = CPU_PAGE53_MEM_ADR; /* RAM Page 4.3 video 0 */
-    Device_Data.MemPages [7] = CPU_PAGE54_MEM_ADR; /* RAM Page 4.4 video 0 */
-    init_rom();
+    if (!shiftPressed) {
+        Device_Data.MemPages [0] = CPU_PAGE01_MEM_ADR; /* RAM Page 0.1 */
+        Device_Data.MemPages [1] = CPU_PAGE02_MEM_ADR; /* RAM Page 0.2 */
+        Device_Data.MemPages [2] = CPU_PAGE03_MEM_ADR; /* RAM Page 0.3 */
+        Device_Data.MemPages [3] = CPU_PAGE04_MEM_ADR; /* RAM Page 0.4 */
+        Device_Data.MemPages [4] = CPU_PAGE51_MEM_ADR; /* RAM Page 4.1 video 0 */
+        Device_Data.MemPages [5] = CPU_PAGE52_MEM_ADR; /* RAM Page 4.2 video 0 */
+        Device_Data.MemPages [6] = CPU_PAGE53_MEM_ADR; /* RAM Page 4.3 video 0 */
+        Device_Data.MemPages [7] = CPU_PAGE54_MEM_ADR; /* RAM Page 4.4 video 0 */
+        init_rom();
+    }
 
     Device_Data.CPU_State.psw   = 0340;
     Device_Data.CPU_State.r [7] = Device_Data.SysRegs.RdReg177716 & 0177400;

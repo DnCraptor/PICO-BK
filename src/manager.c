@@ -29,6 +29,7 @@ static volatile bool plusPressed = false;
 static volatile bool minusPressed = false;
 static volatile bool ctrlPressed = false;
 static volatile bool altPressed = false;
+volatile bool shiftPressed = false;
 static volatile bool delPressed = false;
 static volatile bool f1Pressed = false;
 static volatile bool f2Pressed = false;
@@ -2180,11 +2181,19 @@ bool handleScancode(uint32_t ps2scancode) { // core 1
       case 0xD0:
         downPressed = false;
         break;
-      case 0x38:
+        case 0x38:
         altPressed = true;
         break;
       case 0xB8:
         altPressed = false;
+        break;
+      case 0x2A:
+      case 0x36:
+        shiftPressed = true;
+        break;
+      case 0xAA:
+      case 0xB6:
+        shiftPressed = false;
         break;
       case 0x0E:
         backspacePressed = true;
