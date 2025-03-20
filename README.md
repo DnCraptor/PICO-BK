@@ -138,6 +138,7 @@ Based on: https://github.com/konst-st/BK8266/tree/BK0011M, который баз
 Клавиши менеджера:
 <ul>
 <li>Ctrl + Alt + Del - Reset ВМ1 CPU, RAM cleanup, set default pages, deafult speed, init system registers</li>
+<li>Shift + Ctrl + Alt + Del - Reset ВМ1 CPU, 32K RAM cleanup, init system registers (неполная инициализация при перезагрузке - пропускает инициализацию страниц памяти, части регистов, и заменяет адрес загрузки с 140000 на 100000 (для БК-0011М))</li>
 <li>Up / PageUp - Вверх</li>
 <li>Down / PageDown - Вниз</li>
 <li>Enter - запустить BIN файл, зайти в папку или смонтировать IMG/BKD файл, и выйти из манагера с ресетом (если не выбрано "BK-0010 + КНГМД 16k", то автоматически выбирается "BK-0011М + КНГМД", для режима "BK-0010 + КНГМД 16k" работает клавиатурный скрипт, который автоматическик набирает "S160000 Enter" для запуска КНГМД), запуск BKE-снэпшотов.</li>
