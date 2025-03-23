@@ -610,6 +610,8 @@ static TCPU_Arg AT_OVL CPU_GetArgAdrB (uint_fast8_t SrcCode)
     return 0;
 }
 
+volatile static CPU_WAIT_STATE = false;
+
 void AT_OVL CPU_Stop (void)
 {
     TCPU_Arg ArgS;
@@ -707,7 +709,7 @@ void AT_OVL CPU_RunInstruction (void) {
     TCPU_Arg Res;
     TCPU_Psw Psw = PSW;
 
-    if ((Psw & 0200) == 0) {
+    if (CPU_WAIT_STATE || ((Psw & 0200) == 0)) {
         if (vsync) { // 50 Hz interrupt
             vsync = false;
             if (is_bk0011mode() && !(Device_Data.SysRegs.WrReg177662 & (1 << 14))) {
@@ -738,7 +740,13 @@ void AT_OVL CPU_RunInstruction (void) {
     }
     DEBUG_PRINT (("%06o: ", (int) PC));
 
-    OpCode = CPU_ReadMemW (PC); PC += 2;
+    if (CPU_WAIT_STATE) {
+        CPU_CALC_TIMING (CPU_TIMING_WAIT);
+        goto Exit;
+    }
+
+    OpCode = CPU_ReadMemW (PC);
+    PC += 2;
 
     CPU_CHECK_ARG_FAULT (OpCode);
 
@@ -760,6 +768,7 @@ void AT_OVL CPU_RunInstruction (void) {
 
             case 001: // 000001   WAIT
                     DEBUG_PRINT (("WAIT  "));
+                    { CPU_WAIT_STATE = true; }
                     CPU_CALC_TIMING (CPU_TIMING_WAIT);
                     break;
 

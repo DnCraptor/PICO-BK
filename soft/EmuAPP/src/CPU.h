@@ -244,7 +244,7 @@ static inline bool is_bk0011mode() {
     PC   = CPU_PAGE01_MEM16 [ (Vec) >> 1     ];                                                         \
     ArgS = CPU_PAGE01_MEM16 [((Vec) >> 1) + 1] & 0377;                                                  \
     CPU_SET_PSW (ArgS);                                                                                \
-                                                                                                       \
+    { CPU_WAIT_STATE = false; }                                                                         \
     INVALID_PRINT (("  (%o)=%o=>PC  (%o)=%o=>PSW", (int) (Vec), (int) PC, (int) (Vec) + 2, (int) ArgS)); \
 }
 
