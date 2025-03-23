@@ -709,7 +709,7 @@ void AT_OVL CPU_RunInstruction (void) {
     TCPU_Arg Res;
     TCPU_Psw Psw = PSW;
 
-    if (CPU_WAIT_STATE || ((Psw & 0200) == 0)) {
+    if ((Psw & 0200) == 0) {
         if (vsync) { // 50 Hz interrupt
             vsync = false;
             if (is_bk0011mode() && !(Device_Data.SysRegs.WrReg177662 & (1 << 14))) {
@@ -719,6 +719,8 @@ void AT_OVL CPU_RunInstruction (void) {
                 goto Exit;
             }
         }
+    }
+    if (CPU_WAIT_STATE || ((Psw & 0200) == 0)) {
         if ((Device_Data.CPU_State.Flags & (CPU_FLAG_KEY_VECTOR_60 | CPU_FLAG_KEY_VECTOR_274))) {
             if (Device_Data.CPU_State.Flags & CPU_FLAG_KEY_VECTOR_60)
             {
