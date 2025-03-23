@@ -691,7 +691,7 @@ void set_bk0010mode(bk_mode_t mode) {
     }
 }
 
-extern uint8_t* vsync_ptr;
+extern bool vsync;
 
 void AT_OVL CPU_RunInstruction (void) {
     if ((PC & 0177776) == m_nFDDCatchAddr && is_fdd_suppored()) {
@@ -707,35 +707,35 @@ void AT_OVL CPU_RunInstruction (void) {
     TCPU_Arg Res;
     TCPU_Psw Psw = PSW;
 
-    if ((Psw & 0200) == 0 && (Device_Data.CPU_State.Flags & (CPU_FLAG_KEY_VECTOR_60 | CPU_FLAG_KEY_VECTOR_274))) {
-        if (Device_Data.CPU_State.Flags & CPU_FLAG_KEY_VECTOR_60)
-        {
-            Device_Data.CPU_State.Flags &= ~CPU_FLAG_KEY_VECTOR_60;
-            DEBUG_PRINT (("               INTERRUPT VEC=60"));
-            CPU_INST_INTERRUPT (060);
-            CPU_CALC_TIMING    (CPU_TIMING_INT);
-            goto Exit;
+    if ((Psw & 0200) == 0) {
+        if (vsync) { // 50 Hz interrupt
+            vsync = false;
+            if (is_bk0011mode() && !(Device_Data.SysRegs.WrReg177662 & (1 << 14))) {
+                DEBUG_PRINT (("               INTERRUPT VEC=100"));
+                CPU_INST_INTERRUPT (0100);
+                CPU_CALC_TIMING (CPU_TIMING_IOT);
+                goto Exit;
+            }
         }
-        else if (Device_Data.CPU_State.Flags & CPU_FLAG_KEY_VECTOR_274)
-        {
-            Device_Data.CPU_State.Flags &= ~CPU_FLAG_KEY_VECTOR_274;
-            DEBUG_PRINT (("               INTERRUPT VEC=274"));
-            CPU_INST_INTERRUPT (0274);
-            CPU_CALC_TIMING    (CPU_TIMING_INT);
-            goto Exit;
+        if ((Device_Data.CPU_State.Flags & (CPU_FLAG_KEY_VECTOR_60 | CPU_FLAG_KEY_VECTOR_274))) {
+            if (Device_Data.CPU_State.Flags & CPU_FLAG_KEY_VECTOR_60)
+            {
+                Device_Data.CPU_State.Flags &= ~CPU_FLAG_KEY_VECTOR_60;
+                DEBUG_PRINT (("               INTERRUPT VEC=60"));
+                CPU_INST_INTERRUPT (060);
+                CPU_CALC_TIMING    (CPU_TIMING_INT);
+                goto Exit;
+            }
+            else if (Device_Data.CPU_State.Flags & CPU_FLAG_KEY_VECTOR_274)
+            {
+                Device_Data.CPU_State.Flags &= ~CPU_FLAG_KEY_VECTOR_274;
+                DEBUG_PRINT (("               INTERRUPT VEC=274"));
+                CPU_INST_INTERRUPT (0274);
+                CPU_CALC_TIMING    (CPU_TIMING_INT);
+                goto Exit;
+            }
         }
     }
-
-    if (*vsync_ptr) { // 50 Hz interrupt
-        *vsync_ptr = 0;
-        if ((Psw & 0200) == 0 && is_bk0011mode() && !(Device_Data.SysRegs.WrReg177662 & (1 << 14))) {
-            DEBUG_PRINT (("               INTERRUPT VEC=100"));
-            CPU_INST_INTERRUPT (0100);
-            CPU_CALC_TIMING (CPU_TIMING_IOT);
-            goto Exit;
-        }
-    }
-
     DEBUG_PRINT (("%06o: ", (int) PC));
 
     OpCode = CPU_ReadMemW (PC); PC += 2;
