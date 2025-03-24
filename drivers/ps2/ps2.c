@@ -262,7 +262,7 @@ uint32_t ps2get_raw_code() {
         ps2buffer[i - len] = ps2buffer[i];
     }
     ps2bufsize -= len;
-    DBGM_PRINT(("retval: 0x%04Xh\n", retval));
+    DBGM_PRINT(("\nps2 retval: 0x%04Xh", retval));
     return retval;
 }
 

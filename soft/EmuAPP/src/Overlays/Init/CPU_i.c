@@ -76,6 +76,7 @@ extern volatile uint16_t az_covox_R;
 extern volatile uint16_t az_covox_L;
 
 void AT_OVL CPU_Init (void) {
+    CPU_Init_e();
     if (!shiftPressed)
         memset (&Device_Data, 0, sizeof (Device_Data));
 

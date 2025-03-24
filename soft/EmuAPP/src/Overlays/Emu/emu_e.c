@@ -101,9 +101,14 @@ void AT_OVL emu_start () {
             case 1:
                 //ps2_periodic ();
                 break;
-            case 2:
+            case 2: {
+                auto prev = g_conf.CodeAndFlags;
                 g_conf.CodeAndFlags = (uint_fast16_t)(ps2get_raw_code() & 0xFFFF); // ps2_read ();
-                if (g_conf.CodeAndFlags == 0) g_conf.RunState = 5;
+                if (prev != g_conf.CodeAndFlags) {
+                    KBD_PRINT(("2. 0x%04X (prev: 0x%04X)", g_conf.CodeAndFlags, prev));
+                }
+                if (g_conf.CodeAndFlags == 0) { // nothig pressed, so do nothig
+                    g_conf.RunState = 0; /// 5;
 /*   Адрес регистра - 177716.
    Старший байт регистра (разряды  8-15) используются для задания адреса, с которого запускается процессор при включении питания (при
 этом младший байт регистра принимается равным 0). Адрес начального пуска процессора равен 100000.
@@ -122,13 +127,19 @@ void AT_OVL emu_start () {
  * Разряд 6 сброшен в "0", если хотя бы одна клавиша нажата и установлен в "1", если все клавиши отжаты.
    Разряд 7 используется для чтения сигнала готовности с линии.
 */
-                else { // TODO:
-                    DBGM_PRINT(("    0x%04X,", g_conf.CodeAndFlags));
+                } else {
+                    if (g_conf.PrevCAF == g_conf.CodeAndFlags) { // nothing changed, so do nothing (suppress auto-repeat)
+                        g_conf.RunState = 0;
+                    } else {
+                        g_conf.PrevCAF = g_conf.CodeAndFlags;
+                    }
+                     // TODO:
                 //    if (any_down(CodeAndFlags)) Device_Data.SysRegs.RdReg177716 &= ~0100;
                 //    else Device_Data.SysRegs.RdReg177716 |= 0100;
                 //    KBD_PRINT(("2. CodeAndFlags: %04Xh RdReg177716: %oo", CodeAndFlags, Device_Data.SysRegs.RdReg177716));
                 }
                 break;
+            }
             case 3:
                 if (g_conf.CodeAndFlags == PS2_PAUSE) {
                     g_conf.RunState = 5;
@@ -143,7 +154,7 @@ void AT_OVL emu_start () {
                 else {
                     g_conf.Key = Key_Translate (g_conf.CodeAndFlags);
                     KBD_PRINT(("3. CodeAndFlags: %04Xh RdReg177716: %oo Key: %d (%Xh / %oo)",
-                                   CodeAndFlags, Device_Data.SysRegs.RdReg177716, Key, Key, Key));
+                        g_conf.CodeAndFlags, Device_Data.SysRegs.RdReg177716, g_conf.Key, g_conf.Key, g_conf.Key));
                 }
                 break;
             case 4:
@@ -177,7 +188,7 @@ void AT_OVL emu_start () {
                 if ((g_conf.LastKey & 0x800) == 0) {
                     if ((Device_Data.SysRegs.Reg177660 & 0200) == 0) {
                         g_conf.Key = (uint_fast16_t) (g_conf.LastKey >> 16);
-                        KBD_PRINT(("5. Key: %d", Key));
+                        KBD_PRINT(("5. Key: %d", g_conf.Key));
                         if (g_conf.Key == 14) {
                             Key_SetRusLat ();
                         } else if (g_conf.Key == 15) {
@@ -198,7 +209,7 @@ void AT_OVL emu_start () {
                         KBD_PRINT(("5. Reg177660: %oo", Device_Data.SysRegs.Reg177660));
                     }
                     g_conf.LastKey |= 0x800;
-                    KBD_PRINT(("5. LastKey: %Xh", LastKey));
+                    KBD_PRINT(("5. LastKey: %Xh", g_conf.LastKey));
 /*   Регистр данных клавиатуры имеет адрес 177662.
    При нажатии на определенную клавишу в разрядах 0-6 этого регистра формируется соответствующий нажатой клавише семиразрядный код. Запись
 нового кода в регистр не производится до тех пор, пока не будет прочитан предыдущий код.
