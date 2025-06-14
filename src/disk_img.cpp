@@ -29,7 +29,7 @@ const char *strID_RT11Q = "?QUBOOT-";
 0 - Microdos
 -1 - ошибка чтения файла
 */
-inline static int AnalyseMicrodos(FIL *f, uint8_t *buf)
+inline static int AnalyseMicrodos(FIL* f, uint8_t* pSector)
 {
 #pragma pack(push)
 #pragma pack(1)
@@ -56,36 +56,31 @@ inline static int AnalyseMicrodos(FIL *f, uint8_t *buf)
 	};
 #pragma pack(pop)
 	int nRet = -1;
-	if (f_lseek(f, 0) == FR_OK) {
-		// перемещаемся к нулевому сектору
-		UINT br;
-		const size_t dp = sizeof(MikrodosFileRecord);
-		char pCatBuffer[0500 + dp] = { 0 };
-		if (f_read(f, pCatBuffer, sizeof(pCatBuffer), &br) == FR_OK)
-		{
-			int nRecNum = *(reinterpret_cast<uint16_t*>(&pCatBuffer[030])); // читаем общее кол-во файлов.
-			MikrodosFileRecord* pDiskCat = reinterpret_cast<MikrodosFileRecord*>(pCatBuffer + 0500); // каталог диска
-			int nMKDirFlag = 0;
-			int nAODirFlag = 0;
-			// сканируем каталог и ищем там директории
-			for (size_t i = 0; i < nRecNum; ++i) {
-				if (pDiskCat->name[0] == 0177) {
-					nMKDirFlag++;
-				} else if (pDiskCat->name[0] != 0 && pDiskCat->len_blk == 0) {
-					nAODirFlag++;
-				}
-				if (f_read(f, pDiskCat, dp, &br) != FR_OK) break;
-			}
-			if (nMKDirFlag && nAODirFlag) {
-				nRet = 0;
-			} else if (nMKDirFlag) {
-				nRet = 2;
-			} else if (nAODirFlag) {
-				nRet = 1;
-			} else {
-				nRet = 0;
-			}
+    // перемещаемся к нулевому сектору
+	const size_t dp = sizeof(MikrodosFileRecord);
+    int nRecNum = *(reinterpret_cast<uint16_t*>(&pSector[030])); // читаем общее кол-во файлов.
+	MikrodosFileRecord* pDiskCat = reinterpret_cast<MikrodosFileRecord*>(pSector + 0500); // каталог диска
+    int nMKDirFlag = 0;
+	int nAODirFlag = 0;
+	f_lseek(f, dp);
+	// сканируем каталог и ищем там директории
+	for (size_t i = 0; i < nRecNum; ++i) {
+		if (pDiskCat->name[0] == 0177) {
+			nMKDirFlag++;
+		} else if (pDiskCat->name[0] != 0 && pDiskCat->len_blk == 0) {
+			nAODirFlag++;
 		}
+		UINT br;
+		if (f_read(f, pDiskCat, dp, &br) != FR_OK) break;
+	}
+	if (nMKDirFlag && nAODirFlag) {
+		nRet = 0;
+	} else if (nMKDirFlag) {
+		nRet = 2;
+	} else if (nAODirFlag) {
+		nRet = 1;
+	} else {
+		nRet = 0;
 	}
 	return nRet;
 }
@@ -395,20 +390,20 @@ static void ParseImage(const char* fname, PARSE_RESULT_C& ret) {
 	strncpy(ret.strName, fname, 256);
 	ret.nBaseOffset = 0;
 	ret.imageOSType = IMAGE_TYPE::ERROR_NOIMAGE; // предполагаем изначально такое
-    FIL fil;
-	if (f_open(&fil, fname, FA_READ) != FR_OK) {
+    FIL* fil = new FIL();
+	if (f_open(fil, fname, FA_READ) != FR_OK) {
 		DBGM_PRINT(("Unable to open %s", fname));
-		return;
+		goto e;
 	}
-	ret.nImageSize = f_size(&fil); // получим размер файла
+	ret.nImageSize = f_size(fil); // получим размер файла
     DBGM_PRINT(("%s nImageSize: %d", fname, ret.nImageSize));
 	UINT br;
-	if (f_read(&fil, pSector, BLOCK_SIZE, &br) == FR_OK) {
+	if (f_read(fil, pSector, BLOCK_SIZE, &br) == FR_OK) {
 		bool bAC1 = false; // условие андос 1 (метка диска)
 		bool bAC2 = false; // условие андос 2 (параметры диска)
 		// Получим признак системного диска
-		if (wSector[0] == 0240 /*NOP*/) {
-			if (wSector[1] != 5 /*RESET*/) {
+		if (wSector[0] == 0240) { //NOP
+			if (wSector[1] != 5) { //RESET
 				ret.bImageBootable = true;
 			}
 		}
@@ -452,7 +447,7 @@ static void ParseImage(const char* fname, PARSE_RESULT_C& ret) {
 			}
 			// тут надо найти способ как определить прочую экзотику
 			else {
-				int nRet = AnalyseMicrodos(&fil, pSector);
+				int nRet = AnalyseMicrodos(fil, pSector);
 				switch (nRet) {
 					case 0:
 						ret.nPartLen = *(reinterpret_cast<uint16_t *>(pSector + 0466));
@@ -479,9 +474,8 @@ static void ParseImage(const char* fname, PARSE_RESULT_C& ret) {
 			DBGM_PRINT(("FAT12"));
 			uint8_t nMediaDescriptor = pSector[025];
 			int nBootSize = *(reinterpret_cast<uint16_t *>(pSector + 016)) * (*(reinterpret_cast<uint16_t *>(pSector + 013)));
-			uint8_t b[BLOCK_SIZE];
-			f_lseek(&fil, nBootSize);
-			f_read(&fil, b, BLOCK_SIZE, &br);
+			uint8_t* b = new uint8_t[BLOCK_SIZE];
+			if (f_lseek(fil, nBootSize) == FR_OK && f_read(fil, b, BLOCK_SIZE, &br) == FR_OK)
 			if (b[1] == 0xff && b[0] == nMediaDescriptor) // если медиадескриптор в BPB и фат совпадают, то это точно FAT12
 			{
 				if (bAC1 || bAC2) // если одно из этих условий - то это скорее всего ANDOS
@@ -501,6 +495,7 @@ static void ParseImage(const char* fname, PARSE_RESULT_C& ret) {
 				ret.imageOSType = IMAGE_TYPE::UNKNOWN;
 				DBGM_PRINT(("UNKNOWN"));
 			}
+            delete[] b;
 		}
 		// проверка на предположительно возможно НС-ДОС
 		else if (wSector[2 / 2] == 012700 && wSector[4 / 2] == 0404 && wSector[6 / 2] == 0104012) {
@@ -518,34 +513,34 @@ static void ParseImage(const char* fname, PARSE_RESULT_C& ret) {
             DBGM_PRINT(("IsRT11_old: %d", t));
 			switch (t) {
 				case 0:
-					t = IsRT11(&fil, pSector);
+					t = IsRT11(fil, pSector);
                     DBGM_PRINT(("IsRT11: %d", t));
 					switch (t) {
 						case 0:	{
 							// нет, не рт11
 							// проверим, а не ксидос ли у нас
-							t = IsCSIDOS3(&fil, pSector);
+							t = IsCSIDOS3(fil, pSector);
                             DBGM_PRINT(("IsCSIDOS3: %d", t));
 							switch (t)
 							{
 								case 0:
 									// нет, не ксидос
 									// проверим на ОПТОК
-									t = IsOPTOK(&fil, pSector);
+									t = IsOPTOK(fil, pSector);
 									DBGM_PRINT(("IsOPTOK: %d", t));
 									switch (t)
 									{
 										case 0:
 											// нет, не опток
 											// проверим на Holography
-											t = IsHolography(&fil, pSector);
+											t = IsHolography(fil, pSector);
 											DBGM_PRINT(("IsHolography: %d", t));
 											switch (t)
 											{
 												case 0:
 													// нет, не Holography
 													// проверим на Dale OS
-													t = IsDaleOS(&fil, pSector);
+													t = IsDaleOS(fil, pSector);
 													DBGM_PRINT(("IsDaleOS: %d", t));
 													switch (t)
 													{
@@ -591,7 +586,9 @@ static void ParseImage(const char* fname, PARSE_RESULT_C& ret) {
 		}
 	}
 	DBGM_PRINT(("nPartLen: %d imageOSType: %d", ret.nPartLen, ret.imageOSType))
-	f_close(&fil);
+	f_close(fil);
+e:
+	delete fil;
 	return;
 }
 
@@ -635,7 +632,8 @@ inline static const char* GetOSName(const IMAGE_TYPE t) {
 }
 
 extern "C" void detect_os_type(const char* path, char* os_type, size_t sz) {
-///    try {
+	//	snprintf(os_type, sz, "");
+			///    try {
         ParseImage(path, parse_result);
 		snprintf(os_type, sz, "%d KB %s%s",
 		         parse_result.nImageSize >> 10,

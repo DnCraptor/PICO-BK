@@ -264,27 +264,30 @@ void mkdos_review(const PARSE_RESULT_C& parse_result, int curr_dir_num) {
 	m_sDiskCat.nCurrDirNum = curr_dir_num;
 	m_sDiskCat.bHasDir = true;
 	m_sDiskCat.nMaxDirNum = 0177;
-	FIL fil;
-	if (f_open(&fil, parse_result.strName, FA_READ | FA_WRITE) == FR_OK) {
+	FIL* fil = new FIL();
+	if (f_open(fil, parse_result.strName, FA_READ | FA_WRITE) == FR_OK) {
 		m_bFileROMode = false;
-	} else if (f_open(&fil, parse_result.strName, FA_READ) != FR_OK) {
+	} else if (f_open(fil, parse_result.strName, FA_READ) != FR_OK) {
+		delete fil;
         return;
 	} else {
 		m_bFileROMode = true;
 	}
 	UINT br;
-	if (f_read(&fil, m_pCatBuffer, sizeof m_pCatBuffer, &br) != FR_OK) {
-		f_close(&fil);
+	if (f_read(fil, m_pCatBuffer, sizeof m_pCatBuffer, &br) != FR_OK) {
+		f_close(fil);
+		delete fil;
 		return;
 	}
-	f_close(&fil);
+	f_close(fil);
+    delete fil;
 	int files_count = 0;
 	int files_total = *(reinterpret_cast<uint16_t *>(&m_pCatBuffer[FMT_MKDOS_CAT_RECORD_NUMBER])); // читаем общее кол-во файлов. (НЕ записей!)
 	m_sDiskCat.nDataBegin = *(reinterpret_cast<uint16_t *>(&m_pCatBuffer[FMT_MKDOS_FIRST_FILE_BLOCK])); // блок начала данных
 	m_sDiskCat.nTotalRecs = m_nMKCatSize; // это у нас объём каталога, из него надо будет вычесть общее количество записей
 	int used_size = 0;
-	BKDirDataItem AFR; // экземпляр абстрактной записи
-	auto pRec = reinterpret_cast<MKDosFileRecord *>(AFR.pSpecificData); // а в ней копия оригинальной записи
+	BKDirDataItem* AFR = new BKDirDataItem(); // экземпляр абстрактной записи
+	auto pRec = reinterpret_cast<MKDosFileRecord *>(AFR->pSpecificData); // а в ней копия оригинальной записи
 	for (unsigned int i = 0; i < m_nMKCatSize; ++i) // цикл по всему каталогу
 	{
 		if (files_count >= files_total) // файлы кончились, выходим
@@ -293,17 +296,17 @@ void mkdos_review(const PARSE_RESULT_C& parse_result, int curr_dir_num) {
 			break;
 		}
 		// преобразуем запись и поместим в массив
-		AFR.clear();
-		AFR.nSpecificDataLength = sizeof(MKDosFileRecord);
+		AFR->clear();
+		AFR->nSpecificDataLength = sizeof(MKDosFileRecord);
 		*pRec = m_pDiskCat[i]; // копируем текущую запись как есть
-		ConvertRealToAbstractRecord(&AFR);
+		ConvertRealToAbstractRecord(AFR);
 		if ((m_pDiskCat[i].status == 0377) || (m_pDiskCat[i].status == 0200)) {
 			// удалённые не считаются,
 			// плохие наверное тоже не считаются, но проверить не на чём
 		} else {
 			files_count++;
 		}
-		if (!(AFR.nAttr & FR_ATTR::DELETED)) {
+		if (!(AFR->nAttr & FR_ATTR::DELETED)) {
 			if (m_pDiskCat[i].name[0] == 0177) {
 				// если директория
 				if (!AppendDirNum(m_pDiskCat[i].status)) {
@@ -316,11 +319,12 @@ void mkdos_review(const PARSE_RESULT_C& parse_result, int curr_dir_num) {
 			}
 		}
 		// выбираем только те записи, которые к нужной директории принадлежат.
-		if (AFR.nDirBelong == m_sDiskCat.nCurrDirNum) {
+		if (AFR->nDirBelong == m_sDiskCat.nCurrDirNum) {
 	//		m_sDiskCat.vecFC.push_back(AFR);
-	        m_add_file_ext(AFR.strName, AFR.nRecType == BKDirDataItem::RECORD_TYPE::DIRECTORY, AFR.nDirNum);
+	        m_add_file_ext(AFR->strName, AFR->nRecType == BKDirDataItem::RECORD_TYPE::DIRECTORY, AFR->nDirNum);
 		}
 	}
+	delete AFR;
 #ifdef _DEBUG
 	DebugOutCatalog(m_pDiskCat);
 #endif
