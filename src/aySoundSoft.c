@@ -429,3 +429,11 @@ void AY_write_address(uint16_t word) {
     if (addr >= 0xFD && addr <= 0xFE) return;
     AY_select_reg(addr & 0x0F);
 }
+
+void beep(bool v) {
+    #ifdef HWAY
+        AY_to595Beep(v);
+    #else
+        pwm_set_gpio_level(BEEPER_PIN, v);
+    #endif
+}

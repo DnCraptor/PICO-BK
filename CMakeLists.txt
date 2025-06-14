@@ -4,8 +4,12 @@ include(pico_sdk_import.cmake)
 
 project(pico-bk C CXX ASM)
 option(OVERCLOCKING "Target Pico MHz" 366)
+option(AY_TYPE "AY-3-8910 Type: PWM / HWAY" HWAY)
 if(NOT OVERCLOCKING)
     SET(OVERCLOCKING 366)
+endif ()
+if(NOT AY_TYPE)
+    SET(AY_TYPE HWAY)
 endif ()
 
 set(CMAKE_C_STANDARD 11)
@@ -21,7 +25,7 @@ set(CMAKE_LIBRARY_OUTPUT_DIRECTORY "${OUTPUT_DIR}")
 set(CMAKE_C_FLAGS   "${CMAKE_C_FLAGS}   -ffunction-sections -fdata-sections -O2")
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -ffunction-sections -fdata-sections -O2")
 
-SET(BUILD_NAME "m1p1-bk-VGA-PWM-${OVERCLOCKING}MHz-132")
+SET(BUILD_NAME "m1p1-bk-VGA-${AY_TYPE}-${OVERCLOCKING}MHz-133")
 
 #add_compile_definitions(${PROJECT_NAME} NO_GRAPHICS)
 set(FAMILY rp2040)
@@ -127,6 +131,10 @@ pico_set_program_version(pico-bk "test")
                 -w
         )
     endif ()
+
+if( AY_TYPE MATCHES "HWAY" )
+    target_compile_definitions(${PROJECT_NAME} PRIVATE HWAY)
+endif()
 
 target_compile_definitions(${PROJECT_NAME} PRIVATE
         PICO_HEAP_SIZE=0

@@ -14,6 +14,8 @@ void  AY_reset();
 void AY_print_state_debug();
 void AY_write_address(uint16_t addr);
 
+void beep(bool v);
+
 extern volatile uint16_t true_covox;
 extern volatile uint16_t az_covox_R;
 extern volatile uint16_t az_covox_L;

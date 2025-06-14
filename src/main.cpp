@@ -89,11 +89,21 @@ static bool __not_in_flash_func(Wii_Joystick_Timer_CB)(repeating_timer_t *rt) {
 }
 #endif
 
+#ifdef HWAY
+extern "C" {
+    #include "PinSerialData_595.h"
+}
+#endif
+
 #ifdef SOUND_SYSTEM
 static repeating_timer_t timer;
 static bool __not_in_flash_func(AY_timer_callback)(repeating_timer_t *rt) {
     static uint16_t outL = 0;  
     static uint16_t outR = 0;
+#ifdef HWAY
+    //AY_to595Beep(outL || outR);
+// TODO
+#else
     pwm_set_gpio_level(PWM_PIN0, outR); // Право
     pwm_set_gpio_level(PWM_PIN1, outL); // Лево
     outL = outR = 0;
@@ -127,6 +137,7 @@ static bool __not_in_flash_func(AY_timer_callback)(repeating_timer_t *rt) {
         }
         pwm_set_gpio_level(BEEPER_PIN, 0);
     }
+#endif
     return true;
 }
 #endif
@@ -345,11 +356,15 @@ int main() {
     set_sys_clock_khz(OVERCLOCKING * KHZ, true);
 #endif
 
+#ifdef HWAY
+    Init_PWM_175(TSPIN_MODE_BOTH);
+#else
     PWM_init_pin(BEEPER_PIN, (1 << 12) - 1);
     #ifdef SOUND_SYSTEM
     PWM_init_pin(PWM_PIN0, (1 << 12) - 1);
     PWM_init_pin(PWM_PIN1, (1 << 12) - 1);
     #endif
+#endif
 
 #if LOAD_WAV_PIO
     //пин ввода звука

@@ -435,9 +435,9 @@ TCPU_Arg AT_OVL CPU_WriteW (TCPU_Arg Adr, uint_fast16_t Word) {
                 // пищалка
                 int vol = g_conf.snd_volume + 9;
                 if (vol > 1) {
-                    pwm_set_gpio_level(BEEPER_PIN, Word & 0100 ? (1 << vol) - 1 : 0);
+                    beep(Word & 0100 ? (1 << vol) - 1 : 0);
                 } else {
-                    pwm_set_gpio_level(BEEPER_PIN, 0);
+                    beep(0);
                 }
             }
             break;
