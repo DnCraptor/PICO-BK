@@ -455,9 +455,10 @@ void AY_write_address(uint16_t word) {
     uint8_t addr = (~word) & 0xff;
     if (addr >= 0xFD && addr <= 0xFE) return;
     #ifdef HWAY
+   		HIGH(CS_AY0); LOW(CS_AY1);	// выбор первого чипа
         uint8_t N_reg = addr & 0x0F;
     	send_to_595(HIGH (BDIR | BC1) | N_reg); 
-		send_to_595( LOW (BDIR |BC1) | N_reg);
+		send_to_595( LOW (BDIR | BC1) | N_reg);
     #else
         AY_select_reg(addr & 0x0F);
     #endif

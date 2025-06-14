@@ -101,21 +101,46 @@ static bool __not_in_flash_func(AY_timer_callback)(repeating_timer_t *rt) {
     static uint16_t outL = 0;  
     static uint16_t outR = 0;
 #ifdef HWAY
-    //AY_to595Beep(outL || outR);
-// TODO
+#ifdef COVOX
+    static uint8_t latch_val = 0;
+    uint8_t val = (outL + outR) >> 6;
+    if (g_conf.is_covox_on && latch_val != val) {
+        latch_val = val;
+        // выбор второго чипа
+		HIGH(CS_AY1);
+        LOW(CS_AY0);
+		// выбор регистра разрешений
+    	send_to_595(HIGH (BDIR | BC1) | 7); 
+		send_to_595( LOW (BDIR | BC1) | 7);
+		// разрешение записи в регистр portB
+		send_to_595(LOW (BDIR) | 0x80);
+		send_to_595(HIGH(BDIR) | 0x80);
+		send_to_595(LOW (BDIR) | 0x80);
+        // выбор IO регистра port B 
+    	send_to_595(HIGH (BDIR | BC1) | 0x0F); 
+		send_to_595( LOW (BDIR | BC1) | 0x0F);
+        // запись значения в регистр port B второго чипа
+		send_to_595(LOW (BDIR) | val);
+		send_to_595(HIGH(BDIR) | val);
+		send_to_595(LOW (BDIR) | val);
+    }
+#endif
 #else
     pwm_set_gpio_level(PWM_PIN0, outR); // Право
     pwm_set_gpio_level(PWM_PIN1, outL); // Лево
+#endif
     outL = outR = 0;
     if (manager_started) {
         return true;
     }
-#ifdef AYSOUND
+#ifndef HWAY
+    #ifdef AYSOUND
     if (g_conf.is_AY_on) {
         uint8_t* AY_data = get_AY_Out(5);
         outL = ((uint16_t)AY_data[0] + AY_data[1]) << 1;
         outR = ((uint16_t)AY_data[2] + AY_data[1]) << 1;
     }
+    #endif
 #endif
 #ifdef COVOX
     if (!outL && !outR && g_conf.is_covox_on && (true_covox || az_covox_L || az_covox_R)) {
@@ -135,9 +160,10 @@ static bool __not_in_flash_func(AY_timer_callback)(repeating_timer_t *rt) {
             outL >>= div;
             outR >>= div;
         }
-        pwm_set_gpio_level(BEEPER_PIN, 0);
+        #ifndef HWAY
+        beep(0);
+        #endif
     }
-#endif
     return true;
 }
 #endif
