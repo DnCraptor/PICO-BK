@@ -110,16 +110,7 @@ void __not_in_flash_func(send_to_595)(uint16_t data) {
 	*/
 }
 
-#define AY_Enable (1<<14)
-#define SAVE (1<<13)
-#define Beeper (1<<12)
-#define CS_AY1 (1<<11)
-#define CS_AY0	(1<<10)
-#define BDIR (1<<9)
-#define BC1 (1<<8)
-static uint16_t control_bits = 0;
-#define LOW(x) (control_bits &= ~(x))
-#define HIGH(x) (control_bits |= (x))			 
+uint16_t control_bits = 0;
 
 void __not_in_flash_func(AY_to595Beep)(bool Beep){ 
 	if (Beep) {send_to_595( HIGH(Beeper)) ;} else {send_to_595( LOW(Beeper));};

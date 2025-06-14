@@ -3,6 +3,10 @@
 #include "stdbool.h"
 #include "debug.h"
 
+#ifdef HWAY
+#include "PinSerialData_595.h"
+#endif
+
 uint8_t N_sel_reg=0;
 
 //регистры состояния AY
@@ -28,9 +32,27 @@ void FAST_FUNC(AY_select_reg)(uint8_t N_reg)
     N_sel_reg = N_reg;
 };
 
+// SAA1099
+void __not_in_flash_func(saa1099_write)(uint8_t addr, uint8_t byte) {
+    // const uint16_t a0 = addr ? BC1 : 0;
+	if(addr>0){HIGH(BC1);}else{LOW(BC1);}
+    send_to_595(byte | LOW(CS_SAA1099)); //
+    busy_wait_us(5);
+    send_to_595(byte | HIGH(CS_SAA1099)); // 
+}
+
 void AY_reset()
 {
     DBGM_PRINT(("AY_reset"));
+    #ifdef HWAY
+		send_to_595(LOW(AY_Enable));
+		//  busy_wait_us(500);
+		for (int i = 0; i < 0x20; i++){
+			saa1099_write(1, i);
+			saa1099_write(0, 0x00);
+		}
+		send_to_595(HIGH(AY_Enable | CS_SAA1099 | CS_AY0 | Beeper |CS_AY1 | BDIR | BC1 | (SAVE)));																						   
+    #endif
     ay_R1_R0=0;
     ay_R3_R2=0;
     ay_R5_R4=0;
@@ -90,9 +112,13 @@ uint8_t FAST_FUNC(AY_get_reg)()
     };
 
 
-void FAST_FUNC(AY_set_reg)(uint8_t val)
-    {
-        DBGM_PRINT(("AY_set_reg(%02Xh)", val));
+void FAST_FUNC(AY_set_reg)(uint8_t val) {
+    DBGM_PRINT(("AY_set_reg(%02Xh)", val));
+    #ifdef HWAY
+		send_to_595(LOW (BDIR) | val);
+		send_to_595(HIGH(BDIR) | val);
+		send_to_595(LOW (BDIR) | val);
+    #else
         switch (N_sel_reg)
         {
         case 0:
@@ -154,7 +180,8 @@ void FAST_FUNC(AY_set_reg)(uint8_t val)
         default:
             break;
         }
-    };
+    #endif
+};
 
 //------------------------
  bool FAST_FUNC(get_random)(){
@@ -427,7 +454,13 @@ void AY_write_address(uint16_t word) {
 //    DBGM_PRINT(("AY_write_address(%04Xh) ~word = %04X", word, ~word));
     uint8_t addr = (~word) & 0xff;
     if (addr >= 0xFD && addr <= 0xFE) return;
-    AY_select_reg(addr & 0x0F);
+    #ifdef HWAY
+        uint8_t N_reg = addr & 0x0F;
+    	send_to_595(HIGH (BDIR | BC1) | N_reg); 
+		send_to_595( LOW (BDIR |BC1) | N_reg);
+    #else
+        AY_select_reg(addr & 0x0F);
+    #endif
 }
 
 void beep(bool v) {
