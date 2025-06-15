@@ -1,4 +1,7 @@
-#include "timer0.h"
+#include <pico/stdlib.h>
+#include <hardware/clocks.h>
+#include <hardware/structs/systick.h>
+
 #include "reboot.h"
 #include "ps2_bk.h"
 #include "ps2_codes.h"
@@ -38,8 +41,7 @@ static bool covox_plus = 0;
 volatile bool is_kbd_joystick = false;
 
 inline static void cleanup_emu_state() {
-    g_conf.cycles_cnt1  = getCycleCount ();
-    g_conf.Time         = (int32_t)g_conf.cycles_cnt1;
+    g_conf.cpu_freq     = g_conf.bk0010mode >= BK_0011M_FDD ? 4000000 : 3000000;
     g_conf.T            = 0;
     g_conf.CodeAndFlags = 0;
     g_conf.Key          = 0;
@@ -54,7 +56,8 @@ void AT_OVL emu_start () {
                                g_conf.CodeAndFlags, g_conf.Key, g_conf.LastKey, Device_Data.CPU_State.Flags));
     // Запускаем эмуляцию
     while (1) {
-        int tormoz = if_manager(false);
+        manager(false);
+        uint32_t armFreqDivEmu = clock_get_hz(clk_sys) / g_conf.cpu_freq;
 #if LOAD_WAV_PIO
         bool bit_wav = hw_get_bit_LOAD();
         if (bit_wav) Device_Data.SysRegs.RdReg177716 |= 0b100000;
@@ -72,21 +75,28 @@ void AT_OVL emu_start () {
                 DEBUG_PRINT(("Count: %d", Count));
                 CPU_RunInstruction ();
             }
-            g_conf.Time = getCycleCount ();
             g_conf.T    = Device_Data.CPU_State.Time;
         }
         else {
-            for (Count = 0; Count < 16; Count++) {
-                uint64_t cycles_cnt2 = getCycleCount ();
-                if (cycles_cnt2 - g_conf.cycles_cnt1 < tormoz) { // чем выше константа, тем медленнее БК
-                    DEBUG_PRINT(("break"));
-                    break;
+            // Настраиваем SysTick: тактирование от системной частоты
+            // и максимальное значение 24-битного счётчика
+            systick_hw->rvr = 0xFFFFFF;  // reload value (24 бита макс)
+            systick_hw->cvr = 0;         // current value
+            systick_hw->csr = (1 << 0) | (1 << 2);  // ENABLE = бит 0, CLKSOURCE = бит 2
+            uint32_t startTicks = systick_hw->cvr;
+            CPU_RunInstruction ();
+            uint32_t dT = Device_Data.CPU_State.Time - g_conf.T; // BM1 emulated ticks passed
+            // Считаем прошедшие такты ARM
+            uint32_t cvr_now = systick_hw->cvr;
+            uint32_t dTicks = startTicks >= cvr_now ? startTicks - cvr_now : startTicks + (0xFFFFFF - cvr_now) + 1; // ARM Cortex ticks passed
+            if (dT < 0x7FFFFFFF && dT > 0 && dTicks > 0) { // W/A for overload
+                // wait for the same time as for emulated CPU
+                while(dT * armFreqDivEmu > dTicks) {
+                    cvr_now = systick_hw->cvr;
+                    dTicks = startTicks >= cvr_now ? startTicks - cvr_now : startTicks + (0xFFFFFF - cvr_now) + 1; // ARM Cortex ticks passed
                 }
-                CPU_RunInstruction ();
-                g_conf.Time = getCycleCount ();
-                g_conf.T    = Device_Data.CPU_State.Time;
-                g_conf.cycles_cnt1 = cycles_cnt2;
             }
+            g_conf.T    = Device_Data.CPU_State.Time;
         }
         // Вся периодика
         DEBUG_PRINT(("RunState: %d", g_conf.RunState));
@@ -146,9 +156,8 @@ void AT_OVL emu_start () {
                     CPU_Stop ();
                 }
                 else if (g_conf.CodeAndFlags == PS2_HOME) {
-                    tormoz = if_manager(true);
+                    manager(true);
                     g_conf.Key = KEY_UNKNOWN;
-                    g_conf.Time = getCycleCount ();
                     g_conf.T    = Device_Data.CPU_State.Time;
                 }
                 else {

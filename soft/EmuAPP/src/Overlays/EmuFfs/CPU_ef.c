@@ -433,12 +433,7 @@ TCPU_Arg AT_OVL CPU_WriteW (TCPU_Arg Adr, uint_fast16_t Word) {
             else {
                 Device_Data.SysRegs.WrReg177716 = (uint16_t) Word;
                 // пищалка
-                int vol = g_conf.snd_volume + 9;
-                if (vol > 1) {
-                    beep(Word & 0100 ? (1 << vol) - 1 : 0);
-                } else {
-                    beep(0);
-                }
+                beep(Word & 0100);
             }
             break;
         default:

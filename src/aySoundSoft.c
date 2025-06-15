@@ -1,4 +1,5 @@
 // from https://github.com/UmkaSK/speccy-pico-trd/blob/main/src/zx_emu/aySoundSoft.c
+#include <hardware/pwm.h>
 #include "aySoundSoft.h"
 #include "stdbool.h"
 #include "debug.h"
@@ -33,13 +34,16 @@ void FAST_FUNC(AY_select_reg)(uint8_t N_reg)
 };
 
 // SAA1099
+#ifdef HWAY
 void __not_in_flash_func(saa1099_write)(uint8_t addr, uint8_t byte) {
     // const uint16_t a0 = addr ? BC1 : 0;
-	if(addr>0){HIGH(BC1);}else{LOW(BC1);}
+	if (addr>0) { HIGH(BC1); }
+    else { LOW(BC1); }
     send_to_595(byte | LOW(CS_SAA1099)); //
     busy_wait_us(5);
     send_to_595(byte | HIGH(CS_SAA1099)); // 
 }
+#endif
 
 void AY_reset()
 {
@@ -468,6 +472,6 @@ void beep(bool v) {
     #ifdef HWAY
         AY_to595Beep(v);
     #else
-        pwm_set_gpio_level(BEEPER_PIN, v);
+        pwm_set_gpio_level(BEEPER_PIN, v ? (1 << (g_conf.snd_volume + 9)) - 1 : 0);
     #endif
 }

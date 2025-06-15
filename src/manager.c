@@ -22,7 +22,6 @@ static void redraw_window();
 
 static uint8_t kbdpad_state  = 0;  // Joystick 1
 static uint8_t kbdpad_state2 = 0;  // Joystick 2
-static volatile int tormoz = 6;
 static volatile bool backspacePressed = false;
 volatile bool enterPressed = false;
 static volatile bool plusPressed = false;
@@ -226,7 +225,6 @@ static void InitMemoryValues(uint16_t* pPtr, size_t nMemSize)
 
 void reset(uint8_t cmd) {
     f12Pressed = false;
-    tormoz = 6;
     true_covox = 0;
     az_covox_R = 0;
     az_covox_L = 0;
@@ -415,6 +413,9 @@ static void in_conf() {
     );
     draw_label(68, 13, 45, b, false, false);
 
+    snprintf(b, 64, "CPU Freq: %d", g_conf.cpu_freq);
+    draw_label(68, 14, 45, b, false, false);
+
     if (is_kbd_joystick) {
         MAX_Z = 24;
         snprintf(b, 8, "%d", kbdpad1_A);
@@ -599,7 +600,10 @@ static void conf_it(uint8_t cmd) {
         if (upPressed) {
             upPressed = false;
             if (z_idx == 0) {
-                if (g_conf.bk0010mode > 0) g_conf.bk0010mode--;
+                if (g_conf.bk0010mode > 0) {
+                    g_conf.bk0010mode--;
+                    g_conf.cpu_freq = g_conf.bk0010mode >= BK_0011M_FDD ? 4000000 : 3000000;
+                }
             } else {
                 if (--z_idx < 0) z_idx = 0;
             }
@@ -608,7 +612,10 @@ static void conf_it(uint8_t cmd) {
         if (downPressed) {
             downPressed = false;
             if (z_idx == 0) {
-                if (g_conf.bk0010mode < 4) g_conf.bk0010mode++;
+                if (g_conf.bk0010mode < 4) {
+                    g_conf.bk0010mode++;
+                    g_conf.cpu_freq = g_conf.bk0010mode >= BK_0011M_FDD ? 4000000 : 3000000;
+                }
             } else {
                 if (++z_idx > MAX_Z) z_idx = MAX_Z;
             }
@@ -2403,16 +2410,15 @@ inline void if_overclock() {
     }
 }
 
-int if_manager(bool force) {
+void manager(bool force) {
     if (ctrlPressed) {
         if (f11Pressed) {
             f11Pressed = false;
-            tormoz++;
+            if (g_conf.cpu_freq > 500000) g_conf.cpu_freq -= 500000; // 500 MHz
         }
         if (f12Pressed) {
             f12Pressed = false;
-            tormoz--;
-            if (tormoz < 0) tormoz = 0;
+            g_conf.cpu_freq += 500000; // 500 MHz
         }
     }
     if_video_mode();
@@ -2420,7 +2426,7 @@ int if_manager(bool force) {
     if_overclock();
     if_sound_control();
     if (manager_started) {
-        return tormoz;
+        return;
     }
     if (is_dendy_joystick || is_kbd_joystick) {
         if (is_dendy_joystick) nespad_read();
@@ -2442,7 +2448,6 @@ int if_manager(bool force) {
         start_manager();
         manager_started = false;
     }
-    return tormoz;
 }
 
 #endif
