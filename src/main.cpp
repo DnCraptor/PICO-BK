@@ -77,8 +77,8 @@ struct dvi_inst dvi0;
 #define DWORDS_PER_PLANE (FRAME_WIDTH / DVI_SYMBOLS_PER_WORD)
 #define BYTES_PER_PLANE (DWORDS_PER_PLANE * 4)
 #define BLACK 0x7fd00
-uint32_t blank[DWORDS_PER_PLANE * 3];
-uint32_t last[DWORDS_PER_PLANE * 3];
+uint32_t __aligned(4) blank[DWORDS_PER_PLANE * 3];
+uint32_t __aligned(4) last[DWORDS_PER_PLANE * 3];
 static semaphore_t vga_start_semaphore;
 /* Renderer loop on Pico's second core */
 void __time_critical_func(render_core)() {
@@ -95,27 +95,30 @@ void __time_critical_func(render_core)() {
 	for (int i = 0; i < sizeof(blank) / sizeof(blank[0]); ++i) {
 		blank[i] = BLACK;
 	}
+    dvi_init(&dvi0, next_striped_spin_lock_num(), next_striped_spin_lock_num());
     dvi_register_irqs_this_core(&dvi0, DMA_IRQ_0);
     dvi_start(&dvi0);
     uint32_t *tmdsbuf = 0;
     sem_acquire_blocking(&vga_start_semaphore);
     while (true) {
-        const uint32_t* bk_page = (const uint32_t*)get_graphics_buffer();
+        register uint32_t* bk_page = (uint32_t*)get_graphics_buffer();
         for (uint y = 0; y < (FRAME_HEIGHT - 512) / 2; ++y) {
             queue_remove_blocking_u32(&dvi0.q_tmds_free, &tmdsbuf);
             memcpy(tmdsbuf, blank, sizeof(blank));
             queue_add_blocking_u32(&dvi0.q_tmds_valid, &tmdsbuf);
         }
         for (uint y = 0; y < 512; ++y) {
-            queue_remove_blocking_u32(&dvi0.q_tmds_free, &tmdsbuf);
             if (y & 1) { // duplicate each odd from prev. even
+                queue_remove_blocking_u32(&dvi0.q_tmds_free, &tmdsbuf);
                 memcpy(tmdsbuf, last, sizeof(last));
-            } else {
-                tmds_encode_1bpp_bk(bk_page + y * 8, tmdsbuf, FRAME_WIDTH);
-                memcpy(tmdsbuf + DWORDS_PER_PLANE, tmdsbuf, BYTES_PER_PLANE);
-                memcpy(tmdsbuf + 2 * DWORDS_PER_PLANE, tmdsbuf, BYTES_PER_PLANE);
-                memcpy(last, tmdsbuf, sizeof(last));
+                queue_add_blocking_u32(&dvi0.q_tmds_valid, &tmdsbuf);
+                continue;
             }
+            queue_remove_blocking_u32(&dvi0.q_tmds_free, &tmdsbuf);
+            tmds_encode_1bpp_bk(bk_page + (y << 3), tmdsbuf, FRAME_WIDTH);
+            memcpy(tmdsbuf + DWORDS_PER_PLANE, tmdsbuf, BYTES_PER_PLANE);
+            memcpy(tmdsbuf + 2 * DWORDS_PER_PLANE, tmdsbuf, BYTES_PER_PLANE);
+            memcpy(last, tmdsbuf, sizeof(last));
             queue_add_blocking_u32(&dvi0.q_tmds_valid, &tmdsbuf);
         }
         for (uint y = 0; y < (FRAME_HEIGHT - 512) / 2; ++y) {
@@ -676,7 +679,6 @@ int main() {
     if (!SELECT_VGA) {
         dvi0.timing = &DVI_TIMING;
         dvi0.ser_cfg = DVI_DEFAULT_SERIAL_CONFIG;
-        dvi_init(&dvi0, next_striped_spin_lock_num(), next_striped_spin_lock_num());
     }
 
     sem_init(&vga_start_semaphore, 0, 1);
