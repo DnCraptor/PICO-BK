@@ -26,6 +26,7 @@ void graphics_inc_palleter_offset();
 void graphics_init();
 
 void graphics_set_buffer(uint8_t *buffer, uint16_t width, uint16_t height);
+uint8_t *get_graphics_buffer();
 
 void graphics_set_textbuffer(uint8_t *buffer);
 

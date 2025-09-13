@@ -51,7 +51,10 @@ static int visible_line_size = 320;
 static int dma_chan_ctrl;
 static int dma_chan;
 
-static uint8_t* graphics_buffer;
+static volatile uint8_t* graphics_buffer;
+uint8_t* get_graphics_buffer() {
+    return graphics_buffer;
+}
 static uint graphics_buffer_width = 0;
 static int graphics_buffer_shift_x = 0;
 static int graphics_buffer_shift_y = 0;

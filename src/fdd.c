@@ -2,6 +2,51 @@
 #include "CPU_ef.h"
 #include "emulator.h"
 
+#ifdef BUILD_IN_FDD_GAMES
+#include "FDD0.h"
+#endif
+#ifdef BUILD_IN_FDD_MKDOS
+#include "MKDOS318B.h"
+#endif
+
+char* fdd0_rom() {
+  #ifdef BUILD_IN_FDD_GAMES
+    return BUILD_IN_GAMES;
+  #else
+    #ifdef BUILD_IN_FDD_MKDOS
+      return MKDOS318B;
+    #endif
+    return 0;
+  #endif
+}
+
+char* fdd1_rom() {
+#ifdef BUILD_IN_FDD_MKDOS
+  return MKDOS318B;
+#else
+  return 819200;
+#endif
+}
+
+size_t fdd0_sz() {
+  #ifdef BUILD_IN_FDD_GAMES
+    return sizeof BUILD_IN_GAMES;
+  #else
+    #ifdef BUILD_IN_FDD_MKDOS
+      return sizeof MKDOS318B;
+    #endif
+    return 819200;
+  #endif
+}
+
+size_t fdd1_sz() {
+#ifdef BUILD_IN_FDD_MKDOS
+  return sizeof MKDOS318B;
+#else
+  return 0;
+#endif
+}
+
 void EmulateFDD() {
     DSK_PRINT(("EmulateFDD enter"));
     uint16_t table_addr, t = Device_Data.CPU_State.r[3];

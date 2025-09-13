@@ -2,7 +2,6 @@
 #include "manager.h"
 #include "emulator.h"
 #include "vga.h"
-#include "usb.h"
 #include "pico-vision.h"
 #include "CPU.h"
 #include "CPU_i.h"
@@ -11,6 +10,11 @@
 #include "aySoundSoft.h"
 #include "ps2.h"
 #include "nespad.h"
+#include "reboot.h"
+#include "main_i.h"
+
+void detect_os_type(const char* path, char* os_type, size_t sz);
+bool mount_img(const char* path, int curr_dir_num);
 
 //#include "EmuUi/Key_eu.h"
 extern bool is_swap_wins_enabled;
@@ -173,7 +177,7 @@ static void mark_to_exit(uint8_t cmd) {
 }
 static void return_to_mos(uint8_t cmd) {
     f_unlink(MOS_FILE);
-    watchdog_enable(1, true);
+    reboot();
     while (true);
 }
 
@@ -231,7 +235,7 @@ void reset(uint8_t cmd) {
 #ifdef AYSOUND
     AY_reset();
 #endif
-    InitMemoryValues(RAM, 32 << 10); // TODO: other chess for 11M
+    InitMemoryValues((uint16_t*)RAM, 32 << 10); // TODO: other chess for 11M
     memset(CPU_PAGE11_MEM_ADR, 0, 0x04000); // W/A for 16K RAM in ROM
     graphics_set_page(CPU_PAGE51_MEM_ADR, is_bk0011mode() ? 15 : 0);
     graphics_shift_screen((uint16_t)0330 | 0b01000000000);
@@ -1347,6 +1351,7 @@ static void bottom_line() {
 }
 
 static inline void turn_usb_off(uint8_t cmd) {
+    /*
     set_tud_msc_ejected(true);
     usb_started = false;
     int cnt = 1000;
@@ -1363,9 +1368,11 @@ static inline void turn_usb_off(uint8_t cmd) {
     sprintf(fn_1_12_tbl_ctrl[9].name, " Exit ");
     fn_1_12_tbl_ctrl[9].action = mark_to_exit;
     redraw_window();
+    */
 }
 
 static void turn_usb_on(uint8_t cmd) {
+    /*
     if (usb_started) return;
     init_pico_usb_drive();
     usb_started = true;
@@ -1378,6 +1385,7 @@ static void turn_usb_on(uint8_t cmd) {
     snprintf(fn_1_12_tbl_alt[9].name, BTN_WIDTH, " UnUSB ");
     fn_1_12_tbl_alt[9].action = turn_usb_off;
     bottom_line();
+    */
 }
 
 inline static bool switch_mode_dialog(bk_mode_t* pbk0010mode) {
@@ -1497,7 +1505,7 @@ inline static void collect_files(file_panel_desc_t* p) {
         if(!mount_img(p->path, p->indexes[p->level].dir_num)) {
            return;
         }
-        qsort (files_info, files_count, sizeof(file_info_t), m_comp);
+        qsort (files_info, files_count, sizeof(file_info_t), (__compar_fn_t)m_comp);
         return;
     }
 #endif
@@ -1508,7 +1516,7 @@ inline static void collect_files(file_panel_desc_t* p) {
         m_add_file(&fileInfo);
     }
     f_closedir(&dir);
-    qsort (files_info, files_count, sizeof(file_info_t), m_comp);
+    qsort (files_info, files_count, sizeof(file_info_t), (__compar_fn_t)m_comp);
 }
 
 static char selected_file_path[260];
@@ -1594,7 +1602,7 @@ inline static void select_left_panel() {
     fill_panel(&right_panel);
 }
 
-inline static fn_1_12_btn_pressed(uint8_t fn_idx) {
+inline static void fn_1_12_btn_pressed(uint8_t fn_idx) {
     if (fn_idx > 11) fn_idx -= 18; // F11-12
     (*actual_fn_1_12_tbl())[fn_idx].action(fn_idx);
 }
@@ -1785,7 +1793,7 @@ static inline bool run_img(char* path) {
     if (escPressed) {
         escPressed = false;
         redraw_window();
-        return;
+        return false;
     }
     insertdisk(mount_as, 819200, 0, path);
     if ( !is_fdd_suppored() ) {
@@ -1970,7 +1978,7 @@ static inline void work_cycle() {
             return;
         }
         if_swap_drives();
-        if_overclock();
+      //  if_overclock();
         if_sound_control();
         if (psp == &left_panel && !left_panel_make_active) {
             select_right_panel();
@@ -2084,12 +2092,15 @@ static inline void work_cycle() {
             scan_code_processed();
             break;
         }
+        /*
         if (usb_started && tud_msc_ejected()) {
             turn_usb_off(0);
         }
         if (usb_started) {
             pico_usb_drive_heartbeat();
-        } else if(mark_to_exit_flag) {
+        } else
+        */
+        if(mark_to_exit_flag) {
             return;
         }
         //sprintf(line, "scan-code: %02Xh / saved scan-code: %02Xh", lastCleanableScanCode, lastSavedScanCode);
@@ -2376,9 +2387,8 @@ inline static int overclock() {
   return 0;
 }
 
-uint32_t overcloking_khz = OVERCLOCKING * 1000;
-
 inline void if_overclock() {
+    /**
     int oc = overclock();
     if (oc > 0) overcloking_khz += 1000;
     if (oc < 0) overcloking_khz -= 1000;
@@ -2408,6 +2418,7 @@ inline void if_overclock() {
         graphics_set_mode(ret);
         restore_video_ram();
     }
+    */
 }
 
 void manager(bool force) {

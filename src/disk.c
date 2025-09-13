@@ -5,6 +5,11 @@
 
 uint8_t bootdrive, hdcount, fdcount;
 
+size_t fdd0_sz();
+size_t fdd1_sz();
+char* fdd0_rom();
+char* fdd1_rom();
+
 #define _FILE FIL
 _FILE fileA;
 _FILE fileB;

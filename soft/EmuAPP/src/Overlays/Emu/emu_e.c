@@ -6,6 +6,7 @@
 #include "ps2_bk.h"
 #include "ps2_codes.h"
 #include "CPU.h"
+#include "CPU_ef.h"
 #include "Key.h"
 #include "emu_e.h"
 #include "CPU_e.h"
@@ -112,7 +113,7 @@ void AT_OVL emu_start () {
                 //ps2_periodic ();
                 break;
             case 2: {
-                auto prev = g_conf.CodeAndFlags;
+                uint_fast16_t prev = g_conf.CodeAndFlags;
                 g_conf.CodeAndFlags = (uint_fast16_t)(ps2get_raw_code() & 0xFFFF); // ps2_read ();
                 if (prev != g_conf.CodeAndFlags) {
                     KBD_PRINT(("2. 0x%04X (prev: 0x%04X)", g_conf.CodeAndFlags, prev));

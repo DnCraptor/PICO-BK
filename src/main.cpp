@@ -23,12 +23,12 @@ extern "C" {
 #include "util_Wii_Joy.h"
 #include "vga.h"
 #include "ps2.h"
-#include "usb.h"
 #include "CPU.h"
 #include "main_i.h"
 #include "emu_e.h"
 #include "aySoundSoft.h"
 #include <stdlib.h>
+#include "fdd.h"
 }
 
 volatile config_em_t g_conf {
@@ -43,6 +43,7 @@ volatile config_em_t g_conf {
    0, // v_buff_offset
 };
 
+volatile bool SELECT_VGA = true;
 bool PSRAM_AVAILABLE = false;
 bool SD_CARD_AVAILABLE = false;
 uint32_t DIRECT_RAM_BORDER = PSRAM_AVAILABLE ? RAM_SIZE : (SD_CARD_AVAILABLE ? RAM_PAGE_SIZE : RAM_SIZE);
@@ -61,16 +62,68 @@ void PWM_init_pin(uint8_t pinN, uint16_t max_lvl) {
 #if NESPAD_ENABLED
 int timer_period = 54925;
 #endif
+
+extern "C" {
+#include "dvi.h"
+#include "dvi_timing.h"
+#include "common_dvi_pin_configs.h"
+#include "tmds_encode.h"
+}
+#define VREG_VSEL VREG_VOLTAGE_1_30
+#define DVI_TIMING dvi_timing_800x600p_60hz
+#define FRAME_WIDTH 800
+#define FRAME_HEIGHT 600
+struct dvi_inst dvi0;
+#define DWORDS_PER_PLANE (FRAME_WIDTH / DVI_SYMBOLS_PER_WORD)
+#define BYTES_PER_PLANE (DWORDS_PER_PLANE * 4)
+#define BLACK 0x7fd00
+uint32_t blank[DWORDS_PER_PLANE * 3];
+uint32_t last[DWORDS_PER_PLANE * 3];
 static semaphore_t vga_start_semaphore;
 /* Renderer loop on Pico's second core */
 void __time_critical_func(render_core)() {
-    graphics_init();
     graphics_set_buffer(CPU_PAGE51_MEM_ADR, 512, 256);
-    graphics_set_textbuffer(TEXT_VIDEO_RAM);
-    graphics_set_bgcolor(0x80808080);
-    graphics_set_offset(0, 0);
-    graphics_set_flashmode(true, true);
+    if (SELECT_VGA) {
+        graphics_init();
+        graphics_set_textbuffer(TEXT_VIDEO_RAM);
+        graphics_set_bgcolor(0x80808080);
+        graphics_set_offset(0, 0);
+        graphics_set_flashmode(true, true);
+        sem_acquire_blocking(&vga_start_semaphore);
+        return;
+    }
+	for (int i = 0; i < sizeof(blank) / sizeof(blank[0]); ++i) {
+		blank[i] = BLACK;
+	}
+    dvi_register_irqs_this_core(&dvi0, DMA_IRQ_0);
+    dvi_start(&dvi0);
+    uint32_t *tmdsbuf = 0;
     sem_acquire_blocking(&vga_start_semaphore);
+    while (true) {
+        const uint32_t* bk_page = (const uint32_t*)get_graphics_buffer();
+        for (uint y = 0; y < (FRAME_HEIGHT - 512) / 2; ++y) {
+            queue_remove_blocking_u32(&dvi0.q_tmds_free, &tmdsbuf);
+            memcpy(tmdsbuf, blank, sizeof(blank));
+            queue_add_blocking_u32(&dvi0.q_tmds_valid, &tmdsbuf);
+        }
+        for (uint y = 0; y < 512; ++y) {
+            queue_remove_blocking_u32(&dvi0.q_tmds_free, &tmdsbuf);
+            if (y & 1) { // duplicate each odd from prev. even
+                memcpy(tmdsbuf, last, sizeof(last));
+            } else {
+                tmds_encode_1bpp_bk(bk_page + y * 8, tmdsbuf, FRAME_WIDTH);
+                memcpy(tmdsbuf + DWORDS_PER_PLANE, tmdsbuf, BYTES_PER_PLANE);
+                memcpy(tmdsbuf + 2 * DWORDS_PER_PLANE, tmdsbuf, BYTES_PER_PLANE);
+                memcpy(last, tmdsbuf, sizeof(last));
+            }
+            queue_add_blocking_u32(&dvi0.q_tmds_valid, &tmdsbuf);
+        }
+        for (uint y = 0; y < (FRAME_HEIGHT - 512) / 2; ++y) {
+            queue_remove_blocking_u32(&dvi0.q_tmds_free, &tmdsbuf);
+            memcpy(tmdsbuf, blank, sizeof(blank));
+            queue_add_blocking_u32(&dvi0.q_tmds_valid, &tmdsbuf);
+        }
+    }
 }
 
 void inInit(uint gpio) {
@@ -169,6 +222,8 @@ static bool __not_in_flash_func(AY_timer_callback)(repeating_timer_t *rt) {
 #endif
 
 static FATFS fatfs;
+#include <string.h>
+extern "C" char *strnstr(const char *haystack, const char *needle, size_t len);
 
 inline static int parse_conf_word(const char* buf, const char* param, size_t plen, size_t lim) {
     char b[16];
@@ -367,19 +422,211 @@ static void init_fs() {
     }
 }
 
+// connection is possible 00->00 (external pull down)
+static int test_0000_case(uint32_t pin0, uint32_t pin1, int res) {
+    gpio_init(pin0);
+    gpio_set_dir(pin0, GPIO_OUT);
+    sleep_ms(33);
+    gpio_put(pin0, 1);
+
+    gpio_init(pin1);
+    gpio_set_dir(pin1, GPIO_IN);
+    gpio_pull_down(pin1); /// external pulled down (so, just to ensure)
+    sleep_ms(33);
+    if ( gpio_get(pin1) ) { // 1 -> 1, looks really connected
+        res |= (1 << 5) | 1;
+    }
+    gpio_deinit(pin0);
+    gpio_deinit(pin1);
+    return res;
+}
+
+// connection is possible 01->01 (no external pull up/down)
+static int test_0101_case(uint32_t pin0, uint32_t pin1, int res) {
+    gpio_init(pin0);
+    gpio_set_dir(pin0, GPIO_OUT);
+    sleep_ms(33);
+    gpio_put(pin0, 1);
+
+    gpio_init(pin1);
+    gpio_set_dir(pin1, GPIO_IN);
+    gpio_pull_down(pin1);
+    sleep_ms(33);
+    if ( gpio_get(pin1) ) { // 1 -> 1, looks really connected
+        res |= (1 << 5) | 1;
+    }
+    gpio_deinit(pin0);
+    gpio_deinit(pin1);
+    return res;
+}
+
+// connection is possible 11->11 (externally pulled up)
+static int test_1111_case(uint32_t pin0, uint32_t pin1, int res) {
+    gpio_init(pin0);
+    gpio_set_dir(pin0, GPIO_OUT);
+    sleep_ms(33);
+    gpio_put(pin0, 0);
+
+    gpio_init(pin1);
+    gpio_set_dir(pin1, GPIO_IN);
+    gpio_pull_up(pin1); /// external pulled up (so, just to ensure)
+    sleep_ms(33);
+    if ( !gpio_get(pin1) ) { // 0 -> 0, looks really connected
+        res |= 1;
+    }
+    gpio_deinit(pin0);
+    gpio_deinit(pin1);
+    return res;
+}
+
+static int testPins(uint32_t pin0, uint32_t pin1) {
+    int res = 0b000000;
+    /// do not try to test butter psram this way
+#ifdef BUTTER_PSRAM_GPIO
+    if (pin0 == BUTTER_PSRAM_GPIO || pin1 == BUTTER_PSRAM_GPIO) return res;
+#endif
+    if (pin0 == PICO_DEFAULT_LED_PIN || pin1 == PICO_DEFAULT_LED_PIN) return res; // LED
+    if (pin0 == 23 || pin1 == 23) return res; // SMPS Power
+    if (pin0 == 24 || pin1 == 24) return res; // VBus sense
+    // try pull down case (passive)
+    gpio_init(pin0);
+    gpio_set_dir(pin0, GPIO_IN);
+    gpio_pull_down(pin0);
+    gpio_init(pin1);
+    gpio_set_dir(pin1, GPIO_IN);
+    gpio_pull_down(pin1);
+    sleep_ms(33);
+    int pin0vPD = gpio_get(pin0);
+    int pin1vPD = gpio_get(pin1);
+    gpio_deinit(pin0);
+    gpio_deinit(pin1);
+    /// try pull up case (passive)
+    gpio_init(pin0);
+    gpio_set_dir(pin0, GPIO_IN);
+    gpio_pull_up(pin0);
+    gpio_init(pin1);
+    gpio_set_dir(pin1, GPIO_IN);
+    gpio_pull_up(pin1);
+    sleep_ms(33);
+    int pin0vPU = gpio_get(pin0);
+    int pin1vPU = gpio_get(pin1);
+    gpio_deinit(pin0);
+    gpio_deinit(pin1);
+
+    res = (pin0vPD << 4) | (pin0vPU << 3) | (pin1vPD << 2) | (pin1vPU << 1);
+
+    if (pin0vPD == 1) {
+        if (pin0vPU == 1) { // pin0vPD == 1 && pin0vPU == 1
+            if (pin1vPD == 1) { // pin0vPD == 1 && pin0vPU == 1 && pin1vPD == 1
+                if (pin1vPU == 1) { // pin0vPD == 1 && pin0vPU == 1 && pin1vPD == 1 && pin1vPU == 1
+                    // connection is possible 11->11 (externally pulled up)
+                    return test_1111_case(pin0, pin1, res);
+                } else { // pin0vPD == 1 && pin0vPU == 1 && pin1vPD == 1 && pin1vPU == 0
+                    // connection is impossible
+                    return res;
+                }
+            } else { // pin0vPD == 1 && pin0vPU == 1 && pin1vPD == 0
+                if (pin1vPU == 1) { // pin0vPD == 1 && pin0vPU == 1 && pin1vPD == 0 && pin1vPU == 1
+                    // connection is impossible
+                    return res;
+                } else { // pin0vPD == 1 && pin0vPU == 1 && pin1vPD == 0 && pin1vPU == 0
+                    // connection is impossible
+                    return res;
+                }
+            }
+        } else {  // pin0vPD == 1 && pin0vPU == 0
+            if (pin1vPD == 1) { // pin0vPD == 1 && pin0vPU == 0 && pin1vPD == 1
+                if (pin1vPU == 1) { // pin0vPD == 1 && pin0vPU == 0 && pin1vPD == 1 && pin1vPU == 1
+                    // connection is impossible
+                    return res;
+                } else { // pin0vPD == 1 && pin0vPU == 0 && pin1vPD == 1 && pin1vPU == 0
+                    // connection is possible 10->10 (pulled up on down, and pulled down on up?)
+                    return res |= (1 << 5) | 1; /// NOT SURE IT IS POSSIBLE TO TEST SUCH CASE (TODO: think about real cases)
+                }
+            } else { // pin0vPD == 1 && pin0vPU == 0 && pin1vPD == 0
+                if (pin1vPU == 1) { // pin0vPD == 1 && pin0vPU == 0 && pin1vPD == 0 && pin1vPU == 1
+                    // connection is impossible
+                    return res;
+                } else { // pin0vPD == 1 && pin0vPU == 0 && pin1vPD == 0 && pin1vPU == 0
+                    // connection is impossible
+                    return res;
+                }
+            }
+        }
+    } else { // pin0vPD == 0
+        if (pin0vPU == 1) { // pin0vPD == 0 && pin0vPU == 1
+            if (pin1vPD == 1) { // pin0vPD == 0 && pin0vPU == 1 && pin1vPD == 1
+                if (pin1vPU == 1) { // pin0vPD == 0 && pin0vPU == 1 && pin1vPD == 1 && pin1vPU == 1
+                    // connection is impossible
+                    return res;
+                } else { // pin0vPD == 0 && pin0vPU == 1 && pin1vPD == 1 && pin1vPU == 0
+                    // connection is impossible
+                    return res;
+                }
+            } else { // pin0vPD == 0 && pin0vPU == 1 && pin1vPD == 0
+                if (pin1vPU == 1) { // pin0vPD == 0 && pin0vPU == 1 && pin1vPD == 0 && pin1vPU == 1
+                    // connection is possible 01->01 (no external pull up/down)
+                    return test_0101_case(pin0, pin1, res);
+                } else { // pin0vPD == 0 && pin0vPU == 1 && pin1vPD == 0 && pin1vPU == 0
+                    // connection is impossible
+                    return res;
+                }
+            }
+        } else {  // pin0vPD == 0 && pin0vPU == 0
+            if (pin1vPD == 1) { // pin0vPD == 0 && pin0vPU == 0 && pin1vPD == 1
+                if (pin1vPU == 1) { // pin0vPD == 0 && pin0vPU == 0 && pin1vPD == 1 && pin1vPU == 1
+                    // connection is impossible
+                    return res;
+                } else { // pin0vPD == 0 && pin0vPU == 0 && pin1vPD == 1 && pin1vPU == 0
+                    // connection is impossible
+                    return res;
+                }
+            } else { // pin0vPD == 0 && pin0vPU == 0 && pin1vPD == 0
+                if (pin1vPU == 1) { // pin0vPD == 0 && pin0vPU == 0 && pin1vPD == 0 && pin1vPU == 1
+                    // connection is impossible
+                    return res;
+                } else { // pin0vPD == 0 && pin0vPU == 0 && pin1vPD == 0 && pin1vPU == 0
+                    // connection is possible 00->00 (externally pulled down)
+                    return test_0000_case(pin0, pin1, res);
+                }
+            }
+        }
+    }
+    return res;
+}
+
+#if !PICO_RP2040
+#include <hardware/structs/qmi.h>
+#include <hardware/structs/bus_ctrl.h>
+static void __not_in_flash() flash_timings() {
+	const int max_flash_freq = 88 * MHZ;
+	const int clock_hz = DVI_TIMING.bit_clk_khz * 1000;
+	int divisor = (clock_hz + max_flash_freq - 1) / max_flash_freq;
+	if (divisor == 1 && clock_hz > 100000000) {
+		divisor = 2;
+	}
+	int rxdelay = divisor;
+	if (clock_hz / divisor > 100000000) {
+		rxdelay += 1;
+	}
+	qmi_hw->m[0].timing = 0x60007000 |
+						rxdelay << QMI_M0_TIMING_RXDELAY_LSB |
+						divisor << QMI_M0_TIMING_CLKDIV_LSB;
+}
+#endif
+
 int main() {
 #if !PICO_RP2040
-    volatile uint32_t *qmi_m0_timing=(uint32_t *)0x400d000c;
-    vreg_disable_voltage_limit();
-    vreg_set_voltage(VREG_VOLTAGE_1_60);
-    sleep_ms(33);
-    *qmi_m0_timing = 0x60007204;
-    set_sys_clock_khz(OVERCLOCKING * KHZ, 0);
-    *qmi_m0_timing = 0x60007303;
+	vreg_disable_voltage_limit();
+	vreg_set_voltage(VREG_VSEL);
+    flash_timings();
+    sleep_ms(100);
+	// Run system at TMDS bit clock
+	set_sys_clock_khz(DVI_TIMING.bit_clk_khz, true);
 #else
     hw_set_bits(&vreg_and_chip_reset_hw->vreg, VREG_AND_CHIP_RESET_VREG_VSEL_BITS);
     sleep_ms(10);
-    set_sys_clock_khz(OVERCLOCKING * KHZ, true);
+    set_sys_clock_khz(360000 * KHZ, true);
 #endif
 
 #ifdef HWAY
@@ -423,7 +670,17 @@ int main() {
     DBGM_PRINT(("Before keyboard_init"));
     keyboard_init();
 
+    uint8_t link = testPins(beginVGA_PIN, beginVGA_PIN + 1);
+    SELECT_VGA = (link == 0) || (link == 0x1F);
+
+    if (!SELECT_VGA) {
+        dvi0.timing = &DVI_TIMING;
+        dvi0.ser_cfg = DVI_DEFAULT_SERIAL_CONFIG;
+        dvi_init(&dvi0, next_striped_spin_lock_num(), next_striped_spin_lock_num());
+    }
+
     sem_init(&vga_start_semaphore, 0, 1);
+	hw_set_bits(&bus_ctrl_hw->priority, BUSCTRL_BUS_PRIORITY_PROC1_BITS);
     multicore_launch_core1(render_core);
     sem_release(&vga_start_semaphore);
 

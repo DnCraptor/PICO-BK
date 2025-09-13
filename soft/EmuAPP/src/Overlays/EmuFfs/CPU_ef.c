@@ -194,45 +194,45 @@ TCPU_Arg AT_OVL CPU_ReadMemB (TCPU_Arg Adr) {
 }
 
 static const uintptr_t PageTab [8*4] = {
-    CPU_PAGE11_MEM_ADR,
-    CPU_PAGE12_MEM_ADR,
-    CPU_PAGE13_MEM_ADR,
-    CPU_PAGE14_MEM_ADR,
+    (uintptr_t)CPU_PAGE11_MEM_ADR,
+    (uintptr_t)CPU_PAGE12_MEM_ADR,
+    (uintptr_t)CPU_PAGE13_MEM_ADR,
+    (uintptr_t)CPU_PAGE14_MEM_ADR,
 
-    CPU_PAGE51_MEM_ADR,
-    CPU_PAGE52_MEM_ADR,
-    CPU_PAGE53_MEM_ADR,
-    CPU_PAGE54_MEM_ADR,
+    (uintptr_t)CPU_PAGE51_MEM_ADR,
+    (uintptr_t)CPU_PAGE52_MEM_ADR,
+    (uintptr_t)CPU_PAGE53_MEM_ADR,
+    (uintptr_t)CPU_PAGE54_MEM_ADR,
 
-    CPU_PAGE21_MEM_ADR,
-    CPU_PAGE22_MEM_ADR,
-    CPU_PAGE23_MEM_ADR,
-    CPU_PAGE24_MEM_ADR,
+    (uintptr_t)CPU_PAGE21_MEM_ADR,
+    (uintptr_t)CPU_PAGE22_MEM_ADR,
+    (uintptr_t)CPU_PAGE23_MEM_ADR,
+    (uintptr_t)CPU_PAGE24_MEM_ADR,
 
-    CPU_PAGE31_MEM_ADR,
-    CPU_PAGE32_MEM_ADR,
-    CPU_PAGE33_MEM_ADR,
-    CPU_PAGE34_MEM_ADR,
+    (uintptr_t)CPU_PAGE31_MEM_ADR,
+    (uintptr_t)CPU_PAGE32_MEM_ADR,
+    (uintptr_t)CPU_PAGE33_MEM_ADR,
+    (uintptr_t)CPU_PAGE34_MEM_ADR,
 
-    CPU_PAGE41_MEM_ADR,
-    CPU_PAGE42_MEM_ADR,
-    CPU_PAGE43_MEM_ADR,
-    CPU_PAGE44_MEM_ADR,
+    (uintptr_t)CPU_PAGE41_MEM_ADR,
+    (uintptr_t)CPU_PAGE42_MEM_ADR,
+    (uintptr_t)CPU_PAGE43_MEM_ADR,
+    (uintptr_t)CPU_PAGE44_MEM_ADR,
 
-    CPU_PAGE71_MEM_ADR,
-    CPU_PAGE72_MEM_ADR,
-    CPU_PAGE73_MEM_ADR,
-    CPU_PAGE74_MEM_ADR,
+    (uintptr_t)CPU_PAGE71_MEM_ADR,
+    (uintptr_t)CPU_PAGE72_MEM_ADR,
+    (uintptr_t)CPU_PAGE73_MEM_ADR,
+    (uintptr_t)CPU_PAGE74_MEM_ADR,
 
-    CPU_PAGE01_MEM_ADR,
-    CPU_PAGE02_MEM_ADR,
-    CPU_PAGE03_MEM_ADR,
-    CPU_PAGE04_MEM_ADR,
+    (uintptr_t)CPU_PAGE01_MEM_ADR,
+    (uintptr_t)CPU_PAGE02_MEM_ADR,
+    (uintptr_t)CPU_PAGE03_MEM_ADR,
+    (uintptr_t)CPU_PAGE04_MEM_ADR,
 
-    CPU_PAGE61_MEM_ADR,
-    CPU_PAGE62_MEM_ADR,
-    CPU_PAGE63_MEM_ADR,
-    CPU_PAGE64_MEM_ADR
+    (uintptr_t)CPU_PAGE61_MEM_ADR,
+    (uintptr_t)CPU_PAGE62_MEM_ADR,
+    (uintptr_t)CPU_PAGE63_MEM_ADR,
+    (uintptr_t)CPU_PAGE64_MEM_ADR
 }; // {1, 5, 2, 3, 4, 7, 0, 6};
 
 static inline void select_11_page(uint16_t Word) {
@@ -244,25 +244,25 @@ static inline void select_11_page(uint16_t Word) {
     Device_Data.MemPages [6] = PageTab [p + 2];
     Device_Data.MemPages [7] = PageTab [p + 3];
     if (Word & 01) {
-        Device_Data.MemPages [8]  = CPU_PAGE81_MEM_ADR;
-        Device_Data.MemPages [9]  = CPU_PAGE82_MEM_ADR;
-        Device_Data.MemPages [10] = CPU_PAGE83_MEM_ADR;
-        Device_Data.MemPages [11] = CPU_PAGE84_MEM_ADR;
+        Device_Data.MemPages [8]  = (uintptr_t)CPU_PAGE81_MEM_ADR;
+        Device_Data.MemPages [9]  = (uintptr_t)CPU_PAGE82_MEM_ADR;
+        Device_Data.MemPages [10] = (uintptr_t)CPU_PAGE83_MEM_ADR;
+        Device_Data.MemPages [11] = (uintptr_t)CPU_PAGE84_MEM_ADR;
     } else if (Word & 02) {
-        Device_Data.MemPages [8]  = CPU_PAGE91_MEM_ADR;
-        Device_Data.MemPages [9]  = CPU_PAGE92_MEM_ADR;
-        Device_Data.MemPages [10] = CPU_PAGE93_MEM_ADR;
-        Device_Data.MemPages [11] = CPU_PAGE94_MEM_ADR;
+        Device_Data.MemPages [8]  = (uintptr_t)CPU_PAGE91_MEM_ADR;
+        Device_Data.MemPages [9]  = (uintptr_t)CPU_PAGE92_MEM_ADR;
+        Device_Data.MemPages [10] = (uintptr_t)CPU_PAGE93_MEM_ADR;
+        Device_Data.MemPages [11] = (uintptr_t)CPU_PAGE94_MEM_ADR;
     } else if (Word & 010) {
-        Device_Data.MemPages [8]  = CPU_PAGE101_MEM_ADR;
-        Device_Data.MemPages [9]  = CPU_PAGE102_MEM_ADR;
-        Device_Data.MemPages [10] = CPU_PAGE103_MEM_ADR;
-        Device_Data.MemPages [11] = CPU_PAGE104_MEM_ADR;
+        Device_Data.MemPages [8]  = (uintptr_t)CPU_PAGE101_MEM_ADR;
+        Device_Data.MemPages [9]  = (uintptr_t)CPU_PAGE102_MEM_ADR;
+        Device_Data.MemPages [10] = (uintptr_t)CPU_PAGE103_MEM_ADR;
+        Device_Data.MemPages [11] = (uintptr_t)CPU_PAGE104_MEM_ADR;
     } else if (Word & 020) {
-        Device_Data.MemPages [8]  = CPU_PAGE111_MEM_ADR;
-        Device_Data.MemPages [9]  = CPU_PAGE112_MEM_ADR;
-        Device_Data.MemPages [10] = CPU_PAGE113_MEM_ADR;
-        Device_Data.MemPages [11] = CPU_PAGE114_MEM_ADR;
+        Device_Data.MemPages [8]  = (uintptr_t)CPU_PAGE111_MEM_ADR;
+        Device_Data.MemPages [9]  = (uintptr_t)CPU_PAGE112_MEM_ADR;
+        Device_Data.MemPages [10] = (uintptr_t)CPU_PAGE113_MEM_ADR;
+        Device_Data.MemPages [11] = (uintptr_t)CPU_PAGE114_MEM_ADR;
     } else {
         p = ((Word >> 8) & 7) * 4;
         // DBGM_PRINT(("select_11_page(0%o) p2: %d", Word, p));
@@ -285,7 +285,7 @@ TCPU_Arg AT_OVL CPU_WriteW (TCPU_Arg Adr, uint_fast16_t Word) {
     if (g_conf.bk0010mode == BK_FDD) {
         if (Adr < 0160000) {
             uintptr_t Page = Device_Data.MemPages[Adr >> 12];
-            auto addr = Page + (Adr & 0x0FFE);
+            uintptr_t addr = Page + (Adr & 0x0FFE);
             ///DEBUG_PRINT(("CPU_WriteW(%oo, %oo) Page: %08X (#%d)", Adr, Word, Page, Adr >> 12));
             if (Page && addr < CPU_PAGE01_MEM_ADR + RAM_PAGES_SIZE) {
                 AnyMem_w_u16 ((uint16_t *)addr, Word);
@@ -298,7 +298,7 @@ TCPU_Arg AT_OVL CPU_WriteW (TCPU_Arg Adr, uint_fast16_t Word) {
 #endif
     if (Adr < 0140000) {
         uintptr_t Page = Device_Data.MemPages [Adr >> 12];
-        auto addr = Page + (Adr & 0x0FFE);
+        uintptr_t addr = Page + (Adr & 0x0FFE);
         ///DEBUG_PRINT(("CPU_WriteW(%oo, %oo) Page: %08X (#%d)", Adr, Word, Page, Adr >> 12));
         if (Page && addr < CPU_PAGE01_MEM_ADR + RAM_PAGES_SIZE) {
             AnyMem_w_u16 ((uint16_t *)addr, Word);
@@ -454,7 +454,7 @@ TCPU_Arg AT_OVL CPU_WriteB (TCPU_Arg Adr, uint_fast8_t Byte) {
     if (g_conf.bk0010mode == BK_FDD) {
         if (Adr < 0160000) {
             uintptr_t Page = Device_Data.MemPages[Adr >> 12];
-            auto addr = Page + ((Adr) & 0x0FFF);
+            uintptr_t addr = Page + ((Adr) & 0x0FFF);
             if (Page && addr < CPU_PAGE01_MEM_ADR + RAM_PAGES_SIZE) {
                 AnyMem_w_u8 ((uint8_t *)addr, Byte);
                 return CPU_ARG_WRITE_OK;
@@ -465,7 +465,7 @@ TCPU_Arg AT_OVL CPU_WriteB (TCPU_Arg Adr, uint_fast8_t Byte) {
 #endif
     if (Adr < 0140000) {
         uintptr_t Page = Device_Data.MemPages [Adr >> 12];
-        auto addr = Page + ((Adr) & 0x0FFF);
+        uintptr_t addr = Page + ((Adr) & 0x0FFF);
         if (Page && addr < CPU_PAGE01_MEM_ADR + RAM_PAGES_SIZE) {
             AnyMem_w_u8 ((uint8_t *)addr, Byte);
             return CPU_ARG_WRITE_OK;

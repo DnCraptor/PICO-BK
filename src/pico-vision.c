@@ -2,6 +2,7 @@
 #include <stdio.h>
 #include <string.h>
 #include "pico-vision.h"
+#include "pico/time.h"
 #include "vga.h"
 
 static const color_schema_t color_schema = {

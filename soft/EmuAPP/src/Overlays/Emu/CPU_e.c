@@ -610,7 +610,7 @@ static TCPU_Arg AT_OVL CPU_GetArgAdrB (uint_fast8_t SrcCode)
     return 0;
 }
 
-volatile static CPU_WAIT_STATE = false;
+volatile static bool CPU_WAIT_STATE = false;
 
 void CPU_Init_e(void) {
     CPU_WAIT_STATE = false;

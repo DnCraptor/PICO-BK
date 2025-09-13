@@ -4,6 +4,11 @@
 #include <stdbool.h>
 #include <stddef.h>
 
+char* fdd0_rom();
+size_t fdd0_sz();
+char* fdd1_rom();
+size_t fdd1_sz();
+
 typedef struct __attribute__ ((__packed__)) TABLE_EMFDD {
 			uint16_t    CSRW;               // 00 копия по записи регистра состояния КНГМД
 			uint16_t    CURTRK;             // 02 адрес текущей дорожки (адрес одного из последующих байтов)

@@ -282,7 +282,7 @@ uint_fast16_t AT_OVL Key_Translate (uint_fast16_t CodeAndFlags)
                             Key_Flags = KeyFlags;
                             return KEY_UNKNOWN;
 
-        case PS2_PRINT:     reboot (0x55AA55AA);
+        case PS2_PRINT:     reboot (); ///(0x55AA55AA);
                             return KEY_UNKNOWN;
 
         case PS2_R_CTRL:    if (CodeAndFlags & 0x8000U) KeyFlags &= ~KEY_FLAGS_RCTRL;

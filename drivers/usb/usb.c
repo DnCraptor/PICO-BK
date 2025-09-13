@@ -27,8 +27,7 @@
 #include <stdio.h>
 #include <string.h>
 
-#include "tusb.h"
-#include "bsp/board_api.h"
+#include "tusb_config.h"
 #include "usb.h"
 
 //--------------------------------------------------------------------+
