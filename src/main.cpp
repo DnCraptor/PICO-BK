@@ -72,13 +72,13 @@ extern "C" {
 #define VREG_VSEL VREG_VOLTAGE_1_30
 #define DVI_TIMING dvi_timing_800x600p_60hz
 #define FRAME_WIDTH 800
-#define FRAME_HEIGHT 600
+#define FRAME_HEIGHT 300
 struct dvi_inst dvi0;
 #define DWORDS_PER_PLANE (FRAME_WIDTH / DVI_SYMBOLS_PER_WORD)
 #define BYTES_PER_PLANE (DWORDS_PER_PLANE * 4)
 #define BLACK 0x7fd00
 uint32_t __aligned(4) blank[DWORDS_PER_PLANE * 3];
-uint32_t __aligned(4) last[DWORDS_PER_PLANE * 3];
+//uint32_t __aligned(4) last[DWORDS_PER_PLANE * 3];
 static semaphore_t vga_start_semaphore;
 
 static void __not_in_flash() dvi_on_core1() {
@@ -91,7 +91,7 @@ static void __not_in_flash() dvi_on_core1() {
     uint32_t *tmdsbuf = 0;
     sem_acquire_blocking(&vga_start_semaphore);
     while (true) {
-        for (uint y = 0; y < (FRAME_HEIGHT - 512) / 2; ++y) {
+        for (uint y = 0; y < (FRAME_HEIGHT - 256) / 2; ++y) {
             queue_remove_blocking_u32(&dvi0.q_tmds_free, &tmdsbuf);
             memcpy(tmdsbuf, blank, sizeof(blank));
             queue_add_blocking_u32(&dvi0.q_tmds_valid, &tmdsbuf);
@@ -100,39 +100,25 @@ static void __not_in_flash() dvi_on_core1() {
         register enum graphics_mode_t gmode = get_graphics_mode();
         switch(gmode) {
             case BK_256x256x2:
-                for (uint y = 0; y < 512; ++y) {
-                    if (y & 1) { // duplicate each odd from prev. even
-                        queue_remove_blocking_u32(&dvi0.q_tmds_free, &tmdsbuf);
-                        memcpy(tmdsbuf, last, sizeof(last));
-                        queue_add_blocking_u32(&dvi0.q_tmds_valid, &tmdsbuf);
-                        continue;
-                    }
+                for (uint y = 0; y < 256; ++y) {
                     queue_remove_blocking_u32(&dvi0.q_tmds_free, &tmdsbuf);
-                    tmds_encode_2bpp_bk_b(bk_page + (y << 3), tmdsbuf, FRAME_WIDTH);
-                    tmds_encode_2bpp_bk_g(bk_page + (y << 3), tmdsbuf + DWORDS_PER_PLANE, FRAME_WIDTH);
-                    tmds_encode_2bpp_bk_r(bk_page + (y << 3), tmdsbuf + DWORDS_PER_PLANE * 2, FRAME_WIDTH);
-                    memcpy(last, tmdsbuf, sizeof(last));
+                    tmds_encode_2bpp_bk_b(bk_page + (y << 4), tmdsbuf, FRAME_WIDTH);
+                    tmds_encode_2bpp_bk_g(bk_page + (y << 4), tmdsbuf + DWORDS_PER_PLANE, FRAME_WIDTH);
+                    tmds_encode_2bpp_bk_r(bk_page + (y << 4), tmdsbuf + DWORDS_PER_PLANE * 2, FRAME_WIDTH);
                     queue_add_blocking_u32(&dvi0.q_tmds_valid, &tmdsbuf);
                 }
                 break;
             default:
-                for (uint y = 0; y < 512; ++y) {
-                    if (y & 1) { // duplicate each odd from prev. even
-                        queue_remove_blocking_u32(&dvi0.q_tmds_free, &tmdsbuf);
-                        memcpy(tmdsbuf, last, sizeof(last));
-                        queue_add_blocking_u32(&dvi0.q_tmds_valid, &tmdsbuf);
-                        continue;
-                    }
+                for (uint y = 0; y < 256; ++y) {
                     queue_remove_blocking_u32(&dvi0.q_tmds_free, &tmdsbuf);
-                    tmds_encode_1bpp_bk(bk_page + (y << 3), tmdsbuf, FRAME_WIDTH);
+                    tmds_encode_1bpp_bk(bk_page + (y << 4), tmdsbuf, FRAME_WIDTH);
                     memcpy(tmdsbuf + DWORDS_PER_PLANE, tmdsbuf, BYTES_PER_PLANE);
                     memcpy(tmdsbuf + 2 * DWORDS_PER_PLANE, tmdsbuf, BYTES_PER_PLANE);
-                    memcpy(last, tmdsbuf, sizeof(last));
                     queue_add_blocking_u32(&dvi0.q_tmds_valid, &tmdsbuf);
                 }
                 break;
         }
-        for (uint y = 0; y < (FRAME_HEIGHT - 512) / 2; ++y) {
+        for (uint y = 0; y < (FRAME_HEIGHT - 256) / 2; ++y) {
             queue_remove_blocking_u32(&dvi0.q_tmds_free, &tmdsbuf);
             memcpy(tmdsbuf, blank, sizeof(blank));
             queue_add_blocking_u32(&dvi0.q_tmds_valid, &tmdsbuf);
