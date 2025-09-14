@@ -52,7 +52,7 @@ static int dma_chan_ctrl;
 static int dma_chan;
 
 static volatile uint8_t* graphics_buffer;
-uint8_t* get_graphics_buffer() {
+uint8_t* __not_in_flash() get_graphics_buffer() {
     return graphics_buffer;
 }
 static uint graphics_buffer_width = 0;
@@ -80,7 +80,8 @@ static uint16_t __scratch_y("vga_driver") txt_palette[16];
 static uint16_t* txt_palette_fast = NULL;
 //static uint16_t txt_palette_fast[256*4];
 
-enum graphics_mode_t graphics_mode;
+volatile enum graphics_mode_t graphics_mode;
+enum graphics_mode_t __not_in_flash() get_graphics_mode() { return graphics_mode; }
 
 // TODO: separate header for sound mixer
 
@@ -322,7 +323,6 @@ enum graphics_mode_t graphics_set_mode(enum graphics_mode_t mode) {
             text_buffer_width = MAX_WIDTH;
             text_buffer_height = MAX_HEIGHT;
     }
-    if (_SM_VGA < 0) return graphics_mode; // если  VGA не инициализирована -
 
     enum graphics_mode_t res = graphics_mode;
     graphics_mode = mode;
@@ -331,6 +331,9 @@ enum graphics_mode_t graphics_set_mode(enum graphics_mode_t mode) {
     if ((txt_palette_fast) && (lines_pattern_data)) {
         return res;
     };
+
+    if (_SM_VGA < 0) return res; // если  VGA не инициализирована -
+
     uint8_t TMPL_VHS8 = 0;
     uint8_t TMPL_VS8 = 0;
     uint8_t TMPL_HS8 = 0;

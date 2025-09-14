@@ -271,6 +271,205 @@ tmds_encode_loop_8bpp_impl 1
 	stmia r1!, {r4, r5, r6, r7}
 .endm
 
+
+// для режима 256*256 БК0010/11 внутри 800*600 (синий)
+// r0: input buffer (word-aligned)
+// r1: output buffer (word-aligned)
+// r2: output pixel count
+decl_func tmds_encode_2bpp_bk_b
+    push {r4-r7, lr}       // сохраняем регистры
+    mov r6, r8
+    mov r7, r9
+    push {r6,r7}
+
+    lsls r2, #1
+    add r2, r1
+    mov ip, r2              // ip = конец буфера
+    adr r4, tmds_2bpp_table_bk_b
+    mov r8, r4              // r8 = таблица TMDS
+    movs r3, #0x78          // маска 0x78
+
+    movs r6, #0             // счётчик итераций
+
+2:  // основной цикл
+    cmp r6, #20             // n2 = 4 (128px) + 16 (512px) = 20
+    bhs 0f                  // если счетчик >= n2, 0
+    cmp r6, #4              // n1 = 4 (128px)
+    blo 0f                  // если счетчик < n, 0
+    b 1f
+0:
+    movs r2, #0             // первые n + 1 итераций r2 = 0
+    b 3f
+1:
+    ldmia r0!, {r2}
+3:
+    mov r9, r6
+    tmds_encode_1bpp_body lsls 3  lsrs 1
+    tmds_encode_1bpp_body lsrs 5  lsrs 9
+    tmds_encode_1bpp_body lsrs 13 lsrs 17
+    tmds_encode_1bpp_body lsrs 21 lsrs 25
+    mov r6, r9
+
+    adds r6, #1             // увеличиваем счётчик
+    cmp r1, ip
+    blo 2b
+
+    pop {r6,r7}
+    mov r8, r6
+    mov r9, r7
+    pop {r4-r7, pc}
+
+.align 2
+tmds_2bpp_table_bk_b: // синий (0b10)
+	.word 0x7fd00, 0x7fd00  // 0000 - нет синего
+	.word 0x7fd00, 0x7fd00  // 0001 - нет синего
+	.word 0xbfe00, 0x7fd00  // 0010 - синий справа
+	.word 0x7fd00, 0x7fd00  // 0011 - нет синего
+	.word 0x7fd00, 0x7fd00  // 0100 - нет синего
+	.word 0x7fd00, 0x7fd00  // 0101 - нет синего
+	.word 0xbfe00, 0x7fd00  // 0110 - синий справа
+	.word 0x7fd00, 0x7fd00  // 0111 - нет синего
+	.word 0x7fd00, 0xbfe00  // 1000 - синий слева
+	.word 0x7fd00, 0xbfe00  // 1001 - синий слева
+	.word 0xbfe00, 0xbfe00  // 1010 - два синих
+	.word 0x7fd00, 0xbfe00  // 1011 - синий слева
+	.word 0x7fd00, 0x7fd00  // 1100 - нет синего
+	.word 0x7fd00, 0x7fd00  // 1101 - нет синего
+	.word 0xbfe00, 0x7fd00  // 1110 - синий справа
+	.word 0x7fd00, 0x7fd00  // 1111 - нет синего
+
+// для режима 256*256 БК0010/11 внутри 800*600 (зелёный)
+// r0: input buffer (word-aligned)
+// r1: output buffer (word-aligned)
+// r2: output pixel count
+decl_func tmds_encode_2bpp_bk_g
+    push {r4-r7, lr}       // сохраняем регистры
+    mov r6, r8
+    mov r7, r9
+    push {r6,r7}
+
+    lsls r2, #1
+    add r2, r1
+    mov ip, r2              // ip = конец буфера
+    adr r4, tmds_2bpp_table_bk_g
+    mov r8, r4              // r8 = таблица TMDS
+    movs r3, #0x78          // маска 0x78
+
+    movs r6, #0             // счётчик итераций
+
+2:  // основной цикл
+    cmp r6, #20             // n2 = 4 (128px) + 16 (512px) = 20
+    bhs 0f                  // если счетчик >= n2, 0
+    cmp r6, #4              // n1 = 4 (128px)
+    blo 0f                  // если счетчик < n, 0
+    b 1f
+0:
+    movs r2, #0             // первые n + 1 итераций r2 = 0
+    b 3f
+1:
+    ldmia r0!, {r2}
+3:
+    mov r9, r6
+    tmds_encode_1bpp_body lsls 3  lsrs 1
+    tmds_encode_1bpp_body lsrs 5  lsrs 9
+    tmds_encode_1bpp_body lsrs 13 lsrs 17
+    tmds_encode_1bpp_body lsrs 21 lsrs 25
+    mov r6, r9
+
+    adds r6, #1             // увеличиваем счётчик
+    cmp r1, ip
+    blo 2b
+
+    pop {r6,r7}
+    mov r8, r6
+    mov r9, r7
+    pop {r4-r7, pc}
+
+.align 2
+tmds_2bpp_table_bk_g: // зелёный (0b01)
+	.word 0x7fd00, 0x7fd00  // 0000 - нет зелёного
+	.word 0xbfe00, 0x7fd00  // 0001 - один зелёный справа
+	.word 0x7fd00, 0x7fd00  // 0010 - нет зелёного
+	.word 0x7fd00, 0x7fd00  // 0011 - нет зелёного
+	.word 0x7fd00, 0xbfe00  // 0100 - один зелёный слева
+	.word 0xbfe00, 0xbfe00  // 0101 - два зелёных
+	.word 0x7fd00, 0xbfe00  // 0110 - один зелёный слева
+	.word 0x7fd00, 0xbfe00  // 0111 - один зелёный слева
+	.word 0x7fd00, 0x7fd00  // 1000 - нет зелёного
+	.word 0xbfe00, 0x7fd00  // 1001 - один зелёный справа
+	.word 0x7fd00, 0x7fd00  // 1010 - нет зелёного
+	.word 0x7fd00, 0x7fd00  // 1011 - нет зелёного
+	.word 0x7fd00, 0x7fd00  // 1100 - нет зелёного
+	.word 0xbfe00, 0x7fd00  // 1101 - один зелёный справа
+	.word 0x7fd00, 0x7fd00  // 1110 - нет зелёного
+	.word 0x7fd00, 0x7fd00  // 1111 - нет зелёного
+
+// для режима 256*256 БК0010/11 внутри 800*600 (красный)
+// r0: input buffer (word-aligned)
+// r1: output buffer (word-aligned)
+// r2: output pixel count
+decl_func tmds_encode_2bpp_bk_r
+    push {r4-r7, lr}       // сохраняем регистры
+    mov r6, r8
+    mov r7, r9
+    push {r6,r7}
+
+    lsls r2, #1
+    add r2, r1
+    mov ip, r2              // ip = конец буфера
+    adr r4, tmds_2bpp_table_bk_r
+    mov r8, r4              // r8 = таблица TMDS
+    movs r3, #0x78          // маска 0x78
+
+    movs r6, #0             // счётчик итераций
+
+2:  // основной цикл
+    cmp r6, #20             // n2 = 4 (128px) + 16 (512px) = 20
+    bhs 0f                  // если счетчик >= n2, 0
+    cmp r6, #4              // n1 = 4 (128px)
+    blo 0f                  // если счетчик < n, 0
+    b 1f
+0:
+    movs r2, #0             // первые n + 1 итераций r2 = 0
+    b 3f
+1:
+    ldmia r0!, {r2}
+3:
+    mov r9, r6
+    tmds_encode_1bpp_body lsls 3  lsrs 1
+    tmds_encode_1bpp_body lsrs 5  lsrs 9
+    tmds_encode_1bpp_body lsrs 13 lsrs 17
+    tmds_encode_1bpp_body lsrs 21 lsrs 25
+    mov r6, r9
+
+    adds r6, #1             // увеличиваем счётчик
+    cmp r1, ip
+    blo 2b
+
+    pop {r6,r7}
+    mov r8, r6
+    mov r9, r7
+    pop {r4-r7, pc}
+
+.align 2
+tmds_2bpp_table_bk_r: // красный (0b11)
+	.word 0x7fd00, 0x7fd00  // 0000 - нет красного
+	.word 0x7fd00, 0x7fd00  // 0001 - нет красного
+	.word 0x7fd00, 0x7fd00  // 0010 - нет красного
+	.word 0xbfe00, 0x7fd00  // 0011 - один красный справа
+	.word 0x7fd00, 0x7fd00  // 0100 - нет красного
+	.word 0x7fd00, 0x7fd00  // 0101 - нет красного
+	.word 0x7fd00, 0x7fd00  // 0110 - нет красного
+	.word 0xbfe00, 0x7fd00  // 0111 - один красный справа
+	.word 0x7fd00, 0x7fd00  // 1000 - нет красного
+	.word 0x7fd00, 0x7fd00  // 1001 - нет красного
+	.word 0x7fd00, 0x7fd00  // 1010 - нет красного
+	.word 0xbfe00, 0x7fd00  // 1011 - один красный справа
+	.word 0xbfd00, 0xbfe00  // 1100 - один красный слева
+	.word 0xbfd00, 0xbfe00  // 1101 - один красный слева
+	.word 0xbfd00, 0xbfe00  // 1110 - один красный слева
+	.word 0xbfe00, 0xbfe00  // 1111 - два красных
+
 // r0: input buffer (word-aligned)
 // r1: output buffer (word-aligned)
 // r2: output pixel count

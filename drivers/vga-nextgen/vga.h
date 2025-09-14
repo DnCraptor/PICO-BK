@@ -27,6 +27,7 @@ void graphics_init();
 
 void graphics_set_buffer(uint8_t *buffer, uint16_t width, uint16_t height);
 uint8_t *get_graphics_buffer();
+enum graphics_mode_t get_graphics_mode();
 
 void graphics_set_textbuffer(uint8_t *buffer);
 

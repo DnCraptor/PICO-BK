@@ -16,8 +16,6 @@ uint8_t led_status = 0b000;
 
 volatile int16_t ps2_error = PS2_ERR_NONE;
 
-void ps2poll();
-
 static void clock_lo(void) {
     gpio_set_dir(KBD_CLOCK_PIN, GPIO_OUT);
     gpio_put(KBD_CLOCK_PIN, 0);
@@ -358,7 +356,7 @@ void __not_in_flash() KeyboardHandler(void) {
     if (bitcount == 11) {
         if (ps2bufsize < KBD_BUFFER_SIZE) {
             ps2buffer[ps2bufsize++] = incoming;
-///            ps2poll();
+            ps2poll();
         }
         bitcount = 0;
         incoming = 0;

@@ -14,6 +14,7 @@
 
 extern uint8_t kbloop;
 
+void ps2poll();
 void KeyboardHandler();//uint /*gpio*/, uint32_t /*event_mask*/
 uint32_t ps2getcode(void);
 void ps2cleanup();

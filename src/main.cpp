@@ -86,30 +86,51 @@ static void __not_in_flash() dvi_on_core1() {
 		blank[i] = BLACK;
 	}
     dvi_init(&dvi0, next_striped_spin_lock_num(), next_striped_spin_lock_num());
-    dvi_register_irqs_this_core(&dvi0, DMA_IRQ_0);
+    dvi_register_irqs_this_core(&dvi0, DMA_IRQ_1);
     dvi_start(&dvi0);
     uint32_t *tmdsbuf = 0;
     sem_acquire_blocking(&vga_start_semaphore);
     while (true) {
-        register uint32_t* bk_page = (uint32_t*)get_graphics_buffer();
         for (uint y = 0; y < (FRAME_HEIGHT - 512) / 2; ++y) {
             queue_remove_blocking_u32(&dvi0.q_tmds_free, &tmdsbuf);
             memcpy(tmdsbuf, blank, sizeof(blank));
             queue_add_blocking_u32(&dvi0.q_tmds_valid, &tmdsbuf);
         }
-        for (uint y = 0; y < 512; ++y) {
-            if (y & 1) { // duplicate each odd from prev. even
-                queue_remove_blocking_u32(&dvi0.q_tmds_free, &tmdsbuf);
-                memcpy(tmdsbuf, last, sizeof(last));
-                queue_add_blocking_u32(&dvi0.q_tmds_valid, &tmdsbuf);
-                continue;
-            }
-            queue_remove_blocking_u32(&dvi0.q_tmds_free, &tmdsbuf);
-            tmds_encode_1bpp_bk(bk_page + (y << 3), tmdsbuf, FRAME_WIDTH);
-            memcpy(tmdsbuf + DWORDS_PER_PLANE, tmdsbuf, BYTES_PER_PLANE);
-            memcpy(tmdsbuf + 2 * DWORDS_PER_PLANE, tmdsbuf, BYTES_PER_PLANE);
-            memcpy(last, tmdsbuf, sizeof(last));
-            queue_add_blocking_u32(&dvi0.q_tmds_valid, &tmdsbuf);
+        register uint32_t* bk_page = (uint32_t*)get_graphics_buffer();
+        register enum graphics_mode_t gmode = get_graphics_mode();
+        switch(gmode) {
+            case BK_256x256x2:
+                for (uint y = 0; y < 512; ++y) {
+                    if (y & 1) { // duplicate each odd from prev. even
+                        queue_remove_blocking_u32(&dvi0.q_tmds_free, &tmdsbuf);
+                        memcpy(tmdsbuf, last, sizeof(last));
+                        queue_add_blocking_u32(&dvi0.q_tmds_valid, &tmdsbuf);
+                        continue;
+                    }
+                    queue_remove_blocking_u32(&dvi0.q_tmds_free, &tmdsbuf);
+                    tmds_encode_2bpp_bk_b(bk_page + (y << 3), tmdsbuf, FRAME_WIDTH);
+                    tmds_encode_2bpp_bk_g(bk_page + (y << 3), tmdsbuf + DWORDS_PER_PLANE, FRAME_WIDTH);
+                    tmds_encode_2bpp_bk_r(bk_page + (y << 3), tmdsbuf + DWORDS_PER_PLANE * 2, FRAME_WIDTH);
+                    memcpy(last, tmdsbuf, sizeof(last));
+                    queue_add_blocking_u32(&dvi0.q_tmds_valid, &tmdsbuf);
+                }
+                break;
+            default:
+                for (uint y = 0; y < 512; ++y) {
+                    if (y & 1) { // duplicate each odd from prev. even
+                        queue_remove_blocking_u32(&dvi0.q_tmds_free, &tmdsbuf);
+                        memcpy(tmdsbuf, last, sizeof(last));
+                        queue_add_blocking_u32(&dvi0.q_tmds_valid, &tmdsbuf);
+                        continue;
+                    }
+                    queue_remove_blocking_u32(&dvi0.q_tmds_free, &tmdsbuf);
+                    tmds_encode_1bpp_bk(bk_page + (y << 3), tmdsbuf, FRAME_WIDTH);
+                    memcpy(tmdsbuf + DWORDS_PER_PLANE, tmdsbuf, BYTES_PER_PLANE);
+                    memcpy(tmdsbuf + 2 * DWORDS_PER_PLANE, tmdsbuf, BYTES_PER_PLANE);
+                    memcpy(last, tmdsbuf, sizeof(last));
+                    queue_add_blocking_u32(&dvi0.q_tmds_valid, &tmdsbuf);
+                }
+                break;
         }
         for (uint y = 0; y < (FRAME_HEIGHT - 512) / 2; ++y) {
             queue_remove_blocking_u32(&dvi0.q_tmds_free, &tmdsbuf);
@@ -698,9 +719,7 @@ int main() {
 //    init_psram();
     init_fs();
     reset(255);
-    if (SELECT_VGA) {
-        graphics_set_mode(g_conf.color_mode ? BK_256x256x2 : BK_512x256x1);
-    }
+    graphics_set_mode(g_conf.color_mode ? BK_256x256x2 : BK_512x256x1);
 
 #ifdef SOUND_SYSTEM
 	int hz = 44100;	//44000 //44100 //96000 //22050
