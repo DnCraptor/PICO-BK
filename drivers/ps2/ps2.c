@@ -337,7 +337,7 @@ void push_script_scan_code(uint16_t sc) {
    kbd_script_sc = sc;
 }
 
-void KeyboardHandler(void) {
+void __not_in_flash() KeyboardHandler(void) {
     static uint8_t incoming = 0;
     static uint32_t prev_ms = 0;
     uint32_t now_ms;
@@ -358,7 +358,7 @@ void KeyboardHandler(void) {
     if (bitcount == 11) {
         if (ps2bufsize < KBD_BUFFER_SIZE) {
             ps2buffer[ps2bufsize++] = incoming;
-            ps2poll();
+///            ps2poll();
         }
         bitcount = 0;
         incoming = 0;
@@ -407,7 +407,7 @@ void keyboard_init(void) {
 
 extern bool handleScancode(uint32_t ps2scancode);
 
-void ps2poll() {
+void __not_in_flash() ps2poll() {
     uint32_t ps2scancode;
     ps2scancode = ps2getcode();
     if (!ps2scancode) {

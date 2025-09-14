@@ -80,18 +80,8 @@ struct dvi_inst dvi0;
 uint32_t __aligned(4) blank[DWORDS_PER_PLANE * 3];
 uint32_t __aligned(4) last[DWORDS_PER_PLANE * 3];
 static semaphore_t vga_start_semaphore;
-/* Renderer loop on Pico's second core */
-void __time_critical_func(render_core)() {
-    graphics_set_buffer(CPU_PAGE51_MEM_ADR, 512, 256);
-    if (SELECT_VGA) {
-        graphics_init();
-        graphics_set_textbuffer(TEXT_VIDEO_RAM);
-        graphics_set_bgcolor(0x80808080);
-        graphics_set_offset(0, 0);
-        graphics_set_flashmode(true, true);
-        sem_acquire_blocking(&vga_start_semaphore);
-        return;
-    }
+
+static void __not_in_flash() dvi_on_core1() {
 	for (int i = 0; i < sizeof(blank) / sizeof(blank[0]); ++i) {
 		blank[i] = BLACK;
 	}
@@ -127,6 +117,21 @@ void __time_critical_func(render_core)() {
             queue_add_blocking_u32(&dvi0.q_tmds_valid, &tmdsbuf);
         }
     }
+}
+/* Renderer loop on Pico's second core */
+void __time_critical_func(render_core)() {
+    graphics_set_buffer(CPU_PAGE51_MEM_ADR, 512, 256);
+    if (SELECT_VGA) {
+        graphics_init();
+        graphics_set_textbuffer(TEXT_VIDEO_RAM);
+        graphics_set_bgcolor(0x80808080);
+        graphics_set_offset(0, 0);
+        graphics_set_flashmode(true, true);
+        sem_acquire_blocking(&vga_start_semaphore);
+        return;
+    }
+    dvi_on_core1();
+	__builtin_unreachable();
 }
 
 void inInit(uint gpio) {
@@ -693,7 +698,9 @@ int main() {
 //    init_psram();
     init_fs();
     reset(255);
-    graphics_set_mode(g_conf.color_mode ? BK_256x256x2 : BK_512x256x1);
+    if (SELECT_VGA) {
+        graphics_set_mode(g_conf.color_mode ? BK_256x256x2 : BK_512x256x1);
+    }
 
 #ifdef SOUND_SYSTEM
 	int hz = 44100;	//44000 //44100 //96000 //22050
