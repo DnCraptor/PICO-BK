@@ -72,6 +72,7 @@ void dvi_register_irqs_this_core(struct dvi_inst *inst, uint irq_num) {
 		dma_irq_privdata[1] = inst;
 		irq_set_exclusive_handler(DMA_IRQ_1, dvi_dma1_irq);
 	}
+	irq_set_priority(irq_num, PICO_HIGHEST_IRQ_PRIORITY);
 	irq_set_enabled(irq_num, true);
 }
 
