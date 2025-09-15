@@ -97,9 +97,9 @@ static void __not_in_flash() dvi_on_core1() {
                 register uint8_t* bk_text = (uint8_t*)TEXT_VIDEO_RAM;
                 for (uint y = 0; y < FRAME_HEIGHT; ++y) {
                     queue_remove_blocking_u32(&dvi0.q_tmds_free, &tmdsbuf);
-                    tmds_encode_64c_r(bk_text + (y >> 4) * (100 * 2), tmdsbuf, y);
-                 //   tmds_encode_64c_r(bk_text + (y >> 4) * (100 * 2), tmdsbuf + DWORDS_PER_PLANE, y);
-                 //   tmds_encode_64c_r(bk_text + (y >> 4) * (100 * 2), tmdsbuf + DWORDS_PER_PLANE * 2, y);
+                    tmds_encode_64c_b(bk_text + (y >> 4) * (100 * 2), tmdsbuf, y);
+                    tmds_encode_64c_g(bk_text + (y >> 4) * (100 * 2), tmdsbuf + DWORDS_PER_PLANE, y);
+                    tmds_encode_64c_r(bk_text + (y >> 4) * (100 * 2), tmdsbuf + DWORDS_PER_PLANE * 2, y);
                     memcpy(tmdsbuf + DWORDS_PER_PLANE, tmdsbuf, BYTES_PER_PLANE);
                     memcpy(tmdsbuf + 2 * DWORDS_PER_PLANE, tmdsbuf, BYTES_PER_PLANE);
                     queue_add_blocking_u32(&dvi0.q_tmds_valid, &tmdsbuf);
