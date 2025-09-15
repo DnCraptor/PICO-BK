@@ -52,8 +52,11 @@ static int dma_chan_ctrl;
 static int dma_chan;
 
 static volatile uint8_t* graphics_buffer;
-uint8_t* __not_in_flash() get_graphics_buffer() {
-    return graphics_buffer;
+uint8_t* __not_in_flash() get_graphics_buffer(int y) {
+    int addr_in_buf = 64 * (y + g_conf.shift_y - 0330);
+    while (addr_in_buf < 0) addr_in_buf += 16 << 10;
+    while (addr_in_buf >= 16 << 10) addr_in_buf -= 16 << 10;
+    return graphics_buffer + addr_in_buf;
 }
 static uint graphics_buffer_width = 0;
 static int graphics_buffer_shift_x = 0;
@@ -71,8 +74,12 @@ static uint16_t palette16_mask = 0;
 static uint8_t* text_buffer;
 static uint8_t* text_buf_color;
 
-static uint text_buffer_width = 0;
-static uint text_buffer_height = 0;
+uint text_buffer_width = 0;
+uint text_buffer_height = 0;
+void set_text_mode_size(uint w, uint h) {
+    text_buffer_width = w;
+    text_buffer_height = h;
+}
 
 static uint16_t __scratch_y("vga_driver") txt_palette[16];
 
@@ -320,8 +327,13 @@ enum graphics_mode_t graphics_set_mode(enum graphics_mode_t mode) {
             text_buffer_height = 30;
             break;
         default:
-            text_buffer_width = MAX_WIDTH;
-            text_buffer_height = MAX_HEIGHT;
+            if (SELECT_VGA) {
+                text_buffer_width = MAX_WIDTH;
+                text_buffer_height = MAX_HEIGHT;
+            } else {
+                text_buffer_width = 100;
+                text_buffer_height = 18;
+            }
     }
 
     enum graphics_mode_t res = graphics_mode;

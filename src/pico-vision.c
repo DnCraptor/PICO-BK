@@ -35,7 +35,7 @@ const color_schema_t* get_color_schema() {
 }
 
 void draw_panel(int left, int top, int width, int height, char* title, char* footer) {
-    char line[MAX_WIDTH + 2];
+    char line[text_buffer_width + 2];
     // top line
     for(int i = 1; i < width - 1; ++i) {
         line[i] = 0xCD; // ═
@@ -122,7 +122,7 @@ void draw_box_ex(int left, int top, int width, int height, const char* title, co
         const line_t * pl = plines->plns + i;
         uint8_t off;
         if (pl->off < 0) {
-            size_t len = strnlen(pl->txt, MAX_WIDTH);
+            size_t len = strnlen(pl->txt, text_buffer_width);
             off = width - 2 > len ? (width - len) >> 1 : 0;
         } else {
             off = pl->off;
@@ -151,7 +151,7 @@ int draw_selector(int left, int top, int width, int height, const char* title, c
             const line_t * pl = plines->plns + i;
             uint8_t off;
             if (pl->off < 0) {
-                size_t len = strnlen(pl->txt, MAX_WIDTH);
+                size_t len = strnlen(pl->txt, text_buffer_width);
                 off = width - 2 > len ? (width - len) >> 1 : 0;
             } else {
                 off = pl->off;
@@ -217,12 +217,12 @@ void draw_cmd_line(int left, int top, char* cmd) {
     char line[MAX_WIDTH + 2];
     if (cmd) {
         int sl = strlen(cmd);
-        snprintf(line, MAX_WIDTH, ">%s", cmd);
-        memset(line + sl + 1, ' ', MAX_WIDTH - sl);
+        snprintf(line, text_buffer_width, ">%s", cmd);
+        memset(line + sl + 1, ' ', text_buffer_width - sl);
     } else {
-        memset(line, ' ', MAX_WIDTH); line[0] = '>';
+        memset(line, ' ', text_buffer_width); line[0] = '>';
     }
-    line[MAX_WIDTH] = 0;
+    line[text_buffer_width] = 0;
     draw_text(line, left, top, pcs->FOREGROUND_CMD_COLOR, pcs->BACKGROUND_CMD_COLOR);
 }
 

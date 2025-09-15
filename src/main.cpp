@@ -43,7 +43,7 @@ volatile config_em_t g_conf {
    0, // v_buff_offset
 };
 
-volatile bool SELECT_VGA = true;
+extern "C" bool SELECT_VGA = true;
 bool PSRAM_AVAILABLE = false;
 bool SD_CARD_AVAILABLE = false;
 uint32_t DIRECT_RAM_BORDER = PSRAM_AVAILABLE ? RAM_SIZE : (SD_CARD_AVAILABLE ? RAM_PAGE_SIZE : RAM_SIZE);
@@ -98,27 +98,30 @@ static void __not_in_flash() dvi_on_core1() {
                 for (uint y = 0; y < FRAME_HEIGHT; ++y) {
                     queue_remove_blocking_u32(&dvi0.q_tmds_free, &tmdsbuf);
                     tmds_encode_64c_r(bk_text + (y >> 4) * (100 * 2), tmdsbuf, y);
-                    tmds_encode_64c_r(bk_text + (y >> 4) * (100 * 2), tmdsbuf + DWORDS_PER_PLANE, y);
-                    tmds_encode_64c_r(bk_text + (y >> 4) * (100 * 2), tmdsbuf + DWORDS_PER_PLANE * 2, y);
+                 //   tmds_encode_64c_r(bk_text + (y >> 4) * (100 * 2), tmdsbuf + DWORDS_PER_PLANE, y);
+                 //   tmds_encode_64c_r(bk_text + (y >> 4) * (100 * 2), tmdsbuf + DWORDS_PER_PLANE * 2, y);
+                    memcpy(tmdsbuf + DWORDS_PER_PLANE, tmdsbuf, BYTES_PER_PLANE);
+                    memcpy(tmdsbuf + 2 * DWORDS_PER_PLANE, tmdsbuf, BYTES_PER_PLANE);
                     queue_add_blocking_u32(&dvi0.q_tmds_valid, &tmdsbuf);
                 }
                 break;
             }
             case BK_256x256x2: {
-                for (uint y = 0; y < (FRAME_HEIGHT - 256) / 2; ++y) {
+                uint total_y = 0;
+                for (uint y = 0; y < (FRAME_HEIGHT - 256) / 2; ++y, ++total_y) {
                     queue_remove_blocking_u32(&dvi0.q_tmds_free, &tmdsbuf);
                     memcpy(tmdsbuf, blank, sizeof(blank));
                     queue_add_blocking_u32(&dvi0.q_tmds_valid, &tmdsbuf);
                 }
-                register uint32_t* bk_page = (uint32_t*)get_graphics_buffer();
-                for (uint y = 0; y < 256; ++y) {
+                for (uint y = 0; y < g_conf.graphics_buffer_height; ++y, ++total_y) {
+                    register uint32_t* bk_page = (uint32_t*)get_graphics_buffer(y);
                     queue_remove_blocking_u32(&dvi0.q_tmds_free, &tmdsbuf);
-                    tmds_encode_2bpp_bk_b(bk_page + (y << 4), tmdsbuf, FRAME_WIDTH);
-                    tmds_encode_2bpp_bk_g(bk_page + (y << 4), tmdsbuf + DWORDS_PER_PLANE, FRAME_WIDTH);
-                    tmds_encode_2bpp_bk_r(bk_page + (y << 4), tmdsbuf + DWORDS_PER_PLANE * 2, FRAME_WIDTH);
+                    tmds_encode_2bpp_bk_b(bk_page, tmdsbuf, FRAME_WIDTH);
+                    tmds_encode_2bpp_bk_g(bk_page, tmdsbuf + DWORDS_PER_PLANE, FRAME_WIDTH);
+                    tmds_encode_2bpp_bk_r(bk_page, tmdsbuf + DWORDS_PER_PLANE * 2, FRAME_WIDTH);
                     queue_add_blocking_u32(&dvi0.q_tmds_valid, &tmdsbuf);
                 }
-                for (uint y = 0; y < (FRAME_HEIGHT - 256) / 2; ++y) {
+                for (; total_y < FRAME_HEIGHT; ++total_y) {
                     queue_remove_blocking_u32(&dvi0.q_tmds_free, &tmdsbuf);
                     memcpy(tmdsbuf, blank, sizeof(blank));
                     queue_add_blocking_u32(&dvi0.q_tmds_valid, &tmdsbuf);
@@ -126,20 +129,21 @@ static void __not_in_flash() dvi_on_core1() {
                 break;
             }
             default: {
-                for (uint y = 0; y < (FRAME_HEIGHT - 256) / 2; ++y) {
+                uint total_y = 0;
+                for (uint y = 0; y < (FRAME_HEIGHT - 256) / 2; ++y, ++total_y) {
                     queue_remove_blocking_u32(&dvi0.q_tmds_free, &tmdsbuf);
                     memcpy(tmdsbuf, blank, sizeof(blank));
                     queue_add_blocking_u32(&dvi0.q_tmds_valid, &tmdsbuf);
                 }
-                register uint32_t* bk_page = (uint32_t*)get_graphics_buffer();
-                for (uint y = 0; y < 256; ++y) {
+                for (uint y = 0; y < g_conf.graphics_buffer_height; ++y, ++total_y) {
+                    register uint32_t* bk_page = (uint32_t*)get_graphics_buffer(y);
                     queue_remove_blocking_u32(&dvi0.q_tmds_free, &tmdsbuf);
-                    tmds_encode_1bpp_bk(bk_page + (y << 4), tmdsbuf, FRAME_WIDTH);
+                    tmds_encode_1bpp_bk(bk_page, tmdsbuf, FRAME_WIDTH);
                     memcpy(tmdsbuf + DWORDS_PER_PLANE, tmdsbuf, BYTES_PER_PLANE);
                     memcpy(tmdsbuf + 2 * DWORDS_PER_PLANE, tmdsbuf, BYTES_PER_PLANE);
                     queue_add_blocking_u32(&dvi0.q_tmds_valid, &tmdsbuf);
                 }
-                for (uint y = 0; y < (FRAME_HEIGHT - 256) / 2; ++y) {
+                for (; total_y < FRAME_HEIGHT; ++total_y) {
                     queue_remove_blocking_u32(&dvi0.q_tmds_free, &tmdsbuf);
                     memcpy(tmdsbuf, blank, sizeof(blank));
                     queue_add_blocking_u32(&dvi0.q_tmds_valid, &tmdsbuf);

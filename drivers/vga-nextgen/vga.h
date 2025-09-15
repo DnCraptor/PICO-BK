@@ -26,8 +26,11 @@ void graphics_inc_palleter_offset();
 void graphics_init();
 
 void graphics_set_buffer(uint8_t *buffer, uint16_t width, uint16_t height);
-uint8_t *get_graphics_buffer();
+uint8_t *get_graphics_buffer(int y);
 enum graphics_mode_t get_graphics_mode();
+extern bool SELECT_VGA;
+extern unsigned int text_buffer_width;
+extern unsigned int text_buffer_height;
 
 void graphics_set_textbuffer(uint8_t *buffer);
 

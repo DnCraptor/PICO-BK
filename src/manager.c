@@ -107,13 +107,13 @@ static bool m_prompt(const char* txt, size_t shift_y);
 static bool m_prompt_ex(const char* txt, const char* bottom, size_t shift_y);
 
 const static const uint8_t PANEL_TOP_Y = 0;
-static const uint8_t TOTAL_SCREEN_LINES = MAX_HEIGHT;
-static const uint8_t F_BTN_Y_POS = TOTAL_SCREEN_LINES - 1;
-static const uint8_t CMD_Y_POS = F_BTN_Y_POS - 1;
-static const uint8_t PANEL_LAST_Y = CMD_Y_POS - 1;
+#define TOTAL_SCREEN_LINES text_buffer_height
+#define F_BTN_Y_POS (TOTAL_SCREEN_LINES - 1)
+#define CMD_Y_POS (F_BTN_Y_POS - 1)
+#define PANEL_LAST_Y (CMD_Y_POS - 1)
 
 const static uint8_t FIRST_FILE_LINE_ON_PANEL_Y = PANEL_TOP_Y + 1;
-static uint8_t LAST_FILE_LINE_ON_PANEL_Y = PANEL_LAST_Y - 1;
+#define LAST_FILE_LINE_ON_PANEL_Y (PANEL_LAST_Y - 1)
 
 typedef struct {
     FSIZE_t fsize;   /* File size */
@@ -279,7 +279,7 @@ inline static void level_state_message(uint8_t divider, char* sys_name) {
     enum graphics_mode_t ret = graphics_set_mode(TEXTMODE_);
     if (ret != TEXTMODE_) clrScr(1);
     char ln[MAX_WIDTH];
-    snprintf(ln, MAX_WIDTH, "%s volume: %d (div: 1 << %d = %d)", sys_name, 16 - divider, divider, (1 << divider));
+    snprintf(ln, text_buffer_width, "%s volume: %d (div: 1 << %d = %d)", sys_name, 16 - divider, divider, (1 << divider));
     const line_t lns[1] = {
         { -1, ln }
     };
@@ -295,7 +295,7 @@ inline static void swap_sound_state_message(volatile bool* p_state, char* sys_na
     enum graphics_mode_t ret = graphics_set_mode(TEXTMODE_);
     if (ret != TEXTMODE_) clrScr(1);
     char ln[MAX_WIDTH];
-    snprintf(ln, MAX_WIDTH, "Turn %s %s", sys_name, *p_state ? "OFF" : "ON");
+    snprintf(ln, text_buffer_width, "Turn %s %s", sys_name, *p_state ? "OFF" : "ON");
     if (*p_state) {
         char ln3[42];
         snprintf(ln3, 42, "To turn it ON back, press Ctrl + Tab + %c", switch_char);
@@ -326,7 +326,7 @@ static void do_nothing(uint8_t cmd) {
         { -1, line }
     };
     const lines_t lines = { 2, 3, lns };
-    draw_box((MAX_WIDTH - 60) / 2, 7, 60, 10, "Info", &lines);
+    draw_box((text_buffer_width - 60) / 2, 7, 60, 10, "Info", &lines);
     sleep_ms(1500);
     redraw_window();
 }
@@ -523,7 +523,7 @@ static void saveConf() {
 }
 
 static void conf_it(uint8_t cmd) {
-    draw_panel(10, 10, MAX_WIDTH - 20, MAX_HEIGHT - 20, "Startup configuration", 0);
+    draw_panel(10, 10, text_buffer_width - 20, MAX_HEIGHT - 20, "Startup configuration", 0);
     in_conf();
     uint16_t prev_nespad_state = 0;
     while(1) {
@@ -591,7 +591,7 @@ static void conf_it(uint8_t cmd) {
         if (enterPressed) {
             enterPressed = false;
             if (!m_prompt_ex("Save and reboot?", "Hold ALT - noreboot", 10)) {
-                draw_panel(10, 10, MAX_WIDTH - 20, MAX_HEIGHT - 20, "Startup configuration", 0);
+                draw_panel(10, 10, text_buffer_width - 20, text_buffer_height - 20, "Startup configuration", 0);
                 in_conf();
                 continue;
             }
@@ -835,10 +835,14 @@ inline static void if_video_mode() {
 }
 
 static void draw_window() {
+    int pw = text_buffer_width >> 1;
+    left_panel.width = pw;
+    right_panel.left = pw;
+    right_panel.width = pw;
     sprintf(line, "SD:%s", left_panel.path);
-    draw_panel( 0, PANEL_TOP_Y, MAX_WIDTH / 2, PANEL_LAST_Y + 1, line, 0);
+    draw_panel( 0, PANEL_TOP_Y, pw, PANEL_LAST_Y + 1, line, 0);
     sprintf(line, "SD:%s", right_panel.path);
-    draw_panel(MAX_WIDTH / 2, PANEL_TOP_Y, MAX_WIDTH / 2, PANEL_LAST_Y + 1, line, 0);
+    draw_panel(pw, PANEL_TOP_Y, pw, PANEL_LAST_Y + 1, line, 0);
 }
 
 static char os_type[160] = { 0 }; 
@@ -875,7 +879,7 @@ inline static void no_selected_file() {
         { -1, "Pls. select some file for this action" },
     };
     const lines_t lines = { 1, 3, lns };
-    draw_box((MAX_WIDTH - 60) / 2, 7, 60, 10, "Info", &lines);
+    draw_box((text_buffer_width - 60) / 2, 7, 60, 10, "Info", &lines);
     sleep_ms(1500);
     redraw_window();
 }
@@ -889,10 +893,10 @@ static bool m_prompt_ex(const char* txt, const char* bottom, size_t shift_y) {
         { -1, txt },
     };
     const lines_t lines = { 1, 2, lns };
-    draw_box_ex((MAX_WIDTH - 60) / 2, 7 + shift_y, 60, 10, "Are you sure?", bottom, &lines);
+    draw_box_ex((text_buffer_width - 60) / 2, 7 + shift_y, 60, 10, "Are you sure?", bottom, &lines);
     bool yes = true;
-    draw_button((MAX_WIDTH - 60) / 2 + 16, 12 + shift_y, 11, "Yes", yes);
-    draw_button((MAX_WIDTH - 60) / 2 + 35, 12 + shift_y, 10, "No", !yes);
+    draw_button((text_buffer_width - 60) / 2 + 16, 12 + shift_y, 11, "Yes", yes);
+    draw_button((text_buffer_width - 60) / 2 + 35, 12 + shift_y, 10, "No", !yes);
     while(1) {
         if (is_dendy_joystick || is_kbd_joystick) {
             if (is_dendy_joystick) nespad_read();
@@ -926,8 +930,8 @@ static bool m_prompt_ex(const char* txt, const char* bottom, size_t shift_y) {
         }
         if (tabPressed || leftPressed || rightPressed) { // TODO: own msgs cycle
             yes = !yes;
-            draw_button((MAX_WIDTH - 60) / 2 + 16, 12 + shift_y, 11, "Yes", yes);
-            draw_button((MAX_WIDTH - 60) / 2 + 35, 12 + shift_y, 10, "No", !yes);
+            draw_button((text_buffer_width - 60) / 2 + 16, 12 + shift_y, 11, "Yes", yes);
+            draw_button((text_buffer_width - 60) / 2 + 35, 12 + shift_y, 10, "No", !yes);
             tabPressed = leftPressed = rightPressed = false;
             scan_code_cleanup();
         }
@@ -983,14 +987,14 @@ static void m_delete_file(uint8_t cmd) {
         construct_full_name(path, psp->path, fp->name);
         FRESULT result = fp->fattrib & AM_DIR ? m_unlink_recursive(path) : f_unlink(path);
         if (result != FR_OK) {
-            snprintf(line, MAX_WIDTH, "FRESULT: %d", result);
+            snprintf(line, text_buffer_width, "FRESULT: %d", result);
             const line_t lns[3] = {
                 { -1, "Unable to delete selected item!" },
                 { -1, path },
                 { -1, line }
             };
             const lines_t lines = { 3, 2, lns };
-            draw_box((MAX_WIDTH - 60) / 2, 7, 60, 10, "Error", &lines);
+            draw_box((text_buffer_width - 60) / 2, 7, 60, 10, "Error", &lines);
             sleep_ms(2500);
         } else {
             psp->indexes[psp->level].selected_file_idx--;
@@ -1076,14 +1080,14 @@ static void m_copy_file(uint8_t cmd) {
         construct_full_name(dest, dsp->path, fp->name);
         FRESULT result = fp->fattrib & AM_DIR ? m_copy_recursive(path, dest) : m_copy(path, dest);
         if (result != FR_OK) {
-            snprintf(line, MAX_WIDTH, "FRESULT: %d", result);
+            snprintf(line, text_buffer_width, "FRESULT: %d", result);
             const line_t lns[3] = {
                 { -1, "Unable to copy selected item!" },
                 { -1, path },
                 { -1, line }
             };
             const lines_t lines = { 3, 2, lns };
-            draw_box((MAX_WIDTH - 60) / 2, 7, 60, 10, "Error", &lines);
+            draw_box((text_buffer_width - 60) / 2, 7, 60, 10, "Error", &lines);
             sleep_ms(2500);
         }
     }
@@ -1118,8 +1122,8 @@ static void m_mk_dir(uint8_t cmd) {
     char dir[256];
     construct_full_name(dir, psp->path, "_");
     size_t len = strnlen(dir, 256) - 1;
-    draw_panel(20, MAX_HEIGHT / 2 - 20, MAX_WIDTH - 40, 5, "DIR NAME", 0);
-    draw_label(22, MAX_HEIGHT / 2 - 18, MAX_WIDTH - 44, dir, true, true);
+    draw_panel(20, text_buffer_height / 2 - 20, text_buffer_width - 40, 5, "DIR NAME", 0);
+    draw_label(22, text_buffer_height / 2 - 18, text_buffer_width - 44, dir, true, true);
     while(1) {
         if (escPressed) {
             escPressed = false;
@@ -1133,7 +1137,7 @@ static void m_mk_dir(uint8_t cmd) {
             if (len == 0) continue;
             dir[len--] = 0;
             dir[len] = '_';
-            draw_label(22, MAX_HEIGHT / 2 - 18, MAX_WIDTH - 44, dir, true, true);
+            draw_label(22, text_buffer_height / 2 - 18, text_buffer_width - 44, dir, true, true);
         }
         if (enterPressed) {
             enterPressed = false;
@@ -1144,11 +1148,11 @@ static void m_mk_dir(uint8_t cmd) {
         if (!sc || sc >= 0x80) continue;
         char c = scan_code_2_cp866[sc]; // TODO: shift, caps lock, alt, rus...
         if (!c) continue;
-        if (len + 2 == MAX_WIDTH - 44) continue;
+        if (len + 2 == text_buffer_width - 44) continue;
         dir[len++] = c;
         dir[len] = '_';
         dir[len + 1] = 0;
-        draw_label(22, MAX_HEIGHT / 2 - 18, MAX_WIDTH - 44, dir, true, true);
+        draw_label(22, text_buffer_height / 2 - 18, text_buffer_width - 44, dir, true, true);
     }
     if (len) {
         dir[len] = 0;
@@ -1181,14 +1185,14 @@ static void m_move_file(uint8_t cmd) {
         construct_full_name(dest, dsp->path, fp->name);
         FRESULT result = f_rename(path, dest);
         if (result != FR_OK) {
-            snprintf(line, MAX_WIDTH, "FRESULT: %d", result);
+            snprintf(line, text_buffer_width, "FRESULT: %d", result);
             const line_t lns[3] = {
                 { -1, "Unable to move selected item!" },
                 { -1, path },
                 { -1, line }
             };
             const lines_t lines = { 3, 2, lns };
-            draw_box((MAX_WIDTH - 60) / 2, 7, 60, 10, "Error", &lines);
+            draw_box((text_buffer_width - 60) / 2, 7, 60, 10, "Error", &lines);
             sleep_ms(2500);
         }
     }
@@ -1240,7 +1244,7 @@ static void m_info(uint8_t cmd) {
         { 1, " - Alt + F10     - mount SD-card as USB-drive" },
     };
     lines_t lines = { 40, 0, plns };
-    draw_box(5, 2, MAX_WIDTH - 15, MAX_HEIGHT - 6, "Help", &lines);
+    draw_box(5, 2, text_buffer_width - 15, text_buffer_height - 6, "Help", &lines);
     enterPressed = escPressed = false;
     nespad_state_delay = DPAD_STATE_DELAY;
     f1Pressed = true;
@@ -1452,7 +1456,7 @@ int m_add_file_ext(const char* fname, bool dir, int dir_num) {
     fp->fsize = 0;
     fp->dir_num = dir_num;
     int i = 0;
-    for (; i < (MAX_WIDTH >> 1) && fname[i] != 0; ++i) {
+    for (; i < (text_buffer_width >> 1) && fname[i] != 0; ++i) {
         fp->name[i] = koi8_2_cp866(fname[i]);
     }
     do { // trim trailing spaces
@@ -1471,7 +1475,7 @@ inline static void m_add_file(FILINFO* fi) {
     fp->fdate   = fi->fdate;
     fp->ftime   = fi->ftime;
     fp->fsize   = fi->fsize;
-    strncpy(fp->name, fi->fname, MAX_WIDTH >> 1);
+    strncpy(fp->name, fi->fname, text_buffer_width >> 1);
 }
 
 inline static bool m_opendir(
@@ -1483,7 +1487,7 @@ inline static bool m_opendir(
             { -1, "It is not a folder!" }
         };
         const lines_t lines = { 1, 4, lns };
-        draw_box((MAX_WIDTH - 60) / 2, 7, 60, 10, "Warning", &lines);
+        draw_box((text_buffer_width - 60) / 2, 7, 60, 10, "Warning", &lines);
         sleep_ms(1500);
         redraw_window();
         return false;
@@ -1494,7 +1498,7 @@ inline static bool m_opendir(
 static int m_comp(const file_info_t * e1, const file_info_t * e2) {
     if ((e1->fattrib & AM_DIR) && !(e2->fattrib & AM_DIR)) return -1;
     if (!(e1->fattrib & AM_DIR) && (e2->fattrib & AM_DIR)) return 1;
-    return strncmp(e1->name, e2->name, MAX_WIDTH >> 1);
+    return strncmp(e1->name, e2->name, text_buffer_width >> 1);
 }
 
 inline static void collect_files(file_panel_desc_t* p) {
@@ -1542,12 +1546,12 @@ static inline void fill_panel(file_panel_desc_t* p) {
         file_info_t* fp = &files_info[fn];
         if (start_file_offset <= p->files_number && y <= LAST_FILE_LINE_ON_PANEL_Y) {
             char* filename = fp->name;
-            snprintf(line, MAX_WIDTH, "%s\\%s", p->path, fp->name);
+            snprintf(line, text_buffer_width, "%s\\%s", p->path, fp->name);
 #if EXT_DRIVES_MOUNT
             if (!p->in_dos)
 #endif
             for (int i = 0; i < 4; ++i) { // mark mounted drived by labels FDD0,FDD1,HDD0...
-                if (drives_states[i].path && strncmp(drives_states[i].path, line, MAX_WIDTH) == 0) {
+                if (drives_states[i].path && strncmp(drives_states[i].path, line, text_buffer_width) == 0) {
                     snprintf(line, p->width, "%s", fp->name);
                     for (int j = strlen(fp->name); j < p->width - 6; ++j) {
                         line[j] = ' ';
@@ -1609,7 +1613,7 @@ inline static void fn_1_12_btn_pressed(uint8_t fn_idx) {
 
 inline static void handle_pagedown_pressed() {
     indexes_t* p = &psp->indexes[psp->level];
-    for (int i = 0; i < MAX_HEIGHT / 2; ++i) {
+    for (int i = 0; i < text_buffer_height / 2; ++i) {
         if (p->selected_file_idx < LAST_FILE_LINE_ON_PANEL_Y &&
             p->start_file_offset + p->selected_file_idx < psp->files_number
         ) {
@@ -1646,7 +1650,7 @@ inline static void handle_down_pressed() {
 
 inline static void handle_pageup_pressed() {
     indexes_t* p = &psp->indexes[psp->level];
-    for (int i = 0; i < MAX_HEIGHT / 2; ++i) {
+    for (int i = 0; i < text_buffer_height / 2; ++i) {
         if (p->selected_file_idx > FIRST_FILE_LINE_ON_PANEL_Y) {
             p->selected_file_idx--;
         } else if (p->selected_file_idx == FIRST_FILE_LINE_ON_PANEL_Y && p->start_file_offset > 0) {
@@ -1703,7 +1707,7 @@ static inline bool run_bin(char* path) {
             { -1, path }
         };
         const lines_t lines = { 2, 3, lns };
-        draw_box((MAX_WIDTH - 60) / 2, 7, 60, 10, "Error", &lines);
+        draw_box((text_buffer_width - 60) / 2, 7, 60, 10, "Error", &lines);
         sleep_ms(1500);
         redraw_window();
         return false;
@@ -1714,14 +1718,14 @@ static inline bool run_bin(char* path) {
     uint16_t len = ((uint16_t)line[3] << 8) | line[2];
     if (result != FR_OK) {
         f_close(&file);
-        snprintf(line, MAX_WIDTH, "FRESULT: %d (bw: %d)", result, bw);
+        snprintf(line, text_buffer_width, "FRESULT: %d (bw: %d)", result, bw);
         const line_t lns[3] = {
             { -1, "Unable to read selected file!" },
             { -1, path },
             { -1, line }
         };
         const lines_t lines = { 3, 2, lns };
-        draw_box((MAX_WIDTH - 60) / 2, 7, 60, 10, "Error", &lines);
+        draw_box((text_buffer_width - 60) / 2, 7, 60, 10, "Error", &lines);
         sleep_ms(1500);
         redraw_window();
         return false;
@@ -1730,14 +1734,14 @@ static inline bool run_bin(char* path) {
     result = f_read(&file, RAM + offset, len2, &bw);
     if (result != FR_OK) {
         f_close(&file);
-        snprintf(line, MAX_WIDTH, "FRESULT: %d (bw: %d)", result, bw);
+        snprintf(line, text_buffer_width, "FRESULT: %d (bw: %d)", result, bw);
         const line_t lns[3] = {
             { -1, "Unable to read selected file!" },
             { -1, path },
             { -1, line }
         };
         const lines_t lines = { 3, 2, lns };
-        draw_box((MAX_WIDTH - 60) / 2, 7, 60, 10, "Error", &lines);
+        draw_box((text_buffer_width - 60) / 2, 7, 60, 10, "Error", &lines);
         sleep_ms(1500);
         redraw_window();
         return false;
@@ -2112,7 +2116,7 @@ inline static void start_manager() {
     mark_to_exit_flag = false;
     save_video_ram();
     graphics_set_mode(TEXTMODE_);
-    set_start_debug_line(MAX_HEIGHT);
+    set_start_debug_line(text_buffer_height);
     if (SD_CARD_AVAILABLE) {
         draw_window();
         select_left_panel();
@@ -2404,7 +2408,7 @@ inline void if_overclock() {
                 { -1, line }
             };
             lines_t lines = { 1, 3, lns };
-            draw_box((MAX_WIDTH - 60) / 2, 7, 60, 10, "Info", &lines);
+            draw_box((text_buffer_width - 60) / 2, 7, 60, 10, "Info", &lines);
         }
         else {
             sprintf(line, "System clock of %u kHz cannot be achieved", overcloking_khz);
@@ -2412,7 +2416,7 @@ inline void if_overclock() {
                 { -1, line }
             };
             lines_t lines = { 1, 3, lns };
-            draw_box((MAX_WIDTH - 60) / 2, 7, 60, 10, "Warning", &lines);
+            draw_box((text_buffer_width - 60) / 2, 7, 60, 10, "Warning", &lines);
         }
         sleep_ms(2500);
         graphics_set_mode(ret);
