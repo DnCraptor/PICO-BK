@@ -19,6 +19,8 @@ void tmds_encode_2bpp_bk_b(const uint32_t *pixbuf, uint32_t *symbuf, size_t n_pi
 void tmds_encode_2bpp_bk_g(const uint32_t *pixbuf, uint32_t *symbuf, size_t n_pix);
 void tmds_encode_2bpp_bk_r(const uint32_t *pixbuf, uint32_t *symbuf, size_t n_pix);
 
+void tmds_encode_64c_r(const uint8_t *textbuf, uint32_t *symbuf, size_t y_line);
+
 void tmds_encode_1bpp(const uint32_t *pixbuf, uint32_t *symbuf, size_t n_pix);
 void tmds_encode_2bpp(const uint32_t *pixbuf, uint32_t *symbuf, size_t n_pix);
 

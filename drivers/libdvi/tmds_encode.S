@@ -824,6 +824,73 @@ tmds_2bpp_table:
 	.word 0xbf230 // 10, 11
 	.word 0xbf203 // 11, 11
 
+.extern font_8x16
+// r0: input buffer (2-bytes: char + color, color 4-bit fg, 4-bit bg)
+// r1: output buffer (word-aligned)
+// r2: output line number (0-299), позже - glyph_line
+decl_func tmds_encode_64c_r
+	push {r4-r7, lr}
+	mov r7, r8
+	push {r7}
+
+	adr r7, tmds_64c_table_r// TODO: динамически от цвета
+    ldr r3, =font_8x16      // адрес массива
+
+    lsls r2, #28            // убрать все, кроме младших 4 бит (сдвиг влево)
+    lsrs r2, #28            // вернуть обратно вправо. результат: остаток от деления на 16
+
+	movs r6, #100         // символов в строке
+1:
+    ldrb r4, [r0]           // взять первый байт (символ)
+    adds r0, #1
+	lsls r4, #4             // умножить на 16 (высота шрифта)
+	add r4, r2              // + glyph_line
+	add r4, r3              // + font_8x16 - получаем адрес glyph_pixels
+    ldrb r4, [r4]           // теперь в r4 лежит глиф
+
+    ldrb r5, [r0]           // взять второй байт (цвет, пока игнорируем)
+	adds r0, #1
+
+	mov r8, r4              // сохраняем на потом
+	lsrs r4, #4
+	lsls r4, #4             // выделить 4 старших бита из байта глифа
+	add r4, r7              // вычислить адрес в таблице цветов: r7 + r4
+	ldr r4, [r4]            // загрузить слово по адресу, теперь в r4 слово для вывода
+    stmia r1!, {r4}         // засунуть в выходной буфер
+
+	mov r4, r8              // восстанавливаем для выделения младших битов
+	lsls r4, #28            // выделить 4 младших бита из байта глифа
+    lsrs r4, #28
+	add r4, r7              // вычислить адрес в таблице цветов: r7 + r4
+	ldr r4, [r4]            // загрузить слово по адресу, теперь в r4 слово для вывода
+    stmia r1!, {r4}         // засунуть в выходной буфер
+
+	subs r6, #1
+	bne 1b
+
+	pop {r7}
+	mov r8, r7
+	pop {r4-r7, pc}
+
+.align 2
+tmds_64c_table_r:
+	.word 0x7f103 // 00, 00
+	.word 0x7f130 // 01, 00
+	.word 0x7f230 // 10, 00
+	.word 0x7f203 // 11, 00
+	.word 0x73d03 // 00, 01
+	.word 0x73d30 // 01, 01
+	.word 0x73e30 // 10, 01
+	.word 0x73e03 // 11, 01
+	.word 0xb3d03 // 00, 10
+	.word 0xb3d30 // 01, 10
+	.word 0xb3e30 // 10, 10
+	.word 0xb3e03 // 11, 10
+	.word 0xbf103 // 00, 11
+	.word 0xbf130 // 01, 11
+	.word 0xbf230 // 10, 11
+	.word 0xbf203 // 11, 11
+
 // ----------------------------------------------------------------------------
 // Full-resolution RGB encode (not very practical)
 

@@ -91,15 +91,26 @@ static void __not_in_flash() dvi_on_core1() {
     uint32_t *tmdsbuf = 0;
     sem_acquire_blocking(&vga_start_semaphore);
     while (true) {
-        for (uint y = 0; y < (FRAME_HEIGHT - 256) / 2; ++y) {
-            queue_remove_blocking_u32(&dvi0.q_tmds_free, &tmdsbuf);
-            memcpy(tmdsbuf, blank, sizeof(blank));
-            queue_add_blocking_u32(&dvi0.q_tmds_valid, &tmdsbuf);
-        }
-        register uint32_t* bk_page = (uint32_t*)get_graphics_buffer();
         register enum graphics_mode_t gmode = get_graphics_mode();
         switch(gmode) {
-            case BK_256x256x2:
+            case TEXTMODE_: {
+                register uint8_t* bk_text = (uint8_t*)TEXT_VIDEO_RAM;
+                for (uint y = 0; y < FRAME_HEIGHT; ++y) {
+                    queue_remove_blocking_u32(&dvi0.q_tmds_free, &tmdsbuf);
+                    tmds_encode_64c_r(bk_text + (y >> 4) * (100 * 2), tmdsbuf, y);
+                    tmds_encode_64c_r(bk_text + (y >> 4) * (100 * 2), tmdsbuf + DWORDS_PER_PLANE, y);
+                    tmds_encode_64c_r(bk_text + (y >> 4) * (100 * 2), tmdsbuf + DWORDS_PER_PLANE * 2, y);
+                    queue_add_blocking_u32(&dvi0.q_tmds_valid, &tmdsbuf);
+                }
+                break;
+            }
+            case BK_256x256x2: {
+                for (uint y = 0; y < (FRAME_HEIGHT - 256) / 2; ++y) {
+                    queue_remove_blocking_u32(&dvi0.q_tmds_free, &tmdsbuf);
+                    memcpy(tmdsbuf, blank, sizeof(blank));
+                    queue_add_blocking_u32(&dvi0.q_tmds_valid, &tmdsbuf);
+                }
+                register uint32_t* bk_page = (uint32_t*)get_graphics_buffer();
                 for (uint y = 0; y < 256; ++y) {
                     queue_remove_blocking_u32(&dvi0.q_tmds_free, &tmdsbuf);
                     tmds_encode_2bpp_bk_b(bk_page + (y << 4), tmdsbuf, FRAME_WIDTH);
@@ -107,8 +118,20 @@ static void __not_in_flash() dvi_on_core1() {
                     tmds_encode_2bpp_bk_r(bk_page + (y << 4), tmdsbuf + DWORDS_PER_PLANE * 2, FRAME_WIDTH);
                     queue_add_blocking_u32(&dvi0.q_tmds_valid, &tmdsbuf);
                 }
+                for (uint y = 0; y < (FRAME_HEIGHT - 256) / 2; ++y) {
+                    queue_remove_blocking_u32(&dvi0.q_tmds_free, &tmdsbuf);
+                    memcpy(tmdsbuf, blank, sizeof(blank));
+                    queue_add_blocking_u32(&dvi0.q_tmds_valid, &tmdsbuf);
+                }
                 break;
-            default:
+            }
+            default: {
+                for (uint y = 0; y < (FRAME_HEIGHT - 256) / 2; ++y) {
+                    queue_remove_blocking_u32(&dvi0.q_tmds_free, &tmdsbuf);
+                    memcpy(tmdsbuf, blank, sizeof(blank));
+                    queue_add_blocking_u32(&dvi0.q_tmds_valid, &tmdsbuf);
+                }
+                register uint32_t* bk_page = (uint32_t*)get_graphics_buffer();
                 for (uint y = 0; y < 256; ++y) {
                     queue_remove_blocking_u32(&dvi0.q_tmds_free, &tmdsbuf);
                     tmds_encode_1bpp_bk(bk_page + (y << 4), tmdsbuf, FRAME_WIDTH);
@@ -116,21 +139,22 @@ static void __not_in_flash() dvi_on_core1() {
                     memcpy(tmdsbuf + 2 * DWORDS_PER_PLANE, tmdsbuf, BYTES_PER_PLANE);
                     queue_add_blocking_u32(&dvi0.q_tmds_valid, &tmdsbuf);
                 }
+                for (uint y = 0; y < (FRAME_HEIGHT - 256) / 2; ++y) {
+                    queue_remove_blocking_u32(&dvi0.q_tmds_free, &tmdsbuf);
+                    memcpy(tmdsbuf, blank, sizeof(blank));
+                    queue_add_blocking_u32(&dvi0.q_tmds_valid, &tmdsbuf);
+                }
                 break;
-        }
-        for (uint y = 0; y < (FRAME_HEIGHT - 256) / 2; ++y) {
-            queue_remove_blocking_u32(&dvi0.q_tmds_free, &tmdsbuf);
-            memcpy(tmdsbuf, blank, sizeof(blank));
-            queue_add_blocking_u32(&dvi0.q_tmds_valid, &tmdsbuf);
+            }
         }
     }
 }
 /* Renderer loop on Pico's second core */
 void __time_critical_func(render_core)() {
     graphics_set_buffer(CPU_PAGE51_MEM_ADR, 512, 256);
+    graphics_set_textbuffer(TEXT_VIDEO_RAM);
     if (SELECT_VGA) {
         graphics_init();
-        graphics_set_textbuffer(TEXT_VIDEO_RAM);
         graphics_set_bgcolor(0x80808080);
         graphics_set_offset(0, 0);
         graphics_set_flashmode(true, true);
