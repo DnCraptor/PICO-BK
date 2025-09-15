@@ -35,7 +35,7 @@ typedef struct fn_1_12_tbl_rec {
 #define BTNS_COUNT 12
 typedef fn_1_12_tbl_rec_t fn_1_12_tbl_t[BTNS_COUNT];
 
-void set_color_schema(color_schema_t* pschema);
+void set_color_schema(const color_schema_t* pschema);
 
 const color_schema_t* get_color_schema();
 

@@ -24,9 +24,9 @@ static const color_schema_t color_schema = {
    /*BACKGROUND_SELECTED_COLOR =*/ 11, // Light Blue
 };
 
-static color_schema_t* pcs = &color_schema;
+static const color_schema_t* pcs = &color_schema;
 
-void set_color_schema(color_schema_t* pschema) {
+void set_color_schema(const color_schema_t* pschema) {
     pcs = pschema;
 }
 

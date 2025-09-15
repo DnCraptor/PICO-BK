@@ -848,28 +848,7 @@ static void draw_window() {
 static char os_type[160] = { 0 }; 
 inline static void update_menu_color();
 
-static const color_schema_t color_schema_dvi = {
-   /*BACKGROUND_FIELD_COLOR =*/ 0, // Black
-   /*FOREGROUND_FIELD_COLOR =*/ 7, // White
-   /*HIGHLIGHTED_FIELD_COLOR=*/ 0b100, // Red
-
-   /*BACKGROUND_F1_10_COLOR =*/ 0, // Black
-   /*FOREGROUND_F1_10_COLOR =*/ 7,
-
-   /*BACKGROUND_F_BTN_COLOR =*/ 0b010, // Green
-   /*FOREGROUND_F_BTN_COLOR =*/ 0, // Black
- 
-   /*BACKGROUND_CMD_COLOR =*/ 0, // Black
-   /*FOREGROUND_CMD_COLOR =*/ 7, // White
-  /*BACKGROUND_SEL_BTN_COLOR*/ 0, // Black
-  
-   /*FOREGROUND_SELECTED_COLOR =*/ 0b010, // Green
-   /*BACKGROUND_SELECTED_COLOR =*/ 0, // Black
-};
-
 static void redraw_window() {
-    if (!SELECT_VGA)
-        set_color_schema(&color_schema_dvi);
     draw_window();
     if (SD_CARD_AVAILABLE) {
         fill_panel(&left_panel);
