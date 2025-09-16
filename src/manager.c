@@ -363,23 +363,23 @@ static void in_conf(int x, int y) {
     draw_label(x+2, y+16, 23, "      is_kbd_joystick:", false, z_idx == 8);
 
     if (is_kbd_joystick) {
-        draw_label(x+2, y+17, 23, "            kbdpad1_A:", false, z_idx == 9);
-        draw_label(x+2, y+18, 23, "            kbdpad1_B:", false, z_idx == 10);
-        draw_label(x+2, y+19, 23, "        kbdpad1_START:", false, z_idx == 11);
-        draw_label(x+2, y+20, 23, "       kbdpad1_SELECT:", false, z_idx == 12);
-        draw_label(x+2, y+21, 23, "           kbdpad1_UP:", false, z_idx == 13);
-        draw_label(x+2, y+22, 23, "         kbdpad1_DOWN:", false, z_idx == 14);
-        draw_label(x+2, y+23, 23, "         kbdpad1_LEFT:", false, z_idx == 15);
-        draw_label(x+2, y+24, 23, "        kbdpad1_RIGHT:", false, z_idx == 16);
+        draw_label(x+2+30, y+9, 23, "            kbdpad1_A:", false, z_idx == 9);
+        draw_label(x+2+30, y+10, 23, "            kbdpad1_B:", false, z_idx == 10);
+        draw_label(x+2+30, y+11, 23, "        kbdpad1_START:", false, z_idx == 11);
+        draw_label(x+2+30, y+12, 23, "       kbdpad1_SELECT:", false, z_idx == 12);
+        draw_label(x+2+30, y+13, 23, "           kbdpad1_UP:", false, z_idx == 13);
+        draw_label(x+2+30, y+14, 23, "         kbdpad1_DOWN:", false, z_idx == 14);
+        draw_label(x+2+30, y+15, 23, "         kbdpad1_LEFT:", false, z_idx == 15);
+        draw_label(x+2+30, y+16, 23, "        kbdpad1_RIGHT:", false, z_idx == 16);
 
-        draw_label(x+32, y+17, 23, "            kbdpad2_A:", false, z_idx == 17);
-        draw_label(x+32, y+18, 23, "            kbdpad2_B:", false, z_idx == 18);
-        draw_label(x+32, y+19, 23, "        kbdpad2_START:", false, z_idx == 19);
-        draw_label(x+32, y+20, 23, "       kbdpad2_SELECT:", false, z_idx == 20);
-        draw_label(x+32, y+21, 23, "           kbdpad2_UP:", false, z_idx == 21);
-        draw_label(x+32, y+22, 23, "         kbdpad2_DOWN:", false, z_idx == 22);
-        draw_label(x+32, y+23, 23, "         kbdpad2_LEFT:", false, z_idx == 23);
-        draw_label(x+32, y+24, 23, "        kbdpad2_RIGHT:", false, z_idx == 24);
+        draw_label(x+32+30, y+9, 23, "            kbdpad2_A:", false, z_idx == 17);
+        draw_label(x+32+30, y+10, 23, "            kbdpad2_B:", false, z_idx == 18);
+        draw_label(x+32+30, y+11, 23, "        kbdpad2_START:", false, z_idx == 19);
+        draw_label(x+32+30, y+12, 23, "       kbdpad2_SELECT:", false, z_idx == 20);
+        draw_label(x+32+30, y+13, 23, "           kbdpad2_UP:", false, z_idx == 21);
+        draw_label(x+32+30, y+14, 23, "         kbdpad2_DOWN:", false, z_idx == 22);
+        draw_label(x+32+30, y+15, 23, "         kbdpad2_LEFT:", false, z_idx == 23);
+        draw_label(x+32+30, y+16, 23, "        kbdpad2_RIGHT:", false, z_idx == 24);
     }
 
     const static char b_on [2] = { 0xFB, 0 };
@@ -423,38 +423,38 @@ static void in_conf(int x, int y) {
     if (is_kbd_joystick) {
         MAX_Z = 24;
         snprintf(b, 8, "%d", kbdpad1_A);
-        draw_label(x+25, y+17, 3, b, !blink && z_idx == 9, confEditMode && z_idx == 9);
+        draw_label(x+25+30, y+9, 3, b, !blink && z_idx == 9, confEditMode && z_idx == 9);
         snprintf(b, 8, "%d", kbdpad1_B);
-        draw_label(x+25, y+18, 3, b, !blink && z_idx == 10, confEditMode && z_idx == 10);
+        draw_label(x+25+30, y+10, 3, b, !blink && z_idx == 10, confEditMode && z_idx == 10);
         snprintf(b, 8, "%d", kbdpad1_START);
-        draw_label(x+25, y+19, 3, b, !blink && z_idx == 11, confEditMode && z_idx == 11);
+        draw_label(x+25+30, y+11, 3, b, !blink && z_idx == 11, confEditMode && z_idx == 11);
         snprintf(b, 8, "%d", kbdpad1_SELECT);
-        draw_label(x+25, y+20, 3, b, !blink && z_idx == 12, confEditMode && z_idx == 12);
+        draw_label(x+25+30, y+12, 3, b, !blink && z_idx == 12, confEditMode && z_idx == 12);
         snprintf(b, 8, "%d", kbdpad1_UP);
-        draw_label(x+25, y+21, 3, b, !blink && z_idx == 13, confEditMode && z_idx == 13);
+        draw_label(x+25+30, y+13, 3, b, !blink && z_idx == 13, confEditMode && z_idx == 13);
         snprintf(b, 8, "%d", kbdpad1_DOWN);
-        draw_label(x+25, y+22, 3, b, !blink && z_idx == 14, confEditMode && z_idx == 14);
+        draw_label(x+25+30, y+14, 3, b, !blink && z_idx == 14, confEditMode && z_idx == 14);
         snprintf(b, 8, "%d", kbdpad1_LEFT);
-        draw_label(x+25, y+23, 3, b, !blink && z_idx == 15, confEditMode && z_idx == 15);
+        draw_label(x+25+30, y+15, 3, b, !blink && z_idx == 15, confEditMode && z_idx == 15);
         snprintf(b, 8, "%d", kbdpad1_RIGHT);
-        draw_label(x+25, y+24, 3, b, !blink && z_idx == 16, confEditMode && z_idx == 16);
+        draw_label(x+25+30, y+16, 3, b, !blink && z_idx == 16, confEditMode && z_idx == 16);
 
         snprintf(b, 8, "%d", kbdpad2_A);
-        draw_label(x+55, y+17, 3, b, !blink && z_idx == 17, confEditMode && z_idx == 17);
+        draw_label(x+55+30, y+9, 3, b, !blink && z_idx == 17, confEditMode && z_idx == 17);
         snprintf(b, 8, "%d", kbdpad2_B);
-        draw_label(x+55, y+18, 3, b, !blink && z_idx == 18, confEditMode && z_idx == 18);
+        draw_label(x+55+30, y+10, 3, b, !blink && z_idx == 18, confEditMode && z_idx == 18);
         snprintf(b, 8, "%d", kbdpad2_START);
-        draw_label(x+55, y+19, 3, b, !blink && z_idx == 19, confEditMode && z_idx == 19);
+        draw_label(x+55+30, y+11, 3, b, !blink && z_idx == 19, confEditMode && z_idx == 19);
         snprintf(b, 8, "%d", kbdpad2_SELECT);
-        draw_label(x+55, y+20, 3, b, !blink && z_idx == 20, confEditMode && z_idx == 20);
+        draw_label(x+55+30, y+12, 3, b, !blink && z_idx == 20, confEditMode && z_idx == 20);
         snprintf(b, 8, "%d", kbdpad2_UP);
-        draw_label(x+55, y+21, 3, b, !blink && z_idx == 21, confEditMode && z_idx == 21);
+        draw_label(x+55+30, y+13, 3, b, !blink && z_idx == 21, confEditMode && z_idx == 21);
         snprintf(b, 8, "%d", kbdpad2_DOWN);
-        draw_label(x+55, y+22, 3, b, !blink && z_idx == 22, confEditMode && z_idx == 22);
+        draw_label(x+55+30, y+14, 3, b, !blink && z_idx == 22, confEditMode && z_idx == 22);
         snprintf(b, 8, "%d", kbdpad2_LEFT);
-        draw_label(x+55, y+23, 3, b, !blink && z_idx == 23, confEditMode && z_idx == 23);
+        draw_label(x+55+30, y+15, 3, b, !blink && z_idx == 23, confEditMode && z_idx == 23);
         snprintf(b, 8, "%d", kbdpad2_RIGHT);
-        draw_label(x+55, y+24, 3, b, !blink && z_idx == 24, confEditMode && z_idx == 24);
+        draw_label(x+55+30, y+16, 3, b, !blink && z_idx == 24, confEditMode && z_idx == 24);
     } else {
         MAX_Z = 8;
     }
@@ -1791,7 +1791,13 @@ static inline bool run_img(char* path) {
     }
 #endif
     const lines_t lines = { 4, 1, drive_num_lns };
-    int mount_as = draw_selector(50, 10, 30, 8, "Device to mount", &lines, 2, "Hold ALT - noreboot");
+    int mount_as = draw_selector(
+        (text_buffer_width - 30) / 2,
+        (text_buffer_height - 8) / 2,
+        30,
+        8,
+        "Device to mount", &lines, 2, "Hold ALT - noreboot"
+    );
     if (escPressed) {
         escPressed = false;
         redraw_window();
