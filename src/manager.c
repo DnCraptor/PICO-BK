@@ -523,7 +523,7 @@ static void saveConf() {
 }
 
 static void conf_it(uint8_t cmd) {
-    draw_panel(10, 10, text_buffer_width - 20, MAX_HEIGHT - 20, "Startup configuration", 0);
+    draw_panel(1, 1, text_buffer_width - 2, text_buffer_height - 2, "Startup configuration", 0);
     in_conf();
     uint16_t prev_nespad_state = 0;
     while(1) {
@@ -591,7 +591,7 @@ static void conf_it(uint8_t cmd) {
         if (enterPressed) {
             enterPressed = false;
             if (!m_prompt_ex("Save and reboot?", "Hold ALT - noreboot", 10)) {
-                draw_panel(10, 10, text_buffer_width - 20, text_buffer_height - 20, "Startup configuration", 0);
+                draw_panel(1, 1, text_buffer_width - 2, text_buffer_height - 2, "Startup configuration", 0);
                 in_conf();
                 continue;
             }
@@ -1201,41 +1201,27 @@ static void m_move_file(uint8_t cmd) {
 }
 
 static void m_info(uint8_t cmd) {
-    line_t plns[40] = {
-        { 1, "Key mapping emulation mode:" },
-        { 1, " - Alt   + \"key\"  - AP2" },
-        { 1, " - Shift + \"key\"  - register up/down" },
-        { 1, " - Ctrl  + \"key\"  - CU" },
-        { 1, " - Caps Lock      - lock up/down register" },
-        { 1, " - left  Win      - RUS" }, // TODO: rus
-        { 1, " - right Win      - LAT" },
-        { 1, " - Pause          - STOP" },
-        { 1, " - F1             - POVTOR" },
-        { 1, " - F2             - KT" },
-        { 1, " - F3             - =|=>|" },
-        { 1, " - F4             - |<==" },
-        { 1, " - F5             - |==>" },
-        { 1, " - F6             - IND SU" },
-        { 1, " - F7             - BLOCK REDACT" },
-        { 1, " - F8             - STEP" },
-        { 1, " - F9             - SBROS" },
-        { 1, " - PgUp | PgDown  - BC" },
-        { 1, " " },
-        { 1, "Emulation hot keys:" },
+    line_t plns[26] = {
+        { 1, "Key mapping in the emulation mode:" },
+        { 1, " - Alt   + key  - AP2                       - F7             - BLOCK REDACT" },
+        { 1, " - Shift + key  - register up/down          - F8             - STEP" },
+        { 1, " - Ctrl  + key  - CU                        - F9             - SBROS" },  // TODO: rus
+        { 1, " - Caps Lock      - lock up/down register   - PgUp | PgDown  - BC" },
+        { 1, " - left  Win      - RUS                    Emulation time hot keys:" },
+        { 1, " - right Win      - LAT                     - Print Screen     - Reset RP2040/RP2350 CPU" },
+        { 1, " - Pause          - STOP                    - F10              - cyclic change pallete" },
+        { 1, " - F1             - POVTOR                  - Alt  + F10       - default BK-0010 pallete" },
+        { 1, " - F2             - KT                      - Ctrl + F10       - default BK-0011 pallete" },
+        { 1, " - F3             - =|=>|                   - F12              - Switch B/W 512x256 & Color 256x256 and back" },
+        { 1, " - F4             - |<==                    - Ctrl + F1..F8    - fast save a snapshot (BK\\SNAP[1..8].BKE)" },
+        { 1, " - F5             - |==>                    - Alt  + F1..F8    - fast restore from related snapshot" },
+        { 1, " - F6             - IND SU                  - Ctrl + F12       - faster emulation" },
         { 1, " - Ctrl + Alt + Del - Reset BM1 CPU, RAM clenup, set default pages, deafult speed, init system registers" },
-        { 1, " - Print Screen     - Reset RP2040/RP2350 CPU" },
-        { 1, " - F10              - cyclic change pallete" },
-        { 1, " - Alt  + F10       - default BK-0010 pallete" },
-        { 1, " - Ctrl + F10       - default BK-0011 pallete" },
-        { 1, " - F11              - adjust brightness" },
-        { 1, " - F12              - Switch B/W 512x256 to Color 256x256 and back" },
-        { 1, " - Ctrl + F1..F8    - fast save a snapshot (BK\\SNAP[1..8].BKE)" },
-        { 1, " - Alt  + F1..F8    - fast restore from related snapshot" },
         { 1, " - Ctrl + F11       - slower emulation (default emulation is about to BK on 3 MHz)" },
-        { 1, " - Ctrl + F12       - faster emulation" },
+        { 1, " - F11              - adjust brightness" },
         { 1, " - Ctrl + \"+\"       - increase volume" },
         { 1, " - Ctrl + \"-\"       - decrease volume" },
-        { 1, " - Esc              - go to the File Manager" },
+        { 1, " " },
         { 1, " " },
         { 1, "File Manager hot keys:" },
         { 1, " - F10           - exit from the File Manager" },
@@ -1243,8 +1229,8 @@ static void m_info(uint8_t cmd) {
         { 1, " - F12           - Switch B/W 512x256 to Color 256x256 and back" },
         { 1, " - Alt + F10     - mount SD-card as USB-drive" },
     };
-    lines_t lines = { 40, 0, plns };
-    draw_box(5, 2, text_buffer_width - 15, text_buffer_height - 6, "Help", &lines);
+    lines_t lines = { 26, 0, plns };
+    draw_box(1, 1, text_buffer_width - 2, text_buffer_height - 2, "Help", &lines);
     enterPressed = escPressed = false;
     nespad_state_delay = DPAD_STATE_DELAY;
     f1Pressed = true;
@@ -1395,7 +1381,16 @@ static void turn_usb_on(uint8_t cmd) {
 inline static bool switch_mode_dialog(bk_mode_t* pbk0010mode) {
     bk_mode_t bk0010mode = *pbk0010mode;
     const lines_t lines = { 5, 1, bk_mode_lns };
-    bk0010mode = draw_selector(50, 10, 30, 9, "BK Emulation Mode", &lines, bk0010mode, 0);
+    bk0010mode = draw_selector(
+        (text_buffer_width - 30) / 2,
+        (text_buffer_height - 9) / 2,
+         30,
+         9,
+         "BK Emulation Mode",
+         &lines,
+         bk0010mode,
+         0
+    );
     if (escPressed) {
         return false;
     }
@@ -1691,13 +1686,13 @@ static inline bool run_bin(char* path) {
         return false;
     }
 #endif
-    bk_mode_t m = BK_0010_01;
-    if (!switch_mode_dialog(&m)) {
-        redraw_window();
-        return false;
-    }
+///    bk_mode_t m = BK_0010_01;
+///    if (!switch_mode_dialog(&m)) {
+///        redraw_window();
+///        return false;
+///    }
     gpio_put(PICO_DEFAULT_LED_PIN, true);
-    set_bk0010mode(m);
+///    set_bk0010mode(m);
     main_init();
     FIL file;
     FRESULT result = f_open(&file, path, FA_READ);

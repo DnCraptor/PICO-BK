@@ -127,6 +127,7 @@ void draw_box_ex(int left, int top, int width, int height, const char* title, co
         } else {
             off = pl->off;
         }
+        if (y == height) break;
         draw_label(left + 1 + off, y, width - 2 - off, pl->txt, false, false);
     }
 }

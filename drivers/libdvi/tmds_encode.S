@@ -833,7 +833,6 @@ decl_func tmds_encode_64c_b
 	mov r7, r8
 	push {r7}
 
-	adr r7, tmds_64c_table_b// TODO: динамически от цвета
     ldr r3, =font_8x16      // адрес массива
 
     lsls r2, #28            // убрать все, кроме младших 4 бит (сдвиг влево)
@@ -845,9 +844,18 @@ decl_func tmds_encode_64c_b
     adds r0, #1
     ldrb r5, [r0]           // взять второй байт (цвет)
 	adds r0, #1
+	adr r7, tmds_64c_table_b// загрузить адрес таблицы цветов
 
+	mov r12, r5             // сохраняем цвет на случай работы по бэкграунду
 	lsls r5, #31            // маска синего (младший бит)
 	bne 3f                  // Zero == 0 (не ноль)
+	// если ноль (нет синего), то смотрим бэкграунд
+	adds r7, #128         // сдвигаемся к инверсной таблице
+	mov r5, r12             // восстанавливаем бг+цвет
+	lsrs r5, #4             // выталкиваем 4 бита цвета
+	lsls r5, #31            // маска синего (младший бит) для бэкграунда
+	bne 3f                  // Zero == 0 (не ноль)
+	subs r7, #128         // возвращаемся на основную цветовую схему
     lsrs r4, #8             // если ноль (нет синего), то зануляем символ, сдвинув все значащие биты вправо
 3:
 	lsls r4, #4             // умножить код символа на 16 (высота шрифта)
@@ -908,6 +916,23 @@ tmds_64c_table_b:
 	.word 0x7fe00, 0xbfe00  // 1101
 	.word 0xbfd00, 0xbfe00  // 1110
 	.word 0xbfe00, 0xbfe00  // 1111
+ // revers color for background
+	.word 0xbfe00, 0xbfe00  // 0000
+	.word 0xbfd00, 0xbfe00  // 0001
+	.word 0x7fe00, 0xbfe00  // 0010
+	.word 0x7fd00, 0xbfe00  // 0011
+	.word 0xbfe00, 0xbfd00  // 0100
+	.word 0xbfd00, 0xbfd00  // 0101
+	.word 0x7fe00, 0xbfd00  // 0110
+	.word 0x7fd00, 0xbfd00  // 0111
+	.word 0xbfe00, 0x7fe00  // 1000
+	.word 0xbfd00, 0x7fe00  // 1001
+	.word 0x7fe00, 0x7fe00  // 1010
+	.word 0x7fd00, 0x7fe00  // 1011
+	.word 0xbfe00, 0x7fd00  // 1100
+	.word 0xbfd00, 0x7fd00  // 1101
+	.word 0x7fe00, 0x7fd00  // 1110
+	.word 0x7fd00, 0x7fd00  // 1111
 
 // r0: input buffer (2-bytes: char + color, color 4-bit fg, 4-bit bg)
 // r1: output buffer (word-aligned)
@@ -917,7 +942,6 @@ decl_func tmds_encode_64c_g
 	mov r7, r8
 	push {r7}
 
-	adr r7, tmds_64c_table_g// TODO: динамически от цвета
     ldr r3, =font_8x16      // адрес массива
 
     lsls r2, #28            // убрать все, кроме младших 4 бит (сдвиг влево)
@@ -929,10 +953,19 @@ decl_func tmds_encode_64c_g
     adds r0, #1
     ldrb r5, [r0]           // взять второй байт (цвет)
 	adds r0, #1
+	adr r7, tmds_64c_table_g// загрузить адрес таблицы цветов
 
+	mov r12, r5             // сохраняем цвет на случай работы по бэкграунду
 	lsls r5, #30            // маска зелёного (первый бит)
 	lsrs r5, #31            // окажется единственным после сдвигов
 	bne 3f                  // Zero == 0 (не ноль)
+	// если ноль (нет зелёного), то смотрим бэкграунд
+	adds r7, #128         // сдвигаемся к инверсной таблице
+	mov r5, r12             // восстанавливаем бг+цвет
+	lsrs r5, #5             // выталкиваем 4 бита цвета + синий бит бэка
+	lsls r5, #31            // маска зелёного (младший бит) для бэкграунда
+	bne 3f                  // Zero == 0 (не ноль)
+	subs r7, #128         // возвращаемся на основную цветовую схему
     lsrs r4, #8             // если ноль (нет зелёного), то зануляем символ, сдвинув все значащие биты вправо
 3:
 	lsls r4, #4             // умножить на 16 (высота шрифта)
@@ -993,6 +1026,23 @@ tmds_64c_table_g:
 	.word 0x7fe00, 0xbfe00  // 1101
 	.word 0xbfd00, 0xbfe00  // 1110
 	.word 0xbfe00, 0xbfe00  // 1111
+ // revers color for background
+	.word 0xbfe00, 0xbfe00  // 0000
+	.word 0xbfd00, 0xbfe00  // 0001
+	.word 0x7fe00, 0xbfe00  // 0010
+	.word 0x7fd00, 0xbfe00  // 0011
+	.word 0xbfe00, 0xbfd00  // 0100
+	.word 0xbfd00, 0xbfd00  // 0101
+	.word 0x7fe00, 0xbfd00  // 0110
+	.word 0x7fd00, 0xbfd00  // 0111
+	.word 0xbfe00, 0x7fe00  // 1000
+	.word 0xbfd00, 0x7fe00  // 1001
+	.word 0x7fe00, 0x7fe00  // 1010
+	.word 0x7fd00, 0x7fe00  // 1011
+	.word 0xbfe00, 0x7fd00  // 1100
+	.word 0xbfd00, 0x7fd00  // 1101
+	.word 0x7fe00, 0x7fd00  // 1110
+	.word 0x7fd00, 0x7fd00  // 1111
 
 // r0: input buffer (2-bytes: char + color, color 4-bit fg, 4-bit bg)
 // r1: output buffer (word-aligned)
@@ -1002,7 +1052,6 @@ decl_func tmds_encode_64c_r
 	mov r7, r8
 	push {r7}
 
-	adr r7, tmds_64c_table_r// TODO: динамически от цвета
     ldr r3, =font_8x16      // адрес массива
 
     lsls r2, #28            // убрать все, кроме младших 4 бит (сдвиг влево)
@@ -1014,10 +1063,19 @@ decl_func tmds_encode_64c_r
     adds r0, #1
     ldrb r5, [r0]           // взять второй байт (цвет)
 	adds r0, #1
+	adr r7, tmds_64c_table_r// загрузить адрес таблицы цветов
 
+	mov r12, r5             // сохраняем цвет на случай работы по бэкграунду
 	lsls r5, #29            // маска красного (второй бит)
 	lsrs r5, #31            // окажется единственным после сдвигов
 	bne 3f                  // Zero == 0 (не ноль)
+	// если ноль (нет красного), то смотрим бэкграунд
+	adds r7, #128         // сдвигаемся к инверсной таблице
+	mov r5, r12             // восстанавливаем бг+цвет
+	lsrs r5, #6             // выталкиваем 4 бита цвета + синий и зелёный биты бэка
+	lsls r5, #31            // маска красного для бэкграунда
+	bne 3f                  // Zero == 0 (не ноль)
+	subs r7, #128         // возвращаемся на основную цветовую схему
     lsrs r4, #8             // если ноль (нет красного), то зануляем символ, сдвинув все значащие биты вправо
 3:
 	lsls r4, #4             // умножить на 16 (высота шрифта)
@@ -1078,6 +1136,23 @@ tmds_64c_table_r:
 	.word 0x7fe00, 0xbfe00  // 1101
 	.word 0xbfd00, 0xbfe00  // 1110
 	.word 0xbfe00, 0xbfe00  // 1111
+ // revers color for background
+	.word 0xbfe00, 0xbfe00  // 0000
+	.word 0xbfd00, 0xbfe00  // 0001
+	.word 0x7fe00, 0xbfe00  // 0010
+	.word 0x7fd00, 0xbfe00  // 0011
+	.word 0xbfe00, 0xbfd00  // 0100
+	.word 0xbfd00, 0xbfd00  // 0101
+	.word 0x7fe00, 0xbfd00  // 0110
+	.word 0x7fd00, 0xbfd00  // 0111
+	.word 0xbfe00, 0x7fe00  // 1000
+	.word 0xbfd00, 0x7fe00  // 1001
+	.word 0x7fe00, 0x7fe00  // 1010
+	.word 0x7fd00, 0x7fe00  // 1011
+	.word 0xbfe00, 0x7fd00  // 1100
+	.word 0xbfd00, 0x7fd00  // 1101
+	.word 0x7fe00, 0x7fd00  // 1110
+	.word 0x7fd00, 0x7fd00  // 1111
 
 // ----------------------------------------------------------------------------
 // Full-resolution RGB encode (not very practical)

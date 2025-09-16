@@ -656,25 +656,6 @@ static void __not_in_flash() flash_timings() {
 }
 #endif
 
-static const color_schema_t color_schema_dvi = {
-   /*BACKGROUND_FIELD_COLOR =*/ 0, // Black
-   /*FOREGROUND_FIELD_COLOR =*/ 7, // White
-   /*HIGHLIGHTED_FIELD_COLOR=*/ 0b100, // Red
-
-   /*BACKGROUND_F1_10_COLOR =*/ 0, // Black
-   /*FOREGROUND_F1_10_COLOR =*/ 7,
-
-   /*BACKGROUND_F_BTN_COLOR =*/ 0b010, // Green
-   /*FOREGROUND_F_BTN_COLOR =*/ 0, // Black
- 
-   /*BACKGROUND_CMD_COLOR =*/ 0, // Black
-   /*FOREGROUND_CMD_COLOR =*/ 7, // White
-   /*BACKGROUND_SEL_BTN_COLOR*/ 0, // Black
-  
-   /*FOREGROUND_SELECTED_COLOR =*/ 0b010, // Green
-   /*BACKGROUND_SELECTED_COLOR =*/ 0, // Black
-};
-
 int main() {
 #if !PICO_RP2040
 	vreg_disable_voltage_limit();
@@ -736,7 +717,6 @@ int main() {
     if (!SELECT_VGA) {
         dvi0.timing = &DVI_TIMING;
         dvi0.ser_cfg = DVI_DEFAULT_SERIAL_CONFIG;
-        set_color_schema(&color_schema_dvi);
     }
 
     sem_init(&vga_start_semaphore, 0, 1);
