@@ -343,58 +343,60 @@ static int MAX_Z = 24;
 static int z_idx = 0;
 static bool blink = false;
 static void in_conf() {
+    int x = 2; // was 13
+    int y = 2; // was 12
     if (z_idx > 8) {
-        draw_label(13, 12, 64, "Use SPACE to start edit, after that any key to set, ESC to exit", false, true);
+        draw_label(x, y, 64, "Use SPACE to start edit, after that any key to set, ESC to exit", false, true);
     } else {
-        draw_label(13, 12, 64, "Use TAB to select, SPACE to change, ENTER to apply, ESC to exit", false, true);
+        draw_label(x, y, 64, "Use TAB to select, SPACE to change, ENTER to apply, ESC to exit", false, true);
     }
-    draw_panel(15, 13, 24, 7, "mode:", 0);
+    draw_panel(x+2, y+1, 24, 7, "mode:", 0);
     for (int i = 0; i < 5; ++i) {
         bool selected = g_conf.bk0010mode == i;
-        draw_label(16, 14 + i, 21, bk_mode_lns[i].txt, selected, selected && z_idx == 0);
+        draw_label(x+3, y+2 + i, 21, bk_mode_lns[i].txt, selected, selected && z_idx == 0);
     }
-    draw_label(15, 21, 23, "          is_covox_on:", false, z_idx == 1);
-    draw_label(15, 22, 23, "             is_AY_on:", false, z_idx == 2);
-    draw_label(15, 23, 23, "           color_mode:", false, z_idx == 3);
-    draw_label(15, 24, 23, "           snd_volume:", false, z_idx == 4);
-    draw_label(15, 25, 23, "graphics_pallette_idx:", false, z_idx == 5);
-    draw_label(15, 26, 23, " is_swap_wins_enabled:", false, z_idx == 6);
-    draw_label(15, 27, 23, "    is_dendy_joystick:", false, z_idx == 7);
-    draw_label(15, 28, 23, "      is_kbd_joystick:", false, z_idx == 8);
+    draw_label(x+2, y+9, 23, "          is_covox_on:", false, z_idx == 1);
+    draw_label(x+2, y+10, 23, "             is_AY_on:", false, z_idx == 2);
+    draw_label(x+2, y+11, 23, "           color_mode:", false, z_idx == 3);
+    draw_label(x+2, y+12, 23, "           snd_volume:", false, z_idx == 4);
+    draw_label(x+2, y+13, 23, "graphics_pallette_idx:", false, z_idx == 5);
+    draw_label(x+2, y+14, 23, " is_swap_wins_enabled:", false, z_idx == 6);
+    draw_label(x+2, y+15, 23, "    is_dendy_joystick:", false, z_idx == 7);
+    draw_label(x+2, y+16, 23, "      is_kbd_joystick:", false, z_idx == 8);
 
     if (is_kbd_joystick) {
-        draw_label(15, 29, 23, "            kbdpad1_A:", false, z_idx == 9);
-        draw_label(15, 30, 23, "            kbdpad1_B:", false, z_idx == 10);
-        draw_label(15, 31, 23, "        kbdpad1_START:", false, z_idx == 11);
-        draw_label(15, 32, 23, "       kbdpad1_SELECT:", false, z_idx == 12);
-        draw_label(15, 33, 23, "           kbdpad1_UP:", false, z_idx == 13);
-        draw_label(15, 34, 23, "         kbdpad1_DOWN:", false, z_idx == 14);
-        draw_label(15, 35, 23, "         kbdpad1_LEFT:", false, z_idx == 15);
-        draw_label(15, 36, 23, "        kbdpad1_RIGHT:", false, z_idx == 16);
+        draw_label(x+2, y+17, 23, "            kbdpad1_A:", false, z_idx == 9);
+        draw_label(x+2, y+18, 23, "            kbdpad1_B:", false, z_idx == 10);
+        draw_label(x+2, y+19, 23, "        kbdpad1_START:", false, z_idx == 11);
+        draw_label(x+2, y+20, 23, "       kbdpad1_SELECT:", false, z_idx == 12);
+        draw_label(x+2, y+21, 23, "           kbdpad1_UP:", false, z_idx == 13);
+        draw_label(x+2, y+22, 23, "         kbdpad1_DOWN:", false, z_idx == 14);
+        draw_label(x+2, y+23, 23, "         kbdpad1_LEFT:", false, z_idx == 15);
+        draw_label(x+2, y+24, 23, "        kbdpad1_RIGHT:", false, z_idx == 16);
 
-        draw_label(45, 29, 23, "            kbdpad2_A:", false, z_idx == 17);
-        draw_label(45, 30, 23, "            kbdpad2_B:", false, z_idx == 18);
-        draw_label(45, 31, 23, "        kbdpad2_START:", false, z_idx == 19);
-        draw_label(45, 32, 23, "       kbdpad2_SELECT:", false, z_idx == 20);
-        draw_label(45, 33, 23, "           kbdpad2_UP:", false, z_idx == 21);
-        draw_label(45, 34, 23, "         kbdpad2_DOWN:", false, z_idx == 22);
-        draw_label(45, 35, 23, "         kbdpad2_LEFT:", false, z_idx == 23);
-        draw_label(45, 36, 23, "        kbdpad2_RIGHT:", false, z_idx == 24);
+        draw_label(x+32, y+17, 23, "            kbdpad2_A:", false, z_idx == 17);
+        draw_label(x+32, y+18, 23, "            kbdpad2_B:", false, z_idx == 18);
+        draw_label(x+32, y+19, 23, "        kbdpad2_START:", false, z_idx == 19);
+        draw_label(x+32, y+20, 23, "       kbdpad2_SELECT:", false, z_idx == 20);
+        draw_label(x+32, y+21, 23, "           kbdpad2_UP:", false, z_idx == 21);
+        draw_label(x+32, y+22, 23, "         kbdpad2_DOWN:", false, z_idx == 22);
+        draw_label(x+32, y+23, 23, "         kbdpad2_LEFT:", false, z_idx == 23);
+        draw_label(x+32, y+24, 23, "        kbdpad2_RIGHT:", false, z_idx == 24);
     }
 
     const static char b_on [2] = { 0xFB, 0 };
     const static char b_off[2] = { 0xB0, 0 };
-    draw_label(38, 21, 1, g_conf.is_covox_on ? b_on : b_off, z_idx == 1, z_idx == 1);
-    draw_label(38, 22, 1, g_conf.is_AY_on ? b_on : b_off, z_idx == 2, z_idx == 2);
-    draw_label(38, 23, 1, g_conf.color_mode ? b_on : b_off, z_idx == 3, z_idx == 3);
+    draw_label(x+25, y+9, 1, g_conf.is_covox_on ? b_on : b_off, z_idx == 1, z_idx == 1);
+    draw_label(x+25, y+10, 1, g_conf.is_AY_on ? b_on : b_off, z_idx == 2, z_idx == 2);
+    draw_label(x+25, y+11, 1, g_conf.color_mode ? b_on : b_off, z_idx == 3, z_idx == 3);
     char b[64] = { 0 };
     snprintf(b, 8, "%d", g_conf.snd_volume);
-    draw_label(38, 24, 3, b, z_idx == 4, z_idx == 4);
+    draw_label(x+25, y+12, 3, b, z_idx == 4, z_idx == 4);
     snprintf(b, 4, "%d", g_conf.graphics_pallette_idx);
-    draw_label(38, 25, 3, b, z_idx == 5, z_idx == 5);
-    draw_label(38, 26, 1, is_swap_wins_enabled ? b_on : b_off, z_idx == 6, z_idx == 6);
-    draw_label(38, 27, 1, is_dendy_joystick ? b_on : b_off, z_idx == 7, z_idx == 7);
-    draw_label(38, 28, 1, is_kbd_joystick ? b_on : b_off, z_idx == 8, z_idx == 8);
+    draw_label(x+25, y+13, 3, b, z_idx == 5, z_idx == 5);
+    draw_label(x+25, y+14, 1, is_swap_wins_enabled ? b_on : b_off, z_idx == 6, z_idx == 6);
+    draw_label(x+25, y+15, 1, is_dendy_joystick ? b_on : b_off, z_idx == 7, z_idx == 7);
+    draw_label(x+25, y+16, 1, is_kbd_joystick ? b_on : b_off, z_idx == 8, z_idx == 8);
 
     uint8_t nk = nespad_state | kbdpad_state;
     snprintf(b, 64, "Joy bits #1: %d%d%d%d%d%d%d%d #2: %d%d%d%d%d%d%d%d",
@@ -415,46 +417,46 @@ static void in_conf() {
         (kbdpad_state2 >> 1) & 1,
          kbdpad_state2 & 1
     );
-    draw_label(68, 13, 45, b, false, false);
+    draw_label(x+55, y+1, 35, b, false, false);
 
-    snprintf(b, 64, "CPU Freq: %d", g_conf.cpu_freq);
-    draw_label(68, 14, 45, b, false, false);
+    snprintf(b, 64, "BK CPU Freq: %d MHz", (g_conf.cpu_freq / 1000000));
+    draw_label(x+55, y+2, 35, b, false, false);
 
     if (is_kbd_joystick) {
         MAX_Z = 24;
         snprintf(b, 8, "%d", kbdpad1_A);
-        draw_label(38, 29, 3, b, !blink && z_idx == 9, confEditMode && z_idx == 9);
+        draw_label(x+25, y+17, 3, b, !blink && z_idx == 9, confEditMode && z_idx == 9);
         snprintf(b, 8, "%d", kbdpad1_B);
-        draw_label(38, 30, 3, b, !blink && z_idx == 10, confEditMode && z_idx == 10);
+        draw_label(x+25, y+18, 3, b, !blink && z_idx == 10, confEditMode && z_idx == 10);
         snprintf(b, 8, "%d", kbdpad1_START);
-        draw_label(38, 31, 3, b, !blink && z_idx == 11, confEditMode && z_idx == 11);
+        draw_label(x+25, y+19, 3, b, !blink && z_idx == 11, confEditMode && z_idx == 11);
         snprintf(b, 8, "%d", kbdpad1_SELECT);
-        draw_label(38, 32, 3, b, !blink && z_idx == 12, confEditMode && z_idx == 12);
+        draw_label(x+25, y+20, 3, b, !blink && z_idx == 12, confEditMode && z_idx == 12);
         snprintf(b, 8, "%d", kbdpad1_UP);
-        draw_label(38, 33, 3, b, !blink && z_idx == 13, confEditMode && z_idx == 13);
+        draw_label(x+25, y+21, 3, b, !blink && z_idx == 13, confEditMode && z_idx == 13);
         snprintf(b, 8, "%d", kbdpad1_DOWN);
-        draw_label(38, 34, 3, b, !blink && z_idx == 14, confEditMode && z_idx == 14);
+        draw_label(x+25, y+22, 3, b, !blink && z_idx == 14, confEditMode && z_idx == 14);
         snprintf(b, 8, "%d", kbdpad1_LEFT);
-        draw_label(38, 35, 3, b, !blink && z_idx == 15, confEditMode && z_idx == 15);
+        draw_label(x+25, y+23, 3, b, !blink && z_idx == 15, confEditMode && z_idx == 15);
         snprintf(b, 8, "%d", kbdpad1_RIGHT);
-        draw_label(38, 36, 3, b, !blink && z_idx == 16, confEditMode && z_idx == 16);
+        draw_label(x+25, y+24, 3, b, !blink && z_idx == 16, confEditMode && z_idx == 16);
 
         snprintf(b, 8, "%d", kbdpad2_A);
-        draw_label(68, 29, 3, b, !blink && z_idx == 17, confEditMode && z_idx == 17);
+        draw_label(x+55, y+17, 3, b, !blink && z_idx == 17, confEditMode && z_idx == 17);
         snprintf(b, 8, "%d", kbdpad2_B);
-        draw_label(68, 30, 3, b, !blink && z_idx == 18, confEditMode && z_idx == 18);
+        draw_label(x+55, y+18, 3, b, !blink && z_idx == 18, confEditMode && z_idx == 18);
         snprintf(b, 8, "%d", kbdpad2_START);
-        draw_label(68, 31, 3, b, !blink && z_idx == 19, confEditMode && z_idx == 19);
+        draw_label(x+55, y+19, 3, b, !blink && z_idx == 19, confEditMode && z_idx == 19);
         snprintf(b, 8, "%d", kbdpad2_SELECT);
-        draw_label(68, 32, 3, b, !blink && z_idx == 20, confEditMode && z_idx == 20);
+        draw_label(x+55, y+20, 3, b, !blink && z_idx == 20, confEditMode && z_idx == 20);
         snprintf(b, 8, "%d", kbdpad2_UP);
-        draw_label(68, 33, 3, b, !blink && z_idx == 21, confEditMode && z_idx == 21);
+        draw_label(x+55, y+21, 3, b, !blink && z_idx == 21, confEditMode && z_idx == 21);
         snprintf(b, 8, "%d", kbdpad2_DOWN);
-        draw_label(68, 34, 3, b, !blink && z_idx == 22, confEditMode && z_idx == 22);
+        draw_label(x+55, y+22, 3, b, !blink && z_idx == 22, confEditMode && z_idx == 22);
         snprintf(b, 8, "%d", kbdpad2_LEFT);
-        draw_label(68, 35, 3, b, !blink && z_idx == 23, confEditMode && z_idx == 23);
+        draw_label(x+55, y+23, 3, b, !blink && z_idx == 23, confEditMode && z_idx == 23);
         snprintf(b, 8, "%d", kbdpad2_RIGHT);
-        draw_label(68, 36, 3, b, !blink && z_idx == 24, confEditMode && z_idx == 24);
+        draw_label(x+55, y+24, 3, b, !blink && z_idx == 24, confEditMode && z_idx == 24);
     } else {
         MAX_Z = 8;
     }
