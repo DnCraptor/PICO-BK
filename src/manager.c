@@ -103,8 +103,8 @@ void scan_code_cleanup() {
   lastSavedScanCode = 0;
   lastCleanableScanCode = 0;
 }
-static bool m_prompt(const char* txt, size_t shift_y);
-static bool m_prompt_ex(const char* txt, const char* bottom, size_t shift_y);
+static bool m_prompt(const char* txt);
+static bool m_prompt_ex(const char* txt, const char* bottom);
 
 const static const uint8_t PANEL_TOP_Y = 0;
 #define TOTAL_SCREEN_LINES text_buffer_height
@@ -342,9 +342,7 @@ static const line_t bk_mode_lns[] = {
 static int MAX_Z = 24;
 static int z_idx = 0;
 static bool blink = false;
-static void in_conf() {
-    int x = 2; // was 13
-    int y = 2; // was 12
+static void in_conf(int x, int y) {
     if (z_idx > 8) {
         draw_label(x, y, 64, "Use SPACE to start edit, after that any key to set, ESC to exit", false, true);
     } else {
@@ -525,8 +523,10 @@ static void saveConf() {
 }
 
 static void conf_it(uint8_t cmd) {
-    draw_panel(1, 1, text_buffer_width - 2, text_buffer_height - 2, "Startup configuration", 0);
-    in_conf();
+    int x = (text_buffer_width - 100) / 2;
+    int y = (text_buffer_height - 18) / 2;
+    draw_panel(x, y, 100, 18, "Startup configuration", 0);
+    in_conf(x, y);
     uint16_t prev_nespad_state = 0;
     while(1) {
         if (confEditMode && lastCleanableScanCode && lastCleanableScanCode != 0xB9 /* SPACE down */) {
@@ -559,12 +559,12 @@ static void conf_it(uint8_t cmd) {
             tabPressed = false;
             spacePressed = false;
             blink = false;
-            in_conf();
+            in_conf(x, y);
         }
         if (confEditMode) {
             blink = !blink;
             sleep_ms(250);
-            in_conf();
+            in_conf(x, y);
         }
         if (is_dendy_joystick || is_kbd_joystick) {
             if (is_dendy_joystick) nespad_read();
@@ -592,9 +592,9 @@ static void conf_it(uint8_t cmd) {
         if (escPressed) break;
         if (enterPressed) {
             enterPressed = false;
-            if (!m_prompt_ex("Save and reboot?", "Hold ALT - noreboot", 10)) {
-                draw_panel(1, 1, text_buffer_width - 2, text_buffer_height - 2, "Startup configuration", 0);
-                in_conf();
+            if (!m_prompt_ex("Save and reboot?", "Hold ALT - noreboot")) {
+                draw_panel(x, y, 100, 18, "Startup configuration", 0);
+                in_conf(x, y);
                 continue;
             }
             saveConf();
@@ -613,7 +613,7 @@ static void conf_it(uint8_t cmd) {
             } else {
                 if (--z_idx < 0) z_idx = 0;
             }
-            in_conf();
+            in_conf(x, y);
         }
         if (downPressed) {
             downPressed = false;
@@ -625,13 +625,13 @@ static void conf_it(uint8_t cmd) {
             } else {
                 if (++z_idx > MAX_Z) z_idx = MAX_Z;
             }
-            in_conf();
+            in_conf(x, y);
         }
         if (tabPressed) {
             tabPressed = false;
             z_idx++;
             if (z_idx > MAX_Z) z_idx = 0;
-            in_conf();
+            in_conf(x, y);
         }
         if (spacePressed) {
             spacePressed = false;
@@ -668,10 +668,10 @@ static void conf_it(uint8_t cmd) {
               is_kbd_joystick = !is_kbd_joystick;
               break;
             }
-            in_conf();
+            in_conf(x, y);
         }
         if (nespad_state || kbdpad_state || kbdpad_state2 || prev_nespad_state) {
-            in_conf();
+            in_conf(x, y);
             prev_nespad_state = ((uint16_t)(nespad_state | kbdpad_state) << 8) | kbdpad_state2;
         }
     }
@@ -686,8 +686,8 @@ typedef struct drive_state {
 static drive_state_t drives_states[4] = {
     { { 0 }, "FDD0" },
     { { 0 }, "FDD1" },
-    { { 0 }, "HDD0" },
-    { { 0 }, "HDD1" }
+    { { 0 }, "FDD2" },
+    { { 0 }, "FDD3" }
 };
 
 void notify_image_insert_action(uint8_t drivenum, char *pathname) {
@@ -886,19 +886,20 @@ inline static void no_selected_file() {
     redraw_window();
 }
 
-static bool m_prompt(const char* txt, size_t shift_y) {
-    return m_prompt_ex(txt, 0, shift_y);
+static bool m_prompt(const char* txt) {
+    return m_prompt_ex(txt, 0);
 }
 
-static bool m_prompt_ex(const char* txt, const char* bottom, size_t shift_y) {
-        const line_t lns[1] = {
+static bool m_prompt_ex(const char* txt, const char* bottom) {
+    const line_t lns[1] = {
         { -1, txt },
     };
     const lines_t lines = { 1, 2, lns };
-    draw_box_ex((text_buffer_width - 60) / 2, 7 + shift_y, 60, 10, "Are you sure?", bottom, &lines);
+    int y = (text_buffer_height - 10) / 2;
+    draw_box_ex((text_buffer_width - 60) / 2, y, 60, 10, "Are you sure?", bottom, &lines);
     bool yes = true;
-    draw_button((text_buffer_width - 60) / 2 + 16, 12 + shift_y, 11, "Yes", yes);
-    draw_button((text_buffer_width - 60) / 2 + 35, 12 + shift_y, 10, "No", !yes);
+    draw_button((text_buffer_width - 60) / 2 + 16, 5 + y, 11, "Yes", yes);
+    draw_button((text_buffer_width - 60) / 2 + 35, 5 + y, 10, "No", !yes);
     while(1) {
         if (is_dendy_joystick || is_kbd_joystick) {
             if (is_dendy_joystick) nespad_read();
@@ -932,8 +933,8 @@ static bool m_prompt_ex(const char* txt, const char* bottom, size_t shift_y) {
         }
         if (tabPressed || leftPressed || rightPressed) { // TODO: own msgs cycle
             yes = !yes;
-            draw_button((text_buffer_width - 60) / 2 + 16, 12 + shift_y, 11, "Yes", yes);
-            draw_button((text_buffer_width - 60) / 2 + 35, 12 + shift_y, 10, "No", !yes);
+            draw_button((text_buffer_width - 60) / 2 + 16, 5 + y, 11, "Yes", yes);
+            draw_button((text_buffer_width - 60) / 2 + 35, 5 + y, 10, "No", !yes);
             tabPressed = leftPressed = rightPressed = false;
             scan_code_cleanup();
         }
@@ -985,7 +986,7 @@ static void m_delete_file(uint8_t cmd) {
     }
     char path[256];
     snprintf(path, 256, "Remove %s %s?", fp->name, fp->fattrib & AM_DIR ? "folder" : "file");
-    if (m_prompt(path, 0)) {
+    if (m_prompt(path)) {
         construct_full_name(path, psp->path, fp->name);
         FRESULT result = fp->fattrib & AM_DIR ? m_unlink_recursive(path) : f_unlink(path);
         if (result != FR_OK) {
@@ -1076,7 +1077,7 @@ static void m_copy_file(uint8_t cmd) {
     char path[256];
     file_panel_desc_t* dsp = psp == &left_panel ? &right_panel : &left_panel;
     snprintf(path, 256, "Copy %s %s to %s?", fp->name, fp->fattrib & AM_DIR ? "folder" : "file", dsp->path);
-    if (m_prompt(path, 0)) { // TODO: ask name
+    if (m_prompt(path)) { // TODO: ask name
         construct_full_name(path, psp->path, fp->name);
         char dest[256];
         construct_full_name(dest, dsp->path, fp->name);
@@ -1181,7 +1182,7 @@ static void m_move_file(uint8_t cmd) {
     char path[256];
     file_panel_desc_t* dsp = psp == &left_panel ? &right_panel : &left_panel;
     snprintf(path, 256, "Move %s %s to %s?", fp->name, fp->fattrib & AM_DIR ? "folder" : "file", dsp->path);
-    if (m_prompt(path, 0)) { // TODO: ask name
+    if (m_prompt(path)) { // TODO: ask name
         construct_full_name(path, psp->path, fp->name);
         char dest[256];
         construct_full_name(dest, dsp->path, fp->name);
@@ -1547,7 +1548,7 @@ static inline void fill_panel(file_panel_desc_t* p) {
 #if EXT_DRIVES_MOUNT
             if (!p->in_dos)
 #endif
-            for (int i = 0; i < 4; ++i) { // mark mounted drived by labels FDD0,FDD1,HDD0...
+            for (int i = 0; i < 4; ++i) { // mark mounted drived by labels FDD0,FDD1,FDD2,FDD3...
                 if (drives_states[i].path && strncmp(drives_states[i].path, line, text_buffer_width) == 0) {
                     snprintf(line, p->width, "%s", fp->name);
                     for (int j = strlen(fp->name); j < p->width - 6; ++j) {
@@ -1762,8 +1763,8 @@ static inline bool run_bin(char* path) {
 static const line_t drive_num_lns[] = {
     { -1, " FDD0 (A:) " },
     { -1, " FDD1 (B:) " },
-    { -1, " HDD0 (C:) " },
-    { -1, " HDD1 (D:) " }
+    { -1, " FDD2 (C:) " },
+    { -1, " FDD3 (D:) " }
 };
 
 static inline bool run_img(char* path) {
