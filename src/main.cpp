@@ -81,9 +81,9 @@ uint32_t __aligned(4) blank[DWORDS_PER_PLANE * 3];
 //uint32_t __aligned(4) last[DWORDS_PER_PLANE * 3];
 static semaphore_t vga_start_semaphore;
 
-extern "C" uint64_t tmds_2bpp_table_bk_b[16];
-extern "C" uint64_t tmds_2bpp_table_bk_g[16];
-extern "C" uint64_t tmds_2bpp_table_bk_r[16];
+extern "C" uint64_t tmds_2bpp_table_bk_b[16];   // только 01 - пиксель
+extern "C" uint64_t tmds_2bpp_table_bk_g[16];   // только 10 - пиксель
+extern "C" uint64_t tmds_2bpp_table_bk_r[16];   // только 11 - пиксель
 extern "C" uint64_t tmds_2bpp_table_bk_any[16]; // пиксель 01, 10 и 11, 00 - нет пикселя
 extern "C" uint64_t tmds_2bpp_table_bk_n11[16]; // пиксель только 01 и 10, 00 и 11 - нет пикселя
 extern "C" uint64_t tmds_2bpp_table_bk_n10[16]; // пиксель только 01 и 11, 00 и 10 - нет пикселя
@@ -99,7 +99,7 @@ const static tmds_2bpp_tables_bk_t tmds_2bpp_tables_bk[16] = {
     { tmds_2bpp_table_bk_g  , tmds_2bpp_table_bk_b  , tmds_2bpp_table_bk_any }, //  1 чёрный-жёлтый-пурпур-красный
     { tmds_2bpp_table_bk_b  , tmds_2bpp_table_bk_n11, tmds_2bpp_table_bk_r   }, //  2 чёрный-циан-синий-пурпур
     { tmds_2bpp_table_bk_b  , tmds_2bpp_table_bk_any, tmds_2bpp_table_bk_r   }, //  3 чёрный-зелёный-циан-жёлтый
-    { tmds_2bpp_table_bk_b  , tmds_2bpp_table_bk_g  , tmds_2bpp_table_bk_r   }, //  4 чёрный-пурпур-циан-белый (todo)
+    { tmds_2bpp_table_bk_any, tmds_2bpp_table_bk_g  , tmds_2bpp_table_bk_n10 }, //  4 чёрный-пурпур-циан-белый (todo)
     { tmds_2bpp_table_bk_any, tmds_2bpp_table_bk_any, tmds_2bpp_table_bk_any }, //  5 чёрный-белый-белый-белый
     { tmds_2bpp_table_bk_b  , tmds_2bpp_table_bk_g  , tmds_2bpp_table_bk_r   }, //  6
     { tmds_2bpp_table_bk_b  , tmds_2bpp_table_bk_g  , tmds_2bpp_table_bk_r   }, //  7
