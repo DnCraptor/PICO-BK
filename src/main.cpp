@@ -86,6 +86,36 @@ extern "C" uint64_t tmds_2bpp_table_bk_g[16];
 extern "C" uint64_t tmds_2bpp_table_bk_r[16];
 extern "C" uint64_t tmds_2bpp_table_bk_any[16]; // пиксель 01, 10 и 11, 00 - нет пикселя
 extern "C" uint64_t tmds_2bpp_table_bk_n11[16]; // пиксель только 01 и 10, 00 и 11 - нет пикселя
+extern "C" uint64_t tmds_2bpp_table_bk_n10[16]; // пиксель только 01 и 11, 00 и 10 - нет пикселя
+
+typedef struct tmds_2bpp_tables_bk_s {
+    uint64_t* b;
+    uint64_t* g;
+    uint64_t* r;
+} tmds_2bpp_tables_bk_t;
+
+const static tmds_2bpp_tables_bk_t tmds_2bpp_tables_bk[16] = {
+    { tmds_2bpp_table_bk_b  , tmds_2bpp_table_bk_g  , tmds_2bpp_table_bk_r   }, //  0 чёрный-синий-зелёный-красный
+    { tmds_2bpp_table_bk_g  , tmds_2bpp_table_bk_b  , tmds_2bpp_table_bk_any }, //  1 чёрный-жёлтый-пурпур-красный
+    { tmds_2bpp_table_bk_b  , tmds_2bpp_table_bk_n11, tmds_2bpp_table_bk_r   }, //  2 чёрный-циан-синий-пурпур
+    { tmds_2bpp_table_bk_b  , tmds_2bpp_table_bk_any, tmds_2bpp_table_bk_r   }, //  3 чёрный-зелёный-циан-жёлтый
+    { tmds_2bpp_table_bk_b  , tmds_2bpp_table_bk_g  , tmds_2bpp_table_bk_r   }, //  4 чёрный-пурпур-циан-белый (todo)
+    { tmds_2bpp_table_bk_any, tmds_2bpp_table_bk_any, tmds_2bpp_table_bk_any }, //  5 чёрный-белый-белый-белый
+    { tmds_2bpp_table_bk_b  , tmds_2bpp_table_bk_g  , tmds_2bpp_table_bk_r   }, //  6
+    { tmds_2bpp_table_bk_b  , tmds_2bpp_table_bk_g  , tmds_2bpp_table_bk_r   }, //  7
+    { tmds_2bpp_table_bk_b  , tmds_2bpp_table_bk_g  , tmds_2bpp_table_bk_r   }, //  8
+    { tmds_2bpp_table_bk_b  , tmds_2bpp_table_bk_g  , tmds_2bpp_table_bk_r   }, //  9
+    { tmds_2bpp_table_bk_b  , tmds_2bpp_table_bk_g  , tmds_2bpp_table_bk_r   }, // 10
+    { tmds_2bpp_table_bk_b  , tmds_2bpp_table_bk_g  , tmds_2bpp_table_bk_r   }, // 11
+    { tmds_2bpp_table_bk_b  , tmds_2bpp_table_bk_g  , tmds_2bpp_table_bk_r   }, // 12
+    { tmds_2bpp_table_bk_b  , tmds_2bpp_table_bk_g  , tmds_2bpp_table_bk_r   }, // 13
+    { tmds_2bpp_table_bk_b  , tmds_2bpp_table_bk_g  , tmds_2bpp_table_bk_r   }, // 14
+    { tmds_2bpp_table_bk_b  , tmds_2bpp_table_bk_g  , tmds_2bpp_table_bk_r   }, // 15
+};
+
+#define tmds_encode_2bpp_bk_b(t) tmds_encode_2bpp_bk(bk_page, tmdsbuf, t)
+#define tmds_encode_2bpp_bk_g(t) tmds_encode_2bpp_bk(bk_page, tmdsbuf + DWORDS_PER_PLANE, t)
+#define tmds_encode_2bpp_bk_r(t) tmds_encode_2bpp_bk(bk_page, tmdsbuf + 2 * DWORDS_PER_PLANE, t)
 
 static void __not_in_flash() dvi_on_core1() {
 	for (int i = 0; i < sizeof(blank) / sizeof(blank[0]); ++i) {
@@ -117,57 +147,17 @@ static void __not_in_flash() dvi_on_core1() {
                     memcpy(tmdsbuf, blank, sizeof(blank));
                     queue_add_blocking_u32(&dvi0.q_tmds_valid, &tmdsbuf);
                 }
-                switch(g_conf.graphics_pallette_idx) {
-                    case 1: // чёрный-жёлтый-пурпур-красный
-                        for (uint y = 0; y < g_conf.graphics_buffer_height; ++y, ++total_y) {
-                            register uint32_t* bk_page = (uint32_t*)get_graphics_buffer(y);
-                            queue_remove_blocking_u32(&dvi0.q_tmds_free, &tmdsbuf);
-                            tmds_encode_2bpp_bk(bk_page, tmdsbuf, tmds_2bpp_table_bk_g);
-                            tmds_encode_2bpp_bk(bk_page, tmdsbuf + DWORDS_PER_PLANE, tmds_2bpp_table_bk_b);
-                            tmds_encode_2bpp_bk(bk_page, tmdsbuf + DWORDS_PER_PLANE * 2, tmds_2bpp_table_bk_any);
-                            queue_add_blocking_u32(&dvi0.q_tmds_valid, &tmdsbuf);
-                        }
-                        break;
-                    case 2: // чёрный-циан-синий-пурпур
-                        for (uint y = 0; y < g_conf.graphics_buffer_height; ++y, ++total_y) {
-                            register uint32_t* bk_page = (uint32_t*)get_graphics_buffer(y);
-                            queue_remove_blocking_u32(&dvi0.q_tmds_free, &tmdsbuf);
-                            tmds_encode_2bpp_bk(bk_page, tmdsbuf, tmds_2bpp_table_bk_b);
-                            tmds_encode_2bpp_bk(bk_page, tmdsbuf + DWORDS_PER_PLANE, tmds_2bpp_table_bk_n11);
-                            tmds_encode_2bpp_bk(bk_page, tmdsbuf + DWORDS_PER_PLANE * 2, tmds_2bpp_table_bk_r);
-                            queue_add_blocking_u32(&dvi0.q_tmds_valid, &tmdsbuf);
-                        }
-                        break;
-                    case 3: // чёрный-зелёный-циан-жёлтый
-                        for (uint y = 0; y < g_conf.graphics_buffer_height; ++y, ++total_y) {
-                            register uint32_t* bk_page = (uint32_t*)get_graphics_buffer(y);
-                            queue_remove_blocking_u32(&dvi0.q_tmds_free, &tmdsbuf);
-                            tmds_encode_2bpp_bk(bk_page, tmdsbuf, tmds_2bpp_table_bk_b);
-                            tmds_encode_2bpp_bk(bk_page, tmdsbuf + DWORDS_PER_PLANE, tmds_2bpp_table_bk_any);
-                            tmds_encode_2bpp_bk(bk_page, tmdsbuf + DWORDS_PER_PLANE * 2, tmds_2bpp_table_bk_r);
-                            queue_add_blocking_u32(&dvi0.q_tmds_valid, &tmdsbuf);
-                        }
-                        break;
-
-                    case 5: // чёрный-белый-белый-белый
-                        for (uint y = 0; y < g_conf.graphics_buffer_height; ++y, ++total_y) {
-                            register uint32_t* bk_page = (uint32_t*)get_graphics_buffer(y);
-                            queue_remove_blocking_u32(&dvi0.q_tmds_free, &tmdsbuf);
-                            tmds_encode_2bpp_bk(bk_page, tmdsbuf, tmds_2bpp_table_bk_any);
-                            memcpy(tmdsbuf + DWORDS_PER_PLANE, tmdsbuf, BYTES_PER_PLANE);
-                            memcpy(tmdsbuf + DWORDS_PER_PLANE * 2, tmdsbuf, BYTES_PER_PLANE);
-                            queue_add_blocking_u32(&dvi0.q_tmds_valid, &tmdsbuf);
-                        }
-                        break;
-                    default: // actually fo 0 // чёрный-синий-зелёный-красный
-                        for (uint y = 0; y < g_conf.graphics_buffer_height; ++y, ++total_y) {
-                            register uint32_t* bk_page = (uint32_t*)get_graphics_buffer(y);
-                            queue_remove_blocking_u32(&dvi0.q_tmds_free, &tmdsbuf);
-                            tmds_encode_2bpp_bk(bk_page, tmdsbuf, tmds_2bpp_table_bk_b);
-                            tmds_encode_2bpp_bk(bk_page, tmdsbuf + DWORDS_PER_PLANE, tmds_2bpp_table_bk_g);
-                            tmds_encode_2bpp_bk(bk_page, tmdsbuf + DWORDS_PER_PLANE * 2, tmds_2bpp_table_bk_r);
-                            queue_add_blocking_u32(&dvi0.q_tmds_valid, &tmdsbuf);
-                        }
+                const tmds_2bpp_tables_bk_t& t = tmds_2bpp_tables_bk[g_conf.graphics_pallette_idx & 15];
+                uint64_t* b = t.b;
+                uint64_t* g = t.g;
+                uint64_t* r = t.r;
+                for (uint y = 0; y < g_conf.graphics_buffer_height; ++y, ++total_y) {
+                    register uint32_t* bk_page = (uint32_t*)get_graphics_buffer(y);
+                    queue_remove_blocking_u32(&dvi0.q_tmds_free, &tmdsbuf);
+                    tmds_encode_2bpp_bk_b(g);
+                    tmds_encode_2bpp_bk_g(b);
+                    tmds_encode_2bpp_bk_r(r);
+                    queue_add_blocking_u32(&dvi0.q_tmds_valid, &tmdsbuf);
                 }
                 *vsync_ptr = 1;
                 for (; total_y < FRAME_HEIGHT; ++total_y) {

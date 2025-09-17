@@ -341,6 +341,26 @@ tmds_2bpp_table_bk_any: // белый (любой бит не ноль)
 	.word 0xbfe00, 0xbfe00  // 1111 - два пикселя
 
 .align 2
+.global tmds_2bpp_table_bk_n10
+tmds_2bpp_table_bk_n10: // пиксель только 01 и 11, 00 и 10 - нет пикселя
+	.word 0x7fd00, 0x7fd00  // 0000 - нет пикселя
+	.word 0xbfe00, 0x7fd00  // 0001 - пиксель справа
+	.word 0x7fd00, 0xbfe00  // 0010 - пиксель слева
+	.word 0xbfe00, 0x7fd00  // 0011 - пиксель справа
+	.word 0x7fd00, 0xbfe00  // 0100 - пиксель слева
+	.word 0xbfe00, 0xbfe00  // 0101 - два пикселя
+	.word 0x7fd00, 0xbfe00  // 0110 - пиксель слева
+	.word 0xbfe00, 0xbfe00  // 0111 - два пикселя
+	.word 0x7fd00, 0x7fd00  // 1000 - нет пикселя
+	.word 0xbfe00, 0x7fd00  // 1001 - пиксель справа
+	.word 0x7fd00, 0x7fd00  // 1010 - нет пикселя
+	.word 0xbfe00, 0xbfe00  // 1011 - два пикселя
+	.word 0x7fd00, 0xbfe00  // 1100 - пиксель слева
+	.word 0xbfe00, 0xbfe00  // 1101 - два пикселя
+	.word 0x7fd00, 0xbfe00  // 1110 - пиксель слева
+	.word 0xbfe00, 0xbfe00  // 1111 - два пикселя
+
+.align 2
 .global tmds_2bpp_table_bk_n11
 tmds_2bpp_table_bk_n11: // пиксель только 01 и 10, 00 и 11 - нет пикселя
 	.word 0x7fd00, 0x7fd00  // 0000 - нет пикселя
@@ -360,47 +380,45 @@ tmds_2bpp_table_bk_n11: // пиксель только 01 и 10, 00 и 11 - не
 	.word 0x7fd00, 0xbfe00  // 1110 - пиксель слева
 	.word 0x7fd00, 0x7fd00  // 1111 - нет пикселя
 
-// перепутаны цвета зелёный и синий в каментах
+.align 2
+.global tmds_2bpp_table_bk_b
+tmds_2bpp_table_bk_b: // синий (0b01)
+	.word 0x7fd00, 0x7fd00  // 0000 - нет пикселя
+	.word 0xbfe00, 0x7fd00  // 0001 - один справа
+	.word 0x7fd00, 0x7fd00  // 0010 - нет пикселя
+	.word 0x7fd00, 0x7fd00  // 0011 - нет пикселя
+	.word 0x7fd00, 0xbfe00  // 0100 - один слева
+	.word 0xbfe00, 0xbfe00  // 0101 - два пикселя
+	.word 0x7fd00, 0xbfe00  // 0110 - один слева
+	.word 0x7fd00, 0xbfe00  // 0111 - один слева
+	.word 0x7fd00, 0x7fd00  // 1000 - нет пикселя
+	.word 0xbfe00, 0x7fd00  // 1001 - один справа
+	.word 0x7fd00, 0x7fd00  // 1010 - нет пикселя
+	.word 0x7fd00, 0x7fd00  // 1011 - нет пикселя
+	.word 0x7fd00, 0x7fd00  // 1100 - нет пикселя
+	.word 0xbfe00, 0x7fd00  // 1101 - один справа
+	.word 0x7fd00, 0x7fd00  // 1110 - нет пикселя
+	.word 0x7fd00, 0x7fd00  // 1111 - нет пикселя
 
 .align 2
 .global tmds_2bpp_table_bk_g
-tmds_2bpp_table_bk_g: // синий (0b10)
-	.word 0x7fd00, 0x7fd00  // 0000 - нет синего
-	.word 0x7fd00, 0x7fd00  // 0001 - нет синего
-	.word 0xbfe00, 0x7fd00  // 0010 - синий справа
-	.word 0x7fd00, 0x7fd00  // 0011 - нет синего
-	.word 0x7fd00, 0x7fd00  // 0100 - нет синего
-	.word 0x7fd00, 0x7fd00  // 0101 - нет синего
-	.word 0xbfe00, 0x7fd00  // 0110 - синий справа
-	.word 0x7fd00, 0x7fd00  // 0111 - нет синего
-	.word 0x7fd00, 0xbfe00  // 1000 - синий слева
-	.word 0x7fd00, 0xbfe00  // 1001 - синий слева
-	.word 0xbfe00, 0xbfe00  // 1010 - два синих
-	.word 0x7fd00, 0xbfe00  // 1011 - синий слева
-	.word 0x7fd00, 0x7fd00  // 1100 - нет синего
-	.word 0x7fd00, 0x7fd00  // 1101 - нет синего
-	.word 0xbfe00, 0x7fd00  // 1110 - синий справа
-	.word 0x7fd00, 0x7fd00  // 1111 - нет синего
-
-.align 2
-.global tmds_2bpp_table_bk_b
-tmds_2bpp_table_bk_b: // зелёный (0b01)
-	.word 0x7fd00, 0x7fd00  // 0000 - нет зелёного
-	.word 0xbfe00, 0x7fd00  // 0001 - один зелёный справа
-	.word 0x7fd00, 0x7fd00  // 0010 - нет зелёного
-	.word 0x7fd00, 0x7fd00  // 0011 - нет зелёного
-	.word 0x7fd00, 0xbfe00  // 0100 - один зелёный слева
-	.word 0xbfe00, 0xbfe00  // 0101 - два зелёных
-	.word 0x7fd00, 0xbfe00  // 0110 - один зелёный слева
-	.word 0x7fd00, 0xbfe00  // 0111 - один зелёный слева
-	.word 0x7fd00, 0x7fd00  // 1000 - нет зелёного
-	.word 0xbfe00, 0x7fd00  // 1001 - один зелёный справа
-	.word 0x7fd00, 0x7fd00  // 1010 - нет зелёного
-	.word 0x7fd00, 0x7fd00  // 1011 - нет зелёного
-	.word 0x7fd00, 0x7fd00  // 1100 - нет зелёного
-	.word 0xbfe00, 0x7fd00  // 1101 - один зелёный справа
-	.word 0x7fd00, 0x7fd00  // 1110 - нет зелёного
-	.word 0x7fd00, 0x7fd00  // 1111 - нет зелёного
+tmds_2bpp_table_bk_g: // зелёный (0b10)
+	.word 0x7fd00, 0x7fd00  // 0000 - нет пикселя
+	.word 0x7fd00, 0x7fd00  // 0001 - нет пикселя
+	.word 0xbfe00, 0x7fd00  // 0010 - пиксель справа
+	.word 0x7fd00, 0x7fd00  // 0011 - нет пикселя
+	.word 0x7fd00, 0x7fd00  // 0100 - нет пикселя
+	.word 0x7fd00, 0x7fd00  // 0101 - нет пикселя
+	.word 0xbfe00, 0x7fd00  // 0110 - пиксель справа
+	.word 0x7fd00, 0x7fd00  // 0111 - нет пикселя
+	.word 0x7fd00, 0xbfe00  // 1000 - пиксель слева
+	.word 0x7fd00, 0xbfe00  // 1001 - пиксель слева
+	.word 0xbfe00, 0xbfe00  // 1010 - два пикселя
+	.word 0x7fd00, 0xbfe00  // 1011 - пиксель слева
+	.word 0x7fd00, 0x7fd00  // 1100 - нет пикселя
+	.word 0x7fd00, 0x7fd00  // 1101 - нет пикселя
+	.word 0xbfe00, 0x7fd00  // 1110 - пиксель справа
+	.word 0x7fd00, 0x7fd00  // 1111 - нет пикселя
 
 .align 2
 .global tmds_2bpp_table_bk_r
