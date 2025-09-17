@@ -87,6 +87,7 @@ extern "C" uint64_t tmds_2bpp_table_bk_r[16];   // только 11 - пиксе�
 extern "C" uint64_t tmds_2bpp_table_bk_any[16]; // пиксель 01, 10 и 11, 00 - нет пикселя
 extern "C" uint64_t tmds_2bpp_table_bk_n11[16]; // пиксель только 01 и 10, 00 и 11 - нет пикселя
 extern "C" uint64_t tmds_2bpp_table_bk_n10[16]; // пиксель только 01 и 11, 00 и 10 - нет пикселя
+extern "C" uint64_t tmds_2bpp_table_bk_n01[16]; // пиксель только 10 и 11, 00 и 01 - нет пикселя
 
 typedef struct tmds_2bpp_tables_bk_s {
     uint64_t* b;
@@ -99,7 +100,7 @@ const static tmds_2bpp_tables_bk_t tmds_2bpp_tables_bk[16] = {
     { tmds_2bpp_table_bk_g  , tmds_2bpp_table_bk_b  , tmds_2bpp_table_bk_any }, //  1 чёрный-жёлтый-пурпур-красный
     { tmds_2bpp_table_bk_b  , tmds_2bpp_table_bk_n11, tmds_2bpp_table_bk_r   }, //  2 чёрный-циан-синий-пурпур
     { tmds_2bpp_table_bk_b  , tmds_2bpp_table_bk_any, tmds_2bpp_table_bk_r   }, //  3 чёрный-зелёный-циан-жёлтый
-    { tmds_2bpp_table_bk_any, tmds_2bpp_table_bk_g  , tmds_2bpp_table_bk_n10 }, //  4 чёрный-пурпур-циан-белый (todo)
+    { tmds_2bpp_table_bk_any, tmds_2bpp_table_bk_n01, tmds_2bpp_table_bk_n10 }, //  4 чёрный-пурпур-циан-белый (todo)
     { tmds_2bpp_table_bk_any, tmds_2bpp_table_bk_any, tmds_2bpp_table_bk_any }, //  5 чёрный-белый-белый-белый
     { tmds_2bpp_table_bk_b  , tmds_2bpp_table_bk_g  , tmds_2bpp_table_bk_r   }, //  6
     { tmds_2bpp_table_bk_b  , tmds_2bpp_table_bk_g  , tmds_2bpp_table_bk_r   }, //  7
@@ -154,8 +155,8 @@ static void __not_in_flash() dvi_on_core1() {
                 for (uint y = 0; y < g_conf.graphics_buffer_height; ++y, ++total_y) {
                     register uint32_t* bk_page = (uint32_t*)get_graphics_buffer(y);
                     queue_remove_blocking_u32(&dvi0.q_tmds_free, &tmdsbuf);
-                    tmds_encode_2bpp_bk_b(g);
-                    tmds_encode_2bpp_bk_g(b);
+                    tmds_encode_2bpp_bk_b(b);
+                    tmds_encode_2bpp_bk_g(g);
                     tmds_encode_2bpp_bk_r(r);
                     queue_add_blocking_u32(&dvi0.q_tmds_valid, &tmdsbuf);
                 }
