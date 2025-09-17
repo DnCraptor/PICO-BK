@@ -31,6 +31,7 @@ enum graphics_mode_t get_graphics_mode();
 extern bool SELECT_VGA;
 extern unsigned int text_buffer_width;
 extern unsigned int text_buffer_height;
+extern uint8_t* vsync_ptr;
 
 void graphics_set_textbuffer(uint8_t *buffer);
 

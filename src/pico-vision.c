@@ -6,22 +6,22 @@
 #include "vga.h"
 
 static const color_schema_t color_schema = {
-   /*BACKGROUND_FIELD_COLOR =*/ 1, // Blue
-   /*FOREGROUND_FIELD_COLOR =*/ 7, // White
-   /*HIGHLIGHTED_FIELD_COLOR=*/15, // LightWhite
+   /*BACKGROUND_FIELD_COLOR =*/0b0001, // Blue
+   /*FOREGROUND_FIELD_COLOR =*/0b0011, // White
+   /*HIGHLIGHTED_FIELD_COLOR=*/0b0111, // Marin
 
-   /*BACKGROUND_F1_10_COLOR =*/ 0, // Black
-   /*FOREGROUND_F1_10_COLOR =*/ 7, // White
+   /*BACKGROUND_F1_10_COLOR =*/0b0000, // Black
+   /*FOREGROUND_F1_10_COLOR =*/0b0111, // White
 
-   /*BACKGROUND_F_BTN_COLOR =*/ 3, // Green
-   /*FOREGROUND_F_BTN_COLOR =*/ 0, // Black
+   /*BACKGROUND_F_BTN_COLOR =*/0b0011, // Marin
+   /*FOREGROUND_F_BTN_COLOR =*/0b0000, // Black
  
-   /*BACKGROUND_CMD_COLOR =*/ 0, // Black
-   /*FOREGROUND_CMD_COLOR =*/ 7, // White
-  /*BACKGROUND_SEL_BTN_COLOR*/ 11, // Light Blue
+   /*BACKGROUND_CMD_COLOR   =*/0b0000, // Black
+   /*FOREGROUND_CMD_COLOR   =*/0b0011, // Marin
+   /*BACKGROUND_SEL_BTN_COLOR*/0b0111, // White
   
-   /*FOREGROUND_SELECTED_COLOR =*/ 0, // Black
-   /*BACKGROUND_SELECTED_COLOR =*/ 11, // Light Blue
+   /*FOREGROUND_SELECTED_COLOR =*/0b0000, // Black
+   /*BACKGROUND_SELECTED_COLOR =*/0b0111, // White
 };
 
 static const color_schema_t* pcs = &color_schema;

@@ -119,6 +119,7 @@ static void __not_in_flash() dvi_on_core1() {
                     tmds_encode_2bpp_bk_r(bk_page, tmdsbuf + DWORDS_PER_PLANE * 2, FRAME_WIDTH);
                     queue_add_blocking_u32(&dvi0.q_tmds_valid, &tmdsbuf);
                 }
+                *vsync_ptr = 1;
                 for (; total_y < FRAME_HEIGHT; ++total_y) {
                     queue_remove_blocking_u32(&dvi0.q_tmds_free, &tmdsbuf);
                     memcpy(tmdsbuf, blank, sizeof(blank));
@@ -141,6 +142,7 @@ static void __not_in_flash() dvi_on_core1() {
                     memcpy(tmdsbuf + 2 * DWORDS_PER_PLANE, tmdsbuf, BYTES_PER_PLANE);
                     queue_add_blocking_u32(&dvi0.q_tmds_valid, &tmdsbuf);
                 }
+                *vsync_ptr = 1;
                 for (; total_y < FRAME_HEIGHT; ++total_y) {
                     queue_remove_blocking_u32(&dvi0.q_tmds_free, &tmdsbuf);
                     memcpy(tmdsbuf, blank, sizeof(blank));

@@ -525,7 +525,8 @@ static void saveConf() {
 static void conf_it(uint8_t cmd) {
     int x = (text_buffer_width - 100) / 2;
     int y = (text_buffer_height - 18) / 2;
-    draw_panel(x, y, 100, 18, "Startup configuration", 0);
+    draw_panel(x, y, 100, 19, "Startup configuration", 0);
+    x += 3; y += 1;
     in_conf(x, y);
     uint16_t prev_nespad_state = 0;
     while(1) {
@@ -593,7 +594,7 @@ static void conf_it(uint8_t cmd) {
         if (enterPressed) {
             enterPressed = false;
             if (!m_prompt_ex("Save and reboot?", "Hold ALT - noreboot")) {
-                draw_panel(x, y, 100, 18, "Startup configuration", 0);
+                draw_panel(x, y, 100, 19, "Startup configuration", 0);
                 in_conf(x, y);
                 continue;
             }
@@ -1276,7 +1277,8 @@ static fn_1_12_tbl_t fn_1_12_tbl = {
     ' ', '9', " Swap ", swap_drives,
     '1', '0', " Exit ", mark_to_exit,
     '1', '1', "EmMODE", switch_mode,
-    '1', '2', " B/W  ", switch_color
+    '1', '2', " B/W  ", switch_color,
+    ' ', ' ', "      ", do_nothing
 };
 
 static fn_1_12_tbl_t fn_1_12_tbl_alt = {
@@ -1291,7 +1293,8 @@ static fn_1_12_tbl_t fn_1_12_tbl_alt = {
     ' ', '9', " UpMn ", do_nothing,
     '1', '0', " USB  ", turn_usb_on,
     '1', '1', "EmMODE", switch_mode,
-    '1', '2', " B/W  ", switch_color
+    '1', '2', " B/W  ", switch_color,
+    ' ', ' ', "      ", do_nothing
 };
 
 static fn_1_12_tbl_t fn_1_12_tbl_ctrl = {
@@ -1306,7 +1309,8 @@ static fn_1_12_tbl_t fn_1_12_tbl_ctrl = {
     ' ', '9', " Swap ", swap_drives,
     '1', '0', " M-OS ", return_to_mos,
     '1', '1', "EmMODE", switch_mode,
-    '1', '2', " B/W  ", switch_color
+    '1', '2', " B/W  ", switch_color,
+    ' ', ' ', "      ", do_nothing
 };
 
 static inline fn_1_12_tbl_t* actual_fn_1_12_tbl() {

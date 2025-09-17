@@ -18,7 +18,7 @@
 
 int pallete_mask = 3; // 11 - 2 bits
 uint8_t volatile vsync;
-uint8_t * vsync_ptr=&vsync;
+uint8_t* vsync_ptr = &vsync;
 
 uint16_t pio_program_VGA_instructions[] = {
     //     .wrap_target
@@ -332,7 +332,7 @@ enum graphics_mode_t graphics_set_mode(enum graphics_mode_t mode) {
                 text_buffer_height = MAX_HEIGHT;
             } else {
                 text_buffer_width = 100;
-                text_buffer_height = 18;
+                text_buffer_height = 19;
             }
     }
 
