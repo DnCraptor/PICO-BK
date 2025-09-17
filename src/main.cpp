@@ -84,8 +84,8 @@ static semaphore_t vga_start_semaphore;
 extern "C" uint64_t tmds_2bpp_table_bk_b[16];
 extern "C" uint64_t tmds_2bpp_table_bk_g[16];
 extern "C" uint64_t tmds_2bpp_table_bk_r[16];
-extern "C" uint64_t tmds_2bpp_table_bk_any[16];
-extern "C" uint64_t tmds_2bpp_table_bk_n11[16];
+extern "C" uint64_t tmds_2bpp_table_bk_any[16]; // пиксель 01, 10 и 11, 00 - нет пикселя
+extern "C" uint64_t tmds_2bpp_table_bk_n11[16]; // пиксель только 01 и 10, 00 и 11 - нет пикселя
 
 static void __not_in_flash() dvi_on_core1() {
 	for (int i = 0; i < sizeof(blank) / sizeof(blank[0]); ++i) {
@@ -134,6 +134,16 @@ static void __not_in_flash() dvi_on_core1() {
                             queue_remove_blocking_u32(&dvi0.q_tmds_free, &tmdsbuf);
                             tmds_encode_2bpp_bk(bk_page, tmdsbuf, tmds_2bpp_table_bk_b);
                             tmds_encode_2bpp_bk(bk_page, tmdsbuf + DWORDS_PER_PLANE, tmds_2bpp_table_bk_n11);
+                            tmds_encode_2bpp_bk(bk_page, tmdsbuf + DWORDS_PER_PLANE * 2, tmds_2bpp_table_bk_r);
+                            queue_add_blocking_u32(&dvi0.q_tmds_valid, &tmdsbuf);
+                        }
+                        break;
+                    case 3: // чёрный-зелёный-циан-жёлтый
+                        for (uint y = 0; y < g_conf.graphics_buffer_height; ++y, ++total_y) {
+                            register uint32_t* bk_page = (uint32_t*)get_graphics_buffer(y);
+                            queue_remove_blocking_u32(&dvi0.q_tmds_free, &tmdsbuf);
+                            tmds_encode_2bpp_bk(bk_page, tmdsbuf, tmds_2bpp_table_bk_b);
+                            tmds_encode_2bpp_bk(bk_page, tmdsbuf + DWORDS_PER_PLANE, tmds_2bpp_table_bk_any);
                             tmds_encode_2bpp_bk(bk_page, tmdsbuf + DWORDS_PER_PLANE * 2, tmds_2bpp_table_bk_r);
                             queue_add_blocking_u32(&dvi0.q_tmds_valid, &tmdsbuf);
                         }
