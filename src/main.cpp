@@ -100,9 +100,9 @@ const static tmds_2bpp_tables_bk_t tmds_2bpp_tables_bk[16] = {
     { tmds_2bpp_table_bk_g  , tmds_2bpp_table_bk_b  , tmds_2bpp_table_bk_any }, //  1 чёрный-жёлтый-пурпур-красный
     { tmds_2bpp_table_bk_b  , tmds_2bpp_table_bk_n11, tmds_2bpp_table_bk_r   }, //  2 чёрный-циан-синий-пурпур
     { tmds_2bpp_table_bk_b  , tmds_2bpp_table_bk_any, tmds_2bpp_table_bk_r   }, //  3 чёрный-зелёный-циан-жёлтый
-    { tmds_2bpp_table_bk_any, tmds_2bpp_table_bk_n01, tmds_2bpp_table_bk_n10 }, //  4 чёрный-пурпур-циан-белый (todo)
+    { tmds_2bpp_table_bk_any, tmds_2bpp_table_bk_n01, tmds_2bpp_table_bk_n10 }, //  4 чёрный-пурпур-циан-белый
     { tmds_2bpp_table_bk_any, tmds_2bpp_table_bk_any, tmds_2bpp_table_bk_any }, //  5 чёрный-белый-белый-белый
-    { tmds_2bpp_table_bk_b  , tmds_2bpp_table_bk_g  , tmds_2bpp_table_bk_r   }, //  6
+    { tmds_2bpp_table_bk_b  , tmds_2bpp_table_bk_g  , tmds_2bpp_table_bk_r   }, //  6 чёрный-кирпич-тёмный_кирпич-красный (nodo)
     { tmds_2bpp_table_bk_b  , tmds_2bpp_table_bk_g  , tmds_2bpp_table_bk_r   }, //  7
     { tmds_2bpp_table_bk_b  , tmds_2bpp_table_bk_g  , tmds_2bpp_table_bk_r   }, //  8
     { tmds_2bpp_table_bk_b  , tmds_2bpp_table_bk_g  , tmds_2bpp_table_bk_r   }, //  9
@@ -111,7 +111,7 @@ const static tmds_2bpp_tables_bk_t tmds_2bpp_tables_bk[16] = {
     { tmds_2bpp_table_bk_b  , tmds_2bpp_table_bk_g  , tmds_2bpp_table_bk_r   }, // 12
     { tmds_2bpp_table_bk_b  , tmds_2bpp_table_bk_g  , tmds_2bpp_table_bk_r   }, // 13
     { tmds_2bpp_table_bk_b  , tmds_2bpp_table_bk_g  , tmds_2bpp_table_bk_r   }, // 14
-    { tmds_2bpp_table_bk_b  , tmds_2bpp_table_bk_g  , tmds_2bpp_table_bk_r   }, // 15
+    { tmds_2bpp_table_bk_n10, tmds_2bpp_table_bk_any, tmds_2bpp_table_bk_r   }, // 15 чёрный-cyan-green-white
 };
 
 #define tmds_encode_2bpp_bk_b(t) tmds_encode_2bpp_bk(bk_page, tmdsbuf, t)
