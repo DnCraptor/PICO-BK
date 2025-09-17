@@ -81,6 +81,12 @@ uint32_t __aligned(4) blank[DWORDS_PER_PLANE * 3];
 //uint32_t __aligned(4) last[DWORDS_PER_PLANE * 3];
 static semaphore_t vga_start_semaphore;
 
+extern "C" uint64_t tmds_2bpp_table_bk_b[16];
+extern "C" uint64_t tmds_2bpp_table_bk_g[16];
+extern "C" uint64_t tmds_2bpp_table_bk_r[16];
+extern "C" uint64_t tmds_2bpp_table_bk_any[16];
+extern "C" uint64_t tmds_2bpp_table_bk_n11[16];
+
 static void __not_in_flash() dvi_on_core1() {
 	for (int i = 0; i < sizeof(blank) / sizeof(blank[0]); ++i) {
 		blank[i] = BLACK;
@@ -111,13 +117,47 @@ static void __not_in_flash() dvi_on_core1() {
                     memcpy(tmdsbuf, blank, sizeof(blank));
                     queue_add_blocking_u32(&dvi0.q_tmds_valid, &tmdsbuf);
                 }
-                for (uint y = 0; y < g_conf.graphics_buffer_height; ++y, ++total_y) {
-                    register uint32_t* bk_page = (uint32_t*)get_graphics_buffer(y);
-                    queue_remove_blocking_u32(&dvi0.q_tmds_free, &tmdsbuf);
-                    tmds_encode_2bpp_bk_b(bk_page, tmdsbuf, FRAME_WIDTH);
-                    tmds_encode_2bpp_bk_g(bk_page, tmdsbuf + DWORDS_PER_PLANE, FRAME_WIDTH);
-                    tmds_encode_2bpp_bk_r(bk_page, tmdsbuf + DWORDS_PER_PLANE * 2, FRAME_WIDTH);
-                    queue_add_blocking_u32(&dvi0.q_tmds_valid, &tmdsbuf);
+                switch(g_conf.graphics_pallette_idx) {
+                    case 1: // чёрный-жёлтый-пурпур-красный
+                        for (uint y = 0; y < g_conf.graphics_buffer_height; ++y, ++total_y) {
+                            register uint32_t* bk_page = (uint32_t*)get_graphics_buffer(y);
+                            queue_remove_blocking_u32(&dvi0.q_tmds_free, &tmdsbuf);
+                            tmds_encode_2bpp_bk(bk_page, tmdsbuf, tmds_2bpp_table_bk_g);
+                            tmds_encode_2bpp_bk(bk_page, tmdsbuf + DWORDS_PER_PLANE, tmds_2bpp_table_bk_b);
+                            tmds_encode_2bpp_bk(bk_page, tmdsbuf + DWORDS_PER_PLANE * 2, tmds_2bpp_table_bk_any);
+                            queue_add_blocking_u32(&dvi0.q_tmds_valid, &tmdsbuf);
+                        }
+                        break;
+                    case 2: // чёрный-циан-синий-пурпур
+                        for (uint y = 0; y < g_conf.graphics_buffer_height; ++y, ++total_y) {
+                            register uint32_t* bk_page = (uint32_t*)get_graphics_buffer(y);
+                            queue_remove_blocking_u32(&dvi0.q_tmds_free, &tmdsbuf);
+                            tmds_encode_2bpp_bk(bk_page, tmdsbuf, tmds_2bpp_table_bk_b);
+                            tmds_encode_2bpp_bk(bk_page, tmdsbuf + DWORDS_PER_PLANE, tmds_2bpp_table_bk_n11);
+                            tmds_encode_2bpp_bk(bk_page, tmdsbuf + DWORDS_PER_PLANE * 2, tmds_2bpp_table_bk_r);
+                            queue_add_blocking_u32(&dvi0.q_tmds_valid, &tmdsbuf);
+                        }
+                        break;
+
+                    case 5: // чёрный-белый-белый-белый
+                        for (uint y = 0; y < g_conf.graphics_buffer_height; ++y, ++total_y) {
+                            register uint32_t* bk_page = (uint32_t*)get_graphics_buffer(y);
+                            queue_remove_blocking_u32(&dvi0.q_tmds_free, &tmdsbuf);
+                            tmds_encode_2bpp_bk(bk_page, tmdsbuf, tmds_2bpp_table_bk_any);
+                            memcpy(tmdsbuf + DWORDS_PER_PLANE, tmdsbuf, BYTES_PER_PLANE);
+                            memcpy(tmdsbuf + DWORDS_PER_PLANE * 2, tmdsbuf, BYTES_PER_PLANE);
+                            queue_add_blocking_u32(&dvi0.q_tmds_valid, &tmdsbuf);
+                        }
+                        break;
+                    default: // actually fo 0 // чёрный-синий-зелёный-красный
+                        for (uint y = 0; y < g_conf.graphics_buffer_height; ++y, ++total_y) {
+                            register uint32_t* bk_page = (uint32_t*)get_graphics_buffer(y);
+                            queue_remove_blocking_u32(&dvi0.q_tmds_free, &tmdsbuf);
+                            tmds_encode_2bpp_bk(bk_page, tmdsbuf, tmds_2bpp_table_bk_b);
+                            tmds_encode_2bpp_bk(bk_page, tmdsbuf + DWORDS_PER_PLANE, tmds_2bpp_table_bk_g);
+                            tmds_encode_2bpp_bk(bk_page, tmdsbuf + DWORDS_PER_PLANE * 2, tmds_2bpp_table_bk_r);
+                            queue_add_blocking_u32(&dvi0.q_tmds_valid, &tmdsbuf);
+                        }
                 }
                 *vsync_ptr = 1;
                 for (; total_y < FRAME_HEIGHT; ++total_y) {
