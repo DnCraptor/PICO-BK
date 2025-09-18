@@ -88,6 +88,8 @@ extern "C" uint64_t tmds_2bpp_table_bk_any[16]; // пиксель 01, 10 и 11, 
 extern "C" uint64_t tmds_2bpp_table_bk_n11[16]; // пиксель только 01 и 10, 00 и 11 - нет пикселя
 extern "C" uint64_t tmds_2bpp_table_bk_n10[16]; // пиксель только 01 и 11, 00 и 10 - нет пикселя
 extern "C" uint64_t tmds_2bpp_table_bk_n01[16]; // пиксель только 10 и 11, 00 и 01 - нет пикселя
+extern "C" uint64_t tmds_2bpp_table_bk_noc[16]; // нет пикселя во всех кейсах
+extern "C" uint64_t tmds_2bpp_table_bk_2bb[16]; // вариант с "честной" двухбиткой: 00 - чёрный, но 01 - светлее, чем 10, а 11 - самый светлый
 
 typedef struct tmds_2bpp_tables_bk_s {
     uint64_t* b;
@@ -102,15 +104,15 @@ const static tmds_2bpp_tables_bk_t tmds_2bpp_tables_bk[16] = {
     { tmds_2bpp_table_bk_b  , tmds_2bpp_table_bk_any, tmds_2bpp_table_bk_r   }, //  3 чёрный-зелёный-циан-жёлтый
     { tmds_2bpp_table_bk_any, tmds_2bpp_table_bk_n01, tmds_2bpp_table_bk_n10 }, //  4 чёрный-пурпур-циан-белый
     { tmds_2bpp_table_bk_any, tmds_2bpp_table_bk_any, tmds_2bpp_table_bk_any }, //  5 чёрный-белый-белый-белый
-    { tmds_2bpp_table_bk_b  , tmds_2bpp_table_bk_g  , tmds_2bpp_table_bk_r   }, //  6 чёрный-кирпич-тёмный_кирпич-красный (nodo)
-    { tmds_2bpp_table_bk_b  , tmds_2bpp_table_bk_g  , tmds_2bpp_table_bk_r   }, //  7
-    { tmds_2bpp_table_bk_b  , tmds_2bpp_table_bk_g  , tmds_2bpp_table_bk_r   }, //  8
-    { tmds_2bpp_table_bk_b  , tmds_2bpp_table_bk_g  , tmds_2bpp_table_bk_r   }, //  9
-    { tmds_2bpp_table_bk_b  , tmds_2bpp_table_bk_g  , tmds_2bpp_table_bk_r   }, // 10
-    { tmds_2bpp_table_bk_b  , tmds_2bpp_table_bk_g  , tmds_2bpp_table_bk_r   }, // 11
-    { tmds_2bpp_table_bk_b  , tmds_2bpp_table_bk_g  , tmds_2bpp_table_bk_r   }, // 12
-    { tmds_2bpp_table_bk_b  , tmds_2bpp_table_bk_g  , tmds_2bpp_table_bk_r   }, // 13
-    { tmds_2bpp_table_bk_b  , tmds_2bpp_table_bk_g  , tmds_2bpp_table_bk_r   }, // 14
+    { tmds_2bpp_table_bk_noc, tmds_2bpp_table_bk_noc, tmds_2bpp_table_bk_2bb }, //  6 чёрный-кирпич-тёмный_кирпич-красный
+    { tmds_2bpp_table_bk_noc, tmds_2bpp_table_bk_2bb, tmds_2bpp_table_bk_2bb }, //  7
+    { tmds_2bpp_table_bk_2bb, tmds_2bpp_table_bk_noc, tmds_2bpp_table_bk_2bb }, //  8
+    { tmds_2bpp_table_bk_b  , tmds_2bpp_table_bk_g  , tmds_2bpp_table_bk_r   }, //  9 - todo
+    { tmds_2bpp_table_bk_b  , tmds_2bpp_table_bk_g  , tmds_2bpp_table_bk_r   }, // 10 - todo
+    { tmds_2bpp_table_bk_b  , tmds_2bpp_table_bk_g  , tmds_2bpp_table_bk_n01 }, // 11 чёрный-cyan-yellow-red
+    { tmds_2bpp_table_bk_r  , tmds_2bpp_table_bk_n01, tmds_2bpp_table_bk_b   }, // 12 чёрный-red-green-cyan
+    { tmds_2bpp_table_bk_n10, tmds_2bpp_table_bk_any, tmds_2bpp_table_bk_n01 }, // 13 чёрный-cyan-yellow-white
+    { tmds_2bpp_table_bk_b  , tmds_2bpp_table_bk_any, tmds_2bpp_table_bk_n10 }, // 14 чёрный-yellow-green-white
     { tmds_2bpp_table_bk_n10, tmds_2bpp_table_bk_any, tmds_2bpp_table_bk_r   }, // 15 чёрный-cyan-green-white
 };
 
