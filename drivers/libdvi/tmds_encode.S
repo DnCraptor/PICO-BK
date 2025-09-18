@@ -344,7 +344,7 @@ tmds_2bpp_table_bk_any: // белый (любой бит не ноль)
 .global tmds_2bpp_table_bk_n01
 tmds_2bpp_table_bk_n01: // пиксель только 10 и 11, 00 и 01 - нет пикселя
 	.word 0x7fd00, 0x7fd00  // 0000 - нет пикселя
-	.word 0xbfe00, 0x7fd00  // 0001 - пиксель справа
+	.word 0x7fd00, 0x7fd00  // 0001 - нет пикселя
 	.word 0xbfe00, 0x7fd00  // 0010 - пиксель справа
 	.word 0x7fd00, 0x7fd00  // 0011 - нет пикселя
 	.word 0x7fd00, 0x7fd00  // 0100 - нет пикселя
@@ -402,9 +402,29 @@ tmds_2bpp_table_bk_n11: // пиксель только 01 и 10, 00 и 11 - не
 /*
 	.word 0x7f103 // 00, 00
 	.word 0x73d30 // 01, 01 - тёмный
-	.word 0xb3e03 // 11, 10 - средний
+	.word 0xb3e30 // 10, 10 - средний
 	.word 0xbf203 // 11, 11
 */
+.align 2
+.global tmds_2bpp_table_bk_2br
+tmds_2bpp_table_bk_2br:  // вариант с "честной" двухбиткой
+	.word 0x7fd00, 0x7fd00  // 00 00
+	.word 0x73d30, 0x7fd00  // 00 01
+	.word 0xb3e30, 0x7fd00  // 00 10
+	.word 0xbf203, 0x7fd00  // 00 11
+	.word 0x7fd00, 0x73d30  // 01 00
+	.word 0x73d30, 0x73d30  // 01 01
+	.word 0xb3e30, 0x73d30  // 01 10
+	.word 0xbf203, 0x73d30  // 01 11
+	.word 0x7fd00, 0xb3e30  // 10 00
+	.word 0x73d30, 0xb3e30  // 10 01
+	.word 0xb3e30, 0xb3e30  // 10 10
+	.word 0xbf203, 0xb3e30  // 10 11
+	.word 0x7fd00, 0xbf203  // 11 00
+	.word 0x73d30, 0xbf203  // 11 01
+	.word 0x73d30, 0xb3e30  // 11 10
+	.word 0xbf203, 0xbf203  // 11 11
+
 .align 2
 .global tmds_2bpp_table_bk_2bb
 tmds_2bpp_table_bk_2bb:  // вариант с "честной" двухбиткой: 00 - чёрный, но 01 - светлее, чем 10, а 11 - самый светлый
