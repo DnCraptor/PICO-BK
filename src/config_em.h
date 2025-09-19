@@ -28,6 +28,7 @@ typedef struct config_em {
     uint_fast32_t LastKey;
     uint_fast8_t  RunState;
     uint_fast16_t PrevCAF;
+    uint8_t manager_pallette_idx;
 } config_em_t;
 
 extern volatile config_em_t g_conf;

@@ -367,7 +367,8 @@ extern "C" uint8_t kbdpad1_LEFT;
 extern "C" uint8_t kbdpad2_LEFT;
 extern "C" uint8_t kbdpad1_RIGHT;
 extern "C" uint8_t kbdpad2_RIGHT;
-
+extern "C" const color_schema_t color_schema0;
+extern "C" const color_schema_t color_schema1;
 
 inline static void read_config(const char* path) {
     FIL fil;
@@ -476,6 +477,12 @@ inline static void read_config(const char* path) {
     const char p24[] = "kbdpad2_RIGHT:";
     mode = parse_conf_word(buf, p24, sizeof(p24), 256);
     if (mode >= 0 && mode < 0x80)  kbdpad2_RIGHT = mode;
+    const char p25[] = "manager_pallette_idx:";
+    mode = parse_conf_word(buf, p25, sizeof(p25), 256);
+    if (mode >= 0 && mode <= 1) {
+        g_conf.manager_pallette_idx = mode;
+        set_color_schema(mode ? &color_schema1 : &color_schema0);
+    }
     f_close(&fil);
 }
 
