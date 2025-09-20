@@ -199,21 +199,19 @@ inline static void dma_handler_VGA_impl() {
             screen_lines++;
             return;
         }
-        /*
-        case TEXTMODE_128_48: {
-            uint16_t* output_buffer_16bit = (uint16_t *)*output_buffer;
+        case TEXTMODE_:
+        if (g_conf.is_128_48) {
+            register uint16_t* output_buffer_16bit = (uint16_t *)*output_buffer;
             output_buffer_16bit += shift_picture / 2;
-            const uint font_weight = 8;
-            const uint font_height = 16;
             // "слой" символа
-            uint32_t glyph_line = screen_line % font_height;
+            register uint32_t glyph_line = screen_line & 15;
             //указатель откуда начать считывать символы
-            uint8_t* text_buffer_line = &text_buffer[screen_line / font_height * text_buffer_width * 2];
-            for (int x = 0; x < text_buffer_width; x++) {
+            register uint8_t* text_buffer_line = &text_buffer[(screen_line >> 4) * text_buffer_width * 2];
+            for (register int x = 0; x < text_buffer_width; x++) {
                 //из таблицы символов получаем "срез" текущего символа
-                uint8_t glyph_pixels = font_8x16[(*text_buffer_line++) * font_height + glyph_line];
+                register uint8_t glyph_pixels = font_8x16[((*text_buffer_line++) << 4) + glyph_line];
                 //считываем из быстрой палитры начало таблицы быстрого преобразования 2-битных комбинаций цветов пикселей
-                uint16_t* color = &txt_palette_fast[4 * (*text_buffer_line++)];
+                register uint16_t* color = &txt_palette_fast[4 * (*text_buffer_line++)];
                 *output_buffer_16bit++ = color[glyph_pixels & 3];
                 glyph_pixels >>= 2;
                 *output_buffer_16bit++ = color[glyph_pixels & 3];
@@ -226,11 +224,7 @@ inline static void dma_handler_VGA_impl() {
             screen_line++;
             screen_lines++;
             return;
-        }
-        */
-        case TEXTMODE_: {
-            //const uint font_weight = 8;
-            //const uint font_height = 16;
+        } else {
             if (screen_line & 1) {
                 dma_channel_set_read_addr(dma_chan_ctrl, prev_output_buffer, false);
                 screen_line++;
@@ -244,7 +238,7 @@ inline static void dma_handler_VGA_impl() {
             register uint32_t glyph_line = y & 15;
             //указатель откуда начать считывать символы
             register uint8_t* text_buffer_line = &text_buffer[(y >> 4) * text_buffer_width * 2];
-            for (int x = 0; x < text_buffer_width; x++) {
+            for (register int x = 0; x < text_buffer_width; x++) {
                 //из таблицы символов получаем "срез" текущего символа
                 register uint8_t glyph_pixels = font_8x16[((*text_buffer_line++) << 4) + glyph_line];
                 //считываем из быстрой палитры начало таблицы быстрого преобразования 2-битных комбинаций цветов пикселей
@@ -397,7 +391,11 @@ enum graphics_mode_t graphics_set_mode(enum graphics_mode_t mode) {
             text_buffer_height = 30;
             break;
         default:
-            if (SELECT_VGA) {
+            if (g_conf.is_128_48) {
+                text_buffer_width = MAX_WIDTH;
+                text_buffer_height = MAX_HEIGHT;
+            }
+            else if (SELECT_VGA) {
                 text_buffer_width = MAX_WIDTH / 2;
                 text_buffer_height = MAX_HEIGHT / 2;
             } else {

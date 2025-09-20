@@ -29,6 +29,8 @@ typedef struct config_em {
     uint_fast8_t  RunState;
     uint_fast16_t PrevCAF;
     uint8_t manager_pallette_idx;
+    bool is_128_48;
+    bool is_DVI_1024;
 } config_em_t;
 
 extern volatile config_em_t g_conf;

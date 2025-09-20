@@ -352,6 +352,17 @@ inline static void read_config(const char* path) {
     mode = parse_conf_word(buf, p25, sizeof(p25), MAX_CONF);
     g_conf.manager_pallette_idx = !!mode;
     set_color_schema(mode ? &color_schema1 : &color_schema0);
+    const char p26[] = "is_128_48:";
+    mode = parse_conf_word(buf, p26, sizeof(p26), MAX_CONF);
+    if (mode >= 0 && mode <= 1) {
+        g_conf.is_128_48 = (bool)mode;
+    }
+    const char p27[] = "is_DVI_1024:";
+    mode = parse_conf_word(buf, p27, sizeof(p27), MAX_CONF);
+    if (mode >= 0 && mode <= 1) {
+        g_conf.is_DVI_1024 = (bool)mode;
+    }
+
     f_close(&fil);
 }
 
