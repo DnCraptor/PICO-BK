@@ -7,6 +7,10 @@
 #include "dvi_serialiser.h"
 #include "tmds_encode.h"
 
+// How many times to output the same TMDS buffer before recyling it onto the
+// free queue. Pixels are repeated vertically if this is >1.
+uint8_t DVI_VERTICAL_REPEAT = 2;
+
 // Time-critical functions pulled into RAM but each in a unique section to
 // allow garbage collection
 #define __dvi_func(f) __not_in_flash_func(f)

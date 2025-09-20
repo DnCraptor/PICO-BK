@@ -60,9 +60,8 @@ void PWM_init_pin(uint8_t pinN, uint16_t max_lvl) {
     pwm_init(pwm_gpio_to_slice_num(pinN), &config, true);
 }
 
-#define VREG_VSEL VREG_VOLTAGE_1_30
+#define VREG_VSEL VREG_VOLTAGE_1_60
 extern "C" semaphore_t vga_start_semaphore;
-extern "C" void dvi_init_bk();
 extern "C" void dvi_on_core1();
 extern "C" void flash_timings();
 
@@ -178,193 +177,6 @@ static bool __not_in_flash_func(AY_timer_callback)(repeating_timer_t *rt) {
 #endif
 
 static FATFS fatfs;
-#include <string.h>
-extern "C" char *strnstr(const char *haystack, const char *needle, size_t len);
-
-inline static int parse_conf_word(const char* buf, const char* param, size_t plen, size_t lim) {
-    char b[16];
-    const char* pc = strnstr(buf, param, lim);
-    DBGM_PRINT(("param %s pc: %08Xh", param, pc));
-    if (pc) {
-        pc += plen - 1;
-        const char* pc2 = strnstr(pc, "\r\n", lim - (pc - buf));
-        DBGM_PRINT(("param %s \\r\\n pc: %08Xh pc2: %08Xh", param, pc, pc2));
-        if (pc2) {
-            memcpy(b, pc, pc2 - pc);
-            b[pc2 - pc] = 0;
-            DBGM_PRINT(("param %s b: %s atoi(b): %d", param, b, atoi(b)));
-            return atoi(b);
-        }
-        pc2 = strnstr(pc, ";", lim - (pc - buf));
-        DBGM_PRINT(("param %s ; pc2: %08Xh", param, pc2));
-        if (pc2) {
-            memcpy(b, pc, pc2 - pc);
-            b[pc2 - pc] = 0;
-            DBGM_PRINT(("param %s b: %s atoi(b): %d", param, b, atoi(b)));
-            return atoi(b);
-        }
-        pc2 = strnstr(pc, "\n", lim - (pc - buf));
-        DBGM_PRINT(("param %s \\n pc2: %08Xh", param, pc2));
-        if (pc2) {
-            memcpy(b, pc, pc2 - pc);
-            b[pc2 - pc] = 0;
-            DBGM_PRINT(("param %s b: %s atoi(b): %d", param, b, atoi(b)));
-            return atoi(b);
-        }
-        DBGM_PRINT(("param %s pc: %d atoi(pc): %d", param, pc, atoi(pc)));
-        return atoi(pc);
-    }
-    return -100;
-}
-
-extern "C" bool is_swap_wins_enabled;
-extern "C" volatile bool is_dendy_joystick;
-extern "C" volatile bool is_kbd_joystick;
-extern "C" uint8_t kbdpad1_A;
-extern "C" uint8_t kbdpad2_A;
-extern "C" uint8_t kbdpad1_B;
-extern "C" uint8_t kbdpad2_B;
-extern "C" uint8_t kbdpad1_START;
-extern "C" uint8_t kbdpad2_START;
-extern "C" uint8_t kbdpad1_SELECT;
-extern "C" uint8_t kbdpad2_SELECT;
-extern "C" uint8_t kbdpad1_UP;
-extern "C" uint8_t kbdpad2_UP;
-extern "C" uint8_t kbdpad1_DOWN;
-extern "C" uint8_t kbdpad2_DOWN;
-extern "C" uint8_t kbdpad1_LEFT;
-extern "C" uint8_t kbdpad2_LEFT;
-extern "C" uint8_t kbdpad1_RIGHT;
-extern "C" uint8_t kbdpad2_RIGHT;
-extern "C" const color_schema_t color_schema0;
-extern "C" const color_schema_t color_schema1;
-
-#define MAX_CONF 512
-
-inline static void read_config(const char* path) {
-    FIL fil;
-    if (f_open(&fil, path, FA_READ) != FR_OK) {
-        DBGM_PRINT(("f_open %s failed", path));
-        return;
-    }
-    char buf[MAX_CONF] = { 0 };
-    UINT br;
-    if (f_read(&fil, buf, MAX_CONF, &br) != FR_OK) {
-        DBGM_PRINT(("f_read %s failed. br: %d", br));
-        f_close(&fil);
-        return;
-    }
-    DBGM_PRINT(("f_read %s passed. br: %d", br));
-    const char p0[] = "mode:";
-    int mode = parse_conf_word(buf, p0, sizeof(p0), MAX_CONF);
-    if (mode >= 0 && mode <= BK_0011M) {
-        g_conf.bk0010mode = (bk_mode_t)mode;
-    }
-    const char p1[] = "is_covox_on:";
-    mode = parse_conf_word(buf, p1, sizeof(p1), MAX_CONF);
-    if (mode >= 0 && mode <= 1) {
-        g_conf.is_covox_on = (bool)mode;
-    }
-    const char p2[] = "is_AY_on:";
-    mode = parse_conf_word(buf, p2, sizeof(p2), MAX_CONF);
-    if (mode >= 0 && mode <= 1) {
-        g_conf.is_AY_on = (bool)mode;
-    }
-    const char p3[] = "color_mode:";
-    mode = parse_conf_word(buf, p3, sizeof(p3), MAX_CONF);
-    if (mode >= 0 && mode <= 1) {
-        g_conf.color_mode = (bool)mode;
-    }
-    const char p4[] = "snd_volume:";
-    mode = parse_conf_word(buf, p4, sizeof(p4), MAX_CONF);
-    if (mode >= -16 && mode <= 5) {
-        g_conf.snd_volume = mode;
-    }
-    const char p5[] = "graphics_pallette_idx:";
-    mode = parse_conf_word(buf, p5, sizeof(p5), MAX_CONF);
-    if (mode >= 0 && mode <= 15) {
-        g_conf.graphics_pallette_idx = mode;
-    }
-    const char p6[] = "is_swap_wins_enabled:";
-    mode = parse_conf_word(buf, p6, sizeof(p6), MAX_CONF);
-    if (mode >= 0 && mode <= 1) {
-        is_swap_wins_enabled = (bool)mode;
-    }
-    const char p7[] = "is_dendy_joystick:";
-    mode = parse_conf_word(buf, p7, sizeof(p7), MAX_CONF);
-    if (mode >= 0 && mode <= 1) {
-        is_dendy_joystick = (bool)mode;
-    }
-    const char p8[] = "is_kbd_joystick:";
-    mode = parse_conf_word(buf, p8, sizeof(p8), MAX_CONF);
-    if (mode >= 0 && mode <= 1) {
-        is_kbd_joystick = (bool)mode;
-    }
-    const char p9[] = "kbdpad1_A:";
-    mode = parse_conf_word(buf, p9, sizeof(p9), MAX_CONF);
-    if (mode >= 0 && mode < 0x80)  kbdpad1_A = mode;
-    const char p10[] = "kbdpad2_A:";
-    mode = parse_conf_word(buf, p10, sizeof(p10), MAX_CONF);
-    if (mode >= 0 && mode < 0x80)  kbdpad2_A = mode;
-    const char p11[] = "kbdpad1_B:";
-    mode = parse_conf_word(buf, p11, sizeof(p11), MAX_CONF);
-    if (mode >= 0 && mode < 0x80)  kbdpad1_B = mode;
-    const char p12[] = "kbdpad2_B:";
-    mode = parse_conf_word(buf, p12, sizeof(p12), MAX_CONF);
-    if (mode >= 0 && mode < 0x80)  kbdpad2_B = mode;
-    const char p13[] = "kbdpad1_START:";
-    mode = parse_conf_word(buf, p13, sizeof(p13), MAX_CONF);
-    if (mode >= 0 && mode < 0x80)  kbdpad1_START = mode;
-    const char p14[] = "kbdpad2_START:";
-    mode = parse_conf_word(buf, p14, sizeof(p14), MAX_CONF);
-    if (mode >= 0 && mode < 0x80)  kbdpad2_START = mode;
-    const char p15[] = "kbdpad1_SELECT:";
-    mode = parse_conf_word(buf, p15, sizeof(p15), MAX_CONF);
-    if (mode >= 0 && mode < 0x80)  kbdpad1_SELECT = mode;
-    const char p16[] = "kbdpad2_SELECT:";
-    mode = parse_conf_word(buf, p16, sizeof(p16), MAX_CONF);
-    if (mode >= 0 && mode < 0x80)  kbdpad2_SELECT = mode;
-    const char p17[] = "kbdpad1_UP:";
-    mode = parse_conf_word(buf, p17, sizeof(p17), MAX_CONF);
-    if (mode >= 0 && mode < 0x80)  kbdpad1_UP = mode;
-    const char p18[] = "kbdpad2_UP:";
-    mode = parse_conf_word(buf, p18, sizeof(p18), MAX_CONF);
-    if (mode >= 0 && mode < 0x80)  kbdpad2_UP = mode;
-    const char p19[] = "kbdpad1_DOWN:";
-    mode = parse_conf_word(buf, p19, sizeof(p19), MAX_CONF);
-    if (mode >= 0 && mode < 0x80)  kbdpad1_DOWN = mode;
-    const char p20[] = "kbdpad2_DOWN:";
-    mode = parse_conf_word(buf, p20, sizeof(p20), MAX_CONF);
-    if (mode >= 0 && mode < 0x80)  kbdpad2_DOWN = mode;
-    const char p21[] = "kbdpad1_LEFT:";
-    mode = parse_conf_word(buf, p21, sizeof(p21), MAX_CONF);
-    if (mode >= 0 && mode < 0x80)  kbdpad1_LEFT = mode;
-    const char p22[] = "kbdpad2_LEFT:";
-    mode = parse_conf_word(buf, p22, sizeof(p22), MAX_CONF);
-    if (mode >= 0 && mode < 0x80)  kbdpad2_LEFT = mode;
-    const char p23[] = "kbdpad1_RIGHT:";
-    mode = parse_conf_word(buf, p23, sizeof(p23), MAX_CONF);
-    if (mode >= 0 && mode < 0x80)  kbdpad1_RIGHT = mode;
-    const char p24[] = "kbdpad2_RIGHT:";
-    mode = parse_conf_word(buf, p24, sizeof(p24), MAX_CONF);
-    if (mode >= 0 && mode < 0x80)  kbdpad2_RIGHT = mode;
-    const char p25[] = "manager_pallette_idx:";
-    mode = parse_conf_word(buf, p25, sizeof(p25), MAX_CONF);
-    g_conf.manager_pallette_idx = !!mode;
-    set_color_schema(mode ? &color_schema1 : &color_schema0);
-    const char p26[] = "is_128_48:";
-    mode = parse_conf_word(buf, p26, sizeof(p26), MAX_CONF);
-    if (mode >= 0 && mode <= 1) {
-        g_conf.is_128_48 = (bool)mode;
-    }
-    const char p27[] = "is_DVI_1024:";
-    mode = parse_conf_word(buf, p27, sizeof(p27), MAX_CONF);
-    if (mode >= 0 && mode <= 1) {
-        g_conf.is_DVI_1024 = (bool)mode;
-    }
-
-    f_close(&fil);
-}
 
 static void init_fs() {
     FRESULT result = f_mount(&fatfs, "", 1);
@@ -392,7 +204,8 @@ static void init_fs() {
         insertdisk(1, fdd1_sz(), fdd1_rom(), "\\BK\\fdd1.img");
         insertdisk(2, 819200, 0, "\\BK\\fdd2.img");
         insertdisk(3, 819200, 0, "\\BK\\fdd3.img");
-        read_config("\\BK\\bk.conf");
+        if (!spacePressed)
+            read_config("\\BK\\bk.conf");
     }
 }
 
@@ -620,24 +433,20 @@ int main() {
     #endif
     DBGM_PRINT(("Before keyboard_init"));
     keyboard_init();
-
-    uint8_t link = testPins(beginVGA_PIN, beginVGA_PIN + 1);
-    SELECT_VGA = (link == 0) || (link == 0x1F);
-
-    if (!SELECT_VGA) {
-        dvi_init_bk();
-    }
-
-    sem_init(&vga_start_semaphore, 0, 1);
-    multicore_launch_core1(render_core);
-    sem_release(&vga_start_semaphore);
-
     sleep_ms(50);
 
     memset(TEXT_VIDEO_RAM, 0, sizeof TEXT_VIDEO_RAM);
 
 //    init_psram();
     init_fs();
+
+    uint8_t link = testPins(beginVGA_PIN, beginVGA_PIN + 1);
+    SELECT_VGA = (link == 0) || (link == 0x1F);
+
+    sem_init(&vga_start_semaphore, 0, 1);
+    multicore_launch_core1(render_core);
+    sem_release(&vga_start_semaphore);
+
     reset(255);
     graphics_set_mode(g_conf.color_mode ? BK_256x256x2 : BK_512x256x1);
 

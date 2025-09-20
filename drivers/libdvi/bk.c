@@ -13,12 +13,18 @@
 #include "vga.h"
 
 #define DVI_TIMING dvi_timing_800x600p_60hz
-#define FRAME_WIDTH 800
-#define FRAME_HEIGHT 300
+#define DVI_TIMING2 dvi_timing_1024x768p_60hz_custom
+
+#define MAX_FRAME_WIDTH 1024
+
+uint32_t FRAME_WIDTH = 800;
+uint32_t FRAME_HEIGHT = 300;
+extern uint8_t DVI_VERTICAL_REPEAT;
+
 #define DWORDS_PER_PLANE (FRAME_WIDTH / DVI_SYMBOLS_PER_WORD)
 #define BYTES_PER_PLANE (DWORDS_PER_PLANE * 4)
 #define BLACK 0x7fd00
-uint32_t __aligned(4) blank[DWORDS_PER_PLANE * 3];
+uint32_t __aligned(4) blank[MAX_FRAME_WIDTH / DVI_SYMBOLS_PER_WORD * 3];
 semaphore_t vga_start_semaphore;
 
 struct dvi_inst dvi0;
@@ -85,12 +91,42 @@ void __not_in_flash() flash_timings() {
 	hw_set_bits(&bus_ctrl_hw->priority, BUSCTRL_BUS_PRIORITY_PROC1_BITS);
 }
 
-void dvi_init_bk() {
-    dvi0.timing = &DVI_TIMING;
+static void __not_in_flash() flash_timings2() {
+	const int max_flash_freq = 88 * 1000000;
+	const int clock_hz = dvi0.timing->bit_clk_khz * 1000;
+	int divisor = (clock_hz + max_flash_freq - 1) / max_flash_freq;
+	if (divisor == 1 && clock_hz > 100000000) {
+		divisor = 2;
+	}
+	int rxdelay = divisor;
+	if (clock_hz / divisor > 100000000) {
+		rxdelay += 1;
+	}
+	qmi_hw->m[0].timing = 0x60007000 |
+						rxdelay << QMI_M0_TIMING_RXDELAY_LSB |
+						divisor << QMI_M0_TIMING_CLKDIV_LSB;
+    sleep_ms(100);
+	set_sys_clock_khz(dvi0.timing->bit_clk_khz, true);
+}
+
+static void __not_in_flash() dvi_init_bk() {
+    if (g_conf.is_DVI_1024) {
+        FRAME_WIDTH = 1024;
+        FRAME_HEIGHT = g_conf.is_128_48 ? 768 : (768 / 3);
+        dvi0.timing = &DVI_TIMING2;
+        DVI_VERTICAL_REPEAT = g_conf.is_128_48 ? 1 : 3;
+        flash_timings2();
+    } else {
+        FRAME_WIDTH = 800;
+        FRAME_HEIGHT = 300;
+        DVI_VERTICAL_REPEAT = 2;
+        dvi0.timing = &DVI_TIMING;
+    }
     dvi0.ser_cfg = DVI_DEFAULT_SERIAL_CONFIG;
 }
 
 void __not_in_flash() dvi_on_core1() {
+    dvi_init_bk();
 	for (int i = 0; i < sizeof(blank) / sizeof(blank[0]); ++i) {
 		blank[i] = BLACK;
 	}
@@ -104,12 +140,23 @@ void __not_in_flash() dvi_on_core1() {
         switch(gmode) {
             case TEXTMODE_: {
                 register uint8_t* bk_text = (uint8_t*)TEXT_VIDEO_RAM;
-                for (uint y = 0; y < FRAME_HEIGHT; ++y) {
-                    queue_remove_blocking_u32(&dvi0.q_tmds_free, &tmdsbuf);
-                    tmds_encode_64c_b(bk_text + (y >> 4) * (100 * 2), tmdsbuf, y);
-                    tmds_encode_64c_g(bk_text + (y >> 4) * (100 * 2), tmdsbuf + DWORDS_PER_PLANE, y);
-                    tmds_encode_64c_r(bk_text + (y >> 4) * (100 * 2), tmdsbuf + DWORDS_PER_PLANE * 2, y);
-                    queue_add_blocking_u32(&dvi0.q_tmds_valid, &tmdsbuf);
+                register uint32_t bytes_per_string = (dvi0.timing->h_active_pixels >> 3) << 1; // ширина символа - 8 пикселей, 2 байта на символ
+                if (dvi0.timing->h_active_pixels >= 1024) {
+                    for (uint y = 0; y < FRAME_HEIGHT; ++y) {
+                        queue_remove_blocking_u32(&dvi0.q_tmds_free, &tmdsbuf);
+                        tmds_encode_64c_b_128(bk_text + (y >> 4) * bytes_per_string, tmdsbuf, y);
+                        tmds_encode_64c_g_128(bk_text + (y >> 4) * bytes_per_string, tmdsbuf + DWORDS_PER_PLANE, y);
+                        tmds_encode_64c_r_128(bk_text + (y >> 4) * bytes_per_string, tmdsbuf + DWORDS_PER_PLANE * 2, y);
+                        queue_add_blocking_u32(&dvi0.q_tmds_valid, &tmdsbuf);
+                    }
+                } else {
+                    for (uint y = 0; y < FRAME_HEIGHT; ++y) {
+                        queue_remove_blocking_u32(&dvi0.q_tmds_free, &tmdsbuf);
+                        tmds_encode_64c_b_100(bk_text + (y >> 4) * bytes_per_string, tmdsbuf, y);
+                        tmds_encode_64c_g_100(bk_text + (y >> 4) * bytes_per_string, tmdsbuf + DWORDS_PER_PLANE, y);
+                        tmds_encode_64c_r_100(bk_text + (y >> 4) * bytes_per_string, tmdsbuf + DWORDS_PER_PLANE * 2, y);
+                        queue_add_blocking_u32(&dvi0.q_tmds_valid, &tmdsbuf);
+                    }
                 }
                 break;
             }
@@ -141,25 +188,40 @@ void __not_in_flash() dvi_on_core1() {
                 break;
             }
             default: {
-                uint total_y = 0;
-                for (uint y = 0; y < (FRAME_HEIGHT - 256) / 2; ++y, ++total_y) {
-                    queue_remove_blocking_u32(&dvi0.q_tmds_free, &tmdsbuf);
-                    memcpy(tmdsbuf, blank, sizeof(blank));
-                    queue_add_blocking_u32(&dvi0.q_tmds_valid, &tmdsbuf);
-                }
-                for (uint y = 0; y < g_conf.graphics_buffer_height; ++y, ++total_y) {
-                    register uint32_t* bk_page = (uint32_t*)get_graphics_buffer(y);
-                    queue_remove_blocking_u32(&dvi0.q_tmds_free, &tmdsbuf);
-                    tmds_encode_1bpp_bk(bk_page, tmdsbuf, FRAME_WIDTH);
-                    memcpy(tmdsbuf + DWORDS_PER_PLANE, tmdsbuf, BYTES_PER_PLANE);
-                    memcpy(tmdsbuf + 2 * DWORDS_PER_PLANE, tmdsbuf, BYTES_PER_PLANE);
-                    queue_add_blocking_u32(&dvi0.q_tmds_valid, &tmdsbuf);
-                }
-                *vsync_ptr = 1;
-                for (; total_y < FRAME_HEIGHT; ++total_y) {
-                    queue_remove_blocking_u32(&dvi0.q_tmds_free, &tmdsbuf);
-                    memcpy(tmdsbuf, blank, sizeof(blank));
-                    queue_add_blocking_u32(&dvi0.q_tmds_valid, &tmdsbuf);
+                if (FRAME_HEIGHT > 300) {
+                    for (uint y = 0; y < 768; ++y) { // TODO:
+                        register uint32_t* bk_page = (uint32_t*)get_graphics_buffer(y / 3);
+                        queue_remove_blocking_u32(&dvi0.q_tmds_free, &tmdsbuf);
+                        tmds_encode_1bpp_bk_1024(bk_page, tmdsbuf, FRAME_WIDTH);
+                        memcpy(tmdsbuf + DWORDS_PER_PLANE, tmdsbuf, BYTES_PER_PLANE);
+                        memcpy(tmdsbuf + 2 * DWORDS_PER_PLANE, tmdsbuf, BYTES_PER_PLANE);
+                        queue_add_blocking_u32(&dvi0.q_tmds_valid, &tmdsbuf);
+                    }
+                } else {
+                    uint total_y = 0;
+                    for (uint y = 0; y < (FRAME_HEIGHT - 256) / 2; ++y, ++total_y) {
+                        queue_remove_blocking_u32(&dvi0.q_tmds_free, &tmdsbuf);
+                        memcpy(tmdsbuf, blank, sizeof(blank));
+                        queue_add_blocking_u32(&dvi0.q_tmds_valid, &tmdsbuf);
+                    }
+                    for (uint y = 0; y < g_conf.graphics_buffer_height; ++y, ++total_y) {
+                        register uint32_t* bk_page = (uint32_t*)get_graphics_buffer(y);
+                        queue_remove_blocking_u32(&dvi0.q_tmds_free, &tmdsbuf);
+                        if (dvi0.timing->h_active_pixels < 1024) {
+                            tmds_encode_1bpp_bk_800(bk_page, tmdsbuf, FRAME_WIDTH);
+                        } else {
+                            tmds_encode_1bpp_bk_1024(bk_page, tmdsbuf, FRAME_WIDTH);
+                        }
+                        memcpy(tmdsbuf + DWORDS_PER_PLANE, tmdsbuf, BYTES_PER_PLANE);
+                        memcpy(tmdsbuf + 2 * DWORDS_PER_PLANE, tmdsbuf, BYTES_PER_PLANE);
+                        queue_add_blocking_u32(&dvi0.q_tmds_valid, &tmdsbuf);
+                    }
+                    *vsync_ptr = 1;
+                    for (; total_y < FRAME_HEIGHT; ++total_y) {
+                        queue_remove_blocking_u32(&dvi0.q_tmds_free, &tmdsbuf);
+                        memcpy(tmdsbuf, blank, sizeof(blank));
+                        queue_add_blocking_u32(&dvi0.q_tmds_valid, &tmdsbuf);
+                    }
                 }
                 break;
             }

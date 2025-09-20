@@ -221,7 +221,7 @@ const struct dvi_timing __dvi_const(dvi_timing_1024x768p_30hz_cvt_rb2) = {
     .bit_clk_khz       = 260000 // 259320
 };
 
-// 1024x768 @ 60 Hz (Custom, чуть выше лимита 500 MHz)
+// 1024x768 @ 60 Hz (Custom, 512 MHz)
 const struct dvi_timing __dvi_const(dvi_timing_1024x768p_60hz_custom) = {
     .h_sync_polarity   = true,   // +HSync
     .h_front_porch     = 8,      // 1032 - 1024

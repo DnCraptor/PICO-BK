@@ -391,16 +391,15 @@ enum graphics_mode_t graphics_set_mode(enum graphics_mode_t mode) {
             text_buffer_height = 30;
             break;
         default:
-            if (g_conf.is_128_48) {
-                text_buffer_width = MAX_WIDTH;
-                text_buffer_height = MAX_HEIGHT;
-            }
-            else if (SELECT_VGA) {
+            if (!SELECT_VGA && !g_conf.is_DVI_1024) {
+                text_buffer_width = 100;
+                text_buffer_height = 19;
+            } else if (!g_conf.is_128_48) {
                 text_buffer_width = MAX_WIDTH / 2;
                 text_buffer_height = MAX_HEIGHT / 2;
             } else {
-                text_buffer_width = 100;
-                text_buffer_height = 19;
+                text_buffer_width = MAX_WIDTH;
+                text_buffer_height = MAX_HEIGHT;
             }
     }
 

@@ -192,7 +192,6 @@ target_compile_definitions(${PROJECT_NAME} PRIVATE
 )
 
 target_compile_definitions(${PROJECT_NAME} PRIVATE
-    DVI_VERTICAL_REPEAT=2
     DVI_DEFAULT_SERIAL_CONFIG=murmulator_cfg
     PICO_CORE1_STACK_SIZE=0x200
 )
