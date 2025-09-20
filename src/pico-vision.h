@@ -32,7 +32,7 @@ typedef struct fn_1_12_tbl_rec {
     fn_1_12_ptr action;
 } fn_1_12_tbl_rec_t;
 
-#define BTNS_COUNT 13
+#define BTNS_COUNT 12
 typedef fn_1_12_tbl_rec_t fn_1_12_tbl_t[BTNS_COUNT];
 
 void set_color_schema(const color_schema_t* pschema);
@@ -43,7 +43,7 @@ void draw_panel(int left, int top, int width, int height, char* title, char* bot
 
 void draw_button(int left, int top, int width, const char* txt, bool selected);
 
-void draw_fn_btn(fn_1_12_tbl_rec_t* prec, int left, int top);
+void draw_fn_btn(fn_1_12_tbl_rec_t* prec, int left, int top, bool reduced);
 
 void draw_cmd_line(int left, int top, char* cmd);
 

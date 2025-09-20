@@ -4,6 +4,7 @@
 add_library(libdvi INTERFACE)
 
 target_sources(libdvi INTERFACE
+	${CMAKE_CURRENT_LIST_DIR}/bk.c
 	${CMAKE_CURRENT_LIST_DIR}/dvi.c
 	${CMAKE_CURRENT_LIST_DIR}/dvi.h
 	${CMAKE_CURRENT_LIST_DIR}/dvi_config_defs.h

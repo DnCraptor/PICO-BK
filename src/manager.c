@@ -49,7 +49,7 @@ static volatile bool f12Pressed = false;
 static volatile bool tabPressed = false;
 static volatile bool spacePressed = false;
 static volatile bool confEditMode = false;
-volatile bool escPressed = false;
+volatile bool escWasPressed = false;
 static volatile bool leftPressed = false;
 static volatile bool rightPressed = false;
 volatile bool upPressed = false;
@@ -170,7 +170,7 @@ static file_panel_desc_t* psp = &left_panel;
 static bool mark_to_exit_flag = false;
 static void mark_to_exit(uint8_t cmd) {
     f10Pressed = false;
-    escPressed = false;
+    escWasPressed = false;
     mark_to_exit_flag = true;
 }
 static void return_to_mos(uint8_t cmd) {
@@ -329,6 +329,23 @@ static void do_nothing(uint8_t cmd) {
     redraw_window();
 }
 
+
+static char scan_code_2_cp866[0x80] = {
+     0 ,  0 , '1', '2', '3', '4', '5', '6', '7', '8', '9', '0', '-', '=',  0 , ' ', // 0D - TAB
+    'Q', 'W', 'E', 'R', 'T', 'Y', 'U', 'I', 'O', 'P', '[', ']',  0 ,  0 , 'A', 'S',
+    'D', 'F', 'G', 'H', 'J', 'K', 'L', ';',  0 , '~',  0 ,  0 , 'Z', 'X', 'C', 'V',
+    'B', 'N', 'M', ',', '.',  0 ,  0 , '*',  0 , ' ',  0 ,  0 ,  0 ,  0 ,  0 ,  0 ,
+     0 ,  0,   0 ,  0 ,  0 ,  0,   0 , '7', '8', '9', '-', '4', '5', '6', '+', '1',
+    '2', '3', '0', '.',  0 , 0 
+};
+/*
+static char scan_code_2_cp866[0x80] = {
+     0 ,  0 , '1', '2', '3', '4', '5', '6', '7', '8', '9', '0', '-', '=',  0 , ' ', // 0D - TAB
+    'Q', 'W', 'E', 'R', 'T', 'Y', 'U', 'I', 'O', 'P', '[', ']',  0 ,  0 , 'A', 'S',
+    'D', 'F', 'G', 'H', 'J', 'K', 'L', ';','\'', '~',  0 ,'\\', 'Z', 'X', 'C', 'V',
+    'B', 'N', 'M', ',', '.', '/',  0 , '*',  0 , ' ',  0 , 0 ,  0 , 0,  0 , 0,  0 , 0
+};
+*/
 static const line_t bk_mode_lns[] = {
     { 1, " \x81\x8A-0010 + \x8A\x8D\x83\x8C\x84 16K " },
     { 1, " \x81\x8A-0010 Focal + \x8C\x91\x92\x84" },
@@ -336,6 +353,15 @@ static const line_t bk_mode_lns[] = {
     { 1, " \x81\x8A-0011M + \x8A\x8D\x83\x8C\x84    " },
     { 1, " \x81\x8A-0011M + \x8C\x91\x92\x84     " }
 };
+
+#define kbd_j_label_val(kbdpad, idx) \
+        snprintf(b, 8, "%d", kbdpad); \
+        draw_label(xl, yl, 3, b, !blink && z_idx == idx, confEditMode && z_idx == idx); \
+        if (scan_code_2_cp866[kbdpad & 0x7F]) { \
+            b[0] = scan_code_2_cp866[kbdpad & 0x7F]; b[1] = 0; \
+            draw_label(xl+3, yl, 1, b, false, false); \
+        } ++yl \
+
 
 static int MAX_Z = 24;
 static int z_idx = 0;
@@ -353,6 +379,11 @@ static void in_conf(int x, int y) {
     draw_label(x, y+8, 18, "   dendy joystick:", false, z_idx == 7);
     draw_label(x, y+9, 18, "keyboard joystick:", false, z_idx == 8);
     draw_label(x, y+10,18, " manager pallette:", false, z_idx == 9);
+    if(already_swapped_fdds) { // TODO: save it
+        draw_label(x, y+11,23, "  swap FDD drives: true", false, false);
+    } else {
+        draw_label(x, y+11,24, "  swap FDD drives: false", false, false);
+    }
     // TODO: swap fdd
 
     char b[64] = { 0 };
@@ -375,27 +406,27 @@ static void in_conf(int x, int y) {
         (kbdpad_state2 >> 1) & 1,
          kbdpad_state2 & 1
     );
-    draw_label(x, y+16, 35, b, false, false);
+    draw_label(x, y+16, 37, b, false, false);
 
 
     if (is_kbd_joystick) {
-        draw_label(x+2+30, y+0, 23, "            kbdpad1_A:", false, z_idx == 10);
-        draw_label(x+2+30, y+1, 23, "            kbdpad1_B:", false, z_idx == 11);
-        draw_label(x+2+30, y+2, 23, "        kbdpad1_START:", false, z_idx == 12);
-        draw_label(x+2+30, y+3, 23, "       kbdpad1_SELECT:", false, z_idx == 13);
-        draw_label(x+2+30, y+4, 23, "           kbdpad1_UP:", false, z_idx == 14);
-        draw_label(x+2+30, y+5, 23, "         kbdpad1_DOWN:", false, z_idx == 15);
-        draw_label(x+2+30, y+6, 23, "         kbdpad1_LEFT:", false, z_idx == 16);
-        draw_label(x+2+30, y+7, 23, "        kbdpad1_RIGHT:", false, z_idx == 17);
+        draw_label(x+40, y+0, 15, "     kbdpad1_A:", false, z_idx == 10);
+        draw_label(x+40, y+1, 15, "     kbdpad1_B:", false, z_idx == 11);
+        draw_label(x+40, y+2, 15, " kbdpad1_START:", false, z_idx == 12);
+        draw_label(x+40, y+3, 15, "kbdpad1_SELECT:", false, z_idx == 13);
+        draw_label(x+40, y+4, 15, "    kbdpad1_UP:", false, z_idx == 14);
+        draw_label(x+40, y+5, 15, "  kbdpad1_DOWN:", false, z_idx == 15);
+        draw_label(x+40, y+6, 15, "  kbdpad1_LEFT:", false, z_idx == 16);
+        draw_label(x+40, y+7, 15, " kbdpad1_RIGHT:", false, z_idx == 17);
 
-        draw_label(x+2+30, y+9 , 23, "            kbdpad2_A:", false, z_idx == 18);
-        draw_label(x+2+30, y+10, 23, "            kbdpad2_B:", false, z_idx == 19);
-        draw_label(x+2+30, y+11, 23, "        kbdpad2_START:", false, z_idx == 20);
-        draw_label(x+2+30, y+12, 23, "       kbdpad2_SELECT:", false, z_idx == 21);
-        draw_label(x+2+30, y+13, 23, "           kbdpad2_UP:", false, z_idx == 22);
-        draw_label(x+2+30, y+14, 23, "         kbdpad2_DOWN:", false, z_idx == 23);
-        draw_label(x+2+30, y+15, 23, "         kbdpad2_LEFT:", false, z_idx == 24);
-        draw_label(x+2+30, y+16, 23, "        kbdpad2_RIGHT:", false, z_idx == 25);
+        draw_label(x+40, y+9 , 15, "     kbdpad2_A:", false, z_idx == 18);
+        draw_label(x+40, y+10, 15, "     kbdpad2_B:", false, z_idx == 19);
+        draw_label(x+40, y+11, 15, " kbdpad2_START:", false, z_idx == 20);
+        draw_label(x+40, y+12, 15, "kbdpad2_SELECT:", false, z_idx == 21);
+        draw_label(x+40, y+13, 15, "    kbdpad2_UP:", false, z_idx == 22);
+        draw_label(x+40, y+14, 15, "  kbdpad2_DOWN:", false, z_idx == 23);
+        draw_label(x+40, y+15, 15, "  kbdpad2_LEFT:", false, z_idx == 24);
+        draw_label(x+40, y+16, 15, " kbdpad2_RIGHT:", false, z_idx == 25);
     }
 
     draw_label(x+18, y+1, 22, bk_mode_lns[g_conf.bk0010mode].txt, z_idx == 0, z_idx == 0);
@@ -416,39 +447,25 @@ static void in_conf(int x, int y) {
 
     if (is_kbd_joystick) {
         MAX_Z = 25;
-        snprintf(b, 8, "%d", kbdpad1_A);
-        draw_label(x+25+30, y+0, 3, b, !blink && z_idx == 10, confEditMode && z_idx == 10);
-        snprintf(b, 8, "%d", kbdpad1_B);
-        draw_label(x+25+30, y+1, 3, b, !blink && z_idx == 11, confEditMode && z_idx == 11);
-        snprintf(b, 8, "%d", kbdpad1_START);
-        draw_label(x+25+30, y+2, 3, b, !blink && z_idx == 12, confEditMode && z_idx == 12);
-        snprintf(b, 8, "%d", kbdpad1_SELECT);
-        draw_label(x+25+30, y+3, 3, b, !blink && z_idx == 13, confEditMode && z_idx == 13);
-        snprintf(b, 8, "%d", kbdpad1_UP);
-        draw_label(x+25+30, y+4, 3, b, !blink && z_idx == 14, confEditMode && z_idx == 14);
-        snprintf(b, 8, "%d", kbdpad1_DOWN);
-        draw_label(x+25+30, y+5, 3, b, !blink && z_idx == 15, confEditMode && z_idx == 15);
-        snprintf(b, 8, "%d", kbdpad1_LEFT);
-        draw_label(x+25+30, y+6, 3, b, !blink && z_idx == 16, confEditMode && z_idx == 16);
-        snprintf(b, 8, "%d", kbdpad1_RIGHT);
-        draw_label(x+25+30, y+7, 3, b, !blink && z_idx == 17, confEditMode && z_idx == 17);
-
-        snprintf(b, 8, "%d", kbdpad2_A);
-        draw_label(x+25+30, y+9 , 3, b, !blink && z_idx == 18, confEditMode && z_idx == 18);
-        snprintf(b, 8, "%d", kbdpad2_B);
-        draw_label(x+25+30, y+10, 3, b, !blink && z_idx == 19, confEditMode && z_idx == 19);
-        snprintf(b, 8, "%d", kbdpad2_START);
-        draw_label(x+25+30, y+11, 3, b, !blink && z_idx == 20, confEditMode && z_idx == 20);
-        snprintf(b, 8, "%d", kbdpad2_SELECT);
-        draw_label(x+25+30, y+12, 3, b, !blink && z_idx == 21, confEditMode && z_idx == 21);
-        snprintf(b, 8, "%d", kbdpad2_UP);
-        draw_label(x+25+30, y+13, 3, b, !blink && z_idx == 22, confEditMode && z_idx == 22);
-        snprintf(b, 8, "%d", kbdpad2_DOWN);
-        draw_label(x+25+30, y+14, 3, b, !blink && z_idx == 23, confEditMode && z_idx == 23);
-        snprintf(b, 8, "%d", kbdpad2_LEFT);
-        draw_label(x+25+30, y+15, 3, b, !blink && z_idx == 24, confEditMode && z_idx == 24);
-        snprintf(b, 8, "%d", kbdpad2_RIGHT);
-        draw_label(x+25+30, y+16, 3, b, !blink && z_idx == 25, confEditMode && z_idx == 25);
+        int xl = x+56;
+        int yl = y;
+        kbd_j_label_val(kbdpad1_A, 10);
+        kbd_j_label_val(kbdpad1_B, 11);
+        kbd_j_label_val(kbdpad1_START, 12);
+        kbd_j_label_val(kbdpad1_SELECT, 13);
+        kbd_j_label_val(kbdpad1_UP, 14);
+        kbd_j_label_val(kbdpad1_DOWN, 15);
+        kbd_j_label_val(kbdpad1_LEFT, 16);
+        kbd_j_label_val(kbdpad1_RIGHT, 17);
+        ++yl;
+        kbd_j_label_val(kbdpad2_A, 18);
+        kbd_j_label_val(kbdpad2_B, 19);
+        kbd_j_label_val(kbdpad2_START, 20);
+        kbd_j_label_val(kbdpad2_SELECT, 21);
+        kbd_j_label_val(kbdpad2_UP, 22);
+        kbd_j_label_val(kbdpad2_DOWN, 23);
+        kbd_j_label_val(kbdpad2_LEFT, 24);
+        kbd_j_label_val(kbdpad2_RIGHT, 25);
     } else {
         MAX_Z = 9;
     }
@@ -572,29 +589,29 @@ static void conf_it(uint8_t cmd) {
             uint8_t kk = lastCleanableScanCode & 0x7F;
             switch (z_idx)
             {
-                case 9 : kbdpad1_A = kk; break;
-                case 10: kbdpad1_B = kk; break;
-                case 11: kbdpad1_START = kk; break;
-                case 12: kbdpad1_SELECT = kk; break;
-                case 13: kbdpad1_UP = kk; break;
-                case 14: kbdpad1_DOWN = kk; break;
-                case 15: kbdpad1_LEFT = kk; break;
-                case 16: kbdpad1_RIGHT = kk; break;
-                case 17: kbdpad2_A = kk; break;
-                case 18: kbdpad2_B = kk; break;
-                case 19: kbdpad2_START = kk; break;
-                case 20: kbdpad2_SELECT = kk; break;
-                case 21: kbdpad2_UP = kk; break;
-                case 22: kbdpad2_DOWN = kk; break;
-                case 23: kbdpad2_LEFT = kk; break;
-                case 24: kbdpad2_RIGHT = kk; break;
+                case 10: kbdpad1_A = kk; break;
+                case 11: kbdpad1_B = kk; break;
+                case 12: kbdpad1_START = kk; break;
+                case 13: kbdpad1_SELECT = kk; break;
+                case 14: kbdpad1_UP = kk; break;
+                case 15: kbdpad1_DOWN = kk; break;
+                case 16: kbdpad1_LEFT = kk; break;
+                case 17: kbdpad1_RIGHT = kk; break;
+                case 18: kbdpad2_A = kk; break;
+                case 19: kbdpad2_B = kk; break;
+                case 20: kbdpad2_START = kk; break;
+                case 21: kbdpad2_SELECT = kk; break;
+                case 22: kbdpad2_UP = kk; break;
+                case 23: kbdpad2_DOWN = kk; break;
+                case 24: kbdpad2_LEFT = kk; break;
+                case 25: kbdpad2_RIGHT = kk; break;
             }
             confEditMode = false;
             lastCleanableScanCode = false;
             upPressed = false;
             downPressed = false;
             enterPressed = false;
-            escPressed = false;
+            escWasPressed = false;
             tabPressed = false;
             spacePressed = false;
             blink = false;
@@ -620,7 +637,7 @@ static void conf_it(uint8_t cmd) {
                 } else if (nespad_state & DPAD_A) {
                     enterPressed = true;
                 } else if (nespad_state & DPAD_B) {
-                    escPressed = true;
+                    escWasPressed = true;
                 } else if (nespad_state & DPAD_SELECT) {
                     downPressed = true;
                 } else if ((nespad_state & DPAD_LEFT) || (nespad_state & DPAD_RIGHT)) {
@@ -628,8 +645,9 @@ static void conf_it(uint8_t cmd) {
                 }
             }
        // }
-        if (escPressed) {
-            escPressed = false;
+        if (escWasPressed) {
+            escWasPressed = false;
+            // exit from the window
             break;
         }
         if (enterPressed) {
@@ -645,6 +663,12 @@ static void conf_it(uint8_t cmd) {
             }
             break;
         }
+        if (MAX_Z > 9 && (tabPressed || rightPressed || leftPressed)) {
+            tabPressed = rightPressed = leftPressed = false;
+            if (z_idx <= 9) z_idx = 10;
+            else z_idx = 0;
+            in_conf(x, y);
+        }
         if (upPressed) {
             if (--z_idx < 0) z_idx = 0;
             upPressed = false;
@@ -652,7 +676,7 @@ static void conf_it(uint8_t cmd) {
         }
         if (downPressed) {
             downPressed = false;
-            if (++z_idx > MAX_Z) z_idx = MAX_Z;
+            if (++z_idx > MAX_Z) z_idx = 0;
             in_conf(x, y);
         }
         if (spacePressed) {
@@ -744,6 +768,7 @@ static void swap_drives(uint8_t cmd) {
 
 inline static void if_swap_drives() {
     if (backspacePressed && tabPressed && ctrlPressed) {
+        backspacePressed = false; // TODO: was!
         swap_drives(8);
     }
 }
@@ -949,7 +974,7 @@ static bool m_prompt_ex(const char* txt, const char* bottom) {
                 } else if (nespad_state & DPAD_A) {
                     enterPressed = true;
                 } else if (nespad_state & DPAD_B) {
-                    escPressed = true;
+                    escWasPressed = true;
                 } else if (nespad_state & DPAD_LEFT) {
                     leftPressed = true;
                 } else if (nespad_state & DPAD_RIGHT) {
@@ -971,8 +996,8 @@ static bool m_prompt_ex(const char* txt, const char* bottom) {
             tabPressed = leftPressed = rightPressed = false;
             scan_code_cleanup();
         }
-        if (escPressed) {
-            escPressed = false;
+        if (escWasPressed) {
+            escWasPressed = false;
             scan_code_cleanup();
             return false;
         }
@@ -1131,22 +1156,6 @@ static void m_copy_file(uint8_t cmd) {
     gpio_put(PICO_DEFAULT_LED_PIN, false);
 }
 
-static char scan_code_2_cp866[0x80] = {
-     0 ,  0 , '1', '2', '3', '4', '5', '6', '7', '8', '9', '0', '-', '=',  0 , ' ', // 0D - TAB
-    'Q', 'W', 'E', 'R', 'T', 'Y', 'U', 'I', 'O', 'P', '[', ']',  0 ,  0 , 'A', 'S',
-    'D', 'F', 'G', 'H', 'J', 'K', 'L', ';',  0 , '~',  0 ,  0 , 'Z', 'X', 'C', 'V',
-    'B', 'N', 'M', ',', '.',  0 ,  0 , '*',  0 , ' ',  0 ,  0 ,  0 ,  0 ,  0 ,  0 ,
-     0 ,  0,   0 ,  0 ,  0 ,  0,   0 , '7', '8', '9', '-', '4', '5', '6', '+', '1',
-    '2', '3', '0', '.',  0 , 0 
-};
-/*
-static char scan_code_2_cp866[0x80] = {
-     0 ,  0 , '1', '2', '3', '4', '5', '6', '7', '8', '9', '0', '-', '=',  0 , ' ', // 0D - TAB
-    'Q', 'W', 'E', 'R', 'T', 'Y', 'U', 'I', 'O', 'P', '[', ']',  0 ,  0 , 'A', 'S',
-    'D', 'F', 'G', 'H', 'J', 'K', 'L', ';','\'', '~',  0 ,'\\', 'Z', 'X', 'C', 'V',
-    'B', 'N', 'M', ',', '.', '/',  0 , '*',  0 , ' ',  0 , 0 ,  0 , 0,  0 , 0,  0 , 0
-};
-*/
 static void m_mk_dir(uint8_t cmd) {
 #if EXT_DRIVES_MOUNT
     if (psp->in_dos) {
@@ -1161,8 +1170,8 @@ static void m_mk_dir(uint8_t cmd) {
     draw_panel(20, text_buffer_height / 2 - 20, text_buffer_width - 40, 5, "DIR NAME", 0);
     draw_label(22, text_buffer_height / 2 - 18, text_buffer_width - 44, dir, true, true);
     while(1) {
-        if (escPressed) {
-            escPressed = false;
+        if (escWasPressed) {
+            escWasPressed = false;
             scan_code_cleanup();
             redraw_window();
             return;
@@ -1267,10 +1276,10 @@ static void m_info(uint8_t cmd) {
     };
     lines_t lines = { 26, 0, plns };
     draw_box(1, 1, text_buffer_width - 2, text_buffer_height - 2, "Help", &lines);
-    enterPressed = escPressed = false;
+    enterPressed = escWasPressed = false;
     nespad_state_delay = DPAD_STATE_DELAY;
     f1Pressed = true;
-    while(!escPressed && !enterPressed && f1Pressed) {
+    while(!escWasPressed) {
         if (is_dendy_joystick || is_kbd_joystick) {
             if (is_dendy_joystick) nespad_read();
             if (nespad_state && !(nespad_state & DPAD_START) && !(nespad_state & DPAD_SELECT)) {
@@ -1279,6 +1288,7 @@ static void m_info(uint8_t cmd) {
             }
         }
     }
+    escWasPressed = false;
     f1Pressed = false;
     redraw_window();
 }
@@ -1353,22 +1363,33 @@ static inline fn_1_12_tbl_t* actual_fn_1_12_tbl() {
 }
 
 static void bottom_line() {
+    int bw = BTN_WIDTH;
+    if (SELECT_VGA) { // W/A for 64 characters in a line
+        bw -= 3;
+    }
     for (int i = 0; i < BTNS_COUNT; ++i) {
         const fn_1_12_tbl_rec_t* rec = &(*actual_fn_1_12_tbl())[i];
-        draw_fn_btn(rec, i * BTN_WIDTH, F_BTN_Y_POS);
+        if (SELECT_VGA) { // W/A for 64 characters in a line
+            fn_1_12_tbl_rec_t tmp;
+            memcpy(&tmp, rec, sizeof(fn_1_12_tbl_rec_t));
+            strncpy(tmp.name, rec->name + 1, BTN_WIDTH  - 2);
+            draw_fn_btn(&tmp, i * bw, F_BTN_Y_POS, true);
+        } else {
+            draw_fn_btn(rec, i * bw, F_BTN_Y_POS, false);
+        }
     }
-    draw_text( // TODO: move to pico-vision
+    draw_text(
         bk_mode_lns[g_conf.bk0010mode].txt,
-        BTN_WIDTH * 13 + 3,
-        F_BTN_Y_POS,
+        text_buffer_width - strlen(bk_mode_lns[g_conf.bk0010mode].txt) - 2,
+        PANEL_LAST_Y,
         get_color_schema()->FOREGROUND_FIELD_COLOR,
         get_color_schema()->BACKGROUND_FIELD_COLOR
     );
     char buf[4];
-    snprintf(buf, 4, "%s%s", g_conf.is_AY_on ? "A" : " ", g_conf.is_covox_on ? "C" : " ");
+    snprintf(buf, 4, " %s%s", g_conf.is_AY_on ? "A" : " ", g_conf.is_covox_on ? "C" : " ");
     draw_text( // TODO: move to pico-vision
         buf,
-        BTN_WIDTH * 13,
+        bw * BTNS_COUNT,
         F_BTN_Y_POS,
         5, // red
         0  // black
@@ -1389,7 +1410,8 @@ inline static bool switch_mode_dialog(bk_mode_t* pbk0010mode) {
          bk0010mode,
          0
     );
-    if (escPressed) {
+    if (escWasPressed) {
+        escWasPressed = false;
         return false;
     }
     *pbk0010mode = bk0010mode;
@@ -1793,8 +1815,8 @@ static inline bool run_img(char* path) {
         8,
         "Device to mount", &lines, 2, "Hold ALT - noreboot"
     );
-    if (escPressed) {
-        escPressed = false;
+    if (escWasPressed) {
+        escWasPressed = false;
         redraw_window();
         return false;
     }
@@ -1979,6 +2001,9 @@ static inline void work_cycle() {
             ctrlPressed = altPressed = delPressed = false;
             reset(0);
             return;
+        }
+        if (escWasPressed) {
+            mark_to_exit(0);
         }
         if_swap_drives();
       //  if_overclock();
@@ -2171,9 +2196,9 @@ bool handleScancode(uint32_t ps2scancode) { // core 1
     lastCleanableScanCode = ps2scancode;
     switch (ps2scancode) {
       case 0x01: // Esc down
-        escPressed = true; break;
+    //    escPressed = true; break;
       case 0x81: // Esc up
-        escPressed = false; break;
+        escWasPressed = true; break;
       case 0x4B: // left
         leftPressed = true; break;
       case 0xCB: // left
@@ -2447,7 +2472,7 @@ void manager(bool force) {
         true_covox = 0;
         az_covox_R = 0;
         az_covox_L = 0;
-        escPressed = false;
+        escWasPressed = false;
         beep(0);
         ps2cleanup();
         manager_started = true;

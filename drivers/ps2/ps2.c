@@ -412,6 +412,7 @@ void __not_in_flash() ps2poll() {
         return;
     }
     if (handleScancode(ps2scancode)) {
+        if (ps2bufsize) --ps2bufsize;
         return;
     }
 }

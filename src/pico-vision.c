@@ -114,7 +114,7 @@ void draw_box_ex(int left, int top, int width, int height, const char* title, co
 }
 
 extern volatile bool enterPressed;
-extern volatile bool escPressed;
+extern volatile bool escWasPressed;
 extern volatile bool upPressed;
 extern volatile bool downPressed;
 void scan_code_cleanup();
@@ -155,7 +155,7 @@ int draw_selector(int left, int top, int width, int height, const char* title, c
                 } else if (nespad_state & DPAD_A) {
                     enterPressed = true;
                 } else if (nespad_state & DPAD_B) {
-                    escPressed = true;
+                    escWasPressed = true;
                 }
             }
         }
@@ -174,8 +174,8 @@ int draw_selector(int left, int top, int width, int height, const char* title, c
             if (s_line >= plines->sz) s_line = plines->sz - 1;
             downPressed = false;
         }
-        if (escPressed) {
-          //  escPressed = false;
+        if (escWasPressed) {
+            escWasPressed = false;
             break;
         }
     }
@@ -183,8 +183,17 @@ int draw_selector(int left, int top, int width, int height, const char* title, c
     return selected_line;
 }
 
-void draw_fn_btn(fn_1_12_tbl_rec_t* prec, int left, int top) {
+void draw_fn_btn(fn_1_12_tbl_rec_t* prec, int left, int top, bool reduced) {
     char line[10];
+    if (reduced) {
+        sprintf(line, "    ");
+        line[0] = prec->mark;
+        draw_text(line, left, top, pcs->FOREGROUND_F1_12_COLOR, pcs->BACKGROUND_F1_12_COLOR);
+        // button
+        sprintf(line, prec->name);
+        draw_text(line, left + 1, top, pcs->FOREGROUND_F_BTN_COLOR, pcs->BACKGROUND_F_BTN_COLOR);
+        return;
+    }
     sprintf(line, "       ");
     // 1, 2, 3... button mark
     line[0] = prec->pre_mark;

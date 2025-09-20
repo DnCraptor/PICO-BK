@@ -10,8 +10,8 @@ extern "C" {
 #include <pico/sem.h>
 #include <pico/multicore.h>
 #include <pico.h>
+#include <hardware/clocks.h>
 #include <hardware/pwm.h>
-#include "hardware/clocks.h"
 #include <pico/stdlib.h>
 #include <hardware/vreg.h>
 #include <pico/stdio.h>
@@ -59,144 +59,13 @@ void PWM_init_pin(uint8_t pinN, uint16_t max_lvl) {
     pwm_config_set_wrap(&config, max_lvl); // MAX PWM value
     pwm_init(pwm_gpio_to_slice_num(pinN), &config, true);
 }
-#if NESPAD_ENABLED
-int timer_period = 54925;
-#endif
 
-extern "C" {
-#include "dvi.h"
-#include "dvi_timing.h"
-#include "common_dvi_pin_configs.h"
-#include "tmds_encode.h"
-}
 #define VREG_VSEL VREG_VOLTAGE_1_30
-#define DVI_TIMING dvi_timing_800x600p_60hz
-#define FRAME_WIDTH 800
-#define FRAME_HEIGHT 300
-struct dvi_inst dvi0;
-#define DWORDS_PER_PLANE (FRAME_WIDTH / DVI_SYMBOLS_PER_WORD)
-#define BYTES_PER_PLANE (DWORDS_PER_PLANE * 4)
-#define BLACK 0x7fd00
-uint32_t __aligned(4) blank[DWORDS_PER_PLANE * 3];
-//uint32_t __aligned(4) last[DWORDS_PER_PLANE * 3];
-static semaphore_t vga_start_semaphore;
+extern "C" semaphore_t vga_start_semaphore;
+extern "C" void dvi_init_bk();
+extern "C" void dvi_on_core1();
+extern "C" void flash_timings();
 
-extern "C" uint64_t tmds_2bpp_table_bk_b[16];   // только 01 - пиксель
-extern "C" uint64_t tmds_2bpp_table_bk_g[16];   // только 10 - пиксель
-extern "C" uint64_t tmds_2bpp_table_bk_r[16];   // только 11 - пиксель
-extern "C" uint64_t tmds_2bpp_table_bk_any[16]; // пиксель 01, 10 и 11, 00 - нет пикселя
-extern "C" uint64_t tmds_2bpp_table_bk_n11[16]; // пиксель только 01 и 10, 00 и 11 - нет пикселя
-extern "C" uint64_t tmds_2bpp_table_bk_n10[16]; // пиксель только 01 и 11, 00 и 10 - нет пикселя
-extern "C" uint64_t tmds_2bpp_table_bk_n01[16]; // пиксель только 10 и 11, 00 и 01 - нет пикселя
-extern "C" uint64_t tmds_2bpp_table_bk_noc[16]; // нет пикселя во всех кейсах
-extern "C" uint64_t tmds_2bpp_table_bk_2br[16]; // вариант с "честной" двухбиткой
-extern "C" uint64_t tmds_2bpp_table_bk_2bb[16]; // вариант с "честной" двухбиткой: 00 - чёрный, но 01 - светлее, чем 10, а 11 - самый светлый
-
-typedef struct tmds_2bpp_tables_bk_s {
-    uint64_t* b;
-    uint64_t* g;
-    uint64_t* r;
-} tmds_2bpp_tables_bk_t;
-
-const static tmds_2bpp_tables_bk_t tmds_2bpp_tables_bk[16] = {
-    { tmds_2bpp_table_bk_b  , tmds_2bpp_table_bk_g  , tmds_2bpp_table_bk_r   }, //  0 чёрный-синий-зелёный-красный
-    { tmds_2bpp_table_bk_g  , tmds_2bpp_table_bk_b  , tmds_2bpp_table_bk_any }, //  1 чёрный-жёлтый-пурпур-красный
-    { tmds_2bpp_table_bk_b  , tmds_2bpp_table_bk_n11, tmds_2bpp_table_bk_r   }, //  2 чёрный-циан-синий-пурпур
-    { tmds_2bpp_table_bk_b  , tmds_2bpp_table_bk_any, tmds_2bpp_table_bk_r   }, //  3 чёрный-зелёный-циан-жёлтый
-    { tmds_2bpp_table_bk_any, tmds_2bpp_table_bk_n01, tmds_2bpp_table_bk_n10 }, //  4 чёрный-пурпур-циан-белый
-    { tmds_2bpp_table_bk_any, tmds_2bpp_table_bk_any, tmds_2bpp_table_bk_any }, //  5 чёрный-белый-белый-белый
-    { tmds_2bpp_table_bk_noc, tmds_2bpp_table_bk_noc, tmds_2bpp_table_bk_2bb }, //  6 чёрный-кирпич-тёмный_кирпич-красный
-    { tmds_2bpp_table_bk_noc, tmds_2bpp_table_bk_2bb, tmds_2bpp_table_bk_2bb }, //  7
-    { tmds_2bpp_table_bk_2bb, tmds_2bpp_table_bk_noc, tmds_2bpp_table_bk_2bb }, //  8
-    { tmds_2bpp_table_bk_g  , tmds_2bpp_table_bk_b  , tmds_2bpp_table_bk_n01 }, //  9 - todo
-    { tmds_2bpp_table_bk_g  , tmds_2bpp_table_bk_2br, tmds_2bpp_table_bk_n01 }, // 10 - todo
-    { tmds_2bpp_table_bk_b  , tmds_2bpp_table_bk_g  , tmds_2bpp_table_bk_n01 }, // 11 чёрный-cyan-yellow-red
-    { tmds_2bpp_table_bk_r  , tmds_2bpp_table_bk_n01, tmds_2bpp_table_bk_b   }, // 12 чёрный-red-green-cyan
-    { tmds_2bpp_table_bk_n10, tmds_2bpp_table_bk_any, tmds_2bpp_table_bk_n01 }, // 13 чёрный-cyan-yellow-white
-    { tmds_2bpp_table_bk_b  , tmds_2bpp_table_bk_any, tmds_2bpp_table_bk_n10 }, // 14 чёрный-yellow-green-white
-    { tmds_2bpp_table_bk_n10, tmds_2bpp_table_bk_any, tmds_2bpp_table_bk_r   }, // 15 чёрный-cyan-green-white
-};
-
-#define tmds_encode_2bpp_bk_b(t) tmds_encode_2bpp_bk(bk_page, tmdsbuf, t)
-#define tmds_encode_2bpp_bk_g(t) tmds_encode_2bpp_bk(bk_page, tmdsbuf + DWORDS_PER_PLANE, t)
-#define tmds_encode_2bpp_bk_r(t) tmds_encode_2bpp_bk(bk_page, tmdsbuf + 2 * DWORDS_PER_PLANE, t)
-
-static void __not_in_flash() dvi_on_core1() {
-	for (int i = 0; i < sizeof(blank) / sizeof(blank[0]); ++i) {
-		blank[i] = BLACK;
-	}
-    dvi_init(&dvi0, next_striped_spin_lock_num(), next_striped_spin_lock_num());
-    dvi_register_irqs_this_core(&dvi0, DMA_IRQ_1);
-    dvi_start(&dvi0);
-    uint32_t *tmdsbuf = 0;
-    sem_acquire_blocking(&vga_start_semaphore);
-    while (true) {
-        register enum graphics_mode_t gmode = get_graphics_mode();
-        switch(gmode) {
-            case TEXTMODE_: {
-                register uint8_t* bk_text = (uint8_t*)TEXT_VIDEO_RAM;
-                for (uint y = 0; y < FRAME_HEIGHT; ++y) {
-                    queue_remove_blocking_u32(&dvi0.q_tmds_free, &tmdsbuf);
-                    tmds_encode_64c_b(bk_text + (y >> 4) * (100 * 2), tmdsbuf, y);
-                    tmds_encode_64c_g(bk_text + (y >> 4) * (100 * 2), tmdsbuf + DWORDS_PER_PLANE, y);
-                    tmds_encode_64c_r(bk_text + (y >> 4) * (100 * 2), tmdsbuf + DWORDS_PER_PLANE * 2, y);
-                    queue_add_blocking_u32(&dvi0.q_tmds_valid, &tmdsbuf);
-                }
-                break;
-            }
-            case BK_256x256x2: {
-                uint total_y = 0;
-                for (uint y = 0; y < (FRAME_HEIGHT - 256) / 2; ++y, ++total_y) {
-                    queue_remove_blocking_u32(&dvi0.q_tmds_free, &tmdsbuf);
-                    memcpy(tmdsbuf, blank, sizeof(blank));
-                    queue_add_blocking_u32(&dvi0.q_tmds_valid, &tmdsbuf);
-                }
-                const tmds_2bpp_tables_bk_t& t = tmds_2bpp_tables_bk[g_conf.graphics_pallette_idx & 15];
-                uint64_t* b = t.b;
-                uint64_t* g = t.g;
-                uint64_t* r = t.r;
-                for (uint y = 0; y < g_conf.graphics_buffer_height; ++y, ++total_y) {
-                    register uint32_t* bk_page = (uint32_t*)get_graphics_buffer(y);
-                    queue_remove_blocking_u32(&dvi0.q_tmds_free, &tmdsbuf);
-                    tmds_encode_2bpp_bk_b(b);
-                    tmds_encode_2bpp_bk_g(g);
-                    tmds_encode_2bpp_bk_r(r);
-                    queue_add_blocking_u32(&dvi0.q_tmds_valid, &tmdsbuf);
-                }
-                *vsync_ptr = 1;
-                for (; total_y < FRAME_HEIGHT; ++total_y) {
-                    queue_remove_blocking_u32(&dvi0.q_tmds_free, &tmdsbuf);
-                    memcpy(tmdsbuf, blank, sizeof(blank));
-                    queue_add_blocking_u32(&dvi0.q_tmds_valid, &tmdsbuf);
-                }
-                break;
-            }
-            default: {
-                uint total_y = 0;
-                for (uint y = 0; y < (FRAME_HEIGHT - 256) / 2; ++y, ++total_y) {
-                    queue_remove_blocking_u32(&dvi0.q_tmds_free, &tmdsbuf);
-                    memcpy(tmdsbuf, blank, sizeof(blank));
-                    queue_add_blocking_u32(&dvi0.q_tmds_valid, &tmdsbuf);
-                }
-                for (uint y = 0; y < g_conf.graphics_buffer_height; ++y, ++total_y) {
-                    register uint32_t* bk_page = (uint32_t*)get_graphics_buffer(y);
-                    queue_remove_blocking_u32(&dvi0.q_tmds_free, &tmdsbuf);
-                    tmds_encode_1bpp_bk(bk_page, tmdsbuf, FRAME_WIDTH);
-                    memcpy(tmdsbuf + DWORDS_PER_PLANE, tmdsbuf, BYTES_PER_PLANE);
-                    memcpy(tmdsbuf + 2 * DWORDS_PER_PLANE, tmdsbuf, BYTES_PER_PLANE);
-                    queue_add_blocking_u32(&dvi0.q_tmds_valid, &tmdsbuf);
-                }
-                *vsync_ptr = 1;
-                for (; total_y < FRAME_HEIGHT; ++total_y) {
-                    queue_remove_blocking_u32(&dvi0.q_tmds_free, &tmdsbuf);
-                    memcpy(tmdsbuf, blank, sizeof(blank));
-                    queue_add_blocking_u32(&dvi0.q_tmds_valid, &tmdsbuf);
-                }
-                break;
-            }
-        }
-    }
-}
 /* Renderer loop on Pico's second core */
 void __time_critical_func(render_core)() {
     graphics_set_buffer(CPU_PAGE51_MEM_ADR, 512, 256);
@@ -479,7 +348,7 @@ inline static void read_config(const char* path) {
     if (mode >= 0 && mode < 0x80)  kbdpad2_RIGHT = mode;
     const char p25[] = "manager_pallette_idx:";
     mode = parse_conf_word(buf, p25, sizeof(p25), 256);
-    if (mode >= 0 && mode <= 1) {
+    if (mode >= 0) {
         g_conf.manager_pallette_idx = mode;
         set_color_schema(mode ? &color_schema1 : &color_schema0);
     }
@@ -689,34 +558,11 @@ static int testPins(uint32_t pin0, uint32_t pin1) {
     return res;
 }
 
-#if !PICO_RP2040
-#include <hardware/structs/qmi.h>
-#include <hardware/structs/bus_ctrl.h>
-static void __not_in_flash() flash_timings() {
-	const int max_flash_freq = 88 * MHZ;
-	const int clock_hz = DVI_TIMING.bit_clk_khz * 1000;
-	int divisor = (clock_hz + max_flash_freq - 1) / max_flash_freq;
-	if (divisor == 1 && clock_hz > 100000000) {
-		divisor = 2;
-	}
-	int rxdelay = divisor;
-	if (clock_hz / divisor > 100000000) {
-		rxdelay += 1;
-	}
-	qmi_hw->m[0].timing = 0x60007000 |
-						rxdelay << QMI_M0_TIMING_RXDELAY_LSB |
-						divisor << QMI_M0_TIMING_CLKDIV_LSB;
-}
-#endif
-
 int main() {
 #if !PICO_RP2040
 	vreg_disable_voltage_limit();
 	vreg_set_voltage(VREG_VSEL);
     flash_timings();
-    sleep_ms(100);
-	// Run system at TMDS bit clock
-	set_sys_clock_khz(DVI_TIMING.bit_clk_khz, true);
 #else
     hw_set_bits(&vreg_and_chip_reset_hw->vreg, VREG_AND_CHIP_RESET_VREG_VSEL_BITS);
     sleep_ms(10);
@@ -768,12 +614,10 @@ int main() {
     SELECT_VGA = (link == 0) || (link == 0x1F);
 
     if (!SELECT_VGA) {
-        dvi0.timing = &DVI_TIMING;
-        dvi0.ser_cfg = DVI_DEFAULT_SERIAL_CONFIG;
+        dvi_init_bk();
     }
 
     sem_init(&vga_start_semaphore, 0, 1);
-	hw_set_bits(&bus_ctrl_hw->priority, BUSCTRL_BUS_PRIORITY_PROC1_BITS);
     multicore_launch_core1(render_core);
     sem_release(&vga_start_semaphore);
 
