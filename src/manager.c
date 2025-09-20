@@ -544,11 +544,11 @@ const color_schema_t color_schema0 = {
    /*BACKGROUND_F1_10_COLOR =*/0b0000, // Black
    /*FOREGROUND_F1_10_COLOR =*/0b0111, // White
 
-   /*BACKGROUND_F_BTN_COLOR =*/0b0011, // Marin
+   /*BACKGROUND_F_BTN_COLOR =*/0b0011, // Cyan
    /*FOREGROUND_F_BTN_COLOR =*/0b0000, // Black
  
    /*BACKGROUND_CMD_COLOR   =*/0b0000, // Black
-   /*FOREGROUND_CMD_COLOR   =*/0b0011, // Marin
+   /*FOREGROUND_CMD_COLOR   =*/0b0011, // Cyan
    /*BACKGROUND_SEL_BTN_COLOR*/0b0111, // White
   
    /*FOREGROUND_SELECTED_COLOR =*/0b0000, // Black
@@ -563,11 +563,11 @@ const color_schema_t color_schema1 = {
    /*BACKGROUND_F1_10_COLOR =*/0b0000, // Black
    /*FOREGROUND_F1_10_COLOR =*/0b0111, // White
 
-   /*BACKGROUND_F_BTN_COLOR =*/0b0011, // Marin
+   /*BACKGROUND_F_BTN_COLOR =*/0b0011, // Cyan
    /*FOREGROUND_F_BTN_COLOR =*/0b0000, // Black
  
    /*BACKGROUND_CMD_COLOR   =*/0b0000, // Black
-   /*FOREGROUND_CMD_COLOR   =*/0b0011, // Marin
+   /*FOREGROUND_CMD_COLOR   =*/0b0011, // Cyan
    /*BACKGROUND_SEL_BTN_COLOR*/0b0111, // White
   
    /*FOREGROUND_SELECTED_COLOR =*/0b0000, // Black
@@ -615,6 +615,7 @@ static void conf_it(uint8_t cmd) {
             tabPressed = false;
             spacePressed = false;
             blink = false;
+            scan_code_cleanup();
             in_conf(x, y);
         }
         if (confEditMode) {
@@ -647,6 +648,7 @@ static void conf_it(uint8_t cmd) {
        // }
         if (escWasPressed) {
             escWasPressed = false;
+            scan_code_cleanup();
             // exit from the window
             break;
         }
@@ -1290,6 +1292,7 @@ static void m_info(uint8_t cmd) {
     }
     escWasPressed = false;
     f1Pressed = false;
+    scan_code_cleanup();
     redraw_window();
 }
 
@@ -1412,6 +1415,7 @@ inline static bool switch_mode_dialog(bk_mode_t* pbk0010mode) {
     );
     if (escWasPressed) {
         escWasPressed = false;
+        scan_code_cleanup();
         return false;
     }
     *pbk0010mode = bk0010mode;
@@ -1817,6 +1821,7 @@ static inline bool run_img(char* path) {
     );
     if (escWasPressed) {
         escWasPressed = false;
+        scan_code_cleanup();
         redraw_window();
         return false;
     }
@@ -2002,9 +2007,6 @@ static inline void work_cycle() {
             reset(0);
             return;
         }
-        if (escWasPressed) {
-            mark_to_exit(0);
-        }
         if_swap_drives();
       //  if_overclock();
         if_sound_control();
@@ -2026,9 +2028,11 @@ static inline void work_cycle() {
         //if (lastCleanableScanCode) DBGM_PRINT(("lastCleanableScanCode: %02Xh", lastCleanableScanCode));
         switch(lastCleanableScanCode) {
           case 0x01: // Esc down
-          //  mark_to_exit(9);
+            scan_code_cleanup();
+            break;
           case 0x81: // Esc up
-          //  scan_code_processed();
+         //   mark_to_exit(9);
+            scan_code_cleanup();
             break;
           case 0x3B: // F1..10 down
           case 0x3C: // F2
@@ -2196,7 +2200,7 @@ bool handleScancode(uint32_t ps2scancode) { // core 1
     lastCleanableScanCode = ps2scancode;
     switch (ps2scancode) {
       case 0x01: // Esc down
-    //    escPressed = true; break;
+        scan_code_cleanup(); break;
       case 0x81: // Esc up
         escWasPressed = true; break;
       case 0x4B: // left
@@ -2473,6 +2477,7 @@ void manager(bool force) {
         az_covox_R = 0;
         az_covox_L = 0;
         escWasPressed = false;
+        scan_code_cleanup();
         beep(0);
         ps2cleanup();
         manager_started = true;
