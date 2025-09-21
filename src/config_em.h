@@ -31,6 +31,7 @@ typedef struct config_em {
     uint8_t manager_pallette_idx;
     bool is_128_48;
     bool is_DVI_1024;
+    bool is_8x8;
 } config_em_t;
 
 extern volatile config_em_t g_conf;

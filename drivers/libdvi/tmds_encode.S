@@ -1099,19 +1099,23 @@ tmds_2bpp_table:
 	.word 0xbf230 // 10, 11
 	.word 0xbf203 // 11, 11
 
-.extern font_8x16
+.extern font
+.extern font_shift // 4 или 3 (высота 16 или 8 линий)
 // r0: input buffer (2-bytes: char + color, color 4-bit fg, 4-bit bg)
 // r1: output buffer (word-aligned)
-// r2: output line number (0-299), позже - glyph_line
+// r2: glyph_line
 decl_func tmds_encode_64c_b_100
 	push {r4-r7, lr}
 	mov r7, r8
-	push {r7}
+	mov r6, r9
+	push {r6,r7}
 
-    ldr r3, =font_8x16      // адрес массива
+    ldr r3, =font_shift
+	ldr r3, [r3]
+	mov r9, r3
 
-    lsls r2, #28            // убрать все, кроме младших 4 бит (сдвиг влево)
-    lsrs r2, #28            // вернуть обратно вправо. результат: остаток от деления на 16
+    ldr r3, =font           // адрес массива
+	ldr r3, [r3]
 
 	movs r6, #100         // символов в строке
 1:
@@ -1144,7 +1148,10 @@ decl_func tmds_encode_64c_b_100
 4:
 	adds r7, #128         // сдвигаемся к инверсной таблице (для бэка)
 5: // всё готово - рисуем
-	lsls r4, #4             // умножить код символа на 16 (высота шрифта)
+    mov r12, r5
+    mov r5, r9
+	lsls r4, r5             // умножить код символа на высоту шрифта (сдвигом через font_shift)
+    mov r5, r12
 	add r4, r2              // + glyph_line
 	add r4, r3              // + font_8x16 - получаем адрес glyph_pixels
     ldrb r4, [r4]           // теперь в r4 лежит глиф
@@ -1180,7 +1187,8 @@ decl_func tmds_encode_64c_b_100
 	subs r6, #1
 	bne 1b
 
-	pop {r7}
+	pop {r6,r7}
+	mov r9, r6
 	mov r8, r7
 	pop {r4-r7, pc}
 
@@ -1222,16 +1230,19 @@ tmds_64c_table_b:
 
 // r0: input buffer (2-bytes: char + color, color 4-bit fg, 4-bit bg)
 // r1: output buffer (word-aligned)
-// r2: output line number (0-256), позже - glyph_line
+// r2: glyph_line
 decl_func tmds_encode_64c_b_128
 	push {r4-r7, lr}
 	mov r7, r8
-	push {r7}
+	mov r6, r9
+	push {r6,r7}
 
-    ldr r3, =font_8x16      // адрес массива
+    ldr r3, =font_shift
+	ldr r3, [r3]
+	mov r9, r3
 
-    lsls r2, #28            // убрать все, кроме младших 4 бит (сдвиг влево)
-    lsrs r2, #28            // вернуть обратно вправо. результат: остаток от деления на 16
+    ldr r3, =font           // адрес массива
+	ldr r3, [r3]
 
 	movs r6, #128         // символов в строке
 1:
@@ -1264,7 +1275,10 @@ decl_func tmds_encode_64c_b_128
 4:
 	adds r7, #128         // сдвигаемся к инверсной таблице (для бэка)
 5: // всё готово - рисуем
-	lsls r4, #4             // умножить код символа на 16 (высота шрифта)
+    mov r12, r5
+    mov r5, r9
+	lsls r4, r5             // умножить код символа на высоту шрифта (сдвигом через font_shift)
+    mov r5, r12
 	add r4, r2              // + glyph_line
 	add r4, r3              // + font_8x16 - получаем адрес glyph_pixels
     ldrb r4, [r4]           // теперь в r4 лежит глиф
@@ -1300,22 +1314,26 @@ decl_func tmds_encode_64c_b_128
 	subs r6, #1
 	bne 1b
 
-	pop {r7}
+	pop {r6,r7}
+	mov r9, r6
 	mov r8, r7
 	pop {r4-r7, pc}
 
 // r0: input buffer (2-bytes: char + color, color 4-bit fg, 4-bit bg)
 // r1: output buffer (word-aligned)
-// r2: output line number (0-256), позже - glyph_line
+// r2: glyph_line
 decl_func tmds_encode_64c_b_64
 	push {r4-r7, lr}
 	mov r7, r8
-	push {r7}
+	mov r6, r9
+	push {r6,r7}
 
-    ldr r3, =font_8x16      // адрес массива
+    ldr r3, =font_shift
+	ldr r3, [r3]
+	mov r9, r3
 
-    lsls r2, #28            // убрать все, кроме младших 4 бит (сдвиг влево)
-    lsrs r2, #28            // вернуть обратно вправо. результат: остаток от деления на 16
+    ldr r3, =font           // адрес массива
+	ldr r3, [r3]
 
 	movs r6, #64            // символов в строке
 1:
@@ -1348,7 +1366,10 @@ decl_func tmds_encode_64c_b_64
 4:
 	adds r7, #128         // сдвигаемся к инверсной таблице (для бэка)
 5: // всё готово - рисуем
-	lsls r4, #4             // умножить код символа на 16 (высота шрифта)
+    mov r12, r5
+    mov r5, r9
+	lsls r4, r5             // умножить код символа на высоту шрифта (сдвигом через font_shift)
+    mov r5, r12
 	add r4, r2              // + glyph_line
 	add r4, r3              // + font_8x16 - получаем адрес glyph_pixels
     ldrb r4, [r4]           // теперь в r4 лежит глиф
@@ -1384,22 +1405,26 @@ decl_func tmds_encode_64c_b_64
 	subs r6, #1
 	bne 1b
 
-	pop {r7}
+	pop {r6,r7}
+	mov r9, r6
 	mov r8, r7
 	pop {r4-r7, pc}
 
 // r0: input buffer (2-bytes: char + color, color 4-bit fg, 4-bit bg)
 // r1: output buffer (word-aligned)
-// r2: output line number (0-299), позже - glyph_line
+// r2: glyph_line
 decl_func tmds_encode_64c_g_100
 	push {r4-r7, lr}
 	mov r7, r8
-	push {r7}
+	mov r6, r9
+	push {r6,r7}
 
-    ldr r3, =font_8x16      // адрес массива
+    ldr r3, =font_shift
+	ldr r3, [r3]
+	mov r9, r3
 
-    lsls r2, #28            // убрать все, кроме младших 4 бит (сдвиг влево)
-    lsrs r2, #28            // вернуть обратно вправо. результат: остаток от деления на 16
+    ldr r3, =font           // адрес массива
+	ldr r3, [r3]
 
 	movs r6, #100         // символов в строке
 1:
@@ -1434,7 +1459,10 @@ decl_func tmds_encode_64c_g_100
 4:
 	adds r7, #128         // сдвигаемся к инверсной таблице (для бэка)
 5: // всё готово - рисуем
-	lsls r4, #4             // умножить на 16 (высота шрифта)
+    mov r12, r5
+    mov r5, r9
+	lsls r4, r5             // умножить код символа на высоту шрифта (сдвигом через font_shift)
+    mov r5, r12
 	add r4, r2              // + glyph_line
 	add r4, r3              // + font_8x16 - получаем адрес glyph_pixels
     ldrb r4, [r4]           // теперь в r4 лежит глиф
@@ -1470,7 +1498,8 @@ decl_func tmds_encode_64c_g_100
 	subs r6, #1
 	bne 1b
 
-	pop {r7}
+	pop {r6,r7}
+	mov r9, r6
 	mov r8, r7
 	pop {r4-r7, pc}
 
@@ -1512,16 +1541,19 @@ tmds_64c_table_g:
 
 // r0: input buffer (2-bytes: char + color, color 4-bit fg, 4-bit bg)
 // r1: output buffer (word-aligned)
-// r2: output line number (0-256), позже - glyph_line
+// r2: glyph_line
 decl_func tmds_encode_64c_g_128
 	push {r4-r7, lr}
 	mov r7, r8
-	push {r7}
+	mov r6, r9
+	push {r6,r7}
 
-    ldr r3, =font_8x16      // адрес массива
+    ldr r3, =font_shift
+	ldr r3, [r3]
+	mov r9, r3
 
-    lsls r2, #28            // убрать все, кроме младших 4 бит (сдвиг влево)
-    lsrs r2, #28            // вернуть обратно вправо. результат: остаток от деления на 16
+    ldr r3, =font           // адрес массива
+	ldr r3, [r3]
 
 	movs r6, #128         // символов в строке
 1:
@@ -1556,7 +1588,10 @@ decl_func tmds_encode_64c_g_128
 4:
 	adds r7, #128         // сдвигаемся к инверсной таблице (для бэка)
 5: // всё готово - рисуем
-	lsls r4, #4             // умножить на 16 (высота шрифта)
+    mov r12, r5
+    mov r5, r9
+	lsls r4, r5             // умножить код символа на высоту шрифта (сдвигом через font_shift)
+    mov r5, r12
 	add r4, r2              // + glyph_line
 	add r4, r3              // + font_8x16 - получаем адрес glyph_pixels
     ldrb r4, [r4]           // теперь в r4 лежит глиф
@@ -1592,22 +1627,26 @@ decl_func tmds_encode_64c_g_128
 	subs r6, #1
 	bne 1b
 
-	pop {r7}
+	pop {r6,r7}
+	mov r9, r6
 	mov r8, r7
 	pop {r4-r7, pc}
 
 // r0: input buffer (2-bytes: char + color, color 4-bit fg, 4-bit bg)
 // r1: output buffer (word-aligned)
-// r2: output line number (0-256), позже - glyph_line
+// r2: glyph_line
 decl_func tmds_encode_64c_g_64
 	push {r4-r7, lr}
 	mov r7, r8
-	push {r7}
+	mov r6, r9
+	push {r6,r7}
 
-    ldr r3, =font_8x16      // адрес массива
+    ldr r3, =font_shift
+	ldr r3, [r3]
+	mov r9, r3
 
-    lsls r2, #28            // убрать все, кроме младших 4 бит (сдвиг влево)
-    lsrs r2, #28            // вернуть обратно вправо. результат: остаток от деления на 16
+    ldr r3, =font           // адрес массива
+	ldr r3, [r3]
 
 	movs r6, #64            // символов в строке
 1:
@@ -1642,7 +1681,10 @@ decl_func tmds_encode_64c_g_64
 4:
 	adds r7, #128         // сдвигаемся к инверсной таблице (для бэка)
 5: // всё готово - рисуем
-	lsls r4, #4             // умножить на 16 (высота шрифта)
+    mov r12, r5
+    mov r5, r9
+	lsls r4, r5             // умножить код символа на высоту шрифта (сдвигом через font_shift)
+    mov r5, r12
 	add r4, r2              // + glyph_line
 	add r4, r3              // + font_8x16 - получаем адрес glyph_pixels
     ldrb r4, [r4]           // теперь в r4 лежит глиф
@@ -1678,22 +1720,26 @@ decl_func tmds_encode_64c_g_64
 	subs r6, #1
 	bne 1b
 
-	pop {r7}
+	pop {r6,r7}
+	mov r9, r6
 	mov r8, r7
 	pop {r4-r7, pc}
 
 // r0: input buffer (2-bytes: char + color, color 4-bit fg, 4-bit bg)
 // r1: output buffer (word-aligned)
-// r2: output line number (0-299), позже - glyph_line
+// r2: glyph_line
 decl_func tmds_encode_64c_r_100
 	push {r4-r7, lr}
 	mov r7, r8
-	push {r7}
+	mov r6, r9
+	push {r6,r7}
 
-    ldr r3, =font_8x16      // адрес массива
+    ldr r3, =font_shift
+	ldr r3, [r3]
+	mov r9, r3
 
-    lsls r2, #28            // убрать все, кроме младших 4 бит (сдвиг влево)
-    lsrs r2, #28            // вернуть обратно вправо. результат: остаток от деления на 16
+    ldr r3, =font           // адрес массива
+	ldr r3, [r3]
 
 	movs r6, #100         // символов в строке
 1:
@@ -1728,7 +1774,10 @@ decl_func tmds_encode_64c_r_100
 4:
 	adds r7, #128         // сдвигаемся к инверсной таблице (для бэка)
 5: // всё готово - рисуем
-	lsls r4, #4             // умножить на 16 (высота шрифта)
+    mov r12, r5
+    mov r5, r9
+	lsls r4, r5             // умножить код символа на высоту шрифта (сдвигом через font_shift)
+    mov r5, r12
 	add r4, r2              // + glyph_line
 	add r4, r3              // + font_8x16 - получаем адрес glyph_pixels
     ldrb r4, [r4]           // теперь в r4 лежит глиф
@@ -1764,7 +1813,8 @@ decl_func tmds_encode_64c_r_100
 	subs r6, #1
 	bne 1b
 
-	pop {r7}
+	pop {r6,r7}
+	mov r9, r6
 	mov r8, r7
 	pop {r4-r7, pc}
 
@@ -1806,16 +1856,19 @@ tmds_64c_table_r:
 
 // r0: input buffer (2-bytes: char + color, color 4-bit fg, 4-bit bg)
 // r1: output buffer (word-aligned)
-// r2: output line number (0-256), позже - glyph_line
+// r2: glyph_line
 decl_func tmds_encode_64c_r_128
 	push {r4-r7, lr}
 	mov r7, r8
-	push {r7}
+	mov r6, r9
+	push {r6,r7}
 
-    ldr r3, =font_8x16      // адрес массива
+    ldr r3, =font_shift
+	ldr r3, [r3]
+	mov r9, r3
 
-    lsls r2, #28            // убрать все, кроме младших 4 бит (сдвиг влево)
-    lsrs r2, #28            // вернуть обратно вправо. результат: остаток от деления на 16
+    ldr r3, =font           // адрес массива
+	ldr r3, [r3]
 
 	movs r6, #128         // символов в строке
 1:
@@ -1850,7 +1903,10 @@ decl_func tmds_encode_64c_r_128
 4:
 	adds r7, #128         // сдвигаемся к инверсной таблице (для бэка)
 5: // всё готово - рисуем
-	lsls r4, #4             // умножить на 16 (высота шрифта)
+    mov r12, r5
+    mov r5, r9
+	lsls r4, r5             // умножить код символа на высоту шрифта (сдвигом через font_shift)
+    mov r5, r12
 	add r4, r2              // + glyph_line
 	add r4, r3              // + font_8x16 - получаем адрес glyph_pixels
     ldrb r4, [r4]           // теперь в r4 лежит глиф
@@ -1886,22 +1942,26 @@ decl_func tmds_encode_64c_r_128
 	subs r6, #1
 	bne 1b
 
-	pop {r7}
+	pop {r6,r7}
+	mov r9, r6
 	mov r8, r7
 	pop {r4-r7, pc}
 
 // r0: input buffer (2-bytes: char + color, color 4-bit fg, 4-bit bg)
 // r1: output buffer (word-aligned)
-// r2: output line number (0-256), позже - glyph_line
+// r2: glyph_line
 decl_func tmds_encode_64c_r_64
 	push {r4-r7, lr}
 	mov r7, r8
-	push {r7}
+	mov r6, r9
+	push {r6,r7}
 
-    ldr r3, =font_8x16      // адрес массива
+    ldr r3, =font_shift
+	ldr r3, [r3]
+	mov r9, r3
 
-    lsls r2, #28            // убрать все, кроме младших 4 бит (сдвиг влево)
-    lsrs r2, #28            // вернуть обратно вправо. результат: остаток от деления на 16
+    ldr r3, =font           // адрес массива
+	ldr r3, [r3]
 
 	movs r6, #64            // символов в строке
 1:
@@ -1936,7 +1996,10 @@ decl_func tmds_encode_64c_r_64
 4:
 	adds r7, #128         // сдвигаемся к инверсной таблице (для бэка)
 5: // всё готово - рисуем
-	lsls r4, #4             // умножить на 16 (высота шрифта)
+    mov r12, r5
+    mov r5, r9
+	lsls r4, r5             // умножить код символа на высоту шрифта (сдвигом через font_shift)
+    mov r5, r12
 	add r4, r2              // + glyph_line
 	add r4, r3              // + font_8x16 - получаем адрес glyph_pixels
     ldrb r4, [r4]           // теперь в r4 лежит глиф
@@ -1972,7 +2035,8 @@ decl_func tmds_encode_64c_r_64
 	subs r6, #1
 	bne 1b
 
-	pop {r7}
+	pop {r6,r7}
+	mov r9, r6
 	mov r8, r7
 	pop {r4-r7, pc}
 

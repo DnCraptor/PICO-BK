@@ -20,6 +20,9 @@ extern volatile uint16_t az_covox_R;
 extern volatile uint16_t covox_mix;
 
 extern int pallete_mask;
+extern uint8_t font_height;
+extern uint8_t font_shift;
+extern uint32_t font_mask;
 
 void graphics_inc_palleter_offset();
 

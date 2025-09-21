@@ -180,18 +180,22 @@ void __not_in_flash() dvi_on_core1() {
                 register uint32_t bytes_per_string = (dvi0.timing->h_active_pixels >> 3) << 1; // ширина символа - 8 пикселей, 2 байта на символ
                 if (dvi0.timing->h_active_pixels >= 1024) {
                     for (uint y = 0; y < FRAME_HEIGHT; ++y) {
+                        register uint32_t glyph_line = y & font_mask;
+                        register uint8_t* bk_line = bk_text + (y >> font_shift) * bytes_per_string;
                         queue_remove_blocking_u32(&dvi0.q_tmds_free, &tmdsbuf);
-                        tmds_encode_64c_b_128(bk_text + (y >> 4) * bytes_per_string, tmdsbuf, y);
-                        tmds_encode_64c_g_128(bk_text + (y >> 4) * bytes_per_string, tmdsbuf + DWORDS_PER_PLANE, y);
-                        tmds_encode_64c_r_128(bk_text + (y >> 4) * bytes_per_string, tmdsbuf + DWORDS_PER_PLANE * 2, y);
+                        tmds_encode_64c_b_128(bk_line, tmdsbuf, glyph_line);
+                        tmds_encode_64c_g_128(bk_line, tmdsbuf + DWORDS_PER_PLANE, glyph_line);
+                        tmds_encode_64c_r_128(bk_line, tmdsbuf + DWORDS_PER_PLANE * 2, glyph_line);
                         queue_add_blocking_u32(&dvi0.q_tmds_valid, &tmdsbuf);
                     }
                 } else {
                     for (uint y = 0; y < FRAME_HEIGHT; ++y) {
+                        register uint32_t glyph_line = y & font_mask;
+                        register uint8_t* bk_line = bk_text + (y >> font_shift) * bytes_per_string;
                         queue_remove_blocking_u32(&dvi0.q_tmds_free, &tmdsbuf);
-                        tmds_encode_64c_b_100(bk_text + (y >> 4) * bytes_per_string, tmdsbuf, y);
-                        tmds_encode_64c_g_100(bk_text + (y >> 4) * bytes_per_string, tmdsbuf + DWORDS_PER_PLANE, y);
-                        tmds_encode_64c_r_100(bk_text + (y >> 4) * bytes_per_string, tmdsbuf + DWORDS_PER_PLANE * 2, y);
+                        tmds_encode_64c_b_100(bk_line, tmdsbuf, glyph_line);
+                        tmds_encode_64c_g_100(bk_line, tmdsbuf + DWORDS_PER_PLANE, glyph_line);
+                        tmds_encode_64c_r_100(bk_line, tmdsbuf + DWORDS_PER_PLANE * 2, glyph_line);
                         queue_add_blocking_u32(&dvi0.q_tmds_valid, &tmdsbuf);
                     }
                 }
@@ -200,9 +204,9 @@ void __not_in_flash() dvi_on_core1() {
             case BK_256x256x2: {
                 if (dvi0.timing->h_active_pixels >= 1024) {
                     const tmds_2bpp_tables_bk_1024_t* t = &tmds_2bpp_tables_1024_bk[g_conf.graphics_pallette_idx & 15];
-                    uint32_t* b = t->b;
-                    uint32_t* g = t->g;
-                    uint32_t* r = t->r;
+                    register uint32_t* b = t->b;
+                    register uint32_t* g = t->g;
+                    register uint32_t* r = t->r;
                     for (uint y = 0; y < g_conf.graphics_buffer_height; ++y) {
                         register uint32_t* bk_page = (uint32_t*)get_graphics_buffer(y);
                         queue_remove_blocking_u32(&dvi0.q_tmds_free, &tmdsbuf);
@@ -219,9 +223,9 @@ void __not_in_flash() dvi_on_core1() {
                         queue_add_blocking_u32(&dvi0.q_tmds_valid, &tmdsbuf);
                     }
                     const tmds_2bpp_tables_bk_t* t = &tmds_2bpp_tables_bk[g_conf.graphics_pallette_idx & 15];
-                    uint64_t* b = t->b;
-                    uint64_t* g = t->g;
-                    uint64_t* r = t->r;
+                    register uint64_t* b = t->b;
+                    register uint64_t* g = t->g;
+                    register uint64_t* r = t->r;
                     for (uint y = 0; y < g_conf.graphics_buffer_height; ++y, ++total_y) {
                         register uint32_t* bk_page = (uint32_t*)get_graphics_buffer(y);
                         queue_remove_blocking_u32(&dvi0.q_tmds_free, &tmdsbuf);

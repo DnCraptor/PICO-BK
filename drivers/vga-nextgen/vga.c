@@ -11,6 +11,7 @@
 #include "hardware/pio.h"
 #include "pico/stdlib.h"
 #include "stdlib.h"
+#include "fnt8x8.h"
 #include "fnt8x16.h"
 #include "pico-vision.h"
 #include "config_em.h"
@@ -19,6 +20,10 @@
 int pallete_mask = 3; // 11 - 2 bits
 uint8_t volatile vsync;
 uint8_t* vsync_ptr = &vsync;
+uint8_t* font = font_8x16;
+uint8_t font_height = 16;
+uint8_t font_shift = 4;
+uint32_t font_mask = 15;
 
 uint16_t pio_program_VGA_instructions[] = {
     //     .wrap_target
@@ -173,19 +178,18 @@ inline static void dma_handler_VGA_impl() {
             y = line_number - graphics_buffer_shift_y;
             break;
         case TEXTMODE_80x30: {
-            uint16_t* output_buffer_16bit = (uint16_t *)*output_buffer;
+            register uint16_t* output_buffer_16bit = (uint16_t *)*output_buffer;
             output_buffer_16bit += shift_picture / 2;
-            const uint font_weight = 8;
-            const uint font_height = 16;
             // "слой" символа
-            uint32_t glyph_line = screen_line % font_height;
+            register uint32_t glyph_line = screen_line & font_mask;
+            register uint8_t fs = font_shift;
             //указатель откуда начать считывать символы
-            uint8_t* text_buffer_line = &text_buffer[screen_line / font_height * text_buffer_width * 2];
+            register uint8_t* text_buffer_line = &text_buffer[(screen_line >> fs) * text_buffer_width * 2];
             for (int x = 0; x < text_buffer_width; x++) {
                 //из таблицы символов получаем "срез" текущего символа
-                uint8_t glyph_pixels = font_8x16[(*text_buffer_line++) * font_height + glyph_line];
+                register uint8_t glyph_pixels = font[(*text_buffer_line++ << fs) + glyph_line];
                 //считываем из быстрой палитры начало таблицы быстрого преобразования 2-битных комбинаций цветов пикселей
-                uint16_t* color = &txt_palette_fast[4 * (*text_buffer_line++)];
+                register uint16_t* color = &txt_palette_fast[4 * (*text_buffer_line++)];
                 *output_buffer_16bit++ = color[glyph_pixels & 3];
                 glyph_pixels >>= 2;
                 *output_buffer_16bit++ = color[glyph_pixels & 3];
@@ -203,13 +207,14 @@ inline static void dma_handler_VGA_impl() {
         if (g_conf.is_128_48) {
             register uint16_t* output_buffer_16bit = (uint16_t *)*output_buffer;
             output_buffer_16bit += shift_picture / 2;
+            register uint8_t fs = font_shift;
             // "слой" символа
-            register uint32_t glyph_line = screen_line & 15;
+            register uint32_t glyph_line = screen_line & font_mask;
             //указатель откуда начать считывать символы
-            register uint8_t* text_buffer_line = &text_buffer[(screen_line >> 4) * text_buffer_width * 2];
+            register uint8_t* text_buffer_line = &text_buffer[(screen_line >> fs) * text_buffer_width * 2];
             for (register int x = 0; x < text_buffer_width; x++) {
                 //из таблицы символов получаем "срез" текущего символа
-                register uint8_t glyph_pixels = font_8x16[((*text_buffer_line++) << 4) + glyph_line];
+                register uint8_t glyph_pixels = font[(*text_buffer_line++ << fs) + glyph_line];
                 //считываем из быстрой палитры начало таблицы быстрого преобразования 2-битных комбинаций цветов пикселей
                 register uint16_t* color = &txt_palette_fast[4 * (*text_buffer_line++)];
                 *output_buffer_16bit++ = color[glyph_pixels & 3];
@@ -234,13 +239,14 @@ inline static void dma_handler_VGA_impl() {
             register uint16_t* output_buffer_16bit = (uint16_t *)*output_buffer;
             output_buffer_16bit += shift_picture >> 1;
             register uint32_t y = screen_line >> 1;
+            register uint8_t fs = font_shift;
             // "слой" символа
-            register uint32_t glyph_line = y & 15;
+            register uint32_t glyph_line = y & font_mask;
             //указатель откуда начать считывать символы
-            register uint8_t* text_buffer_line = &text_buffer[(y >> 4) * text_buffer_width * 2];
+            register uint8_t* text_buffer_line = &text_buffer[(y >> fs) * text_buffer_width * 2];
             for (register int x = 0; x < text_buffer_width; x++) {
                 //из таблицы символов получаем "срез" текущего символа
-                register uint8_t glyph_pixels = font_8x16[((*text_buffer_line++) << 4) + glyph_line];
+                register uint8_t glyph_pixels = font[(*text_buffer_line++ << fs) + glyph_line];
                 //считываем из быстрой палитры начало таблицы быстрого преобразования 2-битных комбинаций цветов пикселей
                 register uint16_t* color = &txt_palette_fast[4 * (*text_buffer_line++)];
                 // преобразование полубайтов
@@ -403,6 +409,18 @@ enum graphics_mode_t graphics_set_mode(enum graphics_mode_t mode) {
             } else {
                 text_buffer_width = MAX_WIDTH;
                 text_buffer_height = MAX_HEIGHT;
+            }
+            if (g_conf.is_8x8) {
+                text_buffer_height <<= 1;
+                font = font_8x8;
+                font_height = 8;
+                font_shift = 3;
+                font_mask = 7;
+            } else {
+                font = font_8x16;
+                font_height = 16;
+                font_shift = 4;
+                font_mask = 15;
             }
     }
 

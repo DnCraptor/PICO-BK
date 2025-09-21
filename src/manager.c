@@ -363,10 +363,9 @@ static const line_t bk_mode_lns[] = {
             draw_label(xl+3, yl, 1, b, false, false); \
         } ++yl \
 
-
-static int MAX_Z = 27;
+static int MAX_Z = 28;
 static int z_idx = 0;
-static bool blink = false;
+static bool is_128_48_new, is_DVI_1024_new, is_8x8_new, blink = false;
 static void in_conf(int x, int y) {
     draw_label(x+1, y, 36, "Use SPACE to edit, ESC to exit", false, true);
 
@@ -382,10 +381,11 @@ static void in_conf(int x, int y) {
     draw_label(x, y+10,18, " manager pallette:", false, z_idx == 9);
     draw_label(x, y+11,31, "   manager 128x48:   (VGA only)", false, z_idx == 10);
     draw_label(x, y+12,30, "    HDMI 1024x768:   (512 MHz)", false, z_idx == 11);
+    draw_label(x, y+13,18, "    use 8x8 font:", false, z_idx == 12);
     if(already_swapped_fdds) { // TODO: save it?
-        draw_label(x, y+13, 23, "  swap FDD drives: true", false, false);
+        draw_label(x, y+14, 24, "  swap FDD drives: true ", false, false);
     } else {
-        draw_label(x, y+13, 24, "  swap FDD drives: false", false, false);
+        draw_label(x, y+14, 24, "  swap FDD drives: false", false, false);
     }
     // TODO: swap fdd
 
@@ -413,23 +413,23 @@ static void in_conf(int x, int y) {
 
 
     if (is_kbd_joystick) {
-        draw_label(x+40, y+0, 15, "     kbdpad1_A:", false, z_idx == 12);
-        draw_label(x+40, y+1, 15, "     kbdpad1_B:", false, z_idx == 13);
-        draw_label(x+40, y+2, 15, " kbdpad1_START:", false, z_idx == 14);
-        draw_label(x+40, y+3, 15, "kbdpad1_SELECT:", false, z_idx == 15);
-        draw_label(x+40, y+4, 15, "    kbdpad1_UP:", false, z_idx == 16);
-        draw_label(x+40, y+5, 15, "  kbdpad1_DOWN:", false, z_idx == 17);
-        draw_label(x+40, y+6, 15, "  kbdpad1_LEFT:", false, z_idx == 18);
-        draw_label(x+40, y+7, 15, " kbdpad1_RIGHT:", false, z_idx == 19);
+        draw_label(x+40, y+0, 15, "     kbdpad1_A:", false, z_idx == 13);
+        draw_label(x+40, y+1, 15, "     kbdpad1_B:", false, z_idx == 14);
+        draw_label(x+40, y+2, 15, " kbdpad1_START:", false, z_idx == 15);
+        draw_label(x+40, y+3, 15, "kbdpad1_SELECT:", false, z_idx == 16);
+        draw_label(x+40, y+4, 15, "    kbdpad1_UP:", false, z_idx == 17);
+        draw_label(x+40, y+5, 15, "  kbdpad1_DOWN:", false, z_idx == 18);
+        draw_label(x+40, y+6, 15, "  kbdpad1_LEFT:", false, z_idx == 19);
+        draw_label(x+40, y+7, 15, " kbdpad1_RIGHT:", false, z_idx == 20);
 
-        draw_label(x+40, y+9 , 15, "     kbdpad2_A:", false, z_idx == 20);
-        draw_label(x+40, y+10, 15, "     kbdpad2_B:", false, z_idx == 21);
-        draw_label(x+40, y+11, 15, " kbdpad2_START:", false, z_idx == 22);
-        draw_label(x+40, y+12, 15, "kbdpad2_SELECT:", false, z_idx == 23);
-        draw_label(x+40, y+13, 15, "    kbdpad2_UP:", false, z_idx == 24);
-        draw_label(x+40, y+14, 15, "  kbdpad2_DOWN:", false, z_idx == 25);
-        draw_label(x+40, y+15, 15, "  kbdpad2_LEFT:", false, z_idx == 26);
-        draw_label(x+40, y+16, 15, " kbdpad2_RIGHT:", false, z_idx == 27);
+        draw_label(x+40, y+9 , 15, "     kbdpad2_A:", false, z_idx == 21);
+        draw_label(x+40, y+10, 15, "     kbdpad2_B:", false, z_idx == 22);
+        draw_label(x+40, y+11, 15, " kbdpad2_START:", false, z_idx == 23);
+        draw_label(x+40, y+12, 15, "kbdpad2_SELECT:", false, z_idx == 24);
+        draw_label(x+40, y+13, 15, "    kbdpad2_UP:", false, z_idx == 25);
+        draw_label(x+40, y+14, 15, "  kbdpad2_DOWN:", false, z_idx == 26);
+        draw_label(x+40, y+15, 15, "  kbdpad2_LEFT:", false, z_idx == 27);
+        draw_label(x+40, y+16, 15, " kbdpad2_RIGHT:", false, z_idx == 28);
     }
 
     draw_label(x+18, y+1, 22, bk_mode_lns[g_conf.bk0010mode].txt, z_idx == 0, z_idx == 0);
@@ -447,32 +447,33 @@ static void in_conf(int x, int y) {
     draw_label(x+19, y+9, 1, is_kbd_joystick ? b_on : b_off, z_idx == 8, z_idx == 8);
     snprintf(b, 4, "%d", g_conf.manager_pallette_idx);
     draw_label(x+19, y+10, 3, b, z_idx == 9, z_idx == 9);
-    draw_label(x+19, y+11, 1, g_conf.is_128_48 ? b_on : b_off, z_idx == 10, z_idx == 10);
-    draw_label(x+19, y+12, 1, g_conf.is_DVI_1024 ? b_on : b_off, z_idx == 11, z_idx == 11);
+    draw_label(x+19, y+11, 1, is_128_48_new ? b_on : b_off, z_idx == 10, z_idx == 10);
+    draw_label(x+19, y+12, 1, is_DVI_1024_new ? b_on : b_off, z_idx == 11, z_idx == 11);
+    draw_label(x+19, y+13, 1, is_8x8_new ? b_on : b_off, z_idx == 12, z_idx == 12);
 
     if (is_kbd_joystick) {
-        MAX_Z = 27;
+        MAX_Z = 28;
         int xl = x+56;
         int yl = y;
-        kbd_j_label_val(kbdpad1_A, 12);
-        kbd_j_label_val(kbdpad1_B, 13);
-        kbd_j_label_val(kbdpad1_START, 14);
-        kbd_j_label_val(kbdpad1_SELECT, 15);
-        kbd_j_label_val(kbdpad1_UP, 16);
-        kbd_j_label_val(kbdpad1_DOWN, 17);
-        kbd_j_label_val(kbdpad1_LEFT, 18);
-        kbd_j_label_val(kbdpad1_RIGHT, 19);
+        kbd_j_label_val(kbdpad1_A, 13);
+        kbd_j_label_val(kbdpad1_B, 14);
+        kbd_j_label_val(kbdpad1_START, 15);
+        kbd_j_label_val(kbdpad1_SELECT, 16);
+        kbd_j_label_val(kbdpad1_UP, 17);
+        kbd_j_label_val(kbdpad1_DOWN, 18);
+        kbd_j_label_val(kbdpad1_LEFT, 19);
+        kbd_j_label_val(kbdpad1_RIGHT, 20);
         ++yl;
-        kbd_j_label_val(kbdpad2_A, 20);
-        kbd_j_label_val(kbdpad2_B, 21);
-        kbd_j_label_val(kbdpad2_START, 22);
-        kbd_j_label_val(kbdpad2_SELECT, 23);
-        kbd_j_label_val(kbdpad2_UP, 24);
-        kbd_j_label_val(kbdpad2_DOWN, 25);
-        kbd_j_label_val(kbdpad2_LEFT, 26);
-        kbd_j_label_val(kbdpad2_RIGHT, 27);
+        kbd_j_label_val(kbdpad2_A, 21);
+        kbd_j_label_val(kbdpad2_B, 22);
+        kbd_j_label_val(kbdpad2_START, 23);
+        kbd_j_label_val(kbdpad2_SELECT, 24);
+        kbd_j_label_val(kbdpad2_UP, 25);
+        kbd_j_label_val(kbdpad2_DOWN, 26);
+        kbd_j_label_val(kbdpad2_LEFT, 27);
+        kbd_j_label_val(kbdpad2_RIGHT, 28);
     } else {
-        MAX_Z = 11;
+        MAX_Z = 12;
     }
     snprintf(b, 64, "[%d MHz]", (clock_get_hz(clk_sys) / 1000000)); draw_label(x+2, y+17, 9, b, false, true);
     snprintf(b, 64, "[%d MHz]", (g_conf.cpu_freq / 1000000)); draw_label(x+63-10, y+17, 7, b, false, true);
@@ -537,10 +538,11 @@ static void saveConf() {
         kbdpad2_RIGHT
     );
     f_write(&fil, buf, strlen(buf), &bw);
-    snprintf(buf, 256, "manager_pallette_idx:%d\r\nis_128_48:%dr\nis_DVI_1024:%dr\n",
+    snprintf(buf, 256, "manager_pallette_idx:%d\r\nis_128_48:%dr\nis_DVI_1024:%dr\nis_8x8:%dr\n",
         g_conf.manager_pallette_idx,
         g_conf.is_128_48,
-        g_conf.is_DVI_1024
+        g_conf.is_DVI_1024,
+        g_conf.is_8x8
     );
     f_write(&fil, buf, strlen(buf), &bw);
     f_close(&fil);
@@ -746,13 +748,21 @@ void read_config(const char* path) {
     if (mode >= 0 && mode <= 1) {
         g_conf.is_DVI_1024 = (bool)mode;
     }
-
+    const char p28[] = "is_8x8:";
+    mode = parse_conf_word(buf, p28, sizeof(p28), MAX_CONF);
+    if (mode >= 0 && mode <= 1) {
+        g_conf.is_8x8 = (bool)mode;
+    }
     f_close(&fil);
 }
 
 color_schema_t* pcs = &color_schema0;
 
 static void conf_it(uint8_t cmd) {
+    is_128_48_new = g_conf.is_128_48;
+    is_DVI_1024_new = g_conf.is_DVI_1024;
+    is_8x8_new = g_conf.is_8x8;
+
     int x = (text_buffer_width - 64) / 2;
     int y = (text_buffer_height - 18) / 2;
     int x0 = x; int y0 = y;
@@ -765,22 +775,22 @@ static void conf_it(uint8_t cmd) {
             uint8_t kk = lastCleanableScanCode & 0x7F;
             switch (z_idx)
             {
-                case 12: kbdpad1_A = kk; break;
-                case 13: kbdpad1_B = kk; break;
-                case 14: kbdpad1_START = kk; break;
-                case 15: kbdpad1_SELECT = kk; break;
-                case 16: kbdpad1_UP = kk; break;
-                case 17: kbdpad1_DOWN = kk; break;
-                case 18: kbdpad1_LEFT = kk; break;
-                case 19: kbdpad1_RIGHT = kk; break;
-                case 20: kbdpad2_A = kk; break;
-                case 21: kbdpad2_B = kk; break;
-                case 22: kbdpad2_START = kk; break;
-                case 23: kbdpad2_SELECT = kk; break;
-                case 24: kbdpad2_UP = kk; break;
-                case 25: kbdpad2_DOWN = kk; break;
-                case 26: kbdpad2_LEFT = kk; break;
-                case 27: kbdpad2_RIGHT = kk; break;
+                case 13: kbdpad1_A = kk; break;
+                case 14: kbdpad1_B = kk; break;
+                case 15: kbdpad1_START = kk; break;
+                case 16: kbdpad1_SELECT = kk; break;
+                case 17: kbdpad1_UP = kk; break;
+                case 18: kbdpad1_DOWN = kk; break;
+                case 19: kbdpad1_LEFT = kk; break;
+                case 20: kbdpad1_RIGHT = kk; break;
+                case 21: kbdpad2_A = kk; break;
+                case 22: kbdpad2_B = kk; break;
+                case 23: kbdpad2_START = kk; break;
+                case 24: kbdpad2_SELECT = kk; break;
+                case 25: kbdpad2_UP = kk; break;
+                case 26: kbdpad2_DOWN = kk; break;
+                case 27: kbdpad2_LEFT = kk; break;
+                case 28: kbdpad2_RIGHT = kk; break;
             }
             confEditMode = false;
             lastCleanableScanCode = false;
@@ -835,15 +845,31 @@ static void conf_it(uint8_t cmd) {
                 in_conf(x, y);
                 continue;
             }
+            if (is_128_48_new != g_conf.is_128_48) {
+                g_conf.is_128_48 = is_128_48_new;
+                // TODO: reset VGA
+            }
+            if (is_8x8_new != g_conf.is_8x8) {
+                g_conf.is_8x8 = is_8x8_new;
+                // TODO: reset VGA/HDMI
+            }
+            if (is_DVI_1024_new != g_conf.is_DVI_1024) {
+                g_conf.is_DVI_1024 = is_DVI_1024_new;
+                if (!SELECT_VGA) {
+                    saveConf();
+                    reboot();
+                    break;
+                }
+            }
             saveConf();
             if (!altPressed) {
                 reset(255);
             }
             break;
         }
-        if (MAX_Z > 11 && (tabPressed || rightPressed || leftPressed)) {
+        if (MAX_Z > 12 && (tabPressed || rightPressed || leftPressed)) {
             tabPressed = rightPressed = leftPressed = false;
-            if (z_idx <= 11) z_idx = 12;
+            if (z_idx <= 12) z_idx = 13;
             else z_idx = 0;
             in_conf(x, y);
         }
@@ -866,7 +892,7 @@ static void conf_it(uint8_t cmd) {
                     g_conf.bk0010mode = 0;
                 }
                 g_conf.cpu_freq = g_conf.bk0010mode >= BK_0011M_FDD ? 4000000 : 3000000;
-            } else if (z_idx > 11) {
+            } else if (z_idx > 12) {
                 confEditMode = true;
                 lastCleanableScanCode = 0;
             }
@@ -905,10 +931,13 @@ static void conf_it(uint8_t cmd) {
               draw_panel(x0, y0, 64, 19, "Startup configuration", 0);
               break;
             case 10:
-              g_conf.is_128_48 = !g_conf.is_128_48;
+              is_128_48_new = !is_128_48_new;
               break;
             case 11:
-              g_conf.is_DVI_1024 = !g_conf.is_DVI_1024;
+              is_DVI_1024_new = !is_DVI_1024_new;
+              break;
+            case 12:
+              is_8x8_new = !is_8x8_new;
               break;
             }
             in_conf(x, y);
@@ -2380,7 +2409,9 @@ bool handleScancode(uint32_t ps2scancode) { // core 1
     DBGM_PRINT(("handleScancode: %08Xh", ps2scancode));
     handleJoystickEmulation((uint8_t)ps2scancode);
     lastCleanableScanCode = ps2scancode;
-    switch (ps2scancode) {
+    switch ((uint8_t)(ps2scancode & 0xFF)) {
+    //  case 0x00: // Print Screen?
+      //  reboot(); break;
       case 0x01: // Esc down
         scan_code_cleanup(); break;
       case 0x81: // Esc up

@@ -176,7 +176,7 @@ static bool __not_in_flash_func(AY_timer_callback)(repeating_timer_t *rt) {
 }
 #endif
 
-static FATFS fatfs;
+extern "C" FATFS fatfs;
 
 static void init_fs() {
     FRESULT result = f_mount(&fatfs, "", 1);
