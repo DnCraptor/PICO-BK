@@ -21,12 +21,18 @@ include(pico_sdk_import.cmake)
 project(p2-bk C CXX ASM)
 
 option(AY_TYPE "AY-3-8910 Type: PWM / HWAY" HWAY)
+option(MURM2 "Murmulator 2.0" OFF)
+option(PICO_PC "RP2040-PICO-PC" OFF)
+option(ZERO2 "RP2350-PiZero" OFF)
+
 set(BUILD_VERSION "1.3.6")
 
 set(USE_NESPAD ON)
 #set(AY_TYPE HWAY)
 #set (m1p2launcher ON)
-#set (MURM2 ON)
+
+set (MURM2 ON)
+#set (PICO_PC ON)
 
 set(CMAKE_C_STANDARD 11)
 set(CMAKE_CXX_STANDARD 17)
@@ -189,6 +195,7 @@ if (MURM2)
         PWM_PIN1=11
 
         beginVGA_PIN=12
+        DVI_DEFAULT_SERIAL_CONFIG=murmulator2_cfg
 
         WII_SDA_PIN=20
         WII_SCL_PIN=21
@@ -196,6 +203,39 @@ if (MURM2)
         NES_GPIO_CLK=20
         NES_GPIO_LAT=21
         NES_GPIO_DATA=26
+
+        LOAD_WAV_PIO=22
+    )
+elseif (PICO_PC)
+    target_compile_definitions(${PROJECT_NAME} PRIVATE
+        PICO_PC=1
+
+        # DBG1 1/2
+        KBD_CLOCK_PIN=0
+        KBD_DATA_PIN=1
+
+        LOAD_WAV_PIO=5 # UXT1-10
+
+        # SDCARD
+        SDCARD_PIN_SPI0_MISO=4
+        SDCARD_PIN_SPI0_SCK=6
+        SDCARD_PIN_SPI0_MOSI=7
+        SDCARD_PIN_SPI0_CS=22
+        
+        BEEPER_PIN=26
+        PWM_PIN0=27
+        PWM_PIN1=28
+
+        beginVGA_PIN=12
+        DVI_DEFAULT_SERIAL_CONFIG=olimex_rp2040_cfg
+
+        WII_SDA_PIN=20
+        WII_SCL_PIN=21
+
+        NES_GPIO_CLK=8    # UXT1-6
+        NES_GPIO_LAT=9    # UXT1-5
+        NES_GPIO_DATA=20  # UXT1-3
+        NES_GPIO_DATA2=21 # UXT1-4
 
         LOAD_WAV_PIO=22
     )
@@ -211,6 +251,7 @@ else() # m1
         SDCARD_PIN_SPI0_MISO=4
         
         beginVGA_PIN=6
+        DVI_DEFAULT_SERIAL_CONFIG=murmulator_cfg
 
         WII_SDA_PIN=14
         WII_SCL_PIN=15
@@ -228,7 +269,6 @@ else() # m1
 endif()
 
 target_compile_definitions(${PROJECT_NAME} PRIVATE
-    DVI_DEFAULT_SERIAL_CONFIG=murmulator_cfg
     PICO_CORE1_STACK_SIZE=0x200
 )
 
