@@ -18,16 +18,36 @@ cmake_minimum_required(VERSION 3.22)
 set(PICO_CXX_ENABLE_EXCEPTIONS 1)
 include(pico_sdk_import.cmake)
 
-project(pico-bk C CXX ASM)
+project(p2-bk C CXX ASM)
+
 option(AY_TYPE "AY-3-8910 Type: PWM / HWAY" HWAY)
-if(NOT AY_TYPE)
-    SET(AY_TYPE PWM)
-endif ()
+set(BUILD_VERSION "1.3.6")
+
+set(AY_TYPE HWAY)
+set (m1p2launcher ON)
+#set (MURM2 ON)
 
 set(CMAKE_C_STANDARD 11)
 set(CMAKE_CXX_STANDARD 17)
 
 pico_sdk_init()
+
+IF(MURM2)
+    SET(BUILD_NAME "m2${PROJECT_NAME}")
+ELSEIF(PICO_PC)
+    SET(BUILD_NAME "PC${PROJECT_NAME}")
+ELSEIF(ZERO)
+    SET(BUILD_NAME "z1${PROJECT_NAME}")
+ELSEIF(ZERO2)
+    SET(BUILD_NAME "z2${PROJECT_NAME}")
+ELSE()
+    SET(BUILD_NAME "m1${PROJECT_NAME}")
+ENDIF()
+
+if(NOT AY_TYPE)
+    SET(AY_TYPE PWM)
+endif ()
+
 
 set(OUTPUT_DIR "${CMAKE_SOURCE_DIR}/bin/${CMAKE_BUILD_TYPE}")
 set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY "${OUTPUT_DIR}")
@@ -36,8 +56,6 @@ set(CMAKE_LIBRARY_OUTPUT_DIRECTORY "${OUTPUT_DIR}")
 
 set(CMAKE_C_FLAGS   "${CMAKE_C_FLAGS}   -ffunction-sections -fdata-sections -O2")
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -ffunction-sections -fdata-sections -O2")
-
-SET(BUILD_NAME "m1p1-bk-VGA-${AY_TYPE}-${OVERCLOCKING}MHz-135")
 
 add_subdirectory(drivers/libdvi)
 add_subdirectory(drivers/vga-nextgen)
@@ -59,8 +77,8 @@ message(STATUS "")
 
 add_executable(${PROJECT_NAME} ${SRC})
 
-pico_set_program_name(pico-bk "PICO BK-0010/11 Emulator for ZX Murmulator devboard by DnCraptor")
-pico_set_program_version(pico-bk "test")
+pico_set_program_name(${PROJECT_NAME} "PICO BK-0010/11 Emulator for Murmulator devboard by DnCraptor")
+pico_set_program_version(${PROJECT_NAME} "${BUILD_VERSION}")
 
 # Enable compiler and linker garbage collect unused code/data sections
 add_link_options(-Wl,--gc-sections)
@@ -150,16 +168,6 @@ target_compile_definitions(${PROJECT_NAME} PRIVATE
         WII_SDA_PIN=14
         WII_SCL_PIN=15
 
-       # PSRAM
-        # PSRAM_MUTEX=1
-       # PSRAM_SPINLOCK=1
-       # PSRAM_ASYNC=1
-
-       # PSRAM_PIN_CS=18
-       # PSRAM_PIN_SCK=19
-       # PSRAM_PIN_MOSI=20
-       # PSRAM_PIN_MISO=21
-
         LOAD_WAV_PIO=22
         LOAD_WAV_2_COVOX=1
         PWM_PIN0=26
@@ -170,22 +178,13 @@ target_compile_definitions(${PROJECT_NAME} PRIVATE
         BUILD_IN_FDD_MKDOS
         BUILD_IN_FDD_GAMES
 
-        # supports only for pico with 4 or more MB flashes
-#        PICO_FLASH_SIZE_BYTES=4194304
-
-        #BOOT_DEBUG=1
-        #BOOT_DEBUG_ACC=0xA0000
-        #KBD_DEBUG=1
-        #MNGR_DEBUG=1
-        #DSK_DEBUG=1
-
         EXT_DRIVES_MOUNT=1
 
         SOUND_SYSTEM=1
         COVOX=1
         AYSOUND=1
 
-        # select onr of the folowing:
+        # select one of the folowing:
         #SWAP_BLOCK_1k
         SWAP_BLOCK_2k
         #SWAP_BLOCK_4k
@@ -199,4 +198,20 @@ target_compile_definitions(${PROJECT_NAME} PRIVATE
 pico_enable_stdio_uart(${PROJECT_NAME} 0)
 pico_enable_stdio_usb(${PROJECT_NAME} 0)
 
+SET(BUILD_NAME "${BUILD_NAME}-VGA-HDMI-400MHz-${AY_TYPE}-${BUILD_VERSION}")
+IF(m1p2launcher)
+    SET(BUILD_NAME "${BUILD_NAME}.m1p2")
+    pico_set_linker_script(${PROJECT_NAME} "${CMAKE_SOURCE_DIR}/memmap.ld")
+ENDIF()
+
+set_target_properties(${PROJECT_NAME} PROPERTIES OUTPUT_NAME "${BUILD_NAME}")
+
 pico_add_extra_outputs(${PROJECT_NAME})
+
+if (m1p2launcher)
+    add_custom_command(TARGET ${PROJECT_NAME} POST_BUILD
+        COMMAND ${CMAKE_COMMAND} -E rename
+        "${OUTPUT_DIR}/${BUILD_NAME}.uf2"
+        "${OUTPUT_DIR}/${BUILD_NAME}"
+    )
+endif ()

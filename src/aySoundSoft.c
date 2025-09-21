@@ -1,4 +1,5 @@
 // from https://github.com/UmkaSK/speccy-pico-trd/blob/main/src/zx_emu/aySoundSoft.c
+#include <pico/stdlib.h>
 #include <hardware/pwm.h>
 #include "aySoundSoft.h"
 #include "stdbool.h"
