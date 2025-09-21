@@ -23,8 +23,9 @@ project(p2-bk C CXX ASM)
 option(AY_TYPE "AY-3-8910 Type: PWM / HWAY" HWAY)
 set(BUILD_VERSION "1.3.6")
 
-set(AY_TYPE HWAY)
-set (m1p2launcher ON)
+set(USE_NESPAD ON)
+#set(AY_TYPE HWAY)
+#set (m1p2launcher ON)
 #set (MURM2 ON)
 
 set(CMAKE_C_STANDARD 11)
@@ -140,6 +141,13 @@ if( AY_TYPE MATCHES "HWAY" )
     target_compile_definitions(${PROJECT_NAME} PRIVATE HWAY)
 endif()
 
+if (USE_WII)
+    target_compile_definitions(${PROJECT_NAME} PRIVATE USE_WII)
+endif()
+if (USE_NESPAD)
+    target_compile_definitions(${PROJECT_NAME} PRIVATE USE_NESPAD)
+endif()
+
 target_compile_definitions(${PROJECT_NAME} PRIVATE
         PICO_HEAP_SIZE=0
         USE_ZONE_FOR_MALLOC=1
@@ -147,33 +155,8 @@ target_compile_definitions(${PROJECT_NAME} PRIVATE
         PICO_DEFAULT_UART_RX_PIN=-1
         PICO_DEFAULT_UART_TX_PIN=0
 
-        KBD_CLOCK_PIN=0
-        KBD_DATA_PIN=1
-        
-        # SDCARD
-        SDCARD_PIN_SPI0_CS=5
-        SDCARD_PIN_SPI0_SCK=2
-        SDCARD_PIN_SPI0_MOSI=3
-        SDCARD_PIN_SPI0_MISO=4
-        
-        beginVGA_PIN=6
-
-        # NES Gamepad
-        USE_NESPAD
-        NES_GPIO_CLK=14
-        NES_GPIO_DATA=16
-        NES_GPIO_LAT=15
-
-       # USE_WII
-        WII_SDA_PIN=14
-        WII_SCL_PIN=15
-
-        LOAD_WAV_PIO=22
         LOAD_WAV_2_COVOX=1
-        PWM_PIN0=26
-        PWM_PIN1=27
-        BEEPER_PIN=28
-        
+
         BK_FDD_16K=1
         BUILD_IN_FDD_MKDOS
         BUILD_IN_FDD_GAMES
@@ -189,6 +172,60 @@ target_compile_definitions(${PROJECT_NAME} PRIVATE
         SWAP_BLOCK_2k
         #SWAP_BLOCK_4k
 )
+
+if (MURM2)
+    target_compile_definitions(${PROJECT_NAME} PRIVATE
+        KBD_CLOCK_PIN=2
+        KBD_DATA_PIN=3
+        
+        # SDCARD
+        SDCARD_PIN_SPI0_MISO=4
+        SDCARD_PIN_SPI0_CS=5
+        SDCARD_PIN_SPI0_SCK=6
+        SDCARD_PIN_SPI0_MOSI=7
+        
+        BEEPER_PIN=9
+        PWM_PIN0=10
+        PWM_PIN1=11
+
+        beginVGA_PIN=12
+
+        WII_SDA_PIN=20
+        WII_SCL_PIN=21
+
+        NES_GPIO_CLK=20
+        NES_GPIO_LAT=21
+        NES_GPIO_DATA=26
+
+        LOAD_WAV_PIO=22
+    )
+else() # m1
+    target_compile_definitions(${PROJECT_NAME} PRIVATE
+        KBD_CLOCK_PIN=0
+        KBD_DATA_PIN=1
+        
+        # SDCARD
+        SDCARD_PIN_SPI0_CS=5
+        SDCARD_PIN_SPI0_SCK=2
+        SDCARD_PIN_SPI0_MOSI=3
+        SDCARD_PIN_SPI0_MISO=4
+        
+        beginVGA_PIN=6
+
+        WII_SDA_PIN=14
+        WII_SCL_PIN=15
+
+        NES_GPIO_CLK=14
+        NES_GPIO_LAT=15
+        NES_GPIO_DATA=16
+
+        LOAD_WAV_PIO=22
+
+        PWM_PIN0=26
+        PWM_PIN1=27
+        BEEPER_PIN=28
+    )
+endif()
 
 target_compile_definitions(${PROJECT_NAME} PRIVATE
     DVI_DEFAULT_SERIAL_CONFIG=murmulator_cfg
