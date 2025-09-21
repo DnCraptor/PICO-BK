@@ -65,9 +65,46 @@ const static tmds_2bpp_tables_bk_t tmds_2bpp_tables_bk[16] = {
     { tmds_2bpp_table_bk_n10, tmds_2bpp_table_bk_any, tmds_2bpp_table_bk_r   }, // 15 чёрный-cyan-green-white
 };
 
-#define tmds_encode_2bpp_bk_b(t) tmds_encode_2bpp_bk(bk_page, tmdsbuf, t)
-#define tmds_encode_2bpp_bk_g(t) tmds_encode_2bpp_bk(bk_page, tmdsbuf + DWORDS_PER_PLANE, t)
-#define tmds_encode_2bpp_bk_r(t) tmds_encode_2bpp_bk(bk_page, tmdsbuf + 2 * DWORDS_PER_PLANE, t)
+extern uint32_t tmds_2bpp_table_bk_1024_b[4];   // только 01 - пиксель
+extern uint32_t tmds_2bpp_table_bk_1024_g[4];   // только 10 - пиксель
+extern uint32_t tmds_2bpp_table_bk_1024_r[4];   // только 11 - пиксель
+extern uint32_t tmds_2bpp_table_bk_1024_any[4]; // пиксель 01, 10 и 11, 00 - нет пикселя
+extern uint32_t tmds_2bpp_table_bk_1024_n11[4]; // пиксель только 01 и 10, 00 и 11 - нет пикселя
+extern uint32_t tmds_2bpp_table_bk_1024_n10[4]; // пиксель только 01 и 11, 00 и 10 - нет пикселя
+extern uint32_t tmds_2bpp_table_bk_1024_n01[4]; // пиксель только 10 и 11, 00 и 01 - нет пикселя
+extern uint32_t tmds_2bpp_table_bk_1024_noc[4]; // нет пикселя во всех кейсах
+
+typedef struct tmds_2bpp_tables_bk_1024_s {
+    uint32_t* b;
+    uint32_t* g;
+    uint32_t* r;
+} tmds_2bpp_tables_bk_1024_t;
+
+const static tmds_2bpp_tables_bk_1024_t tmds_2bpp_tables_1024_bk[16] = {
+    { tmds_2bpp_table_bk_1024_b  , tmds_2bpp_table_bk_1024_g  , tmds_2bpp_table_bk_1024_r   }, //  0 чёрный-синий-зелёный-красный
+    { tmds_2bpp_table_bk_1024_g  , tmds_2bpp_table_bk_1024_b  , tmds_2bpp_table_bk_1024_any }, //  1 чёрный-жёлтый-пурпур-красный
+    { tmds_2bpp_table_bk_1024_b  , tmds_2bpp_table_bk_1024_n11, tmds_2bpp_table_bk_1024_r   }, //  2 чёрный-циан-синий-пурпур
+    { tmds_2bpp_table_bk_1024_b  , tmds_2bpp_table_bk_1024_any, tmds_2bpp_table_bk_1024_r   }, //  3 чёрный-зелёный-циан-жёлтый
+    { tmds_2bpp_table_bk_1024_any, tmds_2bpp_table_bk_1024_n01, tmds_2bpp_table_bk_1024_n10 }, //  4 чёрный-пурпур-циан-белый
+    { tmds_2bpp_table_bk_1024_any, tmds_2bpp_table_bk_1024_any, tmds_2bpp_table_bk_1024_any }, //  5 чёрный-белый-белый-белый
+    { tmds_2bpp_table_bk_1024_b  , tmds_2bpp_table_bk_1024_g  , tmds_2bpp_table_bk_1024_r   }, //  6
+    { tmds_2bpp_table_bk_1024_b  , tmds_2bpp_table_bk_1024_g  , tmds_2bpp_table_bk_1024_r   }, //  7
+    { tmds_2bpp_table_bk_1024_b  , tmds_2bpp_table_bk_1024_g  , tmds_2bpp_table_bk_1024_r   }, //  8
+    { tmds_2bpp_table_bk_1024_g  , tmds_2bpp_table_bk_1024_b  , tmds_2bpp_table_bk_1024_n01 }, //  9 - todo
+    { tmds_2bpp_table_bk_1024_b  , tmds_2bpp_table_bk_1024_g  , tmds_2bpp_table_bk_1024_r   }, // 10
+    { tmds_2bpp_table_bk_1024_b  , tmds_2bpp_table_bk_1024_g  , tmds_2bpp_table_bk_1024_n01 }, // 11 чёрный-cyan-yellow-red
+    { tmds_2bpp_table_bk_1024_r  , tmds_2bpp_table_bk_1024_n01, tmds_2bpp_table_bk_1024_b   }, // 12 чёрный-red-green-cyan
+    { tmds_2bpp_table_bk_1024_n10, tmds_2bpp_table_bk_1024_any, tmds_2bpp_table_bk_1024_n01 }, // 13 чёрный-cyan-yellow-white
+    { tmds_2bpp_table_bk_1024_b  , tmds_2bpp_table_bk_1024_any, tmds_2bpp_table_bk_1024_n10 }, // 14 чёрный-yellow-green-white
+    { tmds_2bpp_table_bk_1024_n10, tmds_2bpp_table_bk_1024_any, tmds_2bpp_table_bk_1024_r   }, // 15 чёрный-cyan-green-white
+};
+
+#define tmds_encode_2bpp_bk_800_b(t) tmds_encode_2bpp_bk_800(bk_page, tmdsbuf, t)
+#define tmds_encode_2bpp_bk_800_g(t) tmds_encode_2bpp_bk_800(bk_page, tmdsbuf + DWORDS_PER_PLANE, t)
+#define tmds_encode_2bpp_bk_800_r(t) tmds_encode_2bpp_bk_800(bk_page, tmdsbuf + 2 * DWORDS_PER_PLANE, t)
+#define tmds_encode_2bpp_bk_1024_b(t) tmds_encode_2bpp_bk_1024(bk_page, tmdsbuf, t)
+#define tmds_encode_2bpp_bk_1024_g(t) tmds_encode_2bpp_bk_1024(bk_page, tmdsbuf + DWORDS_PER_PLANE, t)
+#define tmds_encode_2bpp_bk_1024_r(t) tmds_encode_2bpp_bk_1024(bk_page, tmdsbuf + 2 * DWORDS_PER_PLANE, t)
 
 struct dvi_inst dvi0;
 
@@ -112,9 +149,9 @@ static void __not_in_flash() flash_timings2() {
 static void __not_in_flash() dvi_init_bk() {
     if (g_conf.is_DVI_1024) {
         FRAME_WIDTH = 1024;
-        FRAME_HEIGHT = g_conf.is_128_48 ? 768 : (768 / 3);
+        FRAME_HEIGHT = (768 / 3);
         dvi0.timing = &DVI_TIMING2;
-        DVI_VERTICAL_REPEAT = g_conf.is_128_48 ? 1 : 3;
+        DVI_VERTICAL_REPEAT = 3;
         flash_timings2();
     } else {
         FRAME_WIDTH = 800;
@@ -161,30 +198,45 @@ void __not_in_flash() dvi_on_core1() {
                 break;
             }
             case BK_256x256x2: {
-                uint total_y = 0;
-                for (uint y = 0; y < (FRAME_HEIGHT - 256) / 2; ++y, ++total_y) {
-                    queue_remove_blocking_u32(&dvi0.q_tmds_free, &tmdsbuf);
-                    memcpy(tmdsbuf, blank, sizeof(blank));
-                    queue_add_blocking_u32(&dvi0.q_tmds_valid, &tmdsbuf);
-                }
-                const tmds_2bpp_tables_bk_t* t = &tmds_2bpp_tables_bk[g_conf.graphics_pallette_idx & 15];
-                uint64_t* b = t->b;
-                uint64_t* g = t->g;
-                uint64_t* r = t->r;
-                for (uint y = 0; y < g_conf.graphics_buffer_height; ++y, ++total_y) {
-                    register uint32_t* bk_page = (uint32_t*)get_graphics_buffer(y);
-                    queue_remove_blocking_u32(&dvi0.q_tmds_free, &tmdsbuf);
-                    tmds_encode_2bpp_bk_b(b);
-                    tmds_encode_2bpp_bk_g(g);
-                    tmds_encode_2bpp_bk_r(r);
-                    queue_add_blocking_u32(&dvi0.q_tmds_valid, &tmdsbuf);
+                if (dvi0.timing->h_active_pixels >= 1024) {
+                    const tmds_2bpp_tables_bk_1024_t* t = &tmds_2bpp_tables_1024_bk[g_conf.graphics_pallette_idx & 15];
+                    uint32_t* b = t->b;
+                    uint32_t* g = t->g;
+                    uint32_t* r = t->r;
+                    for (uint y = 0; y < g_conf.graphics_buffer_height; ++y) {
+                        register uint32_t* bk_page = (uint32_t*)get_graphics_buffer(y);
+                        queue_remove_blocking_u32(&dvi0.q_tmds_free, &tmdsbuf);
+                        tmds_encode_2bpp_bk_1024_b(b);
+                        tmds_encode_2bpp_bk_1024_g(g);
+                        tmds_encode_2bpp_bk_1024_r(r);
+                        queue_add_blocking_u32(&dvi0.q_tmds_valid, &tmdsbuf);
+                    }
+                } else {
+                    uint total_y = 0;
+                    for (uint y = 0; y < (FRAME_HEIGHT - 256) / 2; ++y, ++total_y) {
+                        queue_remove_blocking_u32(&dvi0.q_tmds_free, &tmdsbuf);
+                        memcpy(tmdsbuf, blank, sizeof(blank));
+                        queue_add_blocking_u32(&dvi0.q_tmds_valid, &tmdsbuf);
+                    }
+                    const tmds_2bpp_tables_bk_t* t = &tmds_2bpp_tables_bk[g_conf.graphics_pallette_idx & 15];
+                    uint64_t* b = t->b;
+                    uint64_t* g = t->g;
+                    uint64_t* r = t->r;
+                    for (uint y = 0; y < g_conf.graphics_buffer_height; ++y, ++total_y) {
+                        register uint32_t* bk_page = (uint32_t*)get_graphics_buffer(y);
+                        queue_remove_blocking_u32(&dvi0.q_tmds_free, &tmdsbuf);
+                        tmds_encode_2bpp_bk_800_b(b);
+                        tmds_encode_2bpp_bk_800_g(g);
+                        tmds_encode_2bpp_bk_800_r(r);
+                        queue_add_blocking_u32(&dvi0.q_tmds_valid, &tmdsbuf);
+                    }
+                    for (; total_y < FRAME_HEIGHT; ++total_y) {
+                        queue_remove_blocking_u32(&dvi0.q_tmds_free, &tmdsbuf);
+                        memcpy(tmdsbuf, blank, sizeof(blank));
+                        queue_add_blocking_u32(&dvi0.q_tmds_valid, &tmdsbuf);
+                    }
                 }
                 *vsync_ptr = 1;
-                for (; total_y < FRAME_HEIGHT; ++total_y) {
-                    queue_remove_blocking_u32(&dvi0.q_tmds_free, &tmdsbuf);
-                    memcpy(tmdsbuf, blank, sizeof(blank));
-                    queue_add_blocking_u32(&dvi0.q_tmds_valid, &tmdsbuf);
-                }
                 break;
             }
             default: {
@@ -216,13 +268,13 @@ void __not_in_flash() dvi_on_core1() {
                         memcpy(tmdsbuf + 2 * DWORDS_PER_PLANE, tmdsbuf, BYTES_PER_PLANE);
                         queue_add_blocking_u32(&dvi0.q_tmds_valid, &tmdsbuf);
                     }
-                    *vsync_ptr = 1;
                     for (; total_y < FRAME_HEIGHT; ++total_y) {
                         queue_remove_blocking_u32(&dvi0.q_tmds_free, &tmdsbuf);
                         memcpy(tmdsbuf, blank, sizeof(blank));
                         queue_add_blocking_u32(&dvi0.q_tmds_valid, &tmdsbuf);
                     }
                 }
+                *vsync_ptr = 1;
                 break;
             }
         }

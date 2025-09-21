@@ -380,8 +380,8 @@ static void in_conf(int x, int y) {
     draw_label(x, y+8, 18, "   dendy joystick:", false, z_idx == 7);
     draw_label(x, y+9, 18, "keyboard joystick:", false, z_idx == 8);
     draw_label(x, y+10,18, " manager pallette:", false, z_idx == 9);
-    draw_label(x, y+11,18, "   manager 128x48:", false, z_idx == 10);
-    draw_label(x, y+12,18, "    HDMI 1024x768:", false, z_idx == 11);
+    draw_label(x, y+11,31, "   manager 128x48:   (VGA only)", false, z_idx == 10);
+    draw_label(x, y+12,30, "    HDMI 1024x768:   (512 MHz)", false, z_idx == 11);
     if(already_swapped_fdds) { // TODO: save it?
         draw_label(x, y+13, 23, "  swap FDD drives: true", false, false);
     } else {
