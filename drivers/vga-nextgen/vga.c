@@ -398,20 +398,24 @@ enum graphics_mode_t graphics_set_mode(enum graphics_mode_t mode) {
             break;
         default:
             if (!SELECT_VGA && g_conf.is_DVI_1024) { // TODO: real dvi0 clock
-                text_buffer_width = MAX_WIDTH; // 128
-                text_buffer_height = (768 / 16) / 3; // = 16
+                text_buffer_width = 128;
+                text_buffer_height = 16;
             } else if (!SELECT_VGA && !g_conf.is_DVI_1024) {
                 text_buffer_width = 100;
                 text_buffer_height = 19;
             } else if (!g_conf.is_128_48) {
-                text_buffer_width = MAX_WIDTH / 2;
-                text_buffer_height = MAX_HEIGHT / 2;
+                text_buffer_width = 64;
+                text_buffer_height = 24;
             } else {
-                text_buffer_width = MAX_WIDTH;
-                text_buffer_height = MAX_HEIGHT;
+                text_buffer_width = 128;
+                text_buffer_height = 48;
             }
             if (g_conf.is_8x8) {
-                text_buffer_height <<= 1;
+                if (!SELECT_VGA && !g_conf.is_DVI_1024) {
+                    text_buffer_height = 37;
+                } else {
+                    text_buffer_height <<= 1;
+                }
                 font = font_8x8;
                 font_height = 8;
                 font_shift = 3;

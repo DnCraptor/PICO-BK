@@ -73,6 +73,8 @@ extern uint32_t tmds_2bpp_table_bk_1024_n11[4]; // пиксель только 0
 extern uint32_t tmds_2bpp_table_bk_1024_n10[4]; // пиксель только 01 и 11, 00 и 10 - нет пикселя
 extern uint32_t tmds_2bpp_table_bk_1024_n01[4]; // пиксель только 10 и 11, 00 и 01 - нет пикселя
 extern uint32_t tmds_2bpp_table_bk_1024_noc[4]; // нет пикселя во всех кейсах
+extern uint32_t tmds_2bpp_table_bk_1024_2br[4]; // вариант с "честной" двухбиткой
+extern uint32_t tmds_2bpp_table_bk_1024_2bb[4]; // вариант с "честной" двухбиткой: 00 - чёрный, но 01 - светлее, чем 10, а 11 - самый светлый
 
 typedef struct tmds_2bpp_tables_bk_1024_s {
     uint32_t* b;
@@ -87,11 +89,11 @@ const static tmds_2bpp_tables_bk_1024_t tmds_2bpp_tables_1024_bk[16] = {
     { tmds_2bpp_table_bk_1024_b  , tmds_2bpp_table_bk_1024_any, tmds_2bpp_table_bk_1024_r   }, //  3 чёрный-зелёный-циан-жёлтый
     { tmds_2bpp_table_bk_1024_any, tmds_2bpp_table_bk_1024_n01, tmds_2bpp_table_bk_1024_n10 }, //  4 чёрный-пурпур-циан-белый
     { tmds_2bpp_table_bk_1024_any, tmds_2bpp_table_bk_1024_any, tmds_2bpp_table_bk_1024_any }, //  5 чёрный-белый-белый-белый
-    { tmds_2bpp_table_bk_1024_b  , tmds_2bpp_table_bk_1024_g  , tmds_2bpp_table_bk_1024_r   }, //  6
-    { tmds_2bpp_table_bk_1024_b  , tmds_2bpp_table_bk_1024_g  , tmds_2bpp_table_bk_1024_r   }, //  7
-    { tmds_2bpp_table_bk_1024_b  , tmds_2bpp_table_bk_1024_g  , tmds_2bpp_table_bk_1024_r   }, //  8
+    { tmds_2bpp_table_bk_1024_noc, tmds_2bpp_table_bk_1024_noc, tmds_2bpp_table_bk_1024_2bb }, //  6 чёрный-кирпич-тёмный_кирпич-красный
+    { tmds_2bpp_table_bk_1024_noc, tmds_2bpp_table_bk_1024_2bb, tmds_2bpp_table_bk_1024_2bb }, //  7
+    { tmds_2bpp_table_bk_1024_2bb, tmds_2bpp_table_bk_1024_noc, tmds_2bpp_table_bk_1024_2bb }, //  8
     { tmds_2bpp_table_bk_1024_g  , tmds_2bpp_table_bk_1024_b  , tmds_2bpp_table_bk_1024_n01 }, //  9 - todo
-    { tmds_2bpp_table_bk_1024_b  , tmds_2bpp_table_bk_1024_g  , tmds_2bpp_table_bk_1024_r   }, // 10
+    { tmds_2bpp_table_bk_1024_g  , tmds_2bpp_table_bk_1024_2br, tmds_2bpp_table_bk_1024_n01 }, // 10 - todo
     { tmds_2bpp_table_bk_1024_b  , tmds_2bpp_table_bk_1024_g  , tmds_2bpp_table_bk_1024_n01 }, // 11 чёрный-cyan-yellow-red
     { tmds_2bpp_table_bk_1024_r  , tmds_2bpp_table_bk_1024_n01, tmds_2bpp_table_bk_1024_b   }, // 12 чёрный-red-green-cyan
     { tmds_2bpp_table_bk_1024_n10, tmds_2bpp_table_bk_1024_any, tmds_2bpp_table_bk_1024_n01 }, // 13 чёрный-cyan-yellow-white

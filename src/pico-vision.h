@@ -3,7 +3,7 @@
 #include <inttypes.h>
 
 #define MAX_WIDTH 128
-#define MAX_HEIGHT 48
+#define MAX_HEIGHT 96
 #define BYTES_PER_CHAR 2
 
 typedef struct color_schema {

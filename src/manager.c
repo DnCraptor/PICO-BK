@@ -379,7 +379,11 @@ static void in_conf(int x, int y) {
     draw_label(x, y+8, 18, "   dendy joystick:", false, z_idx == 7);
     draw_label(x, y+9, 18, "keyboard joystick:", false, z_idx == 8);
     draw_label(x, y+10,18, " manager pallette:", false, z_idx == 9);
-    draw_label(x, y+11,31, "   manager 128x48:   (VGA only)", false, z_idx == 10);
+    if (is_8x8_new) {
+        draw_label(x, y+11,31, "   manager 128x96:   (VGA only)", false, z_idx == 10);
+    } else {
+        draw_label(x, y+11,31, "   manager 128x48:   (VGA only)", false, z_idx == 10);
+    }
     draw_label(x, y+12,30, "    HDMI 1024x768:   (512 MHz)", false, z_idx == 11);
     draw_label(x, y+13,18, "    use 8x8 font:", false, z_idx == 12);
     if(already_swapped_fdds) { // TODO: save it?
@@ -845,24 +849,22 @@ static void conf_it(uint8_t cmd) {
                 in_conf(x, y);
                 continue;
             }
+            bool hard_reset = false;
             if (is_128_48_new != g_conf.is_128_48) {
                 g_conf.is_128_48 = is_128_48_new;
-                // TODO: reset VGA
+                hard_reset = true;
             }
             if (is_8x8_new != g_conf.is_8x8) {
                 g_conf.is_8x8 = is_8x8_new;
-                // TODO: reset VGA/HDMI
+                hard_reset = true;
             }
             if (is_DVI_1024_new != g_conf.is_DVI_1024) {
                 g_conf.is_DVI_1024 = is_DVI_1024_new;
-                if (!SELECT_VGA) {
-                    saveConf();
-                    reboot();
-                    break;
-                }
+                hard_reset = true;
             }
             saveConf();
             if (!altPressed) {
+                if (!SELECT_VGA) reboot();
                 reset(255);
             }
             break;
