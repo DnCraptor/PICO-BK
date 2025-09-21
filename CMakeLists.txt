@@ -26,12 +26,13 @@ option(PICO_PC "RP2040-PICO-PC" OFF)
 option(ZERO2 "RP2350-PiZero" OFF)
 
 set(BUILD_VERSION "1.3.6")
-
 set(USE_NESPAD ON)
+
 #set(AY_TYPE HWAY)
 #set (m1p2launcher ON)
 
-set (MURM2 ON)
+# Platform
+#set (MURM2 ON)
 #set (PICO_PC ON)
 
 set(CMAKE_C_STANDARD 11)
@@ -236,8 +237,6 @@ elseif (PICO_PC)
         NES_GPIO_LAT=9    # UXT1-5
         NES_GPIO_DATA=20  # UXT1-3
         NES_GPIO_DATA2=21 # UXT1-4
-
-        LOAD_WAV_PIO=22
     )
 else() # m1
     target_compile_definitions(${PROJECT_NAME} PRIVATE
