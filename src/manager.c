@@ -10,6 +10,7 @@
 #include "debug.h"
 #include "aySoundSoft.h"
 #include "ps2.h"
+#include "ps2_codes.h"
 #include "nespad.h"
 #include "reboot.h"
 #include "main_i.h"
@@ -71,6 +72,7 @@ bool already_swapped_fdds = false;
 volatile bool manager_started = false;
 static char line[MAX_WIDTH + 2];
 
+static volatile uint32_t lastScanCode = 0;
 static volatile uint32_t lastCleanableScanCode = 0;
 static uint32_t lastSavedScanCode = 0;
 int nespad_state_delay = DPAD_STATE_DELAY;
@@ -394,6 +396,10 @@ static void in_conf(int x, int y) {
     // TODO: swap fdd
 
     char b[64] = { 0 };
+
+    snprintf(b, 64, "    Last scancode: %d [%ph]  ", lastScanCode, lastScanCode);
+    draw_label(x, y+15, 37, b, false, false);
+
     uint8_t nk = nespad_state | kbdpad_state;
     snprintf(b, 64, "Joy bits #1: %d%d%d%d%d%d%d%d #2: %d%d%d%d%d%d%d%d",
         (nk >> 7) & 1,
@@ -766,6 +772,7 @@ static void conf_it(uint8_t cmd) {
     is_128_48_new = g_conf.is_128_48;
     is_DVI_1024_new = g_conf.is_DVI_1024;
     is_8x8_new = g_conf.is_8x8;
+    uint32_t prevScanCode = lastScanCode;
 
     int x = (text_buffer_width - 64) / 2;
     int y = (text_buffer_height - 18) / 2;
@@ -812,6 +819,7 @@ static void conf_it(uint8_t cmd) {
             blink = !blink;
             sleep_ms(250);
             in_conf(x, y);
+            continue;
         }
      //   if (is_dendy_joystick || is_kbd_joystick) {
             if (is_dendy_joystick) nespad_read();
@@ -874,16 +882,19 @@ static void conf_it(uint8_t cmd) {
             if (z_idx <= 12) z_idx = 13;
             else z_idx = 0;
             in_conf(x, y);
+            continue;
         }
         if (upPressed) {
             if (--z_idx < 0) z_idx = MAX_Z;
             upPressed = false;
             in_conf(x, y);
+            continue;
         }
         if (downPressed) {
             downPressed = false;
             if (++z_idx > MAX_Z) z_idx = 0;
             in_conf(x, y);
+            continue;
         }
         if (spacePressed) {
             spacePressed = false;
@@ -943,10 +954,17 @@ static void conf_it(uint8_t cmd) {
               break;
             }
             in_conf(x, y);
+            continue;
         }
         if (nespad_state || kbdpad_state || kbdpad_state2 || prev_nespad_state) {
             in_conf(x, y);
             prev_nespad_state = ((uint16_t)(nespad_state | kbdpad_state) << 8) | kbdpad_state2;
+            continue;
+        }
+        if (prevScanCode != lastScanCode) {
+            prevScanCode = lastScanCode;
+            in_conf(x, y);
+            continue;
         }
     }
     redraw_window();
@@ -2408,12 +2426,14 @@ inline static void handleJoystickEmulation(uint8_t sc) { // core 1
 }
 
 bool handleScancode(uint32_t ps2scancode) { // core 1
+    if (ps2scancode)
+        lastScanCode = ps2scancode;
     DBGM_PRINT(("handleScancode: %08Xh", ps2scancode));
     handleJoystickEmulation((uint8_t)ps2scancode);
     lastCleanableScanCode = ps2scancode;
     switch ((uint8_t)(ps2scancode & 0xFF)) {
-    //  case 0x00: // Print Screen?
-      //  reboot(); break;
+      case 0x80: // PrintScreen is up
+        reboot(); break;
       case 0x01: // Esc down
         scan_code_cleanup(); break;
       case 0x81: // Esc up
