@@ -6,28 +6,14 @@
 #include <stdint.h>
 #include <stdbool.h>
 
-#define KBD_BUFFER_SIZE 16
+void keyboard_init(void);
+void keyboard_tick(void);
 
-#define PS2_LED_SCROLL_LOCK 1
-#define PS2_LED_NUM_LOCK    2
-#define PS2_LED_CAPS_LOCK   4
-
-extern uint8_t kbloop;
-
-void ps2poll();
 void KeyboardHandler();//uint /*gpio*/, uint32_t /*event_mask*/
 uint32_t ps2getcode(void);
 void ps2cleanup();
 uint32_t ps2get_raw_code();
 void push_script_scan_code(uint16_t sc);
-
-void keyboard_init(void);
-
-void Deinit_kbd(void);
-
-void keyboard_toggle_led(uint8_t led);
-
-int16_t keyboard_send(uint8_t data);
 
 struct ps2_struct_group {
     unsigned char character;
@@ -35,7 +21,6 @@ struct ps2_struct_group {
     unsigned is_char;
     unsigned char xt_make;
 };
-
 
 static struct ps2_struct_group ps2_group1[] =
         {

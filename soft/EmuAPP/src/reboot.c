@@ -8,4 +8,5 @@ void reboot() {
     f_mount(&fatfs, "", 0);
     watchdog_enable(100, true);
     while(1);
+    __unreachable();
 }

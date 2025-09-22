@@ -25,7 +25,7 @@ option(MURM2 "Murmulator 2.0" OFF)
 option(PICO_PC "RP2040-PICO-PC" OFF)
 option(ZERO2 "RP2350-PiZero" OFF)
 
-set(BUILD_VERSION "1.3.6")
+set(BUILD_VERSION "1.3.7")
 set(USE_NESPAD ON)
 
 #set(AY_TYPE HWAY)
@@ -72,6 +72,7 @@ add_subdirectory(drivers/fatfs)
 add_subdirectory(drivers/sdcard)
 add_subdirectory(drivers/psram)
 add_subdirectory(drivers/nespad)
+add_subdirectory(drivers/usb)
 
 # INCLUDE FILES THAT SHOULD BE COMPILED:
 
@@ -99,6 +100,7 @@ target_link_libraries(${PROJECT_NAME} PRIVATE
         sdcard
         fatfs
         nespad
+        usb
 
         pico_runtime
         pico_stdlib

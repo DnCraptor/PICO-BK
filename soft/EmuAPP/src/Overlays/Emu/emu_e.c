@@ -57,7 +57,6 @@ void AT_OVL emu_start () {
                                g_conf.CodeAndFlags, g_conf.Key, g_conf.LastKey, Device_Data.CPU_State.Flags));
     // Запускаем эмуляцию
     while (1) {
-      ///  ps2poll();
         manager(false);
         uint32_t armFreqDivEmu = clock_get_hz(clk_sys) / g_conf.cpu_freq;
 #if LOAD_WAV_PIO

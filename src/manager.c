@@ -782,6 +782,7 @@ static void conf_it(uint8_t cmd) {
     in_conf(x, y);
     uint16_t prev_nespad_state = 0;
     while(1) {
+        keyboard_tick();
         if (confEditMode && lastCleanableScanCode && lastCleanableScanCode != 0xB9 /* SPACE down */) {
             uint8_t kk = lastCleanableScanCode & 0x7F;
             switch (z_idx)
@@ -1192,6 +1193,7 @@ static bool m_prompt_ex(const char* txt, const char* bottom) {
     draw_button((text_buffer_width - 60) / 2 + 16, 5 + y, 11, "Yes", yes);
     draw_button((text_buffer_width - 60) / 2 + 35, 5 + y, 10, "No", !yes);
     while(1) {
+        keyboard_tick();
         if (is_dendy_joystick || is_kbd_joystick) {
             if (is_dendy_joystick) nespad_read();
             if (nespad_state_delay > 0) {
@@ -1403,6 +1405,7 @@ static void m_mk_dir(uint8_t cmd) {
     draw_panel(20, text_buffer_height / 2 - 20, text_buffer_width - 40, 5, "DIR NAME", 0);
     draw_label(22, text_buffer_height / 2 - 18, text_buffer_width - 44, dir, true, true);
     while(1) {
+        keyboard_tick();
         if (escWasPressed) {
             escWasPressed = false;
             scan_code_cleanup();
@@ -2205,6 +2208,7 @@ static uint8_t repeat_cnt = 0;
 
 static inline void work_cycle() {
     while(1) {
+        keyboard_tick();
         if (is_dendy_joystick || is_kbd_joystick) {
             if (is_dendy_joystick) nespad_read();
             if (nespad_state_delay > 0) {
@@ -2681,16 +2685,7 @@ inline void if_overclock() {
 }
 
 void manager(bool force) {
-    if (ctrlPressed) {
-        if (f11Pressed) {
-            f11Pressed = false;
-            if (g_conf.cpu_freq > 500000) g_conf.cpu_freq -= 500000; // 500 MHz
-        }
-        if (f12Pressed) {
-            f12Pressed = false;
-            g_conf.cpu_freq += 500000; // 500 MHz
-        }
-    }
+    keyboard_tick();
     if_video_mode();
     if_swap_drives();
     if_overclock();

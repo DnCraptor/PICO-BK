@@ -9,6 +9,7 @@
 #ifndef _PS2KBD_H
 #define _PS2KBD_H
 
+#include "hid.h"
 #include "tusb.h"
 #include "hardware/pio.h"
 #include "hardware/gpio.h"

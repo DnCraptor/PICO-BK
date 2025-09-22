@@ -426,3 +426,39 @@ void Ps2Kbd_Mrmltr::init_gpio() {
     pio_sm_init(_pio, _sm, offset, &c);
     pio_sm_set_enabled(_pio, _sm, true);
 }
+
+void __not_in_flash_func(process_kbd_report)(
+    hid_keyboard_report_t const *report,
+    hid_keyboard_report_t const *prev_report
+) {
+  //
+}
+
+Ps2Kbd_Mrmltr ps2kbd(
+    pio1,
+    KBD_CLOCK_PIN,
+    process_kbd_report
+);
+
+extern "C" void keyboard_init(void) {
+    ps2kbd.init_gpio();
+}
+
+#include <host/usbh.h>
+
+extern "C" void keyboard_tick(void) {
+    ps2kbd.tick();
+    tuh_task();
+}
+
+extern "C" void ps2cleanup() {
+
+}
+
+extern "C" void push_script_scan_code(uint16_t sc) {
+
+}
+
+extern "C" uint32_t ps2get_raw_code() {
+
+}

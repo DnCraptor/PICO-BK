@@ -119,6 +119,7 @@ extern volatile bool upPressed;
 extern volatile bool downPressed;
 void scan_code_cleanup();
 #include "nespad.h"
+#include "ps2.h"
 
 int draw_selector(int left, int top, int width, int height, const char* title, const lines_t* plines, int selected_line, const char* footer) {
     int s_line = selected_line;
@@ -129,6 +130,7 @@ int draw_selector(int left, int top, int width, int height, const char* title, c
     }
     nespad_state_delay = DPAD_STATE_DELAY;
     while(1) {
+        keyboard_tick();
         for (int i = 0, y = top + 1 + plines->toff; i < plines->sz; ++i, ++y) {
             const line_t * pl = plines->plns + i;
             uint8_t off;
