@@ -31,9 +31,10 @@ set(USE_NESPAD ON)
 #set(AY_TYPE HWAY)
 #set (m1p2launcher ON)
 
-# Platform
+# Platform (m1p2 by default)
 #set (MURM2 ON)
 #set (PICO_PC ON)
+#set (ZERO2 ON)
 
 set(CMAKE_C_STANDARD 11)
 set(CMAKE_CXX_STANDARD 17)
@@ -44,8 +45,6 @@ IF(MURM2)
     SET(BUILD_NAME "m2${PROJECT_NAME}")
 ELSEIF(PICO_PC)
     SET(BUILD_NAME "PC${PROJECT_NAME}")
-ELSEIF(ZERO)
-    SET(BUILD_NAME "z1${PROJECT_NAME}")
 ELSEIF(ZERO2)
     SET(BUILD_NAME "z2${PROJECT_NAME}")
 ELSE()
@@ -67,7 +66,8 @@ set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -ffunction-sections -fdata-sections -O2"
 
 add_subdirectory(drivers/libdvi)
 add_subdirectory(drivers/vga-nextgen)
-add_subdirectory(drivers/ps2)
+#add_subdirectory(drivers/ps2)
+add_subdirectory(drivers/ps2kbd)
 add_subdirectory(drivers/fatfs)
 add_subdirectory(drivers/sdcard)
 add_subdirectory(drivers/psram)
@@ -93,7 +93,8 @@ add_link_options(-Wl,--gc-sections)
 target_link_libraries(${PROJECT_NAME} PRIVATE
         libdvi
         vga-nextgen
-        ps2
+#        ps2
+        ps2kbd
         psram
         sdcard
         fatfs
@@ -111,6 +112,8 @@ target_link_libraries(${PROJECT_NAME} PRIVATE
         hardware_clocks
         hardware_pwm
         hardware_flash
+
+        tinyusb_host tinyusb_board
 )
 
 target_link_options(${PROJECT_NAME} PRIVATE -Xlinker --print-memory-usage)
