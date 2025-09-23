@@ -2713,6 +2713,7 @@ void manager(bool force) {
         manager_started = true;
         start_manager();
         manager_started = false;
+        ps2cleanup();
     }
 }
 
