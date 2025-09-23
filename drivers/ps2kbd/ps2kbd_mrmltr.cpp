@@ -427,11 +427,148 @@ void Ps2Kbd_Mrmltr::init_gpio() {
     pio_sm_set_enabled(_pio, _sm, true);
 }
 
+typedef struct mod2xt_s {
+  uint8_t mod;
+  uint8_t kd;
+  uint8_t ku;
+} mod2xt_t;
+
+static mod2xt_t mod2xt[] = {
+  { KEYBOARD_MODIFIER_LEFTCTRL , 0x1D, 0x9D },
+  { KEYBOARD_MODIFIER_LEFTSHIFT, 0x2A, 0xAA },
+  { KEYBOARD_MODIFIER_LEFTALT  , 0x38, 0xB8 },
+  { KEYBOARD_MODIFIER_LEFTGUI  , 0x5B, 0xDB },
+  { KEYBOARD_MODIFIER_RIGHTCTRL, 0x1D, 0x9D },
+  { KEYBOARD_MODIFIER_RIGHTSHIFT,0x36, 0xB6 },
+  { KEYBOARD_MODIFIER_RIGHTALT  ,0x38, 0xB8 },
+  { KEYBOARD_MODIFIER_RIGHTGUI  ,0x5C, 0xDC }
+};
+
+typedef struct hid2xt_s {
+  uint8_t kd;
+  uint8_t ku;
+} hid2xt_t;
+typedef struct hid2at_s {
+  uint16_t kd;
+  uint16_t ku;
+} hid2at_t;
+
+/*
+C	2E	AE	21	F0,21	06
+D	20	A0	23	F0,23	07
+E	12	92	24	F0,24	08
+F	21	A1	2B	F0,2B	09
+G	22	A2	34	F0,34	0A
+H	23	A3	33	F0,33	0B
+I	17	97	43	F0,43	0C
+J	24	A4	3B	F0,3B	0D
+K	25	A5	42	F0,42	0E
+L	26	A6	4B	F0,4B	0F
+M	32	B2	3A	F0,3A	10
+N	31	B1	31	F0,31	11
+O	18	98	44	F0,44	12
+P	19	99	4D	F0,4D	13
+Q	10	90	15	F0,15	14
+R	13	93	2D	F0,2D	15
+S	1F	9F	1B	F0,1B	16
+T	14	94	2C	F0,2C	17
+U	16	96	3C	F0,3C	18
+V	2F	AF	2A	F0,2A	19
+W	11	91	1D	F0,1D	1A
+X	2D	AD	22	F0,22	1B
+Y	15	95	35	F0,35	1C
+Z	2C	AC	1A	F0,1A	1D
+0	0B	8B	45	F0,45	27
+1	02	82	16	F0,16	1E
+2	03	83	1E	F0,1E	1F
+3	04	84	26	F0,26	20
+4	05	85	25	F0,25	21
+5	06	86	2E	F0,2E	22
+6	07	87	36	F0,36	23
+7	08	88	3D	F0,3D	24
+8	09	89	3E	F0,3E	25
+9	0A	8A	46	F0,46	26
+~	29	89	0E	F0,0E	35
+-	0C	8C	4E	F0,4E	2D
+=	0D	82	55	F0,55	2E
+\	2B	AB	5D	F0,5D	31 или 64
+[	1A	9A	54	F0,54	2F
+]	1B	9B	5B	F0,5B	30
+;	27	A7	4C	F0,4C	33
+'	28	A8	52	F0,52	34
+,	33	B3	41	F0,41	36
+.	34	B4	49	F0,49	37
+/	35	B5	4A	F0,4A	38
+*/
+static hid2xt_t hid2xt[256] = {
+  { 0, 0 }, // HID_KEY_NONE                      0x00
+  { 0, 0 }, // 1
+  { 0, 0 }, // 2
+  { 0, 0 }, // 3
+  { 0x1E, 0x9E }, // HID_KEY_A                         0x04
+	{ 0x30, 0xB0 }, // B 05
+};
+static hid2at_t hid2at[256] = {
+  { 0, 0 }, // HID_KEY_NONE                      0x00
+  { 0, 0 }, // 1
+  { 0, 0 }, // 2
+  { 0, 0 }, // 3
+  { 0x1C, 0xF01C }, // HID_KEY_A                         0x04
+  { 0x32, 0xF032 }, // B 05
+};
+
+static uint8_t last_at_scancode_idx = 0;
+static uint32_t last_at_scancodes[16] = { 0 };
+
+static inline void push_at_scancode(uint32_t at) {
+  if (!at) return;
+  if (last_at_scancode_idx >= 15) return;
+  last_at_scancodes[last_at_scancode_idx++] = at;
+}
+
+extern "C" bool handleScancode(uint32_t ps2xt_scancode);
+
 void __not_in_flash_func(process_kbd_report)(
     hid_keyboard_report_t const *report,
     hid_keyboard_report_t const *prev_report
 ) {
-  //
+  for (int i = 0; i < sizeof(mod2xt) / sizeof(mod2xt_t); ++i) {
+    const mod2xt_t& mod = mod2xt[i];
+    bool pressed = report->modifier & mod.mod;
+    bool was_pressed = prev_report->modifier & mod.mod;
+    if (pressed && !was_pressed) handleScancode(mod.kd);
+    else if (!pressed && was_pressed) handleScancode(mod.ku);
+  }
+  for (int i = 0; i < 6; ++i) {
+    uint8_t kc_pressed = report->keycode[i];
+    if (!kc_pressed) continue;
+    bool found = false;
+    for (int j = 0; j < 6; ++j) {
+      if (kc_pressed == prev_report->keycode[j]) {
+        found = true; break;
+      }
+    }
+    if (!found) {
+      push_at_scancode( hid2at[kc_pressed].kd );
+      kc_pressed = hid2xt[kc_pressed].kd;
+      if (kc_pressed) handleScancode(kc_pressed);
+    }
+  }
+  for (int i = 0; i < 6; ++i) {
+    uint8_t kc_was_pressed = prev_report->keycode[i];
+    if (!kc_was_pressed) continue;
+    bool found = false;
+    for (int j = 0; j < 6; ++j) {
+      if (kc_was_pressed == report->keycode[j]) {
+        found = true; break;
+      }
+    }
+    if (!found) {
+      push_at_scancode( hid2at[kc_was_pressed].ku );
+      kc_was_pressed = hid2xt[kc_was_pressed].ku;
+      if (kc_was_pressed) handleScancode(kc_was_pressed);
+    }
+  }
 }
 
 Ps2Kbd_Mrmltr ps2kbd(
@@ -452,13 +589,23 @@ extern "C" void keyboard_tick(void) {
 }
 
 extern "C" void ps2cleanup() {
-
+  memset(last_at_scancodes, 0, sizeof(last_at_scancodes));
+  last_at_scancode_idx = 0;
 }
 
 extern "C" void push_script_scan_code(uint16_t sc) {
-
+  push_at_scancode(sc);
 }
 
 extern "C" uint32_t ps2get_raw_code() {
-
+  uint32_t res = last_at_scancodes[0];
+  if (last_at_scancode_idx > 0) {
+    for (int i = 0; i < 16; ++i) {
+      uint32_t nv = last_at_scancodes[i + 1];
+      if (!nv) break;
+      last_at_scancodes[i] = nv;
+    }
+    last_at_scancodes[last_at_scancode_idx--] = 0;
+  }
+  return res;
 }
