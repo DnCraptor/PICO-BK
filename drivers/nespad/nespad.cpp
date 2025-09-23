@@ -34,6 +34,7 @@ static inline pio_sm_config nespad_program_get_default_config(uint offset) {
 
 static PIO pio = pio1;
 static uint8_t sm = -1;
+uint8_t usbpad_state = 0;
 uint8_t nespad_state  = 0;  // Joystick 1
 uint8_t nespad_state2 = 0;  // Joystick 2
 bool nespad_available = false;
@@ -118,7 +119,7 @@ void nespad_read() {
   temp2  = temp2 << 1;                  // 07000300.07000300
   temp16 = temp16 | temp1 | temp2;      // 87654321.87654321
 //----------------------------------------------------------
-  nespad_state  = temp16;               // 00000000.87654321 Joy1
+  nespad_state  = usbpad_state | temp16;               // 00000000.87654321 Joy1
   nespad_state2 = temp16 >> 8;          // 00000000.87654321 Joy2
   #endif
 }

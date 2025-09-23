@@ -1,18 +1,6 @@
 #include <host/usbh.h>
 #include "xinput_host.h"
-
-struct input_bits_t {
-    bool a: true;
-    bool b: true;
-    bool select: true;
-    bool start: true;
-    bool right: true;
-    bool left: true;
-    bool up: true;
-    bool down: true;
-};
-
-extern input_bits_t gamepad1_bits;
+#include "nespad.h"
 
 //Since https://github.com/hathach/tinyusb/pull/2222, we can add in custom vendor drivers easily
 usbh_class_driver_t const* usbh_app_driver_get_cb(uint8_t* driver_count) {
@@ -23,47 +11,22 @@ usbh_class_driver_t const* usbh_app_driver_get_cb(uint8_t* driver_count) {
 void tuh_xinput_report_received_cb(uint8_t dev_addr, uint8_t instance, uint8_t const* report, uint16_t len) {
     auto xid_itf = (xinputh_interface_t *)report;
     const xinput_gamepad_t* p = &xid_itf->pad;
-    gamepad1_bits.a = p->wButtons & XINPUT_GAMEPAD_A;
-    gamepad1_bits.b = p->wButtons & XINPUT_GAMEPAD_B;
-
-
-        if ((p->wButtons & XINPUT_GAMEPAD_GUIDE) && !gamepad1_bits.start && !gamepad1_bits.select) {
-            gamepad1_bits.start = true;
-            gamepad1_bits.select = true;
-        }
-        else if (!(p->wButtons & XINPUT_GAMEPAD_GUIDE) && gamepad1_bits.start && gamepad1_bits.select) {
-            gamepad1_bits.start = false;
-            gamepad1_bits.select = false;
-        }
-
-
-    gamepad1_bits.select = p->wButtons & XINPUT_GAMEPAD_BACK;
-    gamepad1_bits.start = p->wButtons & XINPUT_GAMEPAD_START;
-
+    uint8_t state = 0;
+    if (p->wButtons & XINPUT_GAMEPAD_A) state |= DPAD_A;
+    if (p->wButtons & XINPUT_GAMEPAD_B) state |= DPAD_B;
+    if (p->wButtons & XINPUT_GAMEPAD_BACK) state |= DPAD_SELECT;
+    if (p->wButtons & XINPUT_GAMEPAD_START) state |= DPAD_START;
+    if (p->wButtons & XINPUT_GAMEPAD_GUIDE) state |= DPAD_START | DPAD_SELECT;
     const uint8_t dpad = p->wButtons & 0xf;
-    bool up, down, right, left;
-    ///if (!dpad) {
-    ///    up = p->sThumbLY > 3 || p->sThumbRY > 3;
-    ///    down = p->sThumbLY < -3 || p->sThumbRY < -3;
-    ///    right = p->sThumbLX > 3 || p->sThumbRX > 3;
-    ///    left = p->sThumbLX < -3 || p->sThumbRX < -3;
-    ///}
-    ///else
-    {
-        down = dpad & XINPUT_GAMEPAD_DPAD_DOWN;
-        up = dpad & XINPUT_GAMEPAD_DPAD_UP;
-        left = dpad & XINPUT_GAMEPAD_DPAD_LEFT;
-        right = dpad & XINPUT_GAMEPAD_DPAD_RIGHT;
-    }
-    gamepad1_bits.down = down;
-    gamepad1_bits.up = up;
-    gamepad1_bits.left = left;
-    gamepad1_bits.right = right;
+    if (dpad & XINPUT_GAMEPAD_DPAD_DOWN) state |= DPAD_DOWN;
+    if (dpad & XINPUT_GAMEPAD_DPAD_UP) state |= DPAD_UP;
+    if (dpad & XINPUT_GAMEPAD_DPAD_LEFT) state |= DPAD_LEFT;
+    if (dpad & XINPUT_GAMEPAD_DPAD_RIGHT) state |= DPAD_RIGHT;
     /*char tmp[128];
     sprintf(tmp, "[%02x, %02x], Type: %s, Buttons %04x, LT: %02x RT: %02x, LX: %d, LY: %d, RX: %d, RY: %d\n",
                  dev_addr, instance, type_str, p->wButtons, p->bLeftTrigger, p->bRightTrigger, p->sThumbLX, p->sThumbLY, p->sThumbRX, p->sThumbRY);
     draw_text(tmp, 0,0, 15,0);*/
-
+    usbpad_state = state;
     tuh_xinput_receive_report(dev_addr, instance);
 }
 

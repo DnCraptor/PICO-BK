@@ -11,6 +11,7 @@
 #include <stdint.h>
 #include <stdbool.h>
 
+extern uint8_t usbpad_state;
 extern uint8_t nespad_state;    // NES Joystick1
 extern uint8_t nespad_state2;    // NES Joystick1
 extern bool nespad_available;
