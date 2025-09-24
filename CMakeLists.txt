@@ -29,7 +29,7 @@ option(MURM2 "Murmulator 2.0" OFF)
 option(PICO_PC "RP2040-PICO-PC" OFF)
 option(ZERO2 "RP2350-PiZero" OFF)
 
-set(BUILD_VERSION "usb-hid")
+set(BUILD_VERSION "1.3.7")
 set(USE_NESPAD ON)
 
 #set(AY_TYPE HWAY)
