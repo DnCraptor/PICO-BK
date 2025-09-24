@@ -130,12 +130,8 @@ void __not_in_flash() flash_timings() {
 #endif
     sleep_ms(100);
 	// Run system at TMDS bit clock
-#if !PICO_RP2040
 	set_sys_clock_khz(DVI_TIMING.bit_clk_khz, true);
 	hw_set_bits(&bus_ctrl_hw->priority, BUSCTRL_BUS_PRIORITY_PROC1_BITS);
-#else
-	set_sys_clock_khz(dvi0.timing->bit_clk_khz, true);
-#endif
 }
 
 static void __not_in_flash() flash_timings2() {
@@ -195,9 +191,13 @@ void __not_in_flash() dvi_on_core1() {
                         register uint32_t glyph_line = y & font_mask;
                         register uint8_t* bk_line = bk_text + (y >> font_shift) * bytes_per_string;
                         queue_remove_blocking_u32(&dvi0.q_tmds_free, &tmdsbuf);
-                        tmds_encode_64c_b_128(bk_line, tmdsbuf, glyph_line);
-                        tmds_encode_64c_g_128(bk_line, tmdsbuf + DWORDS_PER_PLANE, glyph_line);
-                        tmds_encode_64c_r_128(bk_line, tmdsbuf + DWORDS_PER_PLANE * 2, glyph_line);
+                        if(!bk_text) {
+                            memcpy(tmdsbuf, blank, sizeof(blank));
+                        } else {
+                            tmds_encode_64c_b_128(bk_line, tmdsbuf, glyph_line);
+                            tmds_encode_64c_g_128(bk_line, tmdsbuf + DWORDS_PER_PLANE, glyph_line);
+                            tmds_encode_64c_r_128(bk_line, tmdsbuf + DWORDS_PER_PLANE * 2, glyph_line);
+                        }
                         queue_add_blocking_u32(&dvi0.q_tmds_valid, &tmdsbuf);
                     }
                 } else {
@@ -205,9 +205,13 @@ void __not_in_flash() dvi_on_core1() {
                         register uint32_t glyph_line = y & font_mask;
                         register uint8_t* bk_line = bk_text + (y >> font_shift) * bytes_per_string;
                         queue_remove_blocking_u32(&dvi0.q_tmds_free, &tmdsbuf);
-                        tmds_encode_64c_b_100(bk_line, tmdsbuf, glyph_line);
-                        tmds_encode_64c_g_100(bk_line, tmdsbuf + DWORDS_PER_PLANE, glyph_line);
-                        tmds_encode_64c_r_100(bk_line, tmdsbuf + DWORDS_PER_PLANE * 2, glyph_line);
+                        if(!bk_text) {
+                            memcpy(tmdsbuf, blank, sizeof(blank));
+                        } else {
+                            tmds_encode_64c_b_100(bk_line, tmdsbuf, glyph_line);
+                            tmds_encode_64c_g_100(bk_line, tmdsbuf + DWORDS_PER_PLANE, glyph_line);
+                            tmds_encode_64c_r_100(bk_line, tmdsbuf + DWORDS_PER_PLANE * 2, glyph_line);
+                        }
                         queue_add_blocking_u32(&dvi0.q_tmds_valid, &tmdsbuf);
                     }
                 }
