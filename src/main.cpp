@@ -391,6 +391,8 @@ int main() {
 #endif
     flash_timings();
 
+    DBGM_PRINT(("Before keyboard_init"));
+    keyboard_init();
 #ifdef HWAY
     Init_PWM_175(TSPIN_MODE_BOTH);
 #else
@@ -411,6 +413,7 @@ int main() {
     gpio_set_dir(PICO_DEFAULT_LED_PIN, GPIO_OUT);
 
     for (int i = 0; i < 6; i++) {
+        keyboard_tick();
         sleep_ms(23);
         gpio_put(PICO_DEFAULT_LED_PIN, true);
         sleep_ms(23);
@@ -429,11 +432,14 @@ int main() {
         add_repeating_timer_ms(60, Wii_Joystick_Timer_CB, NULL, &Wii_timer);
     }
     #endif
-    DBGM_PRINT(("Before keyboard_init"));
-    keyboard_init();
-    sleep_ms(50);
 
-//    init_psram();
+    memset(TEXT_VIDEO_RAM, 0, sizeof TEXT_VIDEO_RAM);
+
+    for (int i = 0; i < 50; ++i) {
+        keyboard_tick();
+        sleep_ms(1);
+    }
+
     init_fs();
 
     uint8_t link = testPins(beginVGA_PIN, beginVGA_PIN + 1);
