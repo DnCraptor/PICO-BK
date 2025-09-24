@@ -12,20 +12,24 @@ if (EXISTS ${picoVscode})
     include(${picoVscode})
 endif()
 # ====================================================================================
-set(PICO_BOARD pico2 CACHE STRING "Board type")
+set(PICO_BOARD pico CACHE STRING "Board type")
 
 cmake_minimum_required(VERSION 3.22)
 set(PICO_CXX_ENABLE_EXCEPTIONS 1)
 include(pico_sdk_import.cmake)
 
-project(p2-bk C CXX ASM)
+if (PICO_PLATFORM STREQUAL "rp2040")
+    project(p1-bk C CXX ASM)
+else ()
+    project(p2-bk C CXX ASM)
+endif()
 
 option(AY_TYPE "AY-3-8910 Type: PWM / HWAY" HWAY)
 option(MURM2 "Murmulator 2.0" OFF)
 option(PICO_PC "RP2040-PICO-PC" OFF)
 option(ZERO2 "RP2350-PiZero" OFF)
 
-set(BUILD_VERSION "1.3.7")
+set(BUILD_VERSION "usb-hid")
 set(USE_NESPAD ON)
 
 #set(AY_TYPE HWAY)
@@ -40,6 +44,11 @@ set(CMAKE_C_STANDARD 11)
 set(CMAKE_CXX_STANDARD 17)
 
 pico_sdk_init()
+
+if (PICO_PLATFORM STREQUAL "rp2040")
+    pico_define_boot_stage2(slower_boot2 ${PICO_DEFAULT_BOOT_STAGE2_FILE})
+    target_compile_definitions(slower_boot2 PRIVATE PICO_FLASH_SPI_CLKDIV=4)
+endif()
 
 IF(MURM2)
     SET(BUILD_NAME "m2${PROJECT_NAME}")

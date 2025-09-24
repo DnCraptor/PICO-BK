@@ -36,8 +36,6 @@ extern unsigned int text_buffer_width;
 extern unsigned int text_buffer_height;
 extern uint8_t* vsync_ptr;
 
-void graphics_set_textbuffer(uint8_t *buffer);
-
 void graphics_set_offset(int x, int y);
 
 void graphics_shift_screen(uint16_t Word);

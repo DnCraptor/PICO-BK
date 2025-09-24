@@ -48,7 +48,7 @@ bool PSRAM_AVAILABLE = false;
 bool SD_CARD_AVAILABLE = false;
 uint32_t DIRECT_RAM_BORDER = PSRAM_AVAILABLE ? RAM_SIZE : (SD_CARD_AVAILABLE ? RAM_PAGE_SIZE : RAM_SIZE);
 
-uint8_t __aligned(4096) TEXT_VIDEO_RAM[VIDEORAM_SIZE] = { 0 };
+uint8_t* TEXT_VIDEO_RAM = 0;
 uint8_t __aligned(4096) RAM[RAM_SIZE] = { 0 };
 
 pwm_config config = pwm_get_default_config();
@@ -68,7 +68,6 @@ extern "C" void flash_timings();
 /* Renderer loop on Pico's second core */
 void __time_critical_func(render_core)() {
     graphics_set_buffer(CPU_PAGE51_MEM_ADR, 512, 256);
-    graphics_set_textbuffer(TEXT_VIDEO_RAM);
     if (SELECT_VGA) {
         graphics_init();
         graphics_set_bgcolor(0x80808080);
@@ -386,12 +385,11 @@ int main() {
 #if !PICO_RP2040
 	vreg_disable_voltage_limit();
 	vreg_set_voltage(VREG_VSEL);
-    flash_timings();
 #else
     hw_set_bits(&vreg_and_chip_reset_hw->vreg, VREG_AND_CHIP_RESET_VREG_VSEL_BITS);
     sleep_ms(10);
-    set_sys_clock_khz(360000 * KHZ, true);
 #endif
+    flash_timings();
 
 #ifdef HWAY
     Init_PWM_175(TSPIN_MODE_BOTH);
@@ -434,8 +432,6 @@ int main() {
     DBGM_PRINT(("Before keyboard_init"));
     keyboard_init();
     sleep_ms(50);
-
-    memset(TEXT_VIDEO_RAM, 0, sizeof TEXT_VIDEO_RAM);
 
 //    init_psram();
     init_fs();

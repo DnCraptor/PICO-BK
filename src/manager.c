@@ -126,7 +126,7 @@ typedef struct {
     int     dir_num;
 } file_info_t;
 
-#define MAX_FILES 500
+#define MAX_FILES 100
 
 static file_info_t files_info[MAX_FILES] = { 0 };
 static size_t files_count = 0;

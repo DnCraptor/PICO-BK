@@ -24,6 +24,7 @@ uint8_t* font = font_8x16;
 uint8_t font_height = 16;
 uint8_t font_shift = 4;
 uint32_t font_mask = 15;
+extern uint8_t* TEXT_VIDEO_RAM;
 
 uint16_t pio_program_VGA_instructions[] = {
     //     .wrap_target
@@ -76,7 +77,6 @@ static uint16_t __scratch_y("vga_driver") palette[16*4];
 static uint32_t bg_color[2];
 static uint16_t palette16_mask = 0;
 
-static uint8_t* text_buffer;
 static uint8_t* text_buf_color;
 
 uint text_buffer_width = 0;
@@ -184,7 +184,7 @@ inline static void dma_handler_VGA_impl() {
             register uint32_t glyph_line = screen_line & font_mask;
             register uint8_t fs = font_shift;
             //указатель откуда начать считывать символы
-            register uint8_t* text_buffer_line = &text_buffer[(screen_line >> fs) * text_buffer_width * 2];
+            register uint8_t* text_buffer_line = &TEXT_VIDEO_RAM[(screen_line >> fs) * text_buffer_width * 2];
             for (int x = 0; x < text_buffer_width; x++) {
                 //из таблицы символов получаем "срез" текущего символа
                 register uint8_t glyph_pixels = font[(*text_buffer_line++ << fs) + glyph_line];
@@ -211,7 +211,7 @@ inline static void dma_handler_VGA_impl() {
             // "слой" символа
             register uint32_t glyph_line = screen_line & font_mask;
             //указатель откуда начать считывать символы
-            register uint8_t* text_buffer_line = &text_buffer[(screen_line >> fs) * text_buffer_width * 2];
+            register uint8_t* text_buffer_line = &TEXT_VIDEO_RAM[(screen_line >> fs) * text_buffer_width * 2];
             for (register int x = 0; x < text_buffer_width; x++) {
                 //из таблицы символов получаем "срез" текущего символа
                 register uint8_t glyph_pixels = font[(*text_buffer_line++ << fs) + glyph_line];
@@ -243,7 +243,7 @@ inline static void dma_handler_VGA_impl() {
             // "слой" символа
             register uint32_t glyph_line = y & font_mask;
             //указатель откуда начать считывать символы
-            register uint8_t* text_buffer_line = &text_buffer[(y >> fs) * text_buffer_width * 2];
+            register uint8_t* text_buffer_line = &TEXT_VIDEO_RAM[(y >> fs) * text_buffer_width * 2];
             for (register int x = 0; x < text_buffer_width; x++) {
                 //из таблицы символов получаем "срез" текущего символа
                 register uint8_t glyph_pixels = font[(*text_buffer_line++ << fs) + glyph_line];
@@ -389,12 +389,19 @@ void __not_in_flash_func(dma_handler_VGA)() {
 enum graphics_mode_t graphics_set_mode(enum graphics_mode_t mode) {
     switch (mode) {
         case BK_256x256x2:
-            break;
         case BK_512x256x1:
+            if (TEXT_VIDEO_RAM) free(TEXT_VIDEO_RAM);
+            TEXT_VIDEO_RAM = 0;
             break;
         case TEXTMODE_80x30:
             text_buffer_width = 80;
             text_buffer_height = 30;
+            font = font_8x16;
+            font_height = 16;
+            font_shift = 4;
+            font_mask = 15;
+            if (TEXT_VIDEO_RAM) free(TEXT_VIDEO_RAM);
+            TEXT_VIDEO_RAM = calloc(text_buffer_width * text_buffer_height / 2, 4);
             break;
         default:
             if (!SELECT_VGA && g_conf.is_DVI_1024) { // TODO: real dvi0 clock
@@ -426,6 +433,8 @@ enum graphics_mode_t graphics_set_mode(enum graphics_mode_t mode) {
                 font_shift = 4;
                 font_mask = 15;
             }
+            if (TEXT_VIDEO_RAM) free(TEXT_VIDEO_RAM);
+            TEXT_VIDEO_RAM = calloc(text_buffer_width * text_buffer_height / 2, 4);
     }
 
     enum graphics_mode_t res = graphics_mode;
@@ -568,14 +577,11 @@ void graphics_set_flashmode(bool flash_line, bool flash_frame) {
     is_flash_line = flash_line;
 };
 
-void graphics_set_textbuffer(uint8_t* buffer) {
-    text_buffer = buffer;
-};
 static int current_line = 25;
 static int start_debug_line = 25;
 
 void clrScr(uint8_t color) {
-    uint8_t* t_buf = text_buffer;
+    uint8_t* t_buf = TEXT_VIDEO_RAM;
     for (int yi = start_debug_line; yi < text_buffer_height; yi++)
         for (int xi = 0; xi < text_buffer_width * 2; xi++) {
             *t_buf++ = ' ';
@@ -585,7 +591,7 @@ void clrScr(uint8_t color) {
 };
 
 void draw_text(char* string, int x, int y, uint8_t color, uint8_t bgcolor) {
-    uint8_t* t_buf = text_buffer + text_buffer_width * 2 * y + 2 * x;
+    uint8_t* t_buf = TEXT_VIDEO_RAM + text_buffer_width * 2 * y + 2 * x;
     uint8_t c = (bgcolor << 4) | (color & 0xF);
     for (int xi = x; xi < text_buffer_width * 2; ++xi) {
         if (!(*string)) break;
@@ -595,17 +601,17 @@ void draw_text(char* string, int x, int y, uint8_t color, uint8_t bgcolor) {
 }
 
 void draw_shadow(int x, int y, int w, int h, uint8_t color, uint8_t bgcolor) {
-    uint8_t* max_t = text_buffer + 2 * text_buffer_width * text_buffer_height;
+    uint8_t* max_t = TEXT_VIDEO_RAM + 2 * text_buffer_width * text_buffer_height;
     if (y + h < text_buffer_height) {
         for (int xi = x + 1; xi <= x + w && xi < text_buffer_width; ++xi) {
-            uint8_t* t_buf = text_buffer + text_buffer_width * 2 * (y + h) + 2 * xi + 1;
+            uint8_t* t_buf = TEXT_VIDEO_RAM + text_buffer_width * 2 * (y + h) + 2 * xi + 1;
             if (t_buf >= max_t) continue;
             *t_buf = (bgcolor << 4) | (color & 0xF);
         }
     }
     if (x + w < text_buffer_width) {
         for (int yi = y + 1; yi < y + h && y < text_buffer_height; ++yi) {
-            uint8_t* t_buf = text_buffer + text_buffer_width * 2 * yi + 2 * (x + w) + 1;
+            uint8_t* t_buf = TEXT_VIDEO_RAM + text_buffer_width * 2 * yi + 2 * (x + w) + 1;
             if (t_buf >= max_t) continue;
             *t_buf = (bgcolor << 4) | (color & 0xF);
         }
@@ -632,11 +638,11 @@ void logMsg(char* msg) {
         current_line = text_buffer_height - 1;
         size_t sz = text_buffer_width * 2;
         for (int i = start_debug_line; i < current_line; ++i) {
-            uint8_t* t_buf1 = text_buffer + sz * i;
-            uint8_t* t_buf2 = text_buffer + sz * (i + 1);
+            uint8_t* t_buf1 = TEXT_VIDEO_RAM + sz * i;
+            uint8_t* t_buf2 = TEXT_VIDEO_RAM + sz * (i + 1);
             memcpy(t_buf1, t_buf2, sz);
         }
-        uint8_t* t_buf = text_buffer + sz * current_line;
+        uint8_t* t_buf = TEXT_VIDEO_RAM + sz * current_line;
         for (int i = 0; i < sz; ++i) {
             *(t_buf++) = ' ';
             *(t_buf++) = 1 << 4;

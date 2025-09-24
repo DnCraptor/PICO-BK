@@ -3,8 +3,6 @@
 #include <inttypes.h>
 #include <pico-vision.h>
 
-#define VIDEORAM_SIZE (MAX_WIDTH * MAX_HEIGHT * BYTES_PER_CHAR)
-
 // --- select only one of 'em
 #ifdef SWAP_BLOCK_1k
 #define RAM_PAGE_SIZE_KB 1ul
