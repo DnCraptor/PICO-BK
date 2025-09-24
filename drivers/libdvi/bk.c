@@ -133,8 +133,8 @@ void __not_in_flash() flash_timings() {
 #if !PICO_RP2040
 	set_sys_clock_khz(DVI_TIMING.bit_clk_khz, true);
 	hw_set_bits(&bus_ctrl_hw->priority, BUSCTRL_BUS_PRIORITY_PROC1_BITS);
-#else /// TODO: really?
-	set_sys_clock_khz(366000, true);
+#else
+	set_sys_clock_khz(dvi0.timing->bit_clk_khz, true);
 #endif
 }
 

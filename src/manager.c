@@ -126,7 +126,12 @@ typedef struct {
     int     dir_num;
 } file_info_t;
 
+// TODO: dynamic
+#if !PICO_RP2040
+#define MAX_FILES 500
+#else
 #define MAX_FILES 100
+#endif
 
 static file_info_t files_info[MAX_FILES] = { 0 };
 static size_t files_count = 0;

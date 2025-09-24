@@ -45,11 +45,6 @@ set(CMAKE_CXX_STANDARD 17)
 
 pico_sdk_init()
 
-if (PICO_PLATFORM STREQUAL "rp2040")
-    pico_define_boot_stage2(slower_boot2 ${PICO_DEFAULT_BOOT_STAGE2_FILE})
-    target_compile_definitions(slower_boot2 PRIVATE PICO_FLASH_SPI_CLKDIV=4)
-endif()
-
 IF(MURM2)
     SET(BUILD_NAME "m2${PROJECT_NAME}")
 ELSEIF(PICO_PC)
@@ -63,7 +58,6 @@ ENDIF()
 if(NOT AY_TYPE)
     SET(AY_TYPE PWM)
 endif ()
-
 
 set(OUTPUT_DIR "${CMAKE_SOURCE_DIR}/bin/${CMAKE_BUILD_TYPE}")
 set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY "${OUTPUT_DIR}")
@@ -97,6 +91,12 @@ add_executable(${PROJECT_NAME} ${SRC})
 
 pico_set_program_name(${PROJECT_NAME} "PICO BK-0010/11 Emulator for Murmulator devboard by DnCraptor")
 pico_set_program_version(${PROJECT_NAME} "${BUILD_VERSION}")
+
+if (PICO_PLATFORM STREQUAL "rp2040")
+    pico_define_boot_stage2(slower_boot2 ${PICO_DEFAULT_BOOT_STAGE2_FILE})
+    target_compile_definitions(slower_boot2 PRIVATE PICO_FLASH_SPI_CLKDIV=4)
+    pico_set_boot_stage2(${PROJECT_NAME} slower_boot2)
+endif()
 
 # Enable compiler and linker garbage collect unused code/data sections
 add_link_options(-Wl,--gc-sections)

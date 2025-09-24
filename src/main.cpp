@@ -433,8 +433,6 @@ int main() {
     }
     #endif
 
-    memset(TEXT_VIDEO_RAM, 0, sizeof TEXT_VIDEO_RAM);
-
     for (int i = 0; i < 50; ++i) {
         keyboard_tick();
         sleep_ms(1);
@@ -462,5 +460,6 @@ int main() {
 #endif
 
     emu_start();
-    return 0;
+    while(1);
+    __unreachable();
 }
