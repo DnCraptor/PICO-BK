@@ -386,8 +386,8 @@ int main() {
 	vreg_disable_voltage_limit();
 	vreg_set_voltage(VREG_VSEL);
 #else
-    hw_set_bits(&vreg_and_chip_reset_hw->vreg, VREG_AND_CHIP_RESET_VREG_VSEL_BITS);
-    sleep_ms(10);
+    vreg_set_voltage(VREG_VOLTAGE_1_30);
+//    hw_set_bits(&vreg_and_chip_reset_hw->vreg, VREG_AND_CHIP_RESET_VREG_VSEL_BITS);
 #endif
     flash_timings();
 
