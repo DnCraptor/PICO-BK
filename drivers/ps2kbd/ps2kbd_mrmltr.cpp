@@ -731,8 +731,8 @@ Ps2Kbd_Mrmltr ps2kbd(
 );
 
 extern "C" void keyboard_init(void) {
-    tuh_init(BOARD_TUH_RHPORT);
     ps2kbd.init_gpio();
+    tuh_init(BOARD_TUH_RHPORT);
 }
 
 #include <host/usbh.h>
