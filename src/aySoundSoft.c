@@ -120,7 +120,7 @@ uint8_t FAST_FUNC(AY_get_reg)()
 void FAST_FUNC(AY_set_reg)(uint8_t val) {
     DBGM_PRINT(("AY_set_reg(%02Xh)", val));
     #ifdef HWAY
-		send_to_595(LOW (BDIR) | val);
+        send_to_595(LOW (BDIR) | val);
 		send_to_595(HIGH(BDIR) | val);
 		send_to_595(LOW (BDIR) | val);
     #else
