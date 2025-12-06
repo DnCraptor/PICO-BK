@@ -37,7 +37,7 @@ set (m1p2launcher ON)
 
 # Platform (m1p2 by default)
 #set (MURM2 ON)
-set (PICO_PC ON)
+#set (PICO_PC ON)
 #set (ZERO2 ON)
 
 set(CMAKE_C_STANDARD 11)
@@ -288,7 +288,7 @@ target_compile_definitions(${PROJECT_NAME} PRIVATE
 pico_enable_stdio_uart(${PROJECT_NAME} 0)
 pico_enable_stdio_usb(${PROJECT_NAME} 0)
 
-SET(BUILD_NAME "${BUILD_NAME}-VGA-HDMI-400MHz-${AY_TYPE}-${BUILD_VERSION}")
+SET(BUILD_NAME "${BUILD_NAME}-VGA-366MHz-${AY_TYPE}-${BUILD_VERSION}")
 IF(m1p2launcher)
     IF(MURM2)
         SET(BUILD_NAME "${BUILD_NAME}.m2p2")

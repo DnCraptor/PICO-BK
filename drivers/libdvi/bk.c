@@ -130,8 +130,8 @@ void __not_in_flash() flash_timings() {
 #endif
     sleep_ms(100);
 	// Run system at TMDS bit clock
-	set_sys_clock_khz(DVI_TIMING.bit_clk_khz, true);
-//	set_sys_clock_khz(366000, true);
+//	set_sys_clock_khz(DVI_TIMING.bit_clk_khz, true);
+	set_sys_clock_khz(366000, true);
 	hw_set_bits(&bus_ctrl_hw->priority, BUSCTRL_BUS_PRIORITY_PROC1_BITS);
 }
 

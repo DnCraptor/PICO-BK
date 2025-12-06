@@ -440,7 +440,7 @@ int main() {
     init_fs();
 
     uint8_t link = testPins(beginVGA_PIN, beginVGA_PIN + 1);
-    SELECT_VGA = (link == 0) || (link == 0x1F);
+    SELECT_VGA = true; // (link == 0) || (link == 0x1F);
 
     sem_init(&vga_start_semaphore, 0, 1);
     multicore_launch_core1(render_core);
