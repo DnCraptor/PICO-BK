@@ -1035,7 +1035,9 @@ static void save_snap(uint8_t cmd) {
     }
     f_close(&file);
     gpio_put(PICO_DEFAULT_LED_PIN, false);
-    redraw_window();
+    if (manager_started) {
+        redraw_window();
+    }
 }
 
 inline static void restore_snap_by_filename(const char* path) {

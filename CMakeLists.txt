@@ -29,15 +29,15 @@ option(MURM2 "Murmulator 2.0" OFF)
 option(PICO_PC "RP2040-PICO-PC" OFF)
 option(ZERO2 "RP2350-PiZero" OFF)
 
-set(BUILD_VERSION "1.3.7")
+set(BUILD_VERSION "1.3.8")
 set(USE_NESPAD ON)
 
 #set(AY_TYPE HWAY)
-set (m1p2launcher ON)
+#set (m1p2launcher ON)
 
 # Platform (m1p2 by default)
 #set (MURM2 ON)
-set (PICO_PC ON)
+#set (PICO_PC ON)
 #set (ZERO2 ON)
 
 set(CMAKE_C_STANDARD 11)
