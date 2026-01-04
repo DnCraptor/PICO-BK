@@ -30,6 +30,7 @@ extern "C" {
 #include <stdlib.h>
 #include "fdd.h"
 }
+#include "audio.h"
 
 volatile config_em_t g_conf {
    false, // is_covox_on
@@ -42,6 +43,25 @@ volatile config_em_t g_conf {
    256, // graphics_buffer_height
    0, // v_buff_offset
 };
+
+uint8_t link_i2s_code = 0xFF;
+bool is_i2s_enabled = false;
+uint16_t beeper = 0;
+
+static i2s_config_t i2s_config = {
+		.sample_freq = 31250, 
+		.channel_count = 2,
+        .data_pin = I2S_DATA_PIO,
+        .bck_pin = I2S_BCK_PIO,
+        .lck_pin = I2S_LCK_PIO,
+		.pio = pio1,
+		.sm = 0,
+        .dma_channel = 0,
+        .dma_trans_count = 0,
+        .dma_buf = NULL,
+        .volume = 0,
+        .program_offset = 0
+	};
 
 extern "C" bool SELECT_VGA = true;
 bool PSRAM_AVAILABLE = false;
@@ -133,8 +153,15 @@ static bool __not_in_flash_func(AY_timer_callback)(repeating_timer_t *rt) {
     }
 #endif
 #else
-    pwm_set_gpio_level(PWM_PIN0, outR); // Право
-    pwm_set_gpio_level(PWM_PIN1, outL); // Лево
+    if (is_i2s_enabled) {
+        static int16_t v32[2];
+        v32[0] = (beeper + outR) << 3;
+        v32[1] = (beeper + outL) << 3;
+        i2s_write(&i2s_config, v32, 1);
+    } else {
+        pwm_set_gpio_level(PWM_PIN0, outR); // Право
+        pwm_set_gpio_level(PWM_PIN1, outL); // Лево
+    }
 #endif
     outL = outR = 0;
     if (manager_started) {
@@ -395,11 +422,26 @@ int main() {
 #ifdef HWAY
     Init_PWM_175(TSPIN_MODE_BOTH);
 #else
-    PWM_init_pin(BEEPER_PIN, (1 << 12) - 1);
-    #ifdef SOUND_SYSTEM
-    PWM_init_pin(PWM_PIN0, (1 << 12) - 1);
-    PWM_init_pin(PWM_PIN1, (1 << 12) - 1);
-    #endif
+    if (link_i2s_code == 0xFF) {
+        if (I2S_BCK_PIO != I2S_LCK_PIO && I2S_LCK_PIO != I2S_DATA_PIO && I2S_BCK_PIO != I2S_DATA_PIO) {
+            link_i2s_code = testPins(I2S_DATA_PIO, I2S_BCK_PIO);
+        //    is_i2s_enabled = link_i2s_code;
+        }
+    }
+	int hz = 44100;	//44000 //44100 //96000 //22050
+    if (is_i2s_enabled) {
+        i2s_volume(&i2s_config, 0);
+        i2s_config.sample_freq = hz;
+        i2s_config.channel_count = 2;
+        i2s_config.dma_trans_count = 1;
+        i2s_init(&i2s_config);
+    } else {
+        PWM_init_pin(BEEPER_PIN, (1 << 12) - 1);
+        #ifdef SOUND_SYSTEM
+        PWM_init_pin(PWM_PIN0, (1 << 12) - 1);
+        PWM_init_pin(PWM_PIN1, (1 << 12) - 1);
+        #endif
+    }
 #endif
 
 #if LOAD_WAV_PIO
@@ -450,7 +492,6 @@ int main() {
     graphics_set_mode(g_conf.color_mode ? BK_256x256x2 : BK_512x256x1);
 
 #ifdef SOUND_SYSTEM
-	int hz = 44100;	//44000 //44100 //96000 //22050
 	// negative timeout means exact delay (rather than delay between callbacks)
 	if (!add_repeating_timer_us(-1000000 / hz, AY_timer_callback, NULL, &timer)) {
 		logMsg("Failed to add timer");

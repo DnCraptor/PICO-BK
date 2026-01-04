@@ -566,12 +566,7 @@ TCPU_Arg AT_OVL CPU_WriteB (TCPU_Arg Adr, uint_fast8_t Byte) {
                 Device_Data.SysRegs.WrReg177716 = (uint16_t) Word; // ?? LO byte missed
                 // пищалка
                 if (!(Adr & 1)) { // LO byte only
-                    int vol = g_conf.snd_volume + 9;
-                    if (vol > 1) {
-                        pwm_set_gpio_level(BEEPER_PIN, Byte & 0100 ? (1 << vol) - 1 : 0);
-                    } else {
-                        pwm_set_gpio_level(BEEPER_PIN, 0);
-                    }
+                    beep(g_conf.snd_volume + 9 > 0);
                 }
             }
             break;

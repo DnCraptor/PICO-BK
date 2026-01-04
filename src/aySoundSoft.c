@@ -469,10 +469,16 @@ void AY_write_address(uint16_t word) {
     #endif
 }
 
+extern bool is_i2s_enabled;
+extern uint16_t beeper;
 void beep(bool v) {
     #ifdef HWAY
         AY_to595Beep(v);
     #else
-        pwm_set_gpio_level(BEEPER_PIN, v ? (1 << (g_conf.snd_volume + 9)) - 1 : 0);
+        if (is_i2s_enabled) {
+            beeper = (v ? (1 << (g_conf.snd_volume + 9)) - 1 : 0);
+        } else {
+            pwm_set_gpio_level(BEEPER_PIN, v ? (1 << (g_conf.snd_volume + 9)) - 1 : 0);
+        }
     #endif
 }

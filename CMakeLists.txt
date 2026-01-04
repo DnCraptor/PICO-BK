@@ -24,12 +24,12 @@ else ()
     project(p2-bk C CXX ASM)
 endif()
 
-option(AY_TYPE "AY-3-8910 Type: PWM / HWAY" HWAY)
+option(AY_TYPE "AY-3-8910 Type: emulation / HWAY" HWAY)
 option(MURM2 "Murmulator 2.0" OFF)
 option(PICO_PC "RP2040-PICO-PC" OFF)
 option(ZERO2 "RP2350-PiZero" OFF)
 
-set(BUILD_VERSION "1.3.8")
+set(BUILD_VERSION "1.3.9")
 set(USE_NESPAD ON)
 
 #set(AY_TYPE HWAY)
@@ -76,6 +76,7 @@ add_subdirectory(drivers/sdcard)
 add_subdirectory(drivers/psram)
 add_subdirectory(drivers/nespad)
 add_subdirectory(drivers/usb)
+add_subdirectory(drivers/audio)
 
 # INCLUDE FILES THAT SHOULD BE COMPILED:
 
@@ -110,6 +111,7 @@ target_link_libraries(${PROJECT_NAME} PRIVATE
         fatfs
         nespad
         usb
+        audio
 
         pico_runtime
         pico_stdlib
@@ -160,6 +162,9 @@ endif ()
 
 if( AY_TYPE MATCHES "HWAY" )
     target_compile_definitions(${PROJECT_NAME} PRIVATE HWAY)
+    SET(BUILD_NAME "${BUILD_NAME}-400MHz-HWAY-${BUILD_VERSION}")
+else()
+    SET(BUILD_NAME "${BUILD_NAME}-400MHz-${BUILD_VERSION}")
 endif()
 
 if (USE_WII)
@@ -205,6 +210,10 @@ if (MURM2)
         SDCARD_PIN_SPI0_SCK=6
         SDCARD_PIN_SPI0_MOSI=7
         
+        I2S_DATA_PIO=9 #
+        I2S_BCK_PIO=10 #
+        I2S_LCK_PIO=11
+
         BEEPER_PIN=9
         PWM_PIN0=10
         PWM_PIN1=11
@@ -237,6 +246,10 @@ elseif (PICO_PC)
         SDCARD_PIN_SPI0_MOSI=7
         SDCARD_PIN_SPI0_CS=22
         
+        I2S_DATA_PIO=26 # not implemented
+        I2S_BCK_PIO=26  # I2S_BCK_PIO == I2S_LCK_PIO == I2S_DATA_PIO - unsupported mark
+        I2S_LCK_PIO=26
+
         BEEPER_PIN=26
         PWM_PIN0=27
         PWM_PIN1=28
@@ -275,6 +288,10 @@ else() # m1
 
         LOAD_WAV_PIO=22
 
+        I2S_DATA_PIO=26 #
+        I2S_BCK_PIO=27 #
+        I2S_LCK_PIO=28
+
         PWM_PIN0=26
         PWM_PIN1=27
         BEEPER_PIN=28
@@ -288,7 +305,6 @@ target_compile_definitions(${PROJECT_NAME} PRIVATE
 pico_enable_stdio_uart(${PROJECT_NAME} 0)
 pico_enable_stdio_usb(${PROJECT_NAME} 0)
 
-SET(BUILD_NAME "${BUILD_NAME}-VGA-HDMI-400MHz-${AY_TYPE}-${BUILD_VERSION}")
 IF(m1p2launcher)
     IF(MURM2)
         SET(BUILD_NAME "${BUILD_NAME}.m2p2")
