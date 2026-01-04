@@ -64,56 +64,14 @@ void i2s_init(i2s_config_t *i2s_config) {
 
         pio_sm_set_enabled(i2s_config->pio, i2s_config->sm, false);
     }
-    /* Allocate memory for the DMA buffer */
-    i2s_config->dma_buf = malloc(i2s_config->dma_trans_count * sizeof(uint32_t));
-
-    /* Direct Memory Access setup */
-    i2s_config->dma_channel = dma_claim_unused_channel(true);
-    
-    dma_channel_config dma_config = dma_channel_get_default_config(i2s_config->dma_channel);
-    channel_config_set_read_increment(&dma_config, true);
-    channel_config_set_write_increment(&dma_config, false);
-
-    channel_config_set_transfer_data_size(&dma_config, DMA_SIZE_32);
-
-    volatile uint32_t* addr_write_DMA = &(i2s_config->pio->txf[i2s_config->sm]);
-    if (is_i2s_enabled) {
-        channel_config_set_dreq(&dma_config, pio_get_dreq(i2s_config->pio, i2s_config->sm, true));
-    } else {
-        gpio_set_function(PWM_PIN0, GPIO_FUNC_PWM);
-        gpio_set_function(PWM_PIN1, GPIO_FUNC_PWM);
-        uint slice_num = pwm_gpio_to_slice_num(PWM_PIN0);
-    
-        pwm_config c_pwm=pwm_get_default_config();
-        pwm_config_set_clkdiv(&c_pwm,1.0);
-        //pwm_config_set_wrap(&c_pwm,(1<<12)-1);//MAX PWM value
-        pwm_config_set_wrap(&c_pwm,clock_get_hz(clk_sys)/(i2s_config->sample_freq));//MAX PWM value
-        pwm_init(slice_num,&c_pwm,true);
-
-        //Для синхронизации используем другой произвольный канал ШИМ
-        channel_config_set_dreq(&dma_config, pwm_get_dreq(slice_num));     
-        addr_write_DMA=(uint32_t*)&pwm_hw->slice[slice_num].cc;
-    }
-    
-    dma_channel_configure(i2s_config->dma_channel,
-                          &dma_config,
-                          addr_write_DMA,    // Destination pointer
-                          i2s_config->dma_buf,                        // Source pointer
-                          i2s_config->dma_trans_count,                // Number of 32 bits words to transfer
-                          false                                       // Start immediately
-    );
 
     pio_sm_set_enabled(i2s_config->pio, i2s_config->sm , true);
 }
 
 void i2s_deinit(i2s_config_t *i2s_config) {
-    dma_channel_abort(i2s_config->dma_channel);
-    dma_channel_unclaim(i2s_config->dma_channel);
     pio_sm_set_enabled(i2s_config->pio, i2s_config->sm, false);
     pio_remove_program(i2s_config->pio, &audio_i2s_program, i2s_config->program_offset);
     pio_sm_unclaim(i2s_config->pio, i2s_config->sm);
-    free(i2s_config->dma_buf);
-    i2s_config->dma_buf = 0;
 }
 
 /**
@@ -130,34 +88,6 @@ void i2s_write(const i2s_config_t *i2s_config, const int16_t *samples, const siz
         register uint32_t v = (t << 16) | *samples++; // v
         pio_sm_put_blocking(i2s_config->pio, i2s_config->sm, v);
     }
-}
-
-/**
- * Write samples to DMA buffer and initiate DMA transfer (non blocking)
- * i2s_config: I2S context obtained by i2s_get_default_config()
- *     sample: pointer to an array of dma_trans_count x 32 bits samples
- */
-void i2s_dma_write(i2s_config_t *i2s_config,const int16_t *samples) {
-    if (!i2s_config->dma_buf) {
-        return;
-    }
-    /* Wait the completion of the previous DMA transfer */
-    dma_channel_wait_for_finish_blocking(i2s_config->dma_channel);
-    /* Copy samples into the DMA buffer */
-    if (is_i2s_enabled) {
-        for (register size_t i = 0; i < (i2s_config->dma_trans_count); ++i) {
-            register uint32_t t = (uint32_t)(samples[i]);
-            i2s_config->dma_buf[i] = t << 16 | t;
-        }
-    } else {
-        for(uint16_t i=0;i<i2s_config->dma_trans_count*2;i++) {
-            i2s_config->dma_buf[i] = (65536/2+(samples[i]))>>(4+i2s_config->volume);
-        }
-    }
-    /* Initiate the DMA transfer */
-    dma_channel_transfer_from_buffer_now(i2s_config->dma_channel,
-                                         i2s_config->dma_buf,
-                                         i2s_config->dma_trans_count);
 }
 
 /**

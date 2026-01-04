@@ -44,21 +44,17 @@ volatile config_em_t g_conf {
    0, // v_buff_offset
 };
 
-uint8_t link_i2s_code = 0xFF;
-bool is_i2s_enabled = false;
-uint16_t beeper = 0;
+extern "C" bool is_i2s_enabled = false;
+extern "C" uint16_t beeper = 0;
 
 static i2s_config_t i2s_config = {
-		.sample_freq = 31250, 
+		.sample_freq = 41000, 
 		.channel_count = 2,
         .data_pin = I2S_DATA_PIO,
         .bck_pin = I2S_BCK_PIO,
         .lck_pin = I2S_LCK_PIO,
 		.pio = pio1,
 		.sm = 0,
-        .dma_channel = 0,
-        .dma_trans_count = 0,
-        .dma_buf = NULL,
         .volume = 0,
         .program_offset = 0
 	};
@@ -422,18 +418,14 @@ int main() {
 #ifdef HWAY
     Init_PWM_175(TSPIN_MODE_BOTH);
 #else
-    if (link_i2s_code == 0xFF) {
-        if (I2S_BCK_PIO != I2S_LCK_PIO && I2S_LCK_PIO != I2S_DATA_PIO && I2S_BCK_PIO != I2S_DATA_PIO) {
-            link_i2s_code = testPins(I2S_DATA_PIO, I2S_BCK_PIO);
-        //    is_i2s_enabled = link_i2s_code;
-        }
+    if (I2S_BCK_PIO != I2S_LCK_PIO && I2S_LCK_PIO != I2S_DATA_PIO && I2S_BCK_PIO != I2S_DATA_PIO) {
+        is_i2s_enabled = testPins(I2S_DATA_PIO, I2S_BCK_PIO);
     }
 	int hz = 44100;	//44000 //44100 //96000 //22050
     if (is_i2s_enabled) {
         i2s_volume(&i2s_config, 0);
         i2s_config.sample_freq = hz;
         i2s_config.channel_count = 2;
-        i2s_config.dma_trans_count = 1;
         i2s_init(&i2s_config);
     } else {
         PWM_init_pin(BEEPER_PIN, (1 << 12) - 1);
