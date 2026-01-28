@@ -186,7 +186,7 @@ void __not_in_flash() dvi_on_core1() {
         switch(gmode) {
             case TEXTMODE_: {
                 register uint8_t* bk_text = (uint8_t*)TEXT_VIDEO_RAM;
-                register uint32_t bytes_per_string = (dvi0.timing->h_active_pixels >> 3) << 1; // ширина символа - 8 пикселей, 2 байта на символ
+                register uint32_t bytes_per_string = text_buffer_width << 1;
                 if (dvi0.timing->h_active_pixels >= 1024) {
                     for (uint y = 0; y < FRAME_HEIGHT; ++y) {
                         register uint32_t glyph_line = y & font_mask;

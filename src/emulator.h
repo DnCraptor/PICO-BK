@@ -20,7 +20,12 @@
 #include "ff.h"
 
 extern uint8_t RAM[RAM_SIZE];
-extern uint8_t* TEXT_VIDEO_RAM;
+#if PICO_RP2040
+extern uint8_t TEXT_VIDEO_RAM[128*48*2];
+#else
+extern uint8_t TEXT_VIDEO_RAM[128*96*2];
+#endif
+//extern uint8_t* TEXT_VIDEO_RAM;
 extern bool PSRAM_AVAILABLE;
 extern bool SD_CARD_AVAILABLE;
 extern uint32_t DIRECT_RAM_BORDER;

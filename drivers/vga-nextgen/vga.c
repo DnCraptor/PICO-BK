@@ -24,7 +24,11 @@ uint8_t* font = font_8x16;
 uint8_t font_height = 16;
 uint8_t font_shift = 4;
 uint32_t font_mask = 15;
-extern uint8_t* TEXT_VIDEO_RAM;
+#if PICO_RP2040
+extern uint8_t TEXT_VIDEO_RAM[128*48*2];
+#else
+extern uint8_t TEXT_VIDEO_RAM[128*96*2];
+#endif
 
 uint16_t pio_program_VGA_instructions[] = {
     //     .wrap_target
@@ -390,8 +394,8 @@ enum graphics_mode_t graphics_set_mode(enum graphics_mode_t mode) {
     switch (mode) {
         case BK_256x256x2:
         case BK_512x256x1:
-            if (TEXT_VIDEO_RAM) free(TEXT_VIDEO_RAM);
-            TEXT_VIDEO_RAM = 0;
+          //  if (TEXT_VIDEO_RAM) free(TEXT_VIDEO_RAM);
+          //  TEXT_VIDEO_RAM = 0;
             break;
         case TEXTMODE_80x30:
             text_buffer_width = 80;
@@ -400,8 +404,8 @@ enum graphics_mode_t graphics_set_mode(enum graphics_mode_t mode) {
             font_height = 16;
             font_shift = 4;
             font_mask = 15;
-            if (TEXT_VIDEO_RAM) free(TEXT_VIDEO_RAM);
-            TEXT_VIDEO_RAM = calloc(text_buffer_width * text_buffer_height / 2, 4);
+         //   if (TEXT_VIDEO_RAM) free(TEXT_VIDEO_RAM);
+         //   TEXT_VIDEO_RAM = calloc(text_buffer_width * text_buffer_height / 2, 4);
             break;
         default:
             if (!SELECT_VGA && g_conf.is_DVI_1024) { // TODO: real dvi0 clock
@@ -433,8 +437,8 @@ enum graphics_mode_t graphics_set_mode(enum graphics_mode_t mode) {
                 font_shift = 4;
                 font_mask = 15;
             }
-            if (TEXT_VIDEO_RAM) free(TEXT_VIDEO_RAM);
-            TEXT_VIDEO_RAM = calloc(text_buffer_width * text_buffer_height / 2, 4);
+          //  if (TEXT_VIDEO_RAM) free(TEXT_VIDEO_RAM);
+          //  TEXT_VIDEO_RAM = calloc(text_buffer_width * text_buffer_height / 2, 4);
     }
 
     enum graphics_mode_t res = graphics_mode;
@@ -581,19 +585,20 @@ static int current_line = 25;
 static int start_debug_line = 25;
 
 void clrScr(uint8_t color) {
-    uint8_t* t_buf = TEXT_VIDEO_RAM;
+    uint8_t* t_buf = TEXT_VIDEO_RAM + (size_t)start_debug_line * text_buffer_width * 2;
+    const uint8_t attr = (color << 4) | (color & 0xF);
     for (int yi = start_debug_line; yi < text_buffer_height; yi++)
-        for (int xi = 0; xi < text_buffer_width * 2; xi++) {
+        for (int xi = 0; xi < (int)text_buffer_width; xi++) {
             *t_buf++ = ' ';
-            *t_buf++ = (color << 4) | (color & 0xF);
+            *t_buf++ = attr;
         }
     current_line = start_debug_line;
 };
 
 void draw_text(char* string, int x, int y, uint8_t color, uint8_t bgcolor) {
     uint8_t* t_buf = TEXT_VIDEO_RAM + text_buffer_width * 2 * y + 2 * x;
-    uint8_t c = (bgcolor << 4) | (color & 0xF);
-    for (int xi = x; xi < text_buffer_width * 2; ++xi) {
+    const uint8_t c = (bgcolor << 4) | (color & 0xF);
+    for (int xi = x; xi < text_buffer_width; ++xi) {
         if (!(*string)) break;
         *t_buf++ = *string++;
         *t_buf++ = c;
@@ -642,10 +647,11 @@ void logMsg(char* msg) {
             uint8_t* t_buf2 = TEXT_VIDEO_RAM + sz * (i + 1);
             memcpy(t_buf1, t_buf2, sz);
         }
-        uint8_t* t_buf = TEXT_VIDEO_RAM + sz * current_line;
-        for (int i = 0; i < sz; ++i) {
-            *(t_buf++) = ' ';
-            *(t_buf++) = 1 << 4;
+        size_t w = text_buffer_width;
+        uint8_t* t_buf = TEXT_VIDEO_RAM + (w * 2) * current_line;
+        for (size_t x = 0; x < w; ++x) {
+            *t_buf++ = ' ';
+            *t_buf++ = 1 << 4;
         }
     }
     draw_text(msg, 0, current_line++, 7, 1);

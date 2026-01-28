@@ -758,11 +758,13 @@ void read_config(const char* path) {
     if (mode >= 0 && mode <= 1) {
         g_conf.is_128_48 = (bool)mode;
     }
+#if PICO_RP2350
     const char p27[] = "is_DVI_1024:";
     mode = parse_conf_word(buf, p27, sizeof(p27), MAX_CONF);
     if (mode >= 0 && mode <= 1) {
         g_conf.is_DVI_1024 = (bool)mode;
     }
+#endif
     const char p28[] = "is_8x8:";
     mode = parse_conf_word(buf, p28, sizeof(p28), MAX_CONF);
     if (mode >= 0 && mode <= 1) {

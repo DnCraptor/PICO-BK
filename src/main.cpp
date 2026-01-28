@@ -48,8 +48,12 @@ bool PSRAM_AVAILABLE = false;
 bool SD_CARD_AVAILABLE = false;
 uint32_t DIRECT_RAM_BORDER = PSRAM_AVAILABLE ? RAM_SIZE : (SD_CARD_AVAILABLE ? RAM_PAGE_SIZE : RAM_SIZE);
 
-uint8_t* TEXT_VIDEO_RAM = 0;
 uint8_t __aligned(4096) RAM[RAM_SIZE] = { 0 };
+#if PICO_RP2040
+uint8_t __aligned(4) TEXT_VIDEO_RAM[128*48*2] = { 0 };
+#else
+uint8_t __aligned(4) TEXT_VIDEO_RAM[128*96*2] = { 0 };
+#endif
 
 pwm_config config = pwm_get_default_config();
 
