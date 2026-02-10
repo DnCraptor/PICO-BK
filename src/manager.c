@@ -553,7 +553,7 @@ static void saveConf() {
         kbdpad2_RIGHT
     );
     f_write(&fil, buf, strlen(buf), &bw);
-    snprintf(buf, 256, "manager_pallette_idx:%d\r\nis_128_48:%dr\nis_DVI_1024:%dr\nis_8x8:%dr\n",
+    snprintf(buf, 256, "manager_pallette_idx:%d\r\nis_128_48:%d\r\nis_DVI_1024:%d\r\nis_8x8:%d\r\n",
         g_conf.manager_pallette_idx,
         g_conf.is_128_48,
         g_conf.is_DVI_1024,
