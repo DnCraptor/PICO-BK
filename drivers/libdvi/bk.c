@@ -114,7 +114,7 @@ struct dvi_inst dvi0;
 
 void __not_in_flash() flash_timings() {
 #if !PICO_RP2040
-	const int max_flash_freq = 88 * 1000000;
+	const int max_flash_freq = 66 * 1000000;
 	const int clock_hz = DVI_TIMING.bit_clk_khz * 1000;
 	int divisor = (clock_hz + max_flash_freq - 1) / max_flash_freq;
 	if (divisor == 1 && clock_hz > 100000000) {
