@@ -204,3 +204,8 @@ Based on: https://github.com/konst-st/BK8266/tree/BK0011M, который баз
 <li>START + A - выход в Murmulator OS 2.0</li>
 <li>START + B - Reset</li>
 </ul>
+
+Полезные ссылки:
+<ul>
+  <li>![https://mkdos.pdp-11.ru/](https://mkdos.pdp-11.ru/)</li>
+</ul>
