@@ -2,13 +2,14 @@
 Based on: https://github.com/konst-st/BK8266/tree/BK0011M, который базируется на основе эмулятора для ESP8266 https://github.com/konst-st/BK8266
 <br>
 Эмулятор БК-0010(-01)/БК-0011М на Raspberry Pi Pico (RP2040) / Raspberry Pi Pico 2 (RP2350)<br/>
+![BK-0010-01](/look.jpg)<br/>
 ![BK-0010 https://t.me/bk0010_11m/414865/503224](/bk0010-flat-keyboard.jpg)<br/>
 <br>
 <br>
 # Hardware required
 Данные исходники тестировались на Murmulator devboard 1.x/2.0 с VGA и HDMI выходом и на Olimex PICO-PC.<br/>
 Схема простейшего мурмулятора доступна тут: https://github.com/AlexEkb4ever/MURMULATOR_classical_scheme<br/>
-![Murmulator Schematics](https://github.com/javavi/pico-infonesPlus/blob/main/assets/Murmulator-1_BSchem.JPG)<br/>
+![Murmulator Schematics]([https://github.com/javavi/pico-infonesPlus/blob/main/assets/Murmulator-1_BSchem.JPG](https://github.com/AlexEkb4ever/MURMULATOR_classical_scheme/raw/main/img/scheme.png))<br/>
 [S]VGA monitor с поддержкой режима 1024х768 60Гц или HDMI с 800х600 60Гц<br>
 Для VGA вывод осуществляется с удвоением точек 512x2->1024 и с утроением линий 256x3->768 в Ч.Б режиме и
 с учетверением точек 256x4->1024 и с утроением линий 256x3->768 в цветном.<br>
