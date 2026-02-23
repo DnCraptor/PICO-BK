@@ -9,7 +9,7 @@ Based on: https://github.com/konst-st/BK8266/tree/BK0011M, который баз
 # Hardware required
 Данные исходники тестировались на Murmulator devboard 1.x/2.0 с VGA и HDMI выходом и на Olimex PICO-PC.<br/>
 Схема простейшего мурмулятора доступна тут: https://github.com/AlexEkb4ever/MURMULATOR_classical_scheme<br/>
-![Murmulator Schematics]([https://github.com/javavi/pico-infonesPlus/blob/main/assets/Murmulator-1_BSchem.JPG](https://github.com/AlexEkb4ever/MURMULATOR_classical_scheme/raw/main/img/scheme.png))<br/>
+![Murmulator Schematics](https://github.com/AlexEkb4ever/MURMULATOR_classical_scheme/blob/main/img/scheme.png)<br/>
 [S]VGA monitor с поддержкой режима 1024х768 60Гц или HDMI с 800х600 60Гц<br>
 Для VGA вывод осуществляется с удвоением точек 512x2->1024 и с утроением линий 256x3->768 в Ч.Б режиме и
 с учетверением точек 256x4->1024 и с утроением линий 256x3->768 в цветном.<br>
