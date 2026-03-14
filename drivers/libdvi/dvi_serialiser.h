@@ -15,7 +15,7 @@ struct dvi_serialiser_cfg {
 	uint prog_offs;
 };
 
-void dvi_serialiser_init(struct dvi_serialiser_cfg *cfg);
+void dvi_serialiser_init(struct dvi_serialiser_cfg *cfg, const struct dvi_timing *t);
 void dvi_serialiser_enable(struct dvi_serialiser_cfg *cfg, bool enable);
 uint32_t dvi_single_to_diff(uint32_t in);
 

@@ -45,6 +45,10 @@
 #define DVI_SYMBOLS_PER_WORD 2
 #endif
 
+#if DVI_SYMBOLS_PER_WORD != 1 && DVI_SYMBOLS_PER_WORD != 2
+#error "Unsupported value for DVI_SYMBOLS_PER_WORD"
+#endif
+
 // Implement TMDS encode with hardware encoders in SIO, instead of
 // interpolators + LUTs. The processor still has to crank the encoder, but
 // it's much faster. This still works with PIO serialisers, which can appear
@@ -62,7 +66,7 @@
 
 // By default we go R, G, B from MSB -> LSB. Override to e.g. swap RGB <-> BGR
 
-// Default 8bpp layout: RGB332, {r[1:0], g[2:0], b[1:0]}
+// Default 8bpp layout: RGB332, {r[2:0], g[2:0], b[1:0]}
 
 #ifndef DVI_8BPP_RED_MSB
 #define DVI_8BPP_RED_MSB 7

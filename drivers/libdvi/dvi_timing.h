@@ -30,6 +30,37 @@ enum dvi_line_state {
 	DVI_STATE_COUNT
 };
 
+// Extended state enums for audio/data island support
+enum dvi_sync_lane_state
+{
+	DVI_SYNC_LANE_STATE_FRONT_PORCH,
+	DVI_SYNC_LANE_STATE_SYNC_DATA_ISLAND, // leading guardband, header, trailing guardband
+	DVI_SYNC_LANE_STATE_SYNC,
+	DVI_SYNC_LANE_STATE_BACK_PORCH,
+	DVI_SYNC_LANE_STATE_VIDEO_GUARDBAND,
+	DVI_SYNC_LANE_STATE_VIDEO,
+	DVI_SYNC_LANE_STATE_COUNT,
+};
+
+enum dvi_nosync_lane_state
+{
+	DVI_NOSYNC_LANE_STATE_CTL0,
+	DVI_NOSYNC_LANE_STATE_PREAMBLE_TO_DATA,
+	DVI_NOSYNC_LANE_STATE_DATA_ISLAND, // leading guardband, packet, trailing guardband
+	DVI_NOSYNC_LANE_STATE_CTL1,
+	DVI_NOSYNC_LANE_STATE_PREAMBLE_TO_VIDEO,
+	DVI_NOSYNC_LANE_STATE_VIDEO_GUARDBAND,
+	DVI_NOSYNC_LANE_STATE_VIDEO,
+	DVI_NOSYNC_LANE_STATE_COUNT,
+};
+
+typedef struct dvi_blank {
+    int left;
+    int right;
+    int top;
+    int bottom;
+} dvi_blank_t;
+
 struct dvi_timing_state {
 	uint v_ctr;
 	enum dvi_line_state v_state;
@@ -51,10 +82,14 @@ static_assert(__builtin_offsetof(dma_cb_t, c.ctrl) == __builtin_offsetof(dma_cha
 #define DVI_SYNC_LANE_CHUNKS DVI_STATE_COUNT
 #define DVI_NOSYNC_LANE_CHUNKS 2
 
+// Extended chunk counts for audio/data island DMA lists
+#define DVI_SYNC_LANE_CHUNKS_WITH_AUDIO DVI_SYNC_LANE_STATE_COUNT
+#define DVI_NOSYNC_LANE_CHUNKS_WITH_AUDIO DVI_NOSYNC_LANE_STATE_COUNT
+
 struct dvi_scanline_dma_list {
-	dma_cb_t l0[DVI_SYNC_LANE_CHUNKS];
-	dma_cb_t l1[DVI_NOSYNC_LANE_CHUNKS];
-	dma_cb_t l2[DVI_NOSYNC_LANE_CHUNKS];
+	dma_cb_t l0[DVI_SYNC_LANE_CHUNKS_WITH_AUDIO];
+	dma_cb_t l1[DVI_NOSYNC_LANE_CHUNKS_WITH_AUDIO];
+	dma_cb_t l2[DVI_NOSYNC_LANE_CHUNKS_WITH_AUDIO];
 };
 
 static inline dma_cb_t* dvi_lane_from_list(struct dvi_scanline_dma_list *l, int i) {
@@ -77,8 +112,14 @@ extern const struct dvi_timing dvi_timing_640x480p_60hz;
 extern const struct dvi_timing dvi_timing_720x480p_60hz;
 extern const struct dvi_timing dvi_timing_800x480p_60hz;
 extern const struct dvi_timing dvi_timing_800x600p_60hz;
+extern const struct dvi_timing dvi_timing_800x600p_reduced_60hz;
 extern const struct dvi_timing dvi_timing_960x540p_60hz;
 extern const struct dvi_timing dvi_timing_1280x720p_30hz;
+extern const struct dvi_timing dvi_timing_1280x720p_reduced_30hz;
+extern const struct dvi_timing dvi_timing_1600x900p_reduced_30hz;
+extern const struct dvi_timing dvi_timing_720x540p_50hz;
+extern const struct dvi_timing dvi_timing_720x576p_50hz;
+
 // Pixel clock ~40.0 MHz -> TMDS 400.0 MHz
 extern const struct dvi_timing dvi_timing_1024x768p_30hz;
 // 1024x768 @ 40 Hz (progressive)
@@ -88,11 +129,7 @@ extern const struct dvi_timing dvi_timing_1024x768p_30hz_cvt;
 extern const struct dvi_timing dvi_timing_1024x768p_30hz_cvt_rb;
 extern const struct dvi_timing dvi_timing_1024x768p_30hz_cvt_rb2;
 extern const struct dvi_timing dvi_timing_1024x768p_60hz_custom;
-
-extern const struct dvi_timing dvi_timing_800x600p_reduced_60hz;
-extern const struct dvi_timing dvi_timing_1280x720p_reduced_30hz;
-
-extern const struct dvi_timing dvi_timing_1600x900p_reduced_30hz;
+extern const struct dvi_timing dvi_timing_1024x768p_60hz;
 
 void dvi_timing_state_init(struct dvi_timing_state *t);
 
@@ -104,8 +141,18 @@ void dvi_setup_scanline_for_vblank(const struct dvi_timing *t, const struct dvi_
 		bool vsync_asserted, struct dvi_scanline_dma_list *l);
 
 void dvi_setup_scanline_for_active(const struct dvi_timing *t, const struct dvi_lane_dma_cfg dma_cfg[],
-		uint32_t *tmdsbuf, struct dvi_scanline_dma_list *l);
+		uint32_t *tmdsbuf, struct dvi_scanline_dma_list *l, bool black);
 
-void dvi_update_scanline_data_dma(const struct dvi_timing *t, const uint32_t *tmdsbuf, struct dvi_scanline_dma_list *l);
+void dvi_setup_scanline_for_vblank_with_audio(const struct dvi_timing *t, const struct dvi_lane_dma_cfg dma_cfg[],
+										      bool vsync_asserted, struct dvi_scanline_dma_list *l);
+
+void dvi_setup_scanline_for_active_with_audio(const struct dvi_timing *t, const struct dvi_lane_dma_cfg dma_cfg[],
+										      uint32_t *tmdsbuf, struct dvi_scanline_dma_list *l, bool black);
+
+void dvi_update_scanline_data_dma(const struct dvi_timing *t, const uint32_t *tmdsbuf, struct dvi_scanline_dma_list *l, bool audio);
+
+inline uint32_t dvi_timing_get_pixel_clock(const struct dvi_timing *t) { return t->bit_clk_khz * 100; }
+uint32_t dvi_timing_get_pixels_per_frame(const struct dvi_timing *t);
+uint32_t dvi_timing_get_pixels_per_line(const struct dvi_timing *t);
 
 #endif

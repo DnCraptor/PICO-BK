@@ -28,8 +28,9 @@
 	
 % c-sdk {
 #include "dvi_config_defs.h"
+#include "hardware/clocks.h"
 
-static inline void dvi_serialiser_program_init(PIO pio, uint sm, uint offset, uint data_pins, bool debug) {
+static inline void dvi_serialiser_program_init(PIO pio, uint sm, uint offset, uint data_pins, bool debug, uint32_t bit_clk_hz) {
     pio_sm_set_pins_with_mask(pio, sm, 2u << data_pins, 3u << data_pins);
     pio_sm_set_pindirs_with_mask(pio, sm, ~0u, 3u << data_pins);
     pio_gpio_init(pio, data_pins);
@@ -47,6 +48,10 @@ static inline void dvi_serialiser_program_init(PIO pio, uint sm, uint offset, ui
 	    sm_config_set_out_pins(&c, data_pins, 1);
     sm_config_set_out_shift(&c, true, !debug, 10 * DVI_SYMBOLS_PER_WORD);
     sm_config_set_fifo_join(&c, PIO_FIFO_JOIN_TX);
+
+    float clkdiv = (float)clock_get_hz(clk_sys) / bit_clk_hz;
+    sm_config_set_clkdiv(&c, clkdiv);
+
     pio_sm_init(pio, sm, offset, &c);
     pio_sm_set_enabled(pio, sm, false);
 }
