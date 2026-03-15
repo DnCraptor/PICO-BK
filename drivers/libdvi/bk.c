@@ -197,11 +197,13 @@ bool __not_in_flash_func(audio_timer_callback)(struct repeating_timer *t) {
 // Called from AY_timer_callback on core 0 at 44100 Hz — one sample per call.
 // Writes directly into the DVI audio ring; no separate timer needed.
 void __not_in_flash_func(push_audio_sample)(int16_t l, int16_t r) {
-    if (get_write_size(&dvi0.audio_ring, false) == 0) return;
-    audio_sample_t *p = get_write_pointer(&dvi0.audio_ring);
-    p->channels[0] = l;
-    p->channels[1] = r;
-    increase_write_pointer(&dvi0.audio_ring, 1);
+	while(true) {
+        if (get_write_size(&dvi0.audio_ring, false) == 0) return;
+        audio_sample_t *p = get_write_pointer(&dvi0.audio_ring);
+        p->channels[0] = l;
+        p->channels[1] = r;
+        increase_write_pointer(&dvi0.audio_ring, 1);
+    }
 }
 
 void __not_in_flash_func(dvi_on_core1)() {
@@ -216,7 +218,11 @@ void __not_in_flash_func(dvi_on_core1)() {
         dvi_get_blank_settings(&dvi0)->top    = 4 * 0;
         dvi_get_blank_settings(&dvi0)->bottom = 4 * 0;
         dvi_audio_sample_buffer_set(&dvi0, audio_buffer, AUDIO_BUFFER_SIZE);
-        dvi_set_audio_freq(&dvi0, 44100, 28000, 6272);
+        //dvi_set_audio_freq(&dvi0, 44100, 28000, 6272);
+        //dvi_set_audio_freq(&dvi0, 48000, 25200, 6144);
+
+        dvi_set_audio_freq(&dvi0, 44100, 40000, 6272);
+        //dvi_set_audio_freq(&dvi0, 48000, 40000, 6144);
 //        add_repeating_timer_ms(-2, audio_timer_callback, NULL, &audio_timer);
     }
 

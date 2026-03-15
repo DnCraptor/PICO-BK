@@ -409,14 +409,13 @@ bool __dvi_func(dvi_update_data_packet_)(struct dvi_inst *inst, data_packet_t *p
     inst->audio_sample_pos += inst->samples_per_line24;
     if (inst->timing_state.v_state == DVI_STATE_FRONT_PORCH) {
         if (inst->timing_state.v_ctr == 0) {
-            if (inst->dvi_frame_count & 1) {
-                *packet = inst->avi_info_frame;
-            } else {
-                *packet = inst->audio_info_frame;
-            }
+            *packet = inst->audio_info_frame;
             return true;
         } else if (inst->timing_state.v_ctr == 1) {
             *packet = inst->audio_clock_regeneration;
+            return true;
+        } else if (inst->timing_state.v_ctr == 2) {
+            *packet = inst->avi_info_frame;
             return true;
         }
     }
@@ -425,7 +424,7 @@ bool __dvi_func(dvi_update_data_packet_)(struct dvi_inst *inst, data_packet_t *p
     if (n)
     {
         inst->audio_sample_pos -= (n << 24);
-        inst->audio_frame_count = set_audio_sample(packet, &inst->audio_ring, n, inst->audio_frame_count);
+        inst->audio_frame_count = set_audio_sample(packet, &inst->audio_ring, n, inst->audio_frame_count, inst->audio_freq);
         return true;
     }
 

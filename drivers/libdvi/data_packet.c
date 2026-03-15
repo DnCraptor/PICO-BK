@@ -206,7 +206,46 @@ void __not_in_flash_func(set_null)(void *data, int size) {
     }
 }
 
-int  __not_in_flash_func(set_audio_sample)(data_packet_t *data_packet, audio_ring_t *audio_ring, const int n, int frameCt) {
+static inline uint8_t iec60958_cs_byte3(int audio_freq) {
+    switch (audio_freq) {
+        case 32000: return 0x03;
+        case 44100: return 0x00;
+        case 48000: return 0x02;
+        default:    return 0x01; // not indicated
+    }
+}
+
+static inline uint8_t iec60958_cs_byte4(int audio_freq) {
+    uint8_t origfs;
+    switch (audio_freq) {
+        case 32000: origfs = 0xC0; break;
+        case 44100: origfs = 0xF0; break;
+        case 48000: origfs = 0xD0; break;
+        default:    origfs = 0x00; break;
+    }
+    return 0x02 | origfs; // 16-bit samples + original sample frequency
+}
+
+static inline uint8_t iec60958_channel_status_bit(int audio_freq, int frame_index) {
+    // IEC 60958 consumer channel-status block, 192 frames = 24 bytes.
+    // byte0: consumer/audio/not-copyright/no-emphasis
+    // byte1: general category code
+    // byte2: source/channel unspecified
+    // byte3: sample frequency
+    // byte4: word length + original sample frequency
+    uint8_t byte;
+    switch (frame_index >> 3) {
+        case 0:  byte = 0x04; break;
+        case 1:  byte = 0x00; break;
+        case 2:  byte = 0x00; break;
+        case 3:  byte = iec60958_cs_byte3(audio_freq); break;
+        case 4:  byte = iec60958_cs_byte4(audio_freq); break;
+        default: byte = 0x00; break;
+    }
+    return (byte >> (frame_index & 7)) & 1;
+}
+
+int  __not_in_flash_func(set_audio_sample)(data_packet_t *data_packet, audio_ring_t *audio_ring, const int n, int frameCt, int audio_freq) {
     const int layout = 0;
     const int samplePresent = (1 << n) - 1;
     const int B = (frameCt < n) ? (1 << frameCt) : 0;
@@ -230,7 +269,9 @@ int  __not_in_flash_func(set_audio_sample)(data_packet_t *data_packet, audio_rin
             r = (int16_t)0;
         }
 
-        const uint8_t vuc = 1; // valid
+        const int frame_index = (192 - frameCt) & 191;
+        const uint8_t c = iec60958_channel_status_bit(audio_freq, frame_index);
+        const uint8_t vuc = (0u << 0) | (0u << 1) | (c << 2);
         uint8_t *d = data_packet->subpacket[i];
         d[0] = 0;
         d[1] = l;
@@ -243,8 +284,6 @@ int  __not_in_flash_func(set_audio_sample)(data_packet_t *data_packet, audio_rin
         d[6] = (vuc << 0) | (pl << 3) | (vuc << 4) | (pr << 7);
         d[7] = encode_BCH_7(d);
 
-        // channel status (is it relevant?)
-        // After testing, seems better to ignore
         frameCt--;
         if (frameCt < 0)
         {
