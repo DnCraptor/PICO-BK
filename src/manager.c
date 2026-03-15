@@ -405,7 +405,8 @@ static void in_conf(int x, int y) {
     snprintf(b, 64, "    Last scancode: %d [%ph]  ", lastScanCode, lastScanCode);
     draw_label(x, y+15, 37, b, false, false);
 
-    uint8_t nk = nespad_state | kbdpad_state;
+    uint8_t nk = nespad_state | nespad_state2 | kbdpad_state;
+    uint8_t nk2 = nespad_state | kbdpad_state2;
     snprintf(b, 64, "Joy bits #1: %d%d%d%d%d%d%d%d #2: %d%d%d%d%d%d%d%d",
         (nk >> 7) & 1,
         (nk >> 6) & 1,
@@ -415,14 +416,14 @@ static void in_conf(int x, int y) {
         (nk >> 2) & 1,
         (nk >> 1) & 1,
          nk & 1,
-        (kbdpad_state2 >> 7) & 1,
-        (kbdpad_state2 >> 6) & 1,
-        (kbdpad_state2 >> 5) & 1,
-        (kbdpad_state2 >> 4) & 1,
-        (kbdpad_state2 >> 3) & 1,
-        (kbdpad_state2 >> 2) & 1,
-        (kbdpad_state2 >> 1) & 1,
-         kbdpad_state2 & 1
+        (nk2 >> 7) & 1,
+        (nk2 >> 6) & 1,
+        (nk2 >> 5) & 1,
+        (nk2 >> 4) & 1,
+        (nk2 >> 3) & 1,
+        (nk2 >> 2) & 1,
+        (nk2 >> 1) & 1,
+        nk2 & 1
     );
     draw_label(x, y+16, 37, b, false, false);
 
@@ -837,17 +838,17 @@ static void conf_it(uint8_t cmd) {
             }
             else {
                 nespad_state_delay = DPAD_STATE_DELAY;
-                if(nespad_state & DPAD_UP) {
+                if ((nespad_state & DPAD_UP) || (nespad_state2 & DPAD_UP)) {
                     upPressed = true;
-                } else if(nespad_state & DPAD_DOWN) {
+                } else if ((nespad_state & DPAD_DOWN) || (nespad_state2 & DPAD_DOWN)) {
                     downPressed = true;
-                } else if (nespad_state & DPAD_A) {
+                } else if ((nespad_state & DPAD_A) || (nespad_state2 & DPAD_A)) {
                     enterPressed = true;
-                } else if (nespad_state & DPAD_B) {
+                } else if ((nespad_state & DPAD_B) || (nespad_state2 & DPAD_B)) {
                     escWasPressed = true;
-                } else if (nespad_state & DPAD_SELECT) {
+                } else if ((nespad_state & DPAD_SELECT) || (nespad_state2 & DPAD_SELECT)) {
                     downPressed = true;
-                } else if ((nespad_state & DPAD_LEFT) || (nespad_state & DPAD_RIGHT)) {
+                } else if ((nespad_state & DPAD_LEFT) || (nespad_state & DPAD_RIGHT) || (nespad_state2 & DPAD_LEFT) || (nespad_state2 & DPAD_RIGHT)) {
                     spacePressed = true;
                 }
             }
@@ -964,9 +965,9 @@ static void conf_it(uint8_t cmd) {
             in_conf(x, y);
             continue;
         }
-        if (nespad_state || kbdpad_state || kbdpad_state2 || prev_nespad_state) {
+        if (nespad_state || nespad_state2 || kbdpad_state || kbdpad_state2 || prev_nespad_state) {
             in_conf(x, y);
-            prev_nespad_state = ((uint16_t)(nespad_state | kbdpad_state) << 8) | kbdpad_state2;
+            prev_nespad_state = ((uint16_t)(nespad_state | nespad_state2 | kbdpad_state) << 8) | kbdpad_state2;
             continue;
         }
         if (prevScanCode != lastScanCode) {
@@ -1211,19 +1212,19 @@ static bool m_prompt_ex(const char* txt, const char* bottom) {
             }
             else {
                 nespad_state_delay = DPAD_STATE_DELAY;
-                if(nespad_state & DPAD_UP) {
+                if ((nespad_state & DPAD_UP) || (nespad_state2 & DPAD_UP)) {
                     upPressed = true;
-                } else if(nespad_state & DPAD_DOWN) {
+                } else if ((nespad_state & DPAD_DOWN) || (nespad_state2 & DPAD_DOWN)) {
                     downPressed = true;
-                } else if (nespad_state & DPAD_A) {
+                } else if ((nespad_state & DPAD_A) || (nespad_state2 & DPAD_A)) {
                     enterPressed = true;
-                } else if (nespad_state & DPAD_B) {
+                } else if ((nespad_state & DPAD_B) || (nespad_state2 & DPAD_B)) {
                     escWasPressed = true;
-                } else if (nespad_state & DPAD_LEFT) {
+                } else if ((nespad_state & DPAD_LEFT) || (nespad_state2 & DPAD_LEFT)) {
                     leftPressed = true;
-                } else if (nespad_state & DPAD_RIGHT) {
+                } else if ((nespad_state & DPAD_RIGHT) || (nespad_state2 & DPAD_RIGHT)) {
                     rightPressed = true;
-                } else if (nespad_state & DPAD_SELECT) {
+                } else if ((nespad_state & DPAD_SELECT) || (nespad_state2 & DPAD_SELECT)) {
                     tabPressed = true;
                 }
             }
@@ -1232,6 +1233,15 @@ static bool m_prompt_ex(const char* txt, const char* bottom) {
             enterPressed = false;
             scan_code_cleanup();
             return yes;
+        }
+        uint8_t sc = (uint8_t)lastCleanableScanCode;
+        if (sc && sc < 0x80 && scan_code_2_cp866[sc] == 'Y') {
+            scan_code_cleanup();
+            return true;
+        }
+        if (sc && sc < 0x80 && scan_code_2_cp866[sc] == 'N') {
+            scan_code_cleanup();
+            return false;
         }
         if (tabPressed || leftPressed || rightPressed) { // TODO: own msgs cycle
             yes = !yes;
@@ -1527,7 +1537,7 @@ static void m_info(uint8_t cmd) {
     while(!escWasPressed) {
         if (is_dendy_joystick || is_kbd_joystick) {
             if (is_dendy_joystick) nespad_read();
-            if (nespad_state && !(nespad_state & DPAD_START) && !(nespad_state & DPAD_SELECT)) {
+            if ((nespad_state && !(nespad_state & DPAD_START) && !(nespad_state & DPAD_SELECT)) || (nespad_state2 && !(nespad_state2 & DPAD_START) && !(nespad_state2 & DPAD_SELECT))) {
                 nespad_state_delay = DPAD_STATE_DELAY;
                 break;
             }
@@ -2226,21 +2236,21 @@ static inline void work_cycle() {
             }
             else {
                 nespad_state_delay = DPAD_STATE_DELAY;
-                if(nespad_state & DPAD_UP) {
+                if ((nespad_state & DPAD_UP) || (nespad_state2 & DPAD_UP)) {
                     handle_up_pressed();
-                } else if(nespad_state & DPAD_DOWN) {
+                } else if ((nespad_state & DPAD_DOWN) || (nespad_state2 & DPAD_DOWN)) {
                     handle_down_pressed();
-                } else if (nespad_state & DPAD_START) {
+                } else if ((nespad_state & DPAD_START) || (nespad_state & DPAD_START)) {
                     enter_pressed();
-                } else if ((nespad_state & DPAD_A) && (nespad_state & DPAD_START)) {
+                } else if (((nespad_state & DPAD_A) && (nespad_state & DPAD_START)) || ((nespad_state2 & DPAD_A) && (nespad_state2 & DPAD_START))) {
                     return_to_mos(0);
-                } else if ((nespad_state & DPAD_B) && (nespad_state & DPAD_SELECT)) {
+                } else if (((nespad_state & DPAD_B) && (nespad_state & DPAD_SELECT)) || ((nespad_state2 & DPAD_B) && (nespad_state2 & DPAD_SELECT))) {
                     mark_to_exit(0);
-                } else if ((nespad_state & DPAD_LEFT) || (nespad_state & DPAD_RIGHT)) {
+                } else if (((nespad_state & DPAD_LEFT) || (nespad_state & DPAD_RIGHT)) || ((nespad_state2 & DPAD_LEFT) || (nespad_state2 & DPAD_RIGHT))) {
                     left_panel_make_active = !left_panel_make_active;
-                } else if ((nespad_state & DPAD_A) && (nespad_state & DPAD_SELECT)) {
+                } else if (((nespad_state & DPAD_A) && (nespad_state & DPAD_SELECT)) || ((nespad_state2 & DPAD_A) && (nespad_state2 & DPAD_SELECT))) {
                     conf_it(0);
-                } else if ((nespad_state & DPAD_B) && (nespad_state & DPAD_START)) {
+                } else if (((nespad_state & DPAD_B) && (nespad_state & DPAD_START)) || ((nespad_state2 & DPAD_B) && (nespad_state2 & DPAD_START))) {
                     reset(0);
                     return;
                 }
@@ -2704,11 +2714,11 @@ void manager(bool force) {
     }
     if (is_dendy_joystick || is_kbd_joystick) {
         if (is_dendy_joystick) nespad_read();
-        if((nespad_state & DPAD_START) && (nespad_state & DPAD_SELECT)) {
+        if (((nespad_state & DPAD_START) && (nespad_state & DPAD_SELECT)) || ((nespad_state2 & DPAD_START) && (nespad_state2 & DPAD_SELECT))) {
             nespad_state_delay = DPAD_STATE_DELAY;
             force = true;
         } else {
-            Device_Data.SysRegs.RdReg177714 = ((uint16_t)kbdpad_state2 << 8) | nespad_state | kbdpad_state;
+            Device_Data.SysRegs.RdReg177714 = ((uint16_t)kbdpad_state2 << 8) | nespad_state | (nespad_state2 << 8) | kbdpad_state;
         }
     }
     if (force) {

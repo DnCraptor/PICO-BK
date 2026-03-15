@@ -36,9 +36,9 @@ set(USE_NESPAD ON)
 #set (m1p2launcher ON)
 
 # Platform (m1p2 by default)
-#set (MURM2 ON)
+set (MURM2 ON)
 #set (PICO_PC ON)
-set (ZERO2 ON)
+#set (ZERO2 ON)
 
 IF(ZERO2)
     # For Board RP2350-PiZero

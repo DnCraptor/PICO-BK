@@ -120,7 +120,9 @@ void nespad_read() {
   temp16 = temp16 | temp1 | temp2;      // 87654321.87654321
 //----------------------------------------------------------
   nespad_state  = usbpad_state | temp16;               // 00000000.87654321 Joy1
+  if (nespad_state == 0xFF) nespad_state = 0; // W/A
   nespad_state2 = temp16 >> 8;          // 00000000.87654321 Joy2
+  if (nespad_state2 == 0xFF) nespad_state2 = 0; // W/A
   #endif
 }
 

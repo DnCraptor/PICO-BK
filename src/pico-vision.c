@@ -150,13 +150,13 @@ int draw_selector(int left, int top, int width, int height, const char* title, c
             }
             else {
                 nespad_state_delay = DPAD_STATE_DELAY;
-                if(nespad_state & DPAD_UP) {
+                if ((nespad_state & DPAD_UP) || (nespad_state2 & DPAD_UP)) {
                     upPressed = true;
-                } else if(nespad_state & DPAD_DOWN) {
+                } else if ((nespad_state & DPAD_DOWN) || (nespad_state2 & DPAD_DOWN)) {
                     downPressed = true;
-                } else if (nespad_state & DPAD_A) {
+                } else if ((nespad_state & DPAD_A) || (nespad_state2 & DPAD_A)) {
                     enterPressed = true;
-                } else if (nespad_state & DPAD_B) {
+                } else if ((nespad_state & DPAD_B) || (nespad_state2 & DPAD_B)) {
                     escWasPressed = true;
                 }
             }

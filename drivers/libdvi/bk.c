@@ -169,8 +169,6 @@ static void __not_in_flash() dvi_init_bk() {
         dvi0.timing = &DVI_TIMING;
     }
     dvi0.ser_cfg = DVI_DEFAULT_SERIAL_CONFIG;
-    if (dvi0.ser_cfg.pio == pio1)
-        pio_set_gpio_base(pio1, 16);
 }
 
 #define AUDIO_BUFFER_SIZE   256
