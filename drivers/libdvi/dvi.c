@@ -387,6 +387,7 @@ void dvi_set_audio_freq(struct dvi_inst *inst, int audio_freq, int cts, int n) {
     inst->audio_freq = audio_freq;
     set_audio_clock_regeneration(&inst->audio_clock_regeneration, cts, n);
     set_audio_info_frame(&inst->audio_info_frame, audio_freq);
+    set_hdmi_vendor_info_frame(&inst->vendor_info_frame);
     uint pixelClock =   dvi_timing_get_pixel_clock(inst->timing);
     uint64_t nPixPerFrame = dvi_timing_get_pixels_per_frame(inst->timing);
     uint64_t nPixPerLine =  dvi_timing_get_pixels_per_line(inst->timing);
@@ -415,6 +416,9 @@ bool __dvi_func(dvi_update_data_packet_)(struct dvi_inst *inst, data_packet_t *p
             *packet = inst->audio_clock_regeneration;
             return true;
         } else if (inst->timing_state.v_ctr == 2) {
+            *packet = inst->vendor_info_frame;
+            return true;
+        } else if (inst->timing_state.v_ctr == 3) {
             *packet = inst->avi_info_frame;
             return true;
         }

@@ -61,6 +61,7 @@ struct dvi_inst {
     uint    dvi_frame_count;
 
     //Data Packet related
+	data_packet_t vendor_info_frame;
     data_packet_t avi_info_frame;
     data_packet_t audio_clock_regeneration;
     data_packet_t audio_info_frame;

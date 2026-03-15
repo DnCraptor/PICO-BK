@@ -338,6 +338,23 @@ void set_audio_info_frame(data_packet_t *data_packet, int freq) {
     compute_parity(data_packet);
 }
 
+void set_hdmi_vendor_info_frame(data_packet_t *data_packet) {
+    set_null(data_packet, sizeof(data_packet_t));
+
+    data_packet->header[0] = 0x81;   // Vendor Specific InfoFrame
+    data_packet->header[1] = 1;      // version
+    data_packet->header[2] = 5;      // length
+
+    // IEEE OUI for HDMI Licensing: 0x000C03 (LSB first)
+    data_packet->subpacket[0][1] = 0x03;
+    data_packet->subpacket[0][2] = 0x0C;
+    data_packet->subpacket[0][3] = 0x00;
+
+    // no additional payload
+    compute_info_frame_checkSum(data_packet);
+    compute_parity(data_packet);
+}
+
 void set_AVI_info_frame(data_packet_t *data_packet, scan_info s, pixel_format y, colorimetry c, picture_aspect_ratio m,
     active_format_aspect_ratio r, RGB_quantization_range q, video_code vic) {
     set_null(data_packet, sizeof(data_packet_t));

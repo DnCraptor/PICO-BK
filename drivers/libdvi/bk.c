@@ -221,8 +221,8 @@ void __not_in_flash_func(dvi_on_core1)() {
         //dvi_set_audio_freq(&dvi0, 44100, 28000, 6272);
         //dvi_set_audio_freq(&dvi0, 48000, 25200, 6144);
 
-        dvi_set_audio_freq(&dvi0, 44100, 40000, 6272);
-        //dvi_set_audio_freq(&dvi0, 48000, 40000, 6144);
+        //dvi_set_audio_freq(&dvi0, 44100, 40000, 6272);
+        dvi_set_audio_freq(&dvi0, 48000, 40000, 6144);
 //        add_repeating_timer_ms(-2, audio_timer_callback, NULL, &audio_timer);
     }
 

@@ -90,6 +90,7 @@ void set_audio_clock_regeneration(data_packet_t *data_packet, int CTS, int N);
 void set_audio_info_frame(data_packet_t *data_packet, int freq);
 void set_AVI_info_frame(data_packet_t *data_packet, scan_info s, pixel_format y, colorimetry c, picture_aspect_ratio m,
     active_format_aspect_ratio r, RGB_quantization_range q, video_code vic);
+void set_hdmi_vendor_info_frame(data_packet_t *data_packet);
 
 // Public Functions
 extern uint32_t defaultDataPacket12_[N_DATA_ISLAND_WORDS];
