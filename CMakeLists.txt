@@ -38,7 +38,14 @@ set(USE_NESPAD ON)
 # Platform (m1p2 by default)
 #set (MURM2 ON)
 #set (PICO_PC ON)
-#set (ZERO2 ON)
+set (ZERO2 ON)
+
+IF(ZERO2)
+    # For Board RP2350-PiZero
+    set(PICO_BOARD_HEADER_DIRS ${CMAKE_SOURCE_DIR})
+    set(PICO_BOARD waveshare_rp2350_pizero)
+    set(PICO_PLATFORM rp2350-arm-s)
+ENDIF()
 
 set(CMAKE_C_STANDARD 11)
 set(CMAKE_CXX_STANDARD 17)
@@ -50,7 +57,7 @@ IF(MURM2)
 ELSEIF(PICO_PC)
     SET(BUILD_NAME "PC${PROJECT_NAME}")
 ELSEIF(ZERO2)
-    SET(BUILD_NAME "z2${PROJECT_NAME}")
+    SET(BUILD_NAME "z0${PROJECT_NAME}")
 ELSE()
     SET(BUILD_NAME "m1${PROJECT_NAME}")
 ENDIF()
@@ -242,7 +249,7 @@ elseif (PICO_PC)
         PWM_PIN1=28
 
         beginVGA_PIN=12
-        DVI_DEFAULT_SERIAL_CONFIG=olimex_rp2040_cfg
+        DVI_DEFAULT_SERIAL_CONFIG=Olimex_RP2040_PICO_PC_cfg
 
         WII_SDA_PIN=20
         WII_SCL_PIN=21
@@ -251,6 +258,38 @@ elseif (PICO_PC)
         NES_GPIO_LAT=9    # UXT1-5
         NES_GPIO_DATA=20  # UXT1-3
         NES_GPIO_DATA2=21 # UXT1-4
+    )
+elseif (ZERO2)
+    target_compile_definitions(${PROJECT_NAME} PRIVATE
+        ZERO2=1
+
+        # PS2 keyboard
+        KBD_CLOCK_PIN=2
+        KBD_DATA_PIN=3
+
+        LOAD_WAV_PIO=17
+
+        # SDCARD
+        SDCARD_SPI_BUS=spi1
+        SDCARD_PIN_SPI0_SCK=30
+        SDCARD_PIN_SPI0_MOSI=31
+        SDCARD_PIN_SPI0_MISO=40
+        SDCARD_PIN_SPI0_CS=43
+        
+        PWM_PIN0=10
+        PWM_PIN1=11
+        BEEPER_PIN=12
+
+        beginVGA_PIN=32
+        DVI_DEFAULT_SERIAL_CONFIG=waveshare_rp2350_pizero_hdmi_cfg
+
+        WII_SDA_PIN=6
+        WII_SCL_PIN=7
+
+        NES_GPIO_CLK=4
+        NES_GPIO_LAT=5
+        NES_GPIO_DATA=6
+        NES_GPIO_DATA2=7
     )
 else() # m1
     target_compile_definitions(${PROJECT_NAME} PRIVATE

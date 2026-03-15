@@ -450,10 +450,12 @@ int main() {
     }
 
     init_fs();
-
+#if ZERO2
+    SELECT_VGA = 0;
+#else
     uint8_t link = testPins(beginVGA_PIN, beginVGA_PIN + 1);
     SELECT_VGA = (link == 0) || (link == 0x1F);
-
+#endif
     sem_init(&vga_start_semaphore, 0, 1);
     multicore_launch_core1(render_core);
     sem_release(&vga_start_semaphore);
