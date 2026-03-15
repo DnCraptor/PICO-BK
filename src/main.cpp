@@ -177,9 +177,11 @@ static bool __not_in_flash_func(AY_timer_callback)(repeating_timer_t *rt) {
       //  #endif
     }
     if (!SELECT_VGA && !g_conf.is_DVI_1024) {
-        // Feed HDMI audio ring directly — same rate (44100 Hz), no second timer needed.
-        // Beeper mixed in at fixed level 2048 (pre-scale), matching its PWM weight.
-        uint16_t beep_add = beeper_on ? 2048u : 0u;
+        // Beeper/AY ratio on PWM is always 3.2x (511/160 at any volume).
+        // Replicate: beep contributes 3.2 * AY_max_per_channel = 3.2 * 80 = 256,
+        // then the same volume shift applies via outL/outR already being scaled.
+        // Use (1 << (snd_volume + 7)) as beep_add — tracks volume identically to PWM.
+        uint16_t beep_add = beeper_on ? (uint16_t)(1u << (g_conf.snd_volume + 7)) : 0u;
         push_audio_sample((int16_t)((int32_t)(outL + beep_add) * 6),
                           (int16_t)((int32_t)(outR + beep_add) * 6));
     }
