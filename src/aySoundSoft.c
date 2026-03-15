@@ -9,6 +9,8 @@
 #include "PinSerialData_595.h"
 #endif
 
+volatile bool beeper_on = false;
+
 uint8_t N_sel_reg=0;
 
 //регистры состояния AY
@@ -470,6 +472,7 @@ void AY_write_address(uint16_t word) {
 }
 
 void beep(bool v) {
+    beeper_on = v;
     #ifdef HWAY
         AY_to595Beep(v);
     #else

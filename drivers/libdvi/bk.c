@@ -171,12 +171,55 @@ static void __not_in_flash() dvi_init_bk() {
     dvi0.ser_cfg = DVI_DEFAULT_SERIAL_CONFIG;
 }
 
-void __not_in_flash() dvi_on_core1() {
+#define AUDIO_BUFFER_SIZE   256
+audio_sample_t      audio_buffer[AUDIO_BUFFER_SIZE];
+struct repeating_timer audio_timer;
+
+/// TODO: cleanup
+bool __not_in_flash_func(audio_timer_callback)(struct repeating_timer *t) {
+	while(true) {
+		int size = get_write_size(&dvi0.audio_ring, false);
+		if (size == 0) return true;
+		audio_sample_t *audio_ptr = get_write_pointer(&dvi0.audio_ring);
+		audio_sample_t sample;
+		static uint sample_count = 0;
+		for (int cnt = 0; cnt < size; cnt++) {
+            /// TODO: use the same source as PWM, just inject
+			sample.channels[0] = 0; //commodore_argentina[sample_count % commodore_argentina_len] << 8;
+			sample.channels[1] = 0; //commodore_argentina[(sample_count+1024) % commodore_argentina_len] << 8;
+			*(audio_ptr++) = sample;
+			sample_count = sample_count + 1;
+		}
+		increase_write_pointer(&dvi0.audio_ring, size);
+	}
+}
+
+// Called from AY_timer_callback on core 0 at 44100 Hz — one sample per call.
+// Writes directly into the DVI audio ring; no separate timer needed.
+void __not_in_flash_func(push_audio_sample)(int16_t l, int16_t r) {
+    if (get_write_size(&dvi0.audio_ring, false) == 0) return;
+    audio_sample_t *p = get_write_pointer(&dvi0.audio_ring);
+    p->channels[0] = l;
+    p->channels[1] = r;
+    increase_write_pointer(&dvi0.audio_ring, 1);
+}
+
+void __not_in_flash_func(dvi_on_core1)() {
     dvi_init_bk();
 	for (int i = 0; i < sizeof(blank) / sizeof(blank[0]); ++i) {
 		blank[i] = BLACK;
 	}
     dvi_init(&dvi0, next_striped_spin_lock_num(), next_striped_spin_lock_num());
+	hw_set_bits(&bus_ctrl_hw->priority, BUSCTRL_BUS_PRIORITY_PROC1_BITS);
+	// HDMI Audio related
+    if (!g_conf.is_DVI_1024) { // TODO: ensure it is possible to inject audio-ring in 1024*768 (enough space in blank messages)
+        dvi_get_blank_settings(&dvi0)->top    = 4 * 0;
+        dvi_get_blank_settings(&dvi0)->bottom = 4 * 0;
+        dvi_audio_sample_buffer_set(&dvi0, audio_buffer, AUDIO_BUFFER_SIZE);
+        dvi_set_audio_freq(&dvi0, 44100, 28000, 6272);
+//        add_repeating_timer_ms(-2, audio_timer_callback, NULL, &audio_timer);
+    }
+
     dvi_register_irqs_this_core(&dvi0, DMA_IRQ_1);
     dvi_start(&dvi0);
     uint32_t *tmdsbuf = 0;

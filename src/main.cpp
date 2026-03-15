@@ -68,6 +68,7 @@ void PWM_init_pin(uint8_t pinN, uint16_t max_lvl) {
 extern "C" semaphore_t vga_start_semaphore;
 extern "C" void dvi_on_core1();
 extern "C" void flash_timings();
+extern "C" void push_audio_sample(int16_t l, int16_t r);
 
 /* Renderer loop on Pico's second core */
 void __time_critical_func(render_core)() {
@@ -174,6 +175,13 @@ static bool __not_in_flash_func(AY_timer_callback)(repeating_timer_t *rt) {
       //  #ifndef HWAY
       //  beep(0);
       //  #endif
+    }
+    if (!SELECT_VGA && !g_conf.is_DVI_1024) {
+        // Feed HDMI audio ring directly — same rate (44100 Hz), no second timer needed.
+        // Beeper mixed in at fixed level 2048 (pre-scale), matching its PWM weight.
+        uint16_t beep_add = beeper_on ? 2048u : 0u;
+        push_audio_sample((int16_t)((int32_t)(outL + beep_add) * 6),
+                          (int16_t)((int32_t)(outR + beep_add) * 6));
     }
     return true;
 }
