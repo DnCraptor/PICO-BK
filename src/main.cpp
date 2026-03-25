@@ -29,6 +29,7 @@ extern "C" {
 #include "aySoundSoft.h"
 #include <stdlib.h>
 #include "fdd.h"
+#include "ram_config.h"
 }
 
 volatile config_em_t g_conf {
@@ -219,6 +220,10 @@ static void init_fs() {
         insertdisk(3, 819200, 0, "\\BK\\fdd3.img");
         if (!spacePressed)
             read_config("\\BK\\bk.conf");
+        ram_config_save();
+    } else {
+        if (!spacePressed)
+            ram_config_load();
     }
 }
 

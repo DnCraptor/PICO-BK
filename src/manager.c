@@ -13,6 +13,8 @@
 #include "ps2_codes.h"
 #include "nespad.h"
 #include "reboot.h"
+#include "ram_config.h"
+__uninitialized_ram(ram_config_block_t) s_ram_cfg;
 #include "main_i.h"
 
 void detect_os_type(const char* path, char* os_type, size_t sz);
@@ -562,6 +564,7 @@ static void saveConf() {
     );
     f_write(&fil, buf, strlen(buf), &bw);
     f_close(&fil);
+    ram_config_save();
 }
 
 #include <string.h>
@@ -2398,9 +2401,10 @@ inline static void start_manager() {
       ///  m_info(0); // F1 TODO: ensure it is not too aggressive
         work_cycle();
     } else {
-        if (switch_mode_dialog(&g_conf.bk0010mode) ) {
-            reset(0);
-        }
+//        if (switch_mode_dialog(&g_conf.bk0010mode) ) {
+//            reset(0);
+//        }
+        conf_it(0);
     }
     set_start_debug_line(25); // ?? to be removed
     graphics_set_mode(g_conf.color_mode ? BK_256x256x2 : BK_512x256x1);
