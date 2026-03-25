@@ -177,7 +177,7 @@ static bool __not_in_flash_func(AY_timer_callback)(repeating_timer_t *rt) {
       //  beep(0);
       //  #endif
     }
-    if (!SELECT_VGA && !g_conf.is_DVI_1024) {
+    if (!SELECT_VGA && g_conf.dvi_mode != 1) {
         // Beeper/AY ratio on PWM is always 3.2x (511/160 at any volume).
         // Replicate: beep contributes 3.2 * AY_max_per_channel = 3.2 * 80 = 256,
         // then the same volume shift applies via outL/outR already being scaled.

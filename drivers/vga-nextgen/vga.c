@@ -408,12 +408,15 @@ enum graphics_mode_t graphics_set_mode(enum graphics_mode_t mode) {
          //   TEXT_VIDEO_RAM = calloc(text_buffer_width * text_buffer_height / 2, 4);
             break;
         default:
-            if (!SELECT_VGA && g_conf.is_DVI_1024) { // TODO: real dvi0 clock
+            if (!SELECT_VGA && g_conf.dvi_mode == 1) { // TODO: real dvi0 clock
                 text_buffer_width = 128;
                 text_buffer_height = 16;
-            } else if (!SELECT_VGA && !g_conf.is_DVI_1024) {
+            } else if (!SELECT_VGA && g_conf.dvi_mode == 2) {
                 text_buffer_width = 100;
                 text_buffer_height = 19;
+            } else if (!SELECT_VGA && g_conf.dvi_mode == 0) {
+                text_buffer_width = 90;
+                text_buffer_height = 18;
             } else if (!g_conf.is_128_48) {
                 text_buffer_width = 64;
                 text_buffer_height = 24;
@@ -422,7 +425,7 @@ enum graphics_mode_t graphics_set_mode(enum graphics_mode_t mode) {
                 text_buffer_height = 48;
             }
             if (g_conf.is_8x8) {
-                if (!SELECT_VGA && !g_conf.is_DVI_1024) {
+                if (!SELECT_VGA && g_conf.dvi_mode == 2) {
                     text_buffer_height = 37;
                 } else {
                     text_buffer_height <<= 1;

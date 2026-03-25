@@ -374,7 +374,8 @@ static const line_t bk_mode_lns[] = {
 
 static int MAX_Z = 28;
 static int z_idx = 0;
-static bool is_128_48_new, is_DVI_1024_new, is_8x8_new, blink = false;
+static bool is_128_48_new, is_8x8_new, blink = false;
+static uint8_t dvi_mode_new = 0; // 0 - 640x480, 1 - 1024*786, 2 - 800*600
 static void in_conf(int x, int y) {
     draw_label(x+1, y, 36, "Use SPACE to edit, ESC to exit", false, true);
 
@@ -393,8 +394,14 @@ static void in_conf(int x, int y) {
     } else {
         draw_label(x, y+11,31, "   manager 128x48:   (VGA only)", false, z_idx == 10);
     }
-    draw_label(x, y+12,30, "    HDMI 1024x768:   (512 MHz)", false, z_idx == 11);
-    draw_label(x, y+13,18, "    use 8x8 font:", false, z_idx == 12);
+    if (dvi_mode_new == 0) {
+        draw_label(x, y+12,30, "     HDMI 720x576:   (270 MHz)", false, z_idx == 11);
+    } else if(dvi_mode_new == 1) {
+        draw_label(x, y+12,30, "    HDMI 1024x768:   (512 MHz)", false, z_idx == 11);
+    } else {
+        draw_label(x, y+12,30, "     HDMI 800x600:   (400 MHz)", false, z_idx == 11);
+    }
+    draw_label(x, y+13,18, "     use 8x8 font:", false, z_idx == 12);
     if(already_swapped_fdds) { // TODO: save it?
         draw_label(x, y+14, 24, "  swap FDD drives: true ", false, false);
     } else {
@@ -466,7 +473,7 @@ static void in_conf(int x, int y) {
     snprintf(b, 4, "%d", g_conf.manager_pallette_idx);
     draw_label(x+19, y+10, 3, b, z_idx == 9, z_idx == 9);
     draw_label(x+19, y+11, 1, is_128_48_new ? b_on : b_off, z_idx == 10, z_idx == 10);
-    draw_label(x+19, y+12, 1, is_DVI_1024_new ? b_on : b_off, z_idx == 11, z_idx == 11);
+    draw_label(x+19, y+12, 1, dvi_mode_new == 0 ? "0" : (dvi_mode_new == 1 ? "1" : "2"), z_idx == 11, z_idx == 11);
     draw_label(x+19, y+13, 1, is_8x8_new ? b_on : b_off, z_idx == 12, z_idx == 12);
 
     if (is_kbd_joystick) {
@@ -556,10 +563,10 @@ static void saveConf() {
         kbdpad2_RIGHT
     );
     f_write(&fil, buf, strlen(buf), &bw);
-    snprintf(buf, 256, "manager_pallette_idx:%d\r\nis_128_48:%d\r\nis_DVI_1024:%d\r\nis_8x8:%d\r\n",
+    snprintf(buf, 256, "manager_pallette_idx:%d\r\nis_128_48:%d\r\ndvi_mode:%d\r\nis_8x8:%d\r\n",
         g_conf.manager_pallette_idx,
         g_conf.is_128_48,
-        g_conf.is_DVI_1024,
+        g_conf.dvi_mode,
         g_conf.is_8x8
     );
     f_write(&fil, buf, strlen(buf), &bw);
@@ -763,10 +770,10 @@ void read_config(const char* path) {
         g_conf.is_128_48 = (bool)mode;
     }
 #if PICO_RP2350
-    const char p27[] = "is_DVI_1024:";
+    const char p27[] = "dvi_mode:";
     mode = parse_conf_word(buf, p27, sizeof(p27), MAX_CONF);
-    if (mode >= 0 && mode <= 1) {
-        g_conf.is_DVI_1024 = (bool)mode;
+    if (mode >= 0 && mode <= 2) {
+        g_conf.dvi_mode = mode;
     }
 #endif
     const char p28[] = "is_8x8:";
@@ -781,7 +788,7 @@ color_schema_t* pcs = &color_schema0;
 
 static void conf_it(uint8_t cmd) {
     is_128_48_new = g_conf.is_128_48;
-    is_DVI_1024_new = g_conf.is_DVI_1024;
+    dvi_mode_new = g_conf.dvi_mode;
     is_8x8_new = g_conf.is_8x8;
     uint32_t prevScanCode = lastScanCode;
 
@@ -878,8 +885,8 @@ static void conf_it(uint8_t cmd) {
                 g_conf.is_8x8 = is_8x8_new;
                 hard_reset = true;
             }
-            if (is_DVI_1024_new != g_conf.is_DVI_1024) {
-                g_conf.is_DVI_1024 = is_DVI_1024_new;
+            if (dvi_mode_new != g_conf.dvi_mode) {
+                g_conf.dvi_mode = dvi_mode_new;
                 hard_reset = true;
             }
             saveConf();
@@ -959,7 +966,8 @@ static void conf_it(uint8_t cmd) {
               is_128_48_new = !is_128_48_new;
               break;
             case 11:
-              is_DVI_1024_new = !is_DVI_1024_new;
+              dvi_mode_new++;
+              if (dvi_mode_new > 2) dvi_mode_new = 0;
               break;
             case 12:
               is_8x8_new = !is_8x8_new;

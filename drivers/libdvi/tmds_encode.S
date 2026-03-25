@@ -330,6 +330,55 @@ decl_func tmds_encode_2bpp_bk_800
     mov r9, r7
     pop {r4-r7, pc}
 
+// для режима 256*256 БК0011 внутри 720х576
+// r0: input buffer (word-aligned)
+// r1: output buffer (word-aligned)
+// r2: colors table (TMDS encoded) (word-aligned)
+decl_func tmds_encode_2bpp_bk_720
+    push {r4-r7, lr}       // сохраняем регистры
+    mov r6, r8
+    mov r7, r9
+    push {r6,r7}
+
+    mov r4, r2              // TODO: optimize it
+	
+	movs r2, #45
+    lsls r2, #5
+    add r2, r1              // r1 + 1440 (45 << 5)
+    mov ip, r2              // ip = конец буфера
+    mov r8, r4              // r8 = таблица TMDS
+    movs r3, #0x78          // маска 0x78
+
+    movs r6, #0             // счётчик итераций
+
+2:  // основной цикл
+    cmp r6, #20             // n2 = 4 (128px но нужно только 112?) + 16 (512px) = 20
+    bhs 0f                  // если счетчик >= n2, 0
+    cmp r6, #3              // n1 = 3 (96px)
+    blo 0f                  // если счетчик < n, 0
+    b 1f
+0:
+    movs r2, #0             // первые n + 1 итераций r2 = 0
+    b 3f
+1:
+    ldmia r0!, {r2}
+3:
+    mov r9, r6
+    tmds_encode_1bpp_body lsls 3  lsrs 1
+    tmds_encode_1bpp_body lsrs 5  lsrs 9
+    tmds_encode_1bpp_body lsrs 13 lsrs 17
+    tmds_encode_1bpp_body lsrs 21 lsrs 25
+    mov r6, r9
+
+    adds r6, #1             // увеличиваем счётчик
+    cmp r1, ip
+    blo 2b
+
+    pop {r6,r7}
+    mov r8, r6
+    mov r9, r7
+    pop {r4-r7, pc}
+
 // для режима 256*256 БК0011 внутри 1024*768
 // r0: input buffer (word-aligned)
 // r1: output buffer (word-aligned)
@@ -1112,6 +1161,23 @@ tmds_2bpp_table:
 
 .extern font
 .extern font_shift // 4 или 3 (высота 16 или 8 линий)
+
+decl_func tmds_encode_64c_b_90
+	push {r4-r7, lr}
+	mov r7, r8
+	mov r6, r9
+	push {r6,r7}
+
+    ldr r3, =font_shift
+	ldr r3, [r3]
+	mov r9, r3
+
+    ldr r3, =font           // адрес массива
+	ldr r3, [r3]
+
+	movs r6, #90         // символов в строке
+	b g_100b
+
 // r0: input buffer (2-bytes: char + color, color 4-bit fg, 4-bit bg)
 // r1: output buffer (word-aligned)
 // r2: glyph_line
@@ -1129,6 +1195,7 @@ decl_func tmds_encode_64c_b_100
 	ldr r3, [r3]
 
 	movs r6, #100         // символов в строке
+g_100b:
 1:
     ldrb r4, [r0]           // взять первый байт (символ)
     adds r0, #1
@@ -1421,6 +1488,22 @@ decl_func tmds_encode_64c_b_64
 	mov r8, r7
 	pop {r4-r7, pc}
 
+decl_func tmds_encode_64c_g_90
+	push {r4-r7, lr}
+	mov r7, r8
+	mov r6, r9
+	push {r6,r7}
+
+    ldr r3, =font_shift
+	ldr r3, [r3]
+	mov r9, r3
+
+    ldr r3, =font           // адрес массива
+	ldr r3, [r3]
+
+	movs r6, #90         // символов в строке
+	b g_100g
+
 // r0: input buffer (2-bytes: char + color, color 4-bit fg, 4-bit bg)
 // r1: output buffer (word-aligned)
 // r2: glyph_line
@@ -1438,6 +1521,7 @@ decl_func tmds_encode_64c_g_100
 	ldr r3, [r3]
 
 	movs r6, #100         // символов в строке
+g_100g:
 1:
     ldrb r4, [r0]           // взять первый байт (символ)
     adds r0, #1
@@ -1736,6 +1820,23 @@ decl_func tmds_encode_64c_g_64
 	mov r8, r7
 	pop {r4-r7, pc}
 
+
+decl_func tmds_encode_64c_r_90
+	push {r4-r7, lr}
+	mov r7, r8
+	mov r6, r9
+	push {r6,r7}
+
+    ldr r3, =font_shift
+	ldr r3, [r3]
+	mov r9, r3
+
+    ldr r3, =font           // адрес массива
+	ldr r3, [r3]
+
+	movs r6, #90         // символов в строке
+	b g_100r
+
 // r0: input buffer (2-bytes: char + color, color 4-bit fg, 4-bit bg)
 // r1: output buffer (word-aligned)
 // r2: glyph_line
@@ -1753,6 +1854,7 @@ decl_func tmds_encode_64c_r_100
 	ldr r3, [r3]
 
 	movs r6, #100         // символов в строке
+g_100r:
 1:
     ldrb r4, [r0]           // взять первый байт (символ)
     adds r0, #1

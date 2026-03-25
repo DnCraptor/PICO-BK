@@ -29,7 +29,7 @@ option(MURM2 "Murmulator 2.0" OFF)
 option(PICO_PC "RP2040-PICO-PC" OFF)
 option(ZERO2 "RP2350-PiZero" OFF)
 
-set(BUILD_VERSION "1.4.3")
+set(BUILD_VERSION "1.4.4")
 set(USE_NESPAD ON)
 
 #set(AY_TYPE HWAY)
@@ -327,7 +327,7 @@ target_compile_definitions(${PROJECT_NAME} PRIVATE
 pico_enable_stdio_uart(${PROJECT_NAME} 0)
 pico_enable_stdio_usb(${PROJECT_NAME} 0)
 
-SET(BUILD_NAME "${BUILD_NAME}-VGA-HDMI-400MHz-${AY_TYPE}-${BUILD_VERSION}")
+SET(BUILD_NAME "${BUILD_NAME}-VGA-HDMI-270MHz-${AY_TYPE}-${BUILD_VERSION}")
 IF(m1p2launcher)
     IF(MURM2)
         SET(BUILD_NAME "${BUILD_NAME}.m2p2")

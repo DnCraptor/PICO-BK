@@ -16,8 +16,13 @@ void tmds_encode_palette_data(const uint32_t *pixbuf, const uint32_t *tmds_palet
 
 void tmds_encode_1bpp_bk_800(const uint32_t *pixbuf, uint32_t *symbuf, uint32_t n_pix);
 void tmds_encode_1bpp_bk_1024(const uint32_t *pixbuf, uint32_t *symbuf, uint32_t n_pix);
+void tmds_encode_2bpp_bk_720(const uint32_t *pixbuf, uint32_t *symbuf, uint64_t* tmds_2bpp_table);
 void tmds_encode_2bpp_bk_800(const uint32_t *pixbuf, uint32_t *symbuf, uint64_t* tmds_2bpp_table);
 void tmds_encode_2bpp_bk_1024(const uint32_t *pixbuf, uint32_t *symbuf, uint32_t* tmds_2bpp_table);
+
+void tmds_encode_64c_b_90(const uint8_t *textbuf, uint32_t *symbuf, uint32_t glyph_line);
+void tmds_encode_64c_g_90(const uint8_t *textbuf, uint32_t *symbuf, uint32_t glyph_line);
+void tmds_encode_64c_r_90(const uint8_t *textbuf, uint32_t *symbuf, uint32_t glyph_line);
 
 void tmds_encode_64c_b_100(const uint8_t *textbuf, uint32_t *symbuf, uint32_t glyph_line);
 void tmds_encode_64c_g_100(const uint8_t *textbuf, uint32_t *symbuf, uint32_t glyph_line);
