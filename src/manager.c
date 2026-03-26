@@ -766,7 +766,7 @@ void read_config(const char* path) {
     const char p25[] = "manager_pallette_idx:";
     mode = parse_conf_word(buf, p25, sizeof(p25), MAX_CONF);
     g_conf.manager_pallette_idx = !!mode;
-    set_color_schema(mode ? &color_schema1 : &color_schema0);
+    set_color_schema(mode ? &color_schema0 : &color_schema1);
     const char p26[] = "is_128_48:";
     mode = parse_conf_word(buf, p26, sizeof(p26), MAX_CONF);
     if (mode >= 0 && mode <= 1) {
@@ -789,7 +789,7 @@ void read_config(const char* path) {
     f_close(&fil);
 }
 
-color_schema_t* pcs = &color_schema0;
+color_schema_t* pcs = &color_schema1;
 
 static void conf_it(uint8_t cmd) {
     is_128_48_new = g_conf.is_128_48;
@@ -964,7 +964,7 @@ static void conf_it(uint8_t cmd) {
               break;
             case 9:
               g_conf.manager_pallette_idx = !g_conf.manager_pallette_idx;
-              set_color_schema(g_conf.manager_pallette_idx ? &color_schema1 : &color_schema0);
+              set_color_schema(g_conf.manager_pallette_idx ? &color_schema0 : &color_schema1);
               draw_panel(x0, y0, 64, 19, "Startup configuration", 0);
               break;
             case 10:

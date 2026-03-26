@@ -225,9 +225,15 @@ static void __not_in_flash_func(dvi_on_core1_720x576)() {
                     if(!bk_text) {
                         memcpy32(tmdsbuf, blank, sizeof(blank) >> 2);
                     } else {
+#if PICO_RP2350
                         tmds_encode_64c_b_90(bk_line, tmdsbuf, glyph_line);
                         tmds_encode_64c_g_90(bk_line, tmdsbuf + DWORDS_PER_PLANE, glyph_line);
                         tmds_encode_64c_r_90(bk_line, tmdsbuf + DWORDS_PER_PLANE * 2, glyph_line);
+#else
+                        tmds_encode_64c_b_90(bk_line, tmdsbuf, glyph_line);
+                        memcpy32(tmdsbuf + DWORDS_PER_PLANE, tmdsbuf, DWORDS_PER_PLANE);
+                        memcpy32(tmdsbuf + DWORDS_PER_PLANE*2, tmdsbuf, DWORDS_PER_PLANE);
+#endif
                     }
                     queue_add_blocking_u32(&dvi0.q_tmds_valid, &tmdsbuf);
                 }
@@ -303,9 +309,15 @@ static void __not_in_flash_func(dvi_on_core1_800x600)() {
                     if(!bk_text) {
                         memcpy32(tmdsbuf, blank, sizeof(blank) >> 2);
                     } else {
+#if PICO_RP2350
                         tmds_encode_64c_b_100(bk_line, tmdsbuf, glyph_line);
                         tmds_encode_64c_g_100(bk_line, tmdsbuf + DWORDS_PER_PLANE, glyph_line);
                         tmds_encode_64c_r_100(bk_line, tmdsbuf + DWORDS_PER_PLANE * 2, glyph_line);
+#else
+                        tmds_encode_64c_b_100(bk_line, tmdsbuf, glyph_line);
+                        memcpy32(tmdsbuf + DWORDS_PER_PLANE, tmdsbuf, DWORDS_PER_PLANE);
+                        memcpy32(tmdsbuf + DWORDS_PER_PLANE*2, tmdsbuf, DWORDS_PER_PLANE);
+#endif
                     }
                     queue_add_blocking_u32(&dvi0.q_tmds_valid, &tmdsbuf);
                 }
