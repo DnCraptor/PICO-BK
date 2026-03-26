@@ -142,9 +142,9 @@ void __not_in_flash() flash_timings() {
 }
 
 static void __not_in_flash() flash_timings2() {
+    uint khz = dvi0.timing->bit_clk_khz;
 #if !PICO_RP2040
 	const uint max_flash_freq = 66 * 1000000;
-    uint khz = dvi0.timing->bit_clk_khz;
 	const uint clock_hz = khz * 1000;
 	int divisor = (clock_hz + max_flash_freq - 1) / max_flash_freq;
 	if (divisor == 1 && clock_hz > 100000000) {
@@ -169,12 +169,14 @@ static void __not_in_flash() dvi_init_bk() {
         dvi0.timing = &DVI_TIMING0;
         DVI_VERTICAL_REPEAT = 2;
         flash_timings2();
-    } else if (g_conf.dvi_mode == 1) {
+#if PICO_RP2350
+    } else if (g_conf.dvi_mode == 2) {
         FRAME_WIDTH = 1024;
         FRAME_HEIGHT = (768 / 3);
         dvi0.timing = &DVI_TIMING2;
         DVI_VERTICAL_REPEAT = 3;
         flash_timings2();
+#endif
     } else {
         FRAME_WIDTH = 800;
         FRAME_HEIGHT = 300;
@@ -188,25 +190,6 @@ static void __not_in_flash() dvi_init_bk() {
 #define AUDIO_BUFFER_SIZE   256
 audio_sample_t      audio_buffer[AUDIO_BUFFER_SIZE];
 struct repeating_timer audio_timer;
-
-/// TODO: cleanup
-bool __not_in_flash_func(audio_timer_callback)(struct repeating_timer *t) {
-	while(true) {
-		int size = get_write_size(&dvi0.audio_ring, false);
-		if (size == 0) return true;
-		audio_sample_t *audio_ptr = get_write_pointer(&dvi0.audio_ring);
-		audio_sample_t sample;
-		static uint sample_count = 0;
-		for (int cnt = 0; cnt < size; cnt++) {
-            /// TODO: use the same source as PWM, just inject
-			sample.channels[0] = 0; //commodore_argentina[sample_count % commodore_argentina_len] << 8;
-			sample.channels[1] = 0; //commodore_argentina[(sample_count+1024) % commodore_argentina_len] << 8;
-			*(audio_ptr++) = sample;
-			sample_count = sample_count + 1;
-		}
-		increase_write_pointer(&dvi0.audio_ring, size);
-	}
-}
 
 // Called from AY_timer_callback on core 0 at 44100 Hz — one sample per call.
 // Writes directly into the DVI audio ring; no separate timer needed.
@@ -443,14 +426,22 @@ void __not_in_flash_func(dvi_on_core1)() {
 	for (int i = 0; i < sizeof(blank) / sizeof(blank[0]); ++i) {
 		blank[i] = BLACK;
 	}
+#if ZERO2
+    pio_set_gpio_base(dvi0.ser_cfg.pio, 16);
+#endif
     dvi_init(&dvi0, next_striped_spin_lock_num(), next_striped_spin_lock_num());
 	hw_set_bits(&bus_ctrl_hw->priority, BUSCTRL_BUS_PRIORITY_PROC1_BITS);
 	// HDMI Audio related
-    if (g_conf.dvi_mode != 1) { // it is impossible to inject audio-ring in 1024*768 (not enough space in blank messages)
+#if PICO_RP2350
+    if (g_conf.dvi_mode == 2) { // it is impossible to inject audio-ring in 1024*768 (not enough space in blank messages)
+    }
+    else
+#endif
+    {
         dvi_get_blank_settings(&dvi0)->top    = 4 * 0;
         dvi_get_blank_settings(&dvi0)->bottom = 4 * 0;
         dvi_audio_sample_buffer_set(&dvi0, audio_buffer, AUDIO_BUFFER_SIZE);
-        if (!g_conf.dvi_mode) {
+        if (g_conf.dvi_mode == 0) {
             //dvi_set_audio_freq(&dvi0, 44100, 28000, 6272);
             dvi_set_audio_freq(&dvi0, 48000, 27000, 6144);
         } else {
@@ -465,10 +456,12 @@ void __not_in_flash_func(dvi_on_core1)() {
         dvi_on_core1_720x576();
         __unreachable();
     }
-    if (g_conf.dvi_mode == 1) {
+#if PICO_RP2350
+    if (g_conf.dvi_mode == 2) {
         dvi_on_core1_1024x768();
         __unreachable();
     }
+#endif
     dvi_on_core1_800x600();
     __unreachable();
 }

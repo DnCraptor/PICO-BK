@@ -375,7 +375,7 @@ static const line_t bk_mode_lns[] = {
 static int MAX_Z = 28;
 static int z_idx = 0;
 static bool is_128_48_new, is_8x8_new, blink = false;
-static uint8_t dvi_mode_new = 0; // 0 - 640x480, 1 - 1024*786, 2 - 800*600
+static uint8_t dvi_mode_new = 0; // 0 - 640x480, 1 - 800*600, 2 - 1024*786
 static void in_conf(int x, int y) {
     draw_label(x+1, y, 36, "Use SPACE to edit, ESC to exit", false, true);
 
@@ -396,8 +396,10 @@ static void in_conf(int x, int y) {
     }
     if (dvi_mode_new == 0) {
         draw_label(x, y+12,30, "     HDMI 720x576:   (270 MHz)", false, z_idx == 11);
-    } else if(dvi_mode_new == 1) {
+#if PICO_RP2350
+    } else if(dvi_mode_new == 2) {
         draw_label(x, y+12,30, "    HDMI 1024x768:   (512 MHz)", false, z_idx == 11);
+#endif
     } else {
         draw_label(x, y+12,30, "     HDMI 800x600:   (400 MHz)", false, z_idx == 11);
     }
@@ -770,13 +772,15 @@ void read_config(const char* path) {
     if (mode >= 0 && mode <= 1) {
         g_conf.is_128_48 = (bool)mode;
     }
-#if PICO_RP2350
     const char p27[] = "dvi_mode:";
     mode = parse_conf_word(buf, p27, sizeof(p27), MAX_CONF);
+#if PICO_RP2350
     if (mode >= 0 && mode <= 2) {
+#else
+    if (mode >= 0 && mode <= 1) {
+#endif
         g_conf.dvi_mode = mode;
     }
-#endif
     const char p28[] = "is_8x8:";
     mode = parse_conf_word(buf, p28, sizeof(p28), MAX_CONF);
     if (mode >= 0 && mode <= 1) {
@@ -968,7 +972,11 @@ static void conf_it(uint8_t cmd) {
               break;
             case 11:
               dvi_mode_new++;
+#if PICO_RP2350
               if (dvi_mode_new > 2) dvi_mode_new = 0;
+#else
+              if (dvi_mode_new > 1) dvi_mode_new = 0;
+#endif
               break;
             case 12:
               is_8x8_new = !is_8x8_new;

@@ -12,7 +12,7 @@ if (EXISTS ${picoVscode})
     include(${picoVscode})
 endif()
 # ====================================================================================
-set(PICO_BOARD pico2 CACHE STRING "Board type")
+set(PICO_BOARD pico CACHE STRING "Board type")
 
 cmake_minimum_required(VERSION 3.22)
 set(PICO_CXX_ENABLE_EXCEPTIONS 1)
@@ -290,6 +290,8 @@ elseif (ZERO2)
         NES_GPIO_LAT=5
         NES_GPIO_DATA=6
         NES_GPIO_DATA2=7
+
+        PICO_DEFAULT_LED_PIN=25
     )
 else() # m1
     target_compile_definitions(${PROJECT_NAME} PRIVATE

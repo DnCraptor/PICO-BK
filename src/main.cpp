@@ -177,7 +177,13 @@ static bool __not_in_flash_func(AY_timer_callback)(repeating_timer_t *rt) {
       //  beep(0);
       //  #endif
     }
-    if (!SELECT_VGA && g_conf.dvi_mode != 1) {
+    if (!SELECT_VGA) {
+#if PICO_RP2350
+        if (g_conf.dvi_mode == 2) {
+        }
+        else
+#endif
+        {
         // Beeper/AY ratio on PWM is always 3.2x (511/160 at any volume).
         // Replicate: beep contributes 3.2 * AY_max_per_channel = 3.2 * 80 = 256,
         // then the same volume shift applies via outL/outR already being scaled.
@@ -185,6 +191,7 @@ static bool __not_in_flash_func(AY_timer_callback)(repeating_timer_t *rt) {
         uint16_t beep_add = beeper_on ? (uint16_t)(1u << (g_conf.snd_volume + 7)) : 0u;
         push_audio_sample((int16_t)((int32_t)(outL + beep_add) * 6),
                           (int16_t)((int32_t)(outR + beep_add) * 6));
+        }
     }
     return true;
 }
