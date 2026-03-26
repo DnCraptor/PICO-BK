@@ -457,7 +457,7 @@ int main() {
     }
 
     init_fs();
-#if ZERO2
+#if defined(ZERO2) || defined(ZERO)
     SELECT_VGA = 0;
 #else
     uint8_t link = testPins(beginVGA_PIN, beginVGA_PIN + 1);

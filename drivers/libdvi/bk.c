@@ -438,7 +438,7 @@ void __not_in_flash_func(dvi_on_core1)() {
 	for (int i = 0; i < sizeof(blank) / sizeof(blank[0]); ++i) {
 		blank[i] = BLACK;
 	}
-#if ZERO2
+#if defined(ZERO2)
     pio_set_gpio_base(dvi0.ser_cfg.pio, 16);
 #endif
     dvi_init(&dvi0, next_striped_spin_lock_num(), next_striped_spin_lock_num());

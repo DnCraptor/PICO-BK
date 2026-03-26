@@ -28,6 +28,7 @@ option(AY_TYPE "AY-3-8910 Type: PWM / HWAY" HWAY)
 option(MURM2 "Murmulator 2.0" OFF)
 option(PICO_PC "RP2040-PICO-PC" OFF)
 option(ZERO2 "RP2350-PiZero" OFF)
+option(ZERO "RP2040-PiZero" OFF)
 
 set(BUILD_VERSION "1.4.4")
 set(USE_NESPAD ON)
@@ -38,6 +39,7 @@ set(USE_NESPAD ON)
 # Platform (m1p2 by default)
 #set (MURM2 ON)
 #set (PICO_PC ON)
+set (ZERO ON)
 #set (ZERO2 ON)
 
 IF(ZERO2)
@@ -56,6 +58,8 @@ IF(MURM2)
     SET(BUILD_NAME "m2${PROJECT_NAME}")
 ELSEIF(PICO_PC)
     SET(BUILD_NAME "PC${PROJECT_NAME}")
+ELSEIF(ZERO)
+    SET(BUILD_NAME "z0${PROJECT_NAME}")
 ELSEIF(ZERO2)
     SET(BUILD_NAME "z0${PROJECT_NAME}")
 ELSE()
@@ -259,6 +263,39 @@ elseif (PICO_PC)
         NES_GPIO_DATA=20  # UXT1-3
         NES_GPIO_DATA2=21 # UXT1-4
     )
+elseif (ZERO)
+    target_compile_definitions(${PROJECT_NAME} PRIVATE
+        ZERO=1
+
+        # PS2 keyboard
+        KBD_CLOCK_PIN=0
+        KBD_DATA_PIN=1
+
+        LOAD_WAV_PIO=17
+
+        # SDCARD
+        SDCARD_PIN_SPI0_SCK=18
+        SDCARD_PIN_SPI0_MOSI=19
+        SDCARD_PIN_SPI0_MISO=20
+        SDCARD_PIN_SPI0_CS=21
+        
+        PWM_PIN0=10
+        PWM_PIN1=11
+        BEEPER_PIN=12
+
+        beginVGA_PIN=22
+        DVI_DEFAULT_SERIAL_CONFIG=waveshare_rp2040_pizero_hdmi_cfg
+
+        WII_SDA_PIN=6
+        WII_SCL_PIN=7
+
+        NES_GPIO_CLK=4
+        NES_GPIO_LAT=5
+        NES_GPIO_DATA=6
+        NES_GPIO_DATA2=7
+
+        PICO_DEFAULT_LED_PIN=2
+    )
 elseif (ZERO2)
     target_compile_definitions(${PROJECT_NAME} PRIVATE
         ZERO2=1
@@ -337,6 +374,8 @@ IF(m1p2launcher)
         SET(BUILD_NAME "${BUILD_NAME}.PCp2")
     ELSEIF(PICO_DV)
         SET(BUILD_NAME "${BUILD_NAME}.DVp2")
+    ELSEIF(ZERO)
+        SET(BUILD_NAME "${BUILD_NAME}.z0p1")
     ELSEIF(ZERO2)
         SET(BUILD_NAME "${BUILD_NAME}.z0p2")
     ELSE()
