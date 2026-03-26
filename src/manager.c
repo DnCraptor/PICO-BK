@@ -671,6 +671,7 @@ void read_config(const char* path) {
     int mode = parse_conf_word(buf, p0, sizeof(p0), MAX_CONF);
     if (mode >= 0 && mode <= BK_0011M) {
         g_conf.bk0010mode = (bk_mode_t)mode;
+        g_conf.cpu_freq = g_conf.bk0010mode >= BK_0011M_FDD ? 4000000 : 3000000;
     }
     const char p1[] = "is_covox_on:";
     mode = parse_conf_word(buf, p1, sizeof(p1), MAX_CONF);

@@ -20,7 +20,6 @@ typedef struct config_em {
     uint8_t shift_y;
     uint16_t graphics_buffer_height;
     size_t v_buff_offset;
-    uint64_t      not_used; // for compartibility
     uint_fast32_t cpu_freq; // 3'000'000 for BK0010, 4'000'000 for BK0011M
     uint_fast32_t T;
     uint_fast16_t CodeAndFlags;

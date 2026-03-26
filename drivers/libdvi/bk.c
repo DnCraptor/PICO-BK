@@ -226,7 +226,7 @@ static inline void memcpy32(uint32_t* target, const uint32_t* src, const size_t 
     }
 }
 
-static void __not_in_flash_func(dvi_on_core1_640x480)() {
+static void __not_in_flash_func(dvi_on_core1_720x576)() {
     uint32_t *tmdsbuf = 0;
     sem_acquire_blocking(&vga_start_semaphore);
     while (true) {
@@ -462,7 +462,7 @@ void __not_in_flash_func(dvi_on_core1)() {
     dvi_register_irqs_this_core(&dvi0, DMA_IRQ_1);
     dvi_start(&dvi0);
     if (g_conf.dvi_mode == 0) {
-        dvi_on_core1_640x480();
+        dvi_on_core1_720x576();
         __unreachable();
     }
     if (g_conf.dvi_mode == 1) {
