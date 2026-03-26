@@ -352,7 +352,7 @@ decl_func tmds_encode_2bpp_bk_720
     movs r6, #0             // счётчик итераций
 
 2:  // основной цикл
-    cmp r6, #19             // n2 = 3 (96px но нужно только 112?) + 16 (512px) = 19
+    cmp r6, #19             // n2 = 3 (96px) + 16 (512px) = 19
     bhs 0f                  // если счетчик >= n2, 0
     cmp r6, #3              // n1 = 3 (96px)
     blo 0f                  // если счетчик < n, 0
@@ -988,6 +988,94 @@ decl_func tmds_encode_1bpp_bk_800
 
 .align 2
 tmds_1bpp_table_bk:
+#if !DVI_1BPP_BIT_REVERSE
+	.word 0x7fd00, 0x7fd00  // 0000
+	.word 0x7fe00, 0x7fd00  // 0001
+	.word 0xbfd00, 0x7fd00  // 0010
+	.word 0xbfe00, 0x7fd00  // 0011
+	.word 0x7fd00, 0x7fe00  // 0100
+	.word 0x7fe00, 0x7fe00  // 0101
+	.word 0xbfd00, 0x7fe00  // 0110
+	.word 0xbfe00, 0x7fe00  // 0111
+	.word 0x7fd00, 0xbfd00  // 1000
+	.word 0x7fe00, 0xbfd00  // 1001
+	.word 0xbfd00, 0xbfd00  // 1010
+	.word 0xbfe00, 0xbfd00  // 1011
+	.word 0x7fd00, 0xbfe00  // 1100
+	.word 0x7fe00, 0xbfe00  // 1101
+	.word 0xbfd00, 0xbfe00  // 1110
+	.word 0xbfe00, 0xbfe00  // 1111
+#else
+	.word 0x7fd00, 0x7fd00  // 0000
+	.word 0x7fd00, 0xbfd00  // 1000
+	.word 0x7fd00, 0x7fe00  // 0100
+	.word 0x7fd00, 0xbfe00  // 1100
+	.word 0xbfd00, 0x7fd00  // 0010
+	.word 0xbfd00, 0xbfd00  // 1010
+	.word 0xbfd00, 0x7fe00  // 0110
+	.word 0xbfd00, 0xbfe00  // 1110
+	.word 0x7fe00, 0x7fd00  // 0001
+	.word 0x7fe00, 0xbfd00  // 1001
+	.word 0x7fe00, 0x7fe00  // 0101
+	.word 0x7fe00, 0xbfe00  // 1101
+	.word 0xbfe00, 0x7fd00  // 0011
+	.word 0xbfe00, 0xbfd00  // 1011
+	.word 0xbfe00, 0x7fe00  // 0111
+	.word 0xbfe00, 0xbfe00  // 1111
+#endif
+
+decl_func tmds_encode_1bpp_bk_720
+    push {r4-r7, lr}       // сохраняем регистры
+    mov r6, r8
+    mov r7, r9
+    push {r6,r7}
+
+    lsls r2, #1
+    add r2, r1
+    mov ip, r2              // ip = конец буфера
+    adr r4, tmds_1bpp_table_bk2
+    mov r8, r4              // r8 = таблица TMDS
+    movs r3, #0x78          // маска 0x78
+
+    movs r6, #0             // счётчик итераций
+
+2:  // основной цикл
+    cmp r6, #19             // n2 = 3 (96px) + 16 (512px) = 19
+    bhs 0f                  // если счетчик >= n2, 0
+    cmp r6, #3              // n1 = 3 (96px)
+    blo 0f                  // если счетчик < n, 0
+    b 1f
+0:
+    movs r2, #0             // первые n + 1 итераций r2 = 0
+    b 3f
+1:
+    ldmia r0!, {r2}
+3:
+    mov r9, r6
+#if !DVI_1BPP_BIT_REVERSE
+    tmds_encode_1bpp_body lsls 3  lsrs 1
+    tmds_encode_1bpp_body lsrs 5  lsrs 9
+    tmds_encode_1bpp_body lsrs 13 lsrs 17
+    tmds_encode_1bpp_body lsrs 21 lsrs 25
+#else
+    tmds_encode_1bpp_body lsrs 1   lsls 3
+    tmds_encode_1bpp_body lsrs 9   lsrs 5
+    tmds_encode_1bpp_body lsrs 17  lsrs 13
+    tmds_encode_1bpp_body lsrs 25  lsrs 21
+#endif
+    mov r6, r9
+
+    adds r6, #1             // увеличиваем счётчик
+    cmp r1, ip
+    blo 2b
+
+    pop {r6,r7}
+    mov r8, r6
+    mov r9, r7
+    pop {r4-r7, pc}
+
+.align 2
+tmds_1bpp_table_bk2:
 #if !DVI_1BPP_BIT_REVERSE
 	.word 0x7fd00, 0x7fd00  // 0000
 	.word 0x7fe00, 0x7fd00  // 0001

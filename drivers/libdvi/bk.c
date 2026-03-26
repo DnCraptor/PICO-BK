@@ -279,6 +279,19 @@ static void __not_in_flash_func(dvi_on_core1_640x480)() {
             }
             default: { // 512*256
                 uint total_y = 0;
+                for (uint y = 0; y < (FRAME_HEIGHT - 256) / 2; ++y, ++total_y) {
+                    queue_remove_blocking_u32(&dvi0.q_tmds_free, &tmdsbuf);
+                    memcpy32(tmdsbuf, blank, sizeof(blank) >> 2);
+                    queue_add_blocking_u32(&dvi0.q_tmds_valid, &tmdsbuf);
+                }
+                for (uint y = 0; y < g_conf.graphics_buffer_height; ++y, ++total_y) {
+                    register uint32_t* bk_page = (uint32_t*)get_graphics_buffer(y);
+                    queue_remove_blocking_u32(&dvi0.q_tmds_free, &tmdsbuf);
+                    tmds_encode_1bpp_bk_720(bk_page, tmdsbuf, FRAME_WIDTH);
+                    memcpy32(tmdsbuf + DWORDS_PER_PLANE, tmdsbuf, BYTES_PER_PLANE >> 2);
+                    memcpy32(tmdsbuf + 2 * DWORDS_PER_PLANE, tmdsbuf, BYTES_PER_PLANE >> 2);
+                    queue_add_blocking_u32(&dvi0.q_tmds_valid, &tmdsbuf);
+                }
                 for (; total_y < FRAME_HEIGHT; ++total_y) {
                     queue_remove_blocking_u32(&dvi0.q_tmds_free, &tmdsbuf);
                     memcpy32(tmdsbuf, blank, sizeof(blank) >> 2);
