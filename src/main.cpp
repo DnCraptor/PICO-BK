@@ -430,13 +430,6 @@ int main() {
     gpio_init(PICO_DEFAULT_LED_PIN);
     gpio_set_dir(PICO_DEFAULT_LED_PIN, GPIO_OUT);
 
-    for (int i = 0; i < 6; i++) {
-        keyboard_tick();
-        sleep_ms(23);
-        gpio_put(PICO_DEFAULT_LED_PIN, true);
-        sleep_ms(23);
-        gpio_put(PICO_DEFAULT_LED_PIN, false);
-    }
     DBGM_PRINT(("Before Init_Wii_Joystick"));
     #ifdef USE_WII
     if (!Init_Wii_Joystick()) {
@@ -466,6 +459,13 @@ int main() {
     sem_init(&vga_start_semaphore, 0, 1);
     multicore_launch_core1(render_core);
     sem_release(&vga_start_semaphore);
+    for (int i = 0; i < 6; i++) {
+        keyboard_tick();
+        sleep_ms(23);
+        gpio_put(PICO_DEFAULT_LED_PIN, true);
+        sleep_ms(23);
+        gpio_put(PICO_DEFAULT_LED_PIN, false);
+    }
 
     reset(255);
     graphics_set_mode(g_conf.color_mode ? BK_256x256x2 : BK_512x256x1);
