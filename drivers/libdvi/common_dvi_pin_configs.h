@@ -150,7 +150,7 @@ static const struct dvi_serialiser_cfg waveshare_rp2040_pizero_hdmi_cfg = {
 // Waveshare RP2350-PiZero (RP2350B)
 // GPIO base must be shifted: call pio_set_gpio_base(pio, 16) before dvi_init()
 static const struct dvi_serialiser_cfg waveshare_rp2350_pizero_hdmi_cfg = {
-	.pio = pio1,
+	.pio = pio0,
 	.sm_tmds = {0, 1, 2},
 	.pins_tmds = {36, 34, 32},
 	.pins_clk = 38,
