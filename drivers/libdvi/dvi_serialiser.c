@@ -19,6 +19,11 @@ static int clk_sm = 0;
 #endif
 
 static void dvi_configure_pad(uint gpio, bool invert) {
+#if defined(ZERO2)
+	// RP2350B: 12 mA drive + fast slew for GPIO >= 32 HDMI pins
+	gpio_set_drive_strength(gpio, GPIO_DRIVE_STRENGTH_12MA);
+	gpio_set_slew_rate(gpio, GPIO_SLEW_RATE_FAST);
+#else
 	// 2 mA drive, enable slew rate limiting (this seems fine even at 720p30, and
 	// the 3V3 LDO doesn't get warm like when turning all the GPIOs up to 11).
 	// Also disable digital receiver.
@@ -27,6 +32,7 @@ static void dvi_configure_pad(uint gpio, bool invert) {
 		(0 << PADS_BANK0_GPIO0_DRIVE_LSB),
 		PADS_BANK0_GPIO0_DRIVE_BITS | PADS_BANK0_GPIO0_SLEWFAST_BITS | PADS_BANK0_GPIO0_IE_BITS
 	);
+#endif
 	gpio_set_outover(gpio, invert ? GPIO_OVERRIDE_INVERT : GPIO_OVERRIDE_NORMAL);
 }
 

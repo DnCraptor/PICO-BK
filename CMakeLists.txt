@@ -16,13 +16,6 @@ set(PICO_BOARD pico CACHE STRING "Board type")
 
 cmake_minimum_required(VERSION 3.22)
 set(PICO_CXX_ENABLE_EXCEPTIONS 1)
-include(pico_sdk_import.cmake)
-
-if (PICO_PLATFORM STREQUAL "rp2040")
-    project(p1-bk C CXX ASM)
-else ()
-    project(p2-bk C CXX ASM)
-endif()
 
 option(AY_TYPE "AY-3-8910 Type: PWM / HWAY" HWAY)
 option(MURM2 "Murmulator 2.0" OFF)
@@ -39,18 +32,27 @@ set(USE_NESPAD ON)
 # Platform (m1p2 by default)
 #set (MURM2 ON)
 #set (PICO_PC ON)
-set (ZERO ON)
-#set (ZERO2 ON)
+#set (ZERO ON)
+set (ZERO2 ON)
 
 IF(ZERO2)
-    # For Board RP2350-PiZero
-    set(PICO_BOARD_HEADER_DIRS ${CMAKE_SOURCE_DIR})
-    set(PICO_BOARD waveshare_rp2350_pizero)
-    set(PICO_PLATFORM rp2350-arm-s)
+    # For Board RP2350-PiZero — must be set before pico_sdk_import
+    set(PICO_BOARD_HEADER_DIRS ${CMAKE_SOURCE_DIR}/src CACHE STRING "" FORCE)
+    set(PICO_BOARD waveshare_rp2350_pizero CACHE STRING "Board type" FORCE)
+    set(PICO_PLATFORM rp2350-arm-s CACHE STRING "Platform" FORCE)
 ENDIF()
+
+include(pico_sdk_import.cmake)
+
+if (PICO_PLATFORM STREQUAL "rp2040")
+    project(p1-bk C CXX ASM)
+else ()
+    project(p2-bk C CXX ASM)
+endif()
 
 set(CMAKE_C_STANDARD 11)
 set(CMAKE_CXX_STANDARD 17)
+set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
 pico_sdk_init()
 

@@ -31,8 +31,8 @@
 #include "hardware/clocks.h"
 
 static inline void dvi_serialiser_program_init(PIO pio, uint sm, uint offset, uint data_pins, bool debug, uint32_t bit_clk_hz) {
-    pio_sm_set_pins_with_mask(pio, sm, 2u << data_pins, 3u << data_pins);
-    pio_sm_set_pindirs_with_mask(pio, sm, ~0u, 3u << data_pins);
+    pio_sm_set_pins_with_mask64(pio, sm, (uint64_t)2 << data_pins, (uint64_t)3 << data_pins);
+    pio_sm_set_pindirs_with_mask64(pio, sm, ~(uint64_t)0, (uint64_t)3 << data_pins);
     pio_gpio_init(pio, data_pins);
     pio_gpio_init(pio, data_pins + 1);
 
