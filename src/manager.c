@@ -1555,6 +1555,7 @@ static void m_info(uint8_t cmd) {
     nespad_state_delay = DPAD_STATE_DELAY;
     f1Pressed = true;
     while(!escWasPressed) {
+        keyboard_tick();
         if (is_dendy_joystick || is_kbd_joystick) {
             if (is_dendy_joystick) nespad_read();
             if ((nespad_state && !(nespad_state & DPAD_START) && !(nespad_state & DPAD_SELECT)) || (nespad_state2 && !(nespad_state2 & DPAD_START) && !(nespad_state2 & DPAD_SELECT))) {

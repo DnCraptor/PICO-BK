@@ -23,7 +23,7 @@ option(PICO_PC "RP2040-PICO-PC" OFF)
 option(ZERO2 "RP2350-PiZero" OFF)
 option(ZERO "RP2040-PiZero" OFF)
 
-set(BUILD_VERSION "1.4.4")
+set(BUILD_VERSION "1.4.5")
 set(USE_NESPAD ON)
 
 #set(AY_TYPE HWAY)
