@@ -285,7 +285,7 @@ elseif (ZERO)
         
         PWM_PIN0=10
         PWM_PIN1=11
-        BEEPER_PIN=12
+        BEEPER_PIN=3
 
         beginVGA_PIN=22
         DVI_DEFAULT_SERIAL_CONFIG=waveshare_rp2040_pizero_hdmi_cfg
