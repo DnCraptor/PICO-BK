@@ -33,7 +33,7 @@ set(USE_NESPAD ON)
 #set (MURM2 ON)
 #set (PICO_PC ON)
 #set (ZERO ON)
-set (ZERO2 ON)
+#set (ZERO2 ON)
 
 IF(ZERO2)
     # For Board RP2350-PiZero — must be set before pico_sdk_import
@@ -233,6 +233,7 @@ if (MURM2)
         NES_GPIO_DATA=26
 
         LOAD_WAV_PIO=22
+        PICO_DEFAULT_LED_PIN=25
     )
 elseif (PICO_PC)
     target_compile_definitions(${PROJECT_NAME} PRIVATE
@@ -264,6 +265,7 @@ elseif (PICO_PC)
         NES_GPIO_LAT=9    # UXT1-5
         NES_GPIO_DATA=20  # UXT1-3
         NES_GPIO_DATA2=21 # UXT1-4
+        PICO_DEFAULT_LED_PIN=25
     )
 elseif (ZERO)
     target_compile_definitions(${PROJECT_NAME} PRIVATE
@@ -358,6 +360,7 @@ else() # m1
         PWM_PIN0=26
         PWM_PIN1=27
         BEEPER_PIN=28
+        PICO_DEFAULT_LED_PIN=25
     )
 endif()
 
