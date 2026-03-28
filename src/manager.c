@@ -251,8 +251,12 @@ void reset(uint8_t cmd) {
     mark_to_exit_flag = true;
     if (g_conf.bk0010mode == BK_FDD) {
         if (cmd == 255) { // ensure kbd load in time
-            sleep_ms(1500);
+            for (int i = 0; i < 1500; ++i) {
+                keyboard_tick();
+                sleep_ms(1);
+            }
         }
+        ps2cleanup();
         kbd_script_idx = 0;
         add_repeating_timer_ms(200, timer_callback, NULL, &timer);
     }
