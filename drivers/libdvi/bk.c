@@ -9,6 +9,7 @@
     #include <hardware/structs/qmi.h>
 #endif
 #include <hardware/structs/bus_ctrl.h>
+#include <hardware/irq.h>
 
 #include "config_em.h"
 #include "emulator.h"
@@ -138,7 +139,10 @@ void __not_in_flash() flash_timings() {
 	// Run system at TMDS bit clock
 	set_sys_clock_khz(DVI_TIMING.bit_clk_khz, true);
 //	set_sys_clock_khz(366000, true);
-	hw_set_bits(&bus_ctrl_hw->priority, BUSCTRL_BUS_PRIORITY_PROC1_BITS);
+	hw_set_bits(&bus_ctrl_hw->priority,
+		BUSCTRL_BUS_PRIORITY_PROC1_BITS |
+		BUSCTRL_BUS_PRIORITY_DMA_R_BITS |
+		BUSCTRL_BUS_PRIORITY_DMA_W_BITS);
 }
 
 static void __not_in_flash() flash_timings2() {
@@ -194,13 +198,11 @@ struct repeating_timer audio_timer;
 // Called from AY_timer_callback on core 0 at 44100 Hz — one sample per call.
 // Writes directly into the DVI audio ring; no separate timer needed.
 void __not_in_flash_func(push_audio_sample)(int16_t l, int16_t r) {
-	while(true) {
-        if (get_write_size(&dvi0.audio_ring, false) == 0) return;
-        audio_sample_t *p = get_write_pointer(&dvi0.audio_ring);
-        p->channels[0] = l;
-        p->channels[1] = r;
-        increase_write_pointer(&dvi0.audio_ring, 1);
-    }
+    if (get_write_size(&dvi0.audio_ring, false) == 0) return;
+    audio_sample_t *p = get_write_pointer(&dvi0.audio_ring);
+    p->channels[0] = l;
+    p->channels[1] = r;
+    increase_write_pointer(&dvi0.audio_ring, 1);
 }
 
 static inline void memcpy32(uint32_t* target, const uint32_t* src, const size_t cnt) {
@@ -442,7 +444,10 @@ void __not_in_flash_func(dvi_on_core1)() {
     pio_set_gpio_base(dvi0.ser_cfg.pio, 16);
 #endif
     dvi_init(&dvi0, next_striped_spin_lock_num(), next_striped_spin_lock_num());
-	hw_set_bits(&bus_ctrl_hw->priority, BUSCTRL_BUS_PRIORITY_PROC1_BITS);
+	hw_set_bits(&bus_ctrl_hw->priority,
+		BUSCTRL_BUS_PRIORITY_PROC1_BITS |
+		BUSCTRL_BUS_PRIORITY_DMA_R_BITS |
+		BUSCTRL_BUS_PRIORITY_DMA_W_BITS);
 	// HDMI Audio related
 #if PICO_RP2350
     if (g_conf.dvi_mode == 2) { // it is impossible to inject audio-ring in 1024*768 (not enough space in blank messages)
@@ -463,6 +468,7 @@ void __not_in_flash_func(dvi_on_core1)() {
     }
 
     dvi_register_irqs_this_core(&dvi0, DMA_IRQ_1);
+    irq_set_priority(DMA_IRQ_1, 0); // highest priority — DVI DMA must never be starved by USB
     dvi_start(&dvi0);
     if (g_conf.dvi_mode == 0) {
         dvi_on_core1_720x576();
