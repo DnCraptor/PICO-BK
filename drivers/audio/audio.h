@@ -66,6 +66,7 @@ void audio_init(void);
  */
 #ifdef I2S
 void audio_i2s_submit(int16_t l, int16_t r);
+void i2s_recalc_clkdiv(void);
 #endif
 
 #ifdef __cplusplus

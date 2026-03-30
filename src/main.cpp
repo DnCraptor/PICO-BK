@@ -170,6 +170,12 @@ static bool __not_in_flash_func(AY_timer_callback)(repeating_timer_t *rt) {
     if (!SELECT_VGA) {
 #if PICO_RP2350
         if (g_conf.dvi_mode == 2) {
+#if defined(I2S)
+            uint16_t beep_add = beeper_on ? (uint16_t)(1u << (g_conf.snd_volume + 7)) : 0u;
+            int16_t sampleL = (int16_t)((int32_t)(outL + beep_add) * 6);
+            int16_t sampleR = (int16_t)((int32_t)(outR + beep_add) * 6);
+            audio_i2s_submit(sampleL, sampleR);
+#endif
         }
         else
 #endif
@@ -472,6 +478,11 @@ int main() {
     graphics_set_mode(g_conf.color_mode ? BK_256x256x2 : BK_512x256x1);
 
 #ifdef SOUND_SYSTEM
+#if defined(I2S)
+    /* Core 1 may have changed sys_clock (e.g. 270 MHz for DVI);
+       recalculate the PIO clock divider at the actual frequency. */
+    i2s_recalc_clkdiv();
+#endif
 	int hz = 44100;	//44000 //44100 //96000 //22050
 	// negative timeout means exact delay (rather than delay between callbacks)
 	if (!add_repeating_timer_us(-1000000 / hz, AY_timer_callback, NULL, &timer)) {

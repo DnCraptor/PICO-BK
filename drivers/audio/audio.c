@@ -81,10 +81,20 @@ void audio_init(void) {
  * @param r  Right channel sample, signed 16-bit
  */
 #ifdef I2S
+void i2s_recalc_clkdiv(void) {
+    uint32_t system_clock_frequency = clock_get_hz(clk_sys);
+    uint32_t divider = system_clock_frequency * 4 / g_i2s_config.sample_freq;
+    pio_sm_set_clkdiv_int_frac(g_i2s_config.pio, g_i2s_config.sm,
+                               divider >> 8u, divider & 0xffu);
+}
+
 void __not_in_flash_func(audio_i2s_submit)(int16_t l, int16_t r) {
-    g_i2s_samples[0] = r;   /* PIO word layout: bits[31:16] = WS=0 (right), bits[15:0] = WS=1 (left) */
-    g_i2s_samples[1] = l;
-    i2s_write(&g_i2s_config, g_i2s_samples, 1);
+    /* PIO word layout: bits[31:16] = WS=0 (right), bits[15:0] = WS=1 (left) */
+    uint32_t frame = ((uint32_t)(uint16_t)r << 16) | (uint16_t)l;
+    /* Non-blocking: drop the sample if FIFO is full rather than stalling the ISR */
+    if (!pio_sm_is_tx_fifo_full(g_i2s_config.pio, g_i2s_config.sm)) {
+        pio_sm_put(g_i2s_config.pio, g_i2s_config.sm, frame);
+    }
 }
 #endif
 

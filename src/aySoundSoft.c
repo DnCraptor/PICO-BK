@@ -475,7 +475,7 @@ void beep(bool v) {
     beeper_on = v;
     #ifdef HWAY
         AY_to595Beep(v);
-    #else
+    #elif !defined(I2S)
         pwm_set_gpio_level(BEEPER_PIN, v ? (1 << (g_conf.snd_volume + 9)) - 1 : 0);
     #endif
 }

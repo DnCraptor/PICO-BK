@@ -60,12 +60,17 @@ void AT_OVL emu_start () {
     systick_hw->rvr = 0xFFFFFF;  // reload value (24 бита макс)
     systick_hw->cvr = 0;         // current value
     systick_hw->csr = (1 << 0) | (1 << 2);  // ENABLE = бит 0, CLKSOURCE = бит 2
+    uint32_t kbd_divider = 0;
     while (1) {
         // SysTick запущен до manager(), чтобы время USB/клавиатуры учитывалось
         // в бюджете реального времени итерации. Иначе при частом нажатии клавиш
         // tuh_task() добавляет неучтённую задержку и эмуляция замедляется.
         uint32_t startTicks = systick_hw->cvr;
-        manager(false);
+        // Вызываем manager (с keyboard_tick внутри) не каждую инструкцию,
+        // а ~раз в 1 мс (каждые ~256 итераций). Это уменьшает влияние
+        // tuh_task() на тайминг бипера при нажатии клавиш.
+        if (!(kbd_divider++ & 0xFF))
+            manager(false);
         uint32_t armFreqDivEmu = clock_get_hz(clk_sys) / g_conf.cpu_freq;
 #if LOAD_WAV_PIO
         bool bit_wav = hw_get_bit_LOAD();
