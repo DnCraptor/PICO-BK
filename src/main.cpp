@@ -478,11 +478,6 @@ int main() {
     graphics_set_mode(g_conf.color_mode ? BK_256x256x2 : BK_512x256x1);
 
 #ifdef SOUND_SYSTEM
-#if defined(I2S)
-    /* Core 1 may have changed sys_clock (e.g. 270 MHz for DVI);
-       recalculate the PIO clock divider at the actual frequency. */
-    i2s_recalc_clkdiv();
-#endif
 	int hz = 44100;	//44000 //44100 //96000 //22050
 	// negative timeout means exact delay (rather than delay between callbacks)
 	if (!add_repeating_timer_us(-1000000 / hz, AY_timer_callback, NULL, &timer)) {
