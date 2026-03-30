@@ -17,21 +17,23 @@ set(PICO_BOARD pico2 CACHE STRING "Board type")
 cmake_minimum_required(VERSION 3.22)
 set(PICO_CXX_ENABLE_EXCEPTIONS 1)
 
+option(TV_OUT "Composite TV output (tv-software driver)" OFF)
 option(AY_TYPE "AY-3-8910 Type: PWM / I2S / HWAY" PWM)
 option(MURM2 "Murmulator 2.0" OFF)
 option(PICO_PC "RP2040-PICO-PC" OFF)
 option(ZERO2 "RP2350-PiZero" OFF)
 option(ZERO "RP2040-PiZero" OFF)
 
-set(BUILD_VERSION "1.4.7")
+set(BUILD_VERSION "1.4.8")
 set(USE_NESPAD ON)
 
-set(AY_TYPE I2S)
+set(TV_OUT ON)
+#set(AY_TYPE I2S)
 #set(AY_TYPE HWAY)
 #set (m1p2launcher ON)
 
 # Platform (m1p2 by default)
-set (MURM2 ON)
+#set (MURM2 ON)
 #set (PICO_PC ON)
 #set (ZERO ON)
 #set (ZERO2 ON)
@@ -83,6 +85,9 @@ set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -ffunction-sections -fdata-sections -O2"
 
 add_subdirectory(drivers/libdvi)
 add_subdirectory(drivers/vga-nextgen)
+if (TV_OUT)
+    add_subdirectory(drivers/tv-software)
+endif()
 #add_subdirectory(drivers/ps2)
 add_subdirectory(drivers/ps2kbd)
 add_subdirectory(drivers/fatfs)
@@ -118,6 +123,7 @@ add_link_options(-Wl,--gc-sections)
 target_link_libraries(${PROJECT_NAME} PRIVATE
         libdvi
         vga-nextgen
+        $<$<BOOL:${TV_OUT}>:tv-software>
 #        ps2
         ps2kbd
         psram
@@ -179,6 +185,10 @@ if( AY_TYPE MATCHES "HWAY" )
 endif()
 if( AY_TYPE MATCHES "I2S" )
     target_compile_definitions(${PROJECT_NAME} PRIVATE I2S=1)
+endif()
+
+if (TV_OUT)
+    target_compile_definitions(${PROJECT_NAME} PRIVATE SELECT_TV=1)
 endif()
 
 if (USE_WII)

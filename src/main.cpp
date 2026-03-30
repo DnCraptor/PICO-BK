@@ -62,6 +62,16 @@ extern "C" void push_audio_sample(int16_t l, int16_t r);
 /* Renderer loop on Pico's second core */
 void __time_critical_func(render_core)() {
     graphics_set_buffer(CPU_PAGE51_MEM_ADR, 512, 256);
+#if defined(SELECT_TV)
+    /* Composite TV output — tv-software owns pio0 + its own DMA + alarm-pool timer.
+     * Core 1 is not used for rendering; we just init and park on the semaphore. */
+    graphics_init();
+    graphics_set_offset(0, 0);
+    graphics_set_flashmode(true, true);
+    graphics_set_bgcolor(0x00000000);
+    sem_acquire_blocking(&vga_start_semaphore);
+    return;
+#endif
     if (SELECT_VGA) {
         graphics_init();
         graphics_set_bgcolor(0x80808080);
@@ -457,7 +467,12 @@ int main() {
 
     init_fs();
     audio_init();
-#if defined(ZERO2) || defined(ZERO)
+#if defined(SELECT_TV)
+    /* TV composite: VGA pins are wired to the DAC, not to a VGA monitor.
+     * Force SELECT_VGA=true so the audio path knows there is no HDMI audio
+     * ring, and skip the pin-probe that would otherwise misdetect the DAC. */
+    SELECT_VGA = true;
+#elif defined(ZERO2) || defined(ZERO)
     SELECT_VGA = 0;
 #else
     uint8_t link = testPins(beginVGA_PIN, beginVGA_PIN + 1);
