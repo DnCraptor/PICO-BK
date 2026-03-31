@@ -11,6 +11,10 @@
 #include "debug.h"
 #include "hardware/pwm.h"
 
+volatile uint16_t true_covox = 0;
+volatile uint16_t az_covox_L = 0;
+volatile uint16_t az_covox_R = 0;
+
 #define AT_OVL __attribute__((section(".ovl0_ef.text")))
 
 /*

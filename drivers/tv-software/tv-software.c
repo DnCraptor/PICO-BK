@@ -159,6 +159,9 @@ static uint8_t __scratch_x("buff4") paletteRGB[3][256]; //768 байт
 
 static repeating_timer_t video_timer;
 
+/* forward declaration — defined later in this file */
+void graphics_set_palette(uint8_t i, uint32_t color888);
+
 
 void graphics_set_modeTV(tv_out_mode_t mode) {
     if (SM_video == -1) return;

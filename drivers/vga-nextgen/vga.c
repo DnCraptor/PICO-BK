@@ -18,7 +18,7 @@
 #include "ram_page.h"
 
 int pallete_mask = 3; // 11 - 2 bits
-uint8_t volatile vsync;
+extern uint8_t volatile vsync;
 uint8_t* vsync_ptr = &vsync;
 uint8_t* font = font_8x16;
 uint8_t font_height = 16;
@@ -56,7 +56,6 @@ static int shift_picture = 0;
 
 static int begin_line_index = 0;
 static int visible_line_size = 320;
-
 
 static int dma_chan_ctrl;
 static int dma_chan;
@@ -99,12 +98,6 @@ static uint16_t* txt_palette_fast = NULL;
 volatile enum graphics_mode_t graphics_mode;
 enum graphics_mode_t __not_in_flash() get_graphics_mode() { return graphics_mode; }
 
-// TODO: separate header for sound mixer
-
-// регистр "защёлка" для примитивного ковокса без буфера
-volatile uint16_t true_covox = 0;
-volatile uint16_t az_covox_L = 0;
-volatile uint16_t az_covox_R = 0;
 volatile uint16_t covox_mix = 0x0F;
 
 void graphics_inc_palleter_offset() {
@@ -390,6 +383,7 @@ void __not_in_flash_func(dma_handler_VGA)() {
     dma_handler_VGA_impl();
 }
 
+#ifndef SELECT_TV
 enum graphics_mode_t graphics_set_mode(enum graphics_mode_t mode) {
     switch (mode) {
         case BK_256x256x2:
@@ -553,6 +547,7 @@ enum graphics_mode_t graphics_set_mode(enum graphics_mode_t mode) {
     }
     return res;
 };
+#endif
 
 void graphics_set_page(uint8_t* buffer, uint8_t pallette_idx) {
     g_conf.v_buff_offset = buffer - RAM;
@@ -572,6 +567,7 @@ void graphics_shift_screen(uint16_t Word) {
     g_conf.graphics_buffer_height = (Word & 0b01000000000) ? 256 : 256 / 4;
 }
 
+#ifndef SELECT_TV
 void graphics_set_buffer(uint8_t* buffer, uint16_t width, uint16_t height) {
     g_conf.v_buff_offset = buffer - RAM;
     graphics_buffer = buffer;
@@ -583,6 +579,7 @@ void graphics_set_offset(int x, int y) {
     graphics_buffer_shift_x = x;
     graphics_buffer_shift_y = y;
 };
+#endif
 
 void graphics_set_flashmode(bool flash_line, bool flash_frame) {
     is_flash_frame = flash_frame;
@@ -682,6 +679,7 @@ void graphics_set_bgcolor(uint32_t color888) {
                   ((((c_lo << 8) | c_hi) & 0x3f3f) | palette16_mask);
 };
 
+#ifndef SELECT_TV
 void graphics_init() {
     //инициализация палитры по умолчанию
     for (int i = 0; i < 16; ++i)
@@ -880,6 +878,7 @@ void graphics_init() {
     irq_set_enabled(VGA_DMA_IRQ, true);
     dma_start_channel_mask((1u << dma_chan));
 };
+#endif
 
 #ifdef SAVE_VIDEO_RAM_ON_MANAGER
 #include "emulator.h"

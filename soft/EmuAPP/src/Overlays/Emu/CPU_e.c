@@ -9,6 +9,8 @@
 
 #include "Debug.h"
 
+volatile bool vsync = 0;
+
 #define AT_OVL __attribute__((section(".ovl3_e.text")))
 
 
@@ -696,8 +698,6 @@ void set_bk0010mode(bk_mode_t mode) {
         break;
     }
 }
-
-extern bool vsync;
 
 void AT_OVL CPU_RunInstruction (void) {
     if ((PC & 0177776) == m_nFDDCatchAddr && is_fdd_suppored()) {
