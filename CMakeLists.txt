@@ -408,7 +408,12 @@ target_compile_definitions(${PROJECT_NAME} PRIVATE
 pico_enable_stdio_uart(${PROJECT_NAME} 0)
 pico_enable_stdio_usb(${PROJECT_NAME} 0)
 
-SET(BUILD_NAME "${BUILD_NAME}-VGA-HDMI-270MHz-${AY_TYPE}-${BUILD_VERSION}")
+if (TV_OUT)
+    SET(BUILD_NAME "${BUILD_NAME}-TV-270MHz-${AY_TYPE}-${BUILD_VERSION}")
+else ()
+    SET(BUILD_NAME "${BUILD_NAME}-VGA-HDMI-270MHz-${AY_TYPE}-${BUILD_VERSION}")
+endif ()
+
 IF(m1p2launcher)
     IF(MURM2)
         SET(BUILD_NAME "${BUILD_NAME}.m2p2")

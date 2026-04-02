@@ -60,6 +60,7 @@ static int visible_line_size = 320;
 static int dma_chan_ctrl;
 static int dma_chan;
 
+#ifndef SELECT_TV
 static volatile uint8_t* graphics_buffer;
 uint8_t* __not_in_flash() get_graphics_buffer(int y) {
     int addr_in_buf = 64 * (y + g_conf.shift_y - 0330);
@@ -67,6 +68,7 @@ uint8_t* __not_in_flash() get_graphics_buffer(int y) {
     while (addr_in_buf >= 16 << 10) addr_in_buf -= 16 << 10;
     return graphics_buffer + addr_in_buf;
 }
+#endif
 static uint graphics_buffer_width = 0;
 static int graphics_buffer_shift_x = 0;
 static int graphics_buffer_shift_y = 0;
@@ -105,7 +107,7 @@ void graphics_inc_palleter_offset() {
     if (g_conf.graphics_pallette_idx > 0b1111) g_conf.graphics_pallette_idx = 0;
 }
 
-
+#ifndef SELECT_TV
 inline static void dma_handler_VGA_impl() {
     dma_hw->ints0 = 1u << dma_chan_ctrl;
     static uint32_t frame_number = 0;
@@ -383,7 +385,6 @@ void __not_in_flash_func(dma_handler_VGA)() {
     dma_handler_VGA_impl();
 }
 
-#ifndef SELECT_TV
 enum graphics_mode_t graphics_set_mode(enum graphics_mode_t mode) {
     switch (mode) {
         case BK_256x256x2:
@@ -547,13 +548,13 @@ enum graphics_mode_t graphics_set_mode(enum graphics_mode_t mode) {
     }
     return res;
 };
-#endif
 
 void graphics_set_page(uint8_t* buffer, uint8_t pallette_idx) {
     g_conf.v_buff_offset = buffer - RAM;
     graphics_buffer = buffer;
     g_conf.graphics_pallette_idx = pallette_idx;
 };
+#endif
 
 void graphics_set_pallette_idx(uint8_t pallette_idx) {
     g_conf.graphics_pallette_idx = pallette_idx;
