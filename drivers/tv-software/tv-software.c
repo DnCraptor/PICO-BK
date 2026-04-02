@@ -213,11 +213,7 @@ void graphics_set_modeTV(tv_out_mode_t mode) {
     video_mode.LVL_Y_MAX       = 40;
     video_mode.LVL_BLACK_TMPL  = CONV_DAC(video_mode.LVL_BLACK) | (1 << SYNC_PIN);
 
-    /* Set PIO clock divider via proper API so the fractional accumulator
-     * is also restarted — prevents phase jitter on the first cycles. */
-    float clkdiv = (float)clock_get_hz(clk_sys) / (float)(color_freq * 4);
-    pio_sm_set_clkdiv(PIO_VIDEO, SM_video, clkdiv);
-    pio_sm_clkdiv_restart(PIO_VIDEO, SM_video);
+    sm_config_set_clkdiv((pio_sm_config*)PIO_VIDEO->sm, clock_get_hz(clk_sys) / (color_freq * 4));
 
     for (int i = 0; i < 256; i++) {
         graphics_set_palette(i,
@@ -425,87 +421,88 @@ static bool __time_critical_func(video_timer_callbackTV)(repeating_timer_t* rt) 
         uint8_t* output_buffer8 = (uint8_t *)lines_buf[lines_buf_inx];
 
         bool is_line_visible = true;
-        /* PAL 625/50 CCIR sync structure.
-            * EQ  = equalizing pulse line: two short pulses (S/2 each half-line)
-            * VS  = broad vsync line:      two long pulses  (H/2-S each half-line)
-            * Sync polarity: SYNC_TMPL=low(sync), NO_SYNC_TMPL=high(blank/video)
-            *
-            * Field 1:  lines 0-4 EQ, 5-9 VS, 10-14 EQ, 15-309 active, 310-311 EQ
-            * Interl.:  line 312 transition (half-line offset for interlace)
-            * Field 2:  313-316 EQ, 317-321 VS, 322-325 EQ, 326-327 blank, 328-622 active, 623-624 EQ
-            */
-        int S  = video_mode.sync_size;       /* ~4.7 us  */
-        int H2a = video_mode.H_len / 2;          /* first half  */
-        int H2b = video_mode.H_len - H2a;        /* second half, closes odd-length line */
-        /* EQ pulse helper: two short sync pulses per line */
-        #define PAL_EQ(buf) do { \
-            nf_memset((buf),            video_mode.SYNC_TMPL,    S/2); \
-            nf_memset((buf) + S/2,      video_mode.NO_SYNC_TMPL, H2a - S/2); \
-            nf_memset((buf) + H2a,      video_mode.SYNC_TMPL,    S/2); \
-            nf_memset((buf) + H2a + S/2,video_mode.NO_SYNC_TMPL, H2b - S/2); \
-        } while(0)
-        /* VS pulse helper: two broad sync pulses per line (serration) */
-        #define PAL_VS(buf) do { \
-            nf_memset((buf),            video_mode.SYNC_TMPL,    H2a - S); \
-            nf_memset((buf) + H2a - S,  video_mode.NO_SYNC_TMPL, S); \
-            nf_memset((buf) + H2a,      video_mode.SYNC_TMPL,    H2b - S); \
-            nf_memset((buf) + H2a + H2b - S, video_mode.NO_SYNC_TMPL, S); \
-        } while(0)
+
+        /* ---------------------------------------------------------------
+         * PAL 576i (CCIR System B/G): 625 lines/frame, 50 fields/sec
+         * Two interlaced fields of 312.5 lines each.
+         *
+         * EQ line  = two narrow pulses (S/2 each half-line, ~2.35 µs)
+         * VS line  = two broad pulses  (H/2-S each half-line, ~27.3 µs)
+         * Line 312 = transition: first half EQ (end field 1),
+         *                        second half VS (start field 2)
+         *            This half-line shift is what creates true interlace.
+         *
+         * Field 1 (lines 0..311 + first half of 312):
+         *   0-1:     EQ  (pre-equalising)
+         *   2-4:     VS  (broad vsync)
+         *   5-6:     EQ  (post-equalising)
+         *   7-309:   active video
+         *   310-311: EQ  (pre-equalising for field 2)
+         *   312(1st half): EQ, 312(2nd half): VS
+         *
+         * Field 2 (second half of 312..624):
+         *   312(2nd half)+313-314: VS  (2.5 lines broad vsync)
+         *   315-316: EQ  (post-equalising)
+         *   317-619: active video
+         *   620-624: EQ  (pre-equalising for next field 1)
+         * --------------------------------------------------------------- */
+        int S   = video_mode.sync_size;
+        int H2  = video_mode.H_len / 2;
+        int H2b = video_mode.H_len - H2;
+
+        /* EQ: two narrow sync pulses (one per half-line) */
+        #define PAL_EQ(buf) do {             nf_memset((buf),              video_mode.SYNC_TMPL,    S/2);             nf_memset((buf) + S/2,        video_mode.NO_SYNC_TMPL, H2 - S/2);             nf_memset((buf) + H2,         video_mode.SYNC_TMPL,    S/2);             nf_memset((buf) + H2 + S/2,   video_mode.NO_SYNC_TMPL, H2b - S/2);         } while(0)
+
+        /* VS: two broad sync pulses with serration (one per half-line) */
+        #define PAL_VS(buf) do {             nf_memset((buf),              video_mode.SYNC_TMPL,    H2 - S);             nf_memset((buf) + H2 - S,     video_mode.NO_SYNC_TMPL, S);             nf_memset((buf) + H2,         video_mode.SYNC_TMPL,    H2b - S);             nf_memset((buf) + H2 + H2b-S, video_mode.NO_SYNC_TMPL, S);         } while(0)
 
         switch (line_active) {
-            /* ---- Field 1: pre-equalizing (5 lines) ---- */
-            case 0: case 1: case 2: case 3: case 4:
+            /* Field 1: pre-equalising (2 lines) */
+            case 0: case 1:
                 PAL_EQ(output_buffer8);
                 is_line_visible = false;
                 break;
-            /* ---- Field 1: broad vsync (5 lines) ---- */
-            case 5: case 6: case 7: case 8: case 9:
+            /* Field 1: broad vsync (3 lines) */
+            case 2: case 3: case 4:
                 PAL_VS(output_buffer8);
                 is_line_visible = false;
                 break;
-            /* ---- Field 1: post-equalizing (5 lines) ---- */
-            case 10: case 11: case 12: case 13: case 14:
+            /* Field 1: post-equalising (2 lines) */
+            case 5: case 6:
                 PAL_EQ(output_buffer8);
                 is_line_visible = false;
                 break;
-            /* lines 15-309: active video (handled below as is_line_visible=true) */
-            /* ---- End of field 1: 2 equalizing lines ---- */
+            /* Lines 7-309: active video field 1 (default case below) */
+            /* Field 1 end: pre-equalising for field 2 (2 lines) */
             case 310: case 311:
                 PAL_EQ(output_buffer8);
                 is_line_visible = false;
                 break;
-            /* ---- Interlace transition line (half-line offset) ---- */
+            /* Line 312: INTERLACE TRANSITION
+             * First half  = EQ (last equalising pulse of field 1)
+             * Second half = VS (first broad pulse of field 2)
+             * This half-line shift offsets field 2 by exactly H/2 = 32 µs,
+             * producing true interlaced scanning. */
             case 312:
-                /* First half: short eq; second half: start of broad vsync */
-                nf_memset(output_buffer8,               video_mode.SYNC_TMPL,    S/2);
-                nf_memset(output_buffer8 + S/2,         video_mode.NO_SYNC_TMPL, H2a - S/2);
-                nf_memset(output_buffer8 + H2a,         video_mode.SYNC_TMPL,    H2b - S);
-                nf_memset(output_buffer8 + H2a + H2b - S, video_mode.NO_SYNC_TMPL, S);
+                nf_memset(output_buffer8,            video_mode.SYNC_TMPL,    S/2);
+                nf_memset(output_buffer8 + S/2,      video_mode.NO_SYNC_TMPL, H2 - S/2);
+                nf_memset(output_buffer8 + H2,        video_mode.SYNC_TMPL,    H2b - S);
+                nf_memset(output_buffer8 + H2 + H2b-S, video_mode.NO_SYNC_TMPL, S);
                 is_line_visible = false;
                 break;
-            /* ---- Field 2: pre-equalizing (4 lines, 312 was first half) ---- */
-            case 313: case 314: case 315: case 316:
-                PAL_EQ(output_buffer8);
-                is_line_visible = false;
-                break;
-            /* ---- Field 2: broad vsync (5 lines) ---- */
-            case 317: case 318: case 319: case 320: case 321:
+            /* Field 2: broad vsync continued (2 full lines, + half of 312 = 2.5 total) */
+            case 313: case 314:
                 PAL_VS(output_buffer8);
                 is_line_visible = false;
                 break;
-            /* ---- Field 2: post-equalizing (4 lines) ---- */
-            case 322: case 323: case 324: case 325:
+            /* Field 2: post-equalising (2 lines) */
+            case 315: case 316:
                 PAL_EQ(output_buffer8);
                 is_line_visible = false;
                 break;
-            /* Lines 326-327: blank back-porch */
-            case 326: case 327:
-                nf_memset(output_buffer8, video_mode.NO_SYNC_TMPL, video_mode.H_len);
-                is_line_visible = false;
-                break;
-            /* Lines 328-622: active video field 2 (handled below) */
-            /* Lines 623-624: end-of-frame equalizing */
-            case 623: case 624:
+            /* Lines 317-619: active video field 2 (default case below) */
+            /* Frame end: pre-equalising (5 lines, wraps into next field 1) */
+            case 620: case 621: case 622: case 623: case 624:
                 PAL_EQ(output_buffer8);
                 is_line_visible = false;
                 break;
@@ -590,24 +587,31 @@ static bool __time_critical_func(video_timer_callbackTV)(repeating_timer_t* rt) 
             int buffer_shift = 0;
             int y = -1;
 
-            di = 0xD7 / 2; /* PAL 4.43 MHz: ~107 */
+            di = 0xD7 / 2; /* PAL 4.43 MHz subcarrier: di=107 → ~2 samples/pixel */
             d_end = 152;
             buffer_shift = 72;
-            /* Field 1: active lines 15..309, image y=0..239 at lines 42..281 */
-            if (line_active >= 42 && line_active <= 281) { y = (int)line_active - 42; }
-            /* Field 2: active lines 328..622, image y=0..239 at lines 355..594 */
-            if (line_active >= 355 && line_active <= 594) { y = (int)line_active - 355; }
-            /* vsync sentinel: end of each field image */
-            if (line_active == 282 || line_active == 595) { y = 240; }
+            /* Field 1: active lines 7..309 (303 lines).
+             * BK image (240 lines) starts at line 22 to give ~15 lines top blank.
+             * y = line_active - 22: y=0 at line 22, y=239 at line 261. */
+            if (line_active >= 22 && line_active <= 261) { y = (int)line_active - 22; }
+            /* Field 2: active lines 317..619 (303 lines).
+             * Field 2 is offset by 312.5 lines from field 1 (true 576i interlace).
+             * y = line_active - 334: y=0 at line 334, y=239 at line 573.
+             * The +12 offset (334 vs 322) accounts for the half-line shift of
+             * the transition line 312, aligning field 2 rows between field 1 rows. */
+            if (line_active >= 334 && line_active <= 573) { y = (int)line_active - 334; }
+            /* vsync sentinel at end of each field's image */
+            if (line_active == 262 || line_active == 574) { y = 240; }
 
             uint8_t* input_buffer = NULL;
             if (y < 240 && y >= 0) {
                 input_buffer = bk_get_line(y);
             }
-            if (y == 240) { // end-of-field sentinel set above
-                /* For _625_lines: fire vsync only at end of field 2 (line 595).
-                 * Field 1 end (line 282) is skipped to avoid double-rate vsync. */
-                if (line_active == 595) bk_vsync();
+            if (y == 240) { /* end-of-field sentinel */
+                /* Fire vsync once per frame (25 Hz × 2 fields = 50 Hz to emulator).
+                 * Field 1 end (line 262): skip — avoids double-rate vsync.
+                 * Field 2 end (line 574): fire — one vsync per full 625-line frame. */
+                if (line_active == 574) bk_vsync();
             }
             if ((y >= 240) || (y < 0) || (input_buffer == NULL)) {
                 // вне изображения: заливаем окно и дочищаем хвост строки
@@ -847,14 +851,8 @@ void graphics_init() {
     channel_config_set_ring(&cfg_dma,false, 2 + N_LINE_BUF_log2);
 
     for (int i = 0; i < N_LINE_BUF * 2; i++) {
-        transfer_count_DMA_CTRL[i] = video_mode.H_len;
-        /* Pre-fill read addresses so DMA outputs zeros (sync level) instead of
-         * reading from address 0x00000000 during the first few lines. */
-        rd_addr_DMA_CTRL[i] = (uint32_t)lines_buf[i % N_LINE_BUF];
+        transfer_count_DMA_CTRL[i] = video_mode.H_len / 1;
     }
-    /* Zero-fill all line buffers: PIO outputs SYNC_TMPL=0 (sync level) at startup
-     * until the timer callback fills them with proper sync/image data. */
-    memset(lines_buf, 0, sizeof(lines_buf));
 
     dma_channel_configure(
         dma_chan_ctrl2,
@@ -874,8 +872,10 @@ void graphics_init() {
                                            &video_timer)) {
         return;
     }
-    // Palette and mode already set above before DMA start.
-    // A second graphics_set_modeTV() here would reset clkdiv mid-transmission → sync glitch.
+    // graphics_get_default_modeTV();
+    graphics_set_modeTV(tv_out_mode);
+
+    // Palette is initialized centrally by Video.cpp Init()
 };
 
 void graphics_set_offset(int x, int y) {
