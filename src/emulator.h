@@ -29,6 +29,7 @@ extern uint8_t TEXT_VIDEO_RAM[128*96*2];
 extern bool PSRAM_AVAILABLE;
 extern bool SD_CARD_AVAILABLE;
 extern uint32_t DIRECT_RAM_BORDER;
+extern int pallete_mask;
 
 extern int timer_period;
 extern pwm_config config;

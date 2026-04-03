@@ -674,8 +674,8 @@ static bool __time_critical_func(video_timer_callbackTV)(repeating_timer_t* rt) 
                         case BK_512x256x1: {
                             uint8_t* input_buffer8 = bk_get_line(y);
                             uint8_t y_black = video_mode.LVL_BLACK_TMPL;
-                            uint8_t y_gray  = CONV_DAC(video_mode.LVL_BLACK + 20) | (1 << SYNC_PIN);
-                            uint8_t y_white = CONV_DAC(video_mode.LVL_BLACK + 40) | (1 << SYNC_PIN);
+                            uint8_t y_gray  = CONV_DAC(video_mode.LVL_BLACK + 20 / (4 - pallete_mask)) | (1 << SYNC_PIN);
+                            uint8_t y_white = CONV_DAC(video_mode.LVL_BLACK + 40 / (4 - pallete_mask)) | (1 << SYNC_PIN);
                             int clk_pixel = 0;
                             const int clk_total_pixels = video_mode.img_W - d_end;
                             uint8_t packed = *input_buffer8++;
@@ -729,12 +729,14 @@ static bool __time_critical_func(video_timer_callbackTV)(repeating_timer_t* rt) 
                         break;
                         case BK_256x256x2: {
                             uint8_t* input_buffer8 = bk_get_line(y);
-                            uint8_t lut[4] = {
-                                    200, // black
-                                    201, // blue
-                                    202, // green
-                                    204, // red
-                                };
+                            uint32_t lut32;
+                            if (pallete_mask == 3)
+                                 lut32 = ((221 << 24) | (220 << 16) | (219 << 8) | 200);
+                            else if(pallete_mask == 2)
+                                 lut32 = ((204 << 24) | (202 << 16) | (201 << 8) | 200);
+                            else 
+                                 lut32 = ((218 << 24) | (217 << 16) | (216 << 8) | 200);
+                            uint8_t* lut = (uint8_t*)&lut32;
                             uint8_t packed = *input_buffer8++;
                             int subpixel = 0;
                             int clk_pixel = 0;
@@ -919,6 +921,14 @@ void graphics_init() {
     graphics_set_palette(213, RGB888(0xF3, 0x4E, 0xF3)); //light magenta
     graphics_set_palette(214, RGB888(0xF3, 0xF3, 0x4E)); //yellow
     graphics_set_palette(215, RGB888(0xFF, 0xFF, 0xFF)); //white
+// тёмные
+    graphics_set_palette(216, RGB888(0x00, 0x00, 0x74)); //blue
+    graphics_set_palette(217, RGB888(0x00, 0x74, 0x00)); //green
+    graphics_set_palette(218, RGB888(0x74, 0x00, 0x00)); //red
+// светлые
+    graphics_set_palette(219, RGB888(0x00, 0x00, 0xFF)); //blue
+    graphics_set_palette(220, RGB888(0x00, 0xFF, 0x00)); //green
+    graphics_set_palette(221, RGB888(0xFF, 0x00, 0x00)); //red
 };
 
 void graphics_set_textbuffer(uint8_t* buffer) {
