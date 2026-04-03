@@ -7,7 +7,7 @@
 
 #define TV_BASE_PIN (beginVGA_PIN)
 
-#define TEXTMODE_COLS 50
+#define TEXTMODE_COLS 46
 #define TEXTMODE_ROWS 30
 #define RGB888(r, g, b) ((r<<16) | (g << 8 ) | b )
 

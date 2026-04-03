@@ -21,7 +21,7 @@
 #include "config_em.h"
 
 #pragma GCC optimize("Ofast")
-uint8_t* text_buffer = NULL;
+uint8_t* text_buffer = &TEXT_VIDEO_RAM[0];
 
 void graphics_set_palette(uint8_t i, uint32_t color888);
 
@@ -179,7 +179,7 @@ void graphics_set_modeTV(tv_out_mode_t mode) {
     video_mode.sync_size = 4.7 * video_mode.H_len / 64;
     video_mode.sync_size &= 0xfffffff8;
 
-    video_mode.begin_img_shx = 10.5 * video_mode.H_len / 64 - 24; // 24 - TODO: ensure
+    video_mode.begin_img_shx = 10.5 * video_mode.H_len / 64; // TODO: ensure
     video_mode.img_W = video_mode.H_len - ((12 * video_mode.H_len) / 64);
     video_mode.img_W &= 0xfffffffc;
 
@@ -633,6 +633,36 @@ static bool __time_critical_func(video_timer_callbackTV)(repeating_timer_t* rt) 
                             }
                         }
                         break;
+                        case BK_512x256x1: {
+                            uint8_t* input_buffer8 = bk_get_line(y);
+                            uint8_t lut[2] = {
+                                    200, // black
+                                    215, // white
+                                };
+                            uint8_t packed = *input_buffer8++;
+                            int subpixel = 0;
+                            int clk_pixel = 0;
+                            const int logical_total_pixels = 512;
+                            const int clk_total_pixels = video_mode.img_W - d_end;
+                            uint32_t cout32 = conv_color[li][200]; // initial black
+                            uint8_t* c_4 = (uint8_t*)&cout32; // bytes alias for cout32
+                            for (int logical_pixel = 0; clk_pixel < clk_total_pixels && logical_pixel < logical_total_pixels; ++logical_pixel) {
+                                uint8_t color1bpp = (packed >> (subpixel++)) & 0x1;
+                                uint8_t color = lut[color1bpp];
+                                cout32 = conv_color[li][color];
+                                *output_buffer8++ = c_4[clk_pixel++ & 3];
+                                *output_buffer8++ = c_4[clk_pixel++ & 3];
+                                if (subpixel == 8) {
+                                    subpixel = 0;
+                                    packed = *input_buffer8++;
+                                }
+                            }
+                            cout32 = conv_color[li][200];
+                            while (clk_pixel < clk_total_pixels) {
+                                *output_buffer8++ = c_4[clk_pixel++ & 3];
+                            }
+                        }
+                        break;
                         case BK_256x256x2: {
                             uint8_t* input_buffer8 = bk_get_line(y);
                             uint8_t lut[4] = {
@@ -643,22 +673,27 @@ static bool __time_critical_func(video_timer_callbackTV)(repeating_timer_t* rt) 
                                 };
                             uint8_t packed = *input_buffer8++;
                             int subpixel = 0;
-                            int logical_pixel = 0;
-                            const int logical_total_pixels = 256;
+                            int clk_pixel = 0;
+                            const int logical_total_pixels = 220;//56;
                             const int clk_total_pixels = video_mode.img_W - d_end;
-                            for (int clk_pixel = 0; clk_pixel < clk_total_pixels; ++logical_pixel) {
+                            uint32_t cout32 = conv_color[li][200]; // initial black
+                            uint8_t* c_4 = (uint8_t*)&cout32; // bytes alias for cout32
+                            for (int logical_pixel = 0; clk_pixel < clk_total_pixels && logical_pixel < logical_total_pixels; ++logical_pixel) {
                                 uint8_t color2bpp = (packed >> (subpixel++ * 2)) & 0x3;
                                 uint8_t color = lut[color2bpp];
-                                uint32_t cout32 = conv_color[li][color];
-                                uint8_t* c_4 = (uint8_t*)&cout32;
-                                *output_buffer8++ = c_4[clk_pixel++ % 4];
-                                *output_buffer8++ = c_4[clk_pixel++ % 4];
-                                *output_buffer8++ = c_4[clk_pixel++ % 4];
+                                cout32 = conv_color[li][color]; // палитру можно менять только на границе 4-ёх фаз
+                                *output_buffer8++ = c_4[clk_pixel++ & 3];
+                                *output_buffer8++ = c_4[clk_pixel++ & 3];
+                                *output_buffer8++ = c_4[clk_pixel++ & 3];
                                 *output_buffer8++ = c_4[clk_pixel++ % 4];
                                 if (subpixel == 4) {
                                     subpixel = 0;
                                     packed = *input_buffer8++;
                                 }
+                            }
+                            cout32 = conv_color[li][200]; // палитру можно менять только на границе 4-ёх фаз
+                            while (clk_pixel < clk_total_pixels) {
+                                *output_buffer8++ = c_4[clk_pixel++ & 3];
                             }
                         }
                         break;
@@ -679,7 +714,7 @@ static bool __time_critical_func(video_timer_callbackTV)(repeating_timer_t* rt) 
 
 void graphics_set_buffer(uint8_t* buffer, const uint16_t width, const uint16_t height) {
     graphics_buffer.data = buffer;
-    graphics_buffer.width = 256; // TODO: width;
+    graphics_buffer.width = width;
     graphics_buffer.height = height;
 }
 
@@ -833,8 +868,8 @@ void graphics_set_offset(const int x, const int y) {
 
 void graphics_set_mode(const enum graphics_mode_t mode) {
     tv_out_mode.mode_bpp = mode;
-    tv_out_mode.color_index = TEXTMODE_ == mode ? 0.0 : 1.0;
-    tv_out_mode.cb_sync_PI_shift_lines = TEXTMODE_ == mode ? true : false;
+    tv_out_mode.color_index = BK_256x256x2 != mode ? 0.0 : 1.0;
+    tv_out_mode.cb_sync_PI_shift_lines = BK_256x256x2 != mode ? true : false;
     graphics_set_modeTV(tv_out_mode);
     clrScr(0);
 }
