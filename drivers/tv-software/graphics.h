@@ -46,6 +46,3 @@
  * and provides all TV-specific enum/macro definitions. */
 #include "tv-software.h"
 
-/* GRAPHICSMODE_DEFAULT is the token tv-software.c uses in tv_out_mode_t.
- * Map to BK_256x256x2; the actual render dispatch uses get_graphics_mode(). */
-#define GRAPHICSMODE_DEFAULT  BK_256x256x2

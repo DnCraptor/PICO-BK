@@ -35,7 +35,7 @@ typedef struct tv_out_mode_t {
 
 //параметры по умолчанию
 static tv_out_mode_t tv_out_mode = {
-    .mode_bpp = GRAPHICSMODE_DEFAULT,
+    .mode_bpp = BK_256x256x2,
     .color_index = 1.0, //0-1
     .cb_sync_PI_shift_lines = true,
     .cb_sync_PI_shift_half_frame = true
@@ -633,7 +633,7 @@ static bool __time_critical_func(video_timer_callbackTV)(repeating_timer_t* rt) 
                             }
                         }
                         break;
-                        case GRAPHICSMODE_DEFAULT: {
+                        case BK_256x256x2: {
                             uint8_t* input_buffer8 = bk_get_line(y);
                             uint8_t lut[4] = {
                                     200, // black
@@ -643,15 +643,18 @@ static bool __time_critical_func(video_timer_callbackTV)(repeating_timer_t* rt) 
                                 };
                             uint8_t packed = *input_buffer8++;
                             int subpixel = 0;
-                            for (int i = 0; i < video_mode.img_W - d_end;) {
+                            int logical_pixel = 0;
+                            const int logical_total_pixels = 256;
+                            const int clk_total_pixels = video_mode.img_W - d_end;
+                            for (int clk_pixel = 0; clk_pixel < clk_total_pixels; ++logical_pixel) {
                                 uint8_t color2bpp = (packed >> (subpixel++ * 2)) & 0x3;
                                 uint8_t color = lut[color2bpp];
                                 uint32_t cout32 = conv_color[li][color];
                                 uint8_t* c_4 = (uint8_t*)&cout32;
-                                *output_buffer8++ = c_4[i++ % 4];
-                                *output_buffer8++ = c_4[i++ % 4];
-                                *output_buffer8++ = c_4[i++ % 4];
-                                *output_buffer8++ = c_4[i++ % 4];
+                                *output_buffer8++ = c_4[clk_pixel++ % 4];
+                                *output_buffer8++ = c_4[clk_pixel++ % 4];
+                                *output_buffer8++ = c_4[clk_pixel++ % 4];
+                                *output_buffer8++ = c_4[clk_pixel++ % 4];
                                 if (subpixel == 4) {
                                     subpixel = 0;
                                     packed = *input_buffer8++;
