@@ -1,24 +1,29 @@
 #
 //программный композит
 #include <stdio.h>
-#include <hardware/clocks.h>
+#include "graphics.h"
+#include "tv-software.h"
+#include "font6x8.h"
+#include "hardware/clocks.h"
 #include <stdalign.h>
 
-#include <hardware/structs/pll.h>
-#include <hardware/structs/systick.h>
+#include "hardware/structs/pll.h"
+#include "hardware/structs/systick.h"
 
-#include <hardware/dma.h>
-#include <hardware/irq.h>
+#include "hardware/dma.h"
+#include "hardware/irq.h"
 #include <string.h>
-#include <hardware/pio.h>
-#include <pico/stdlib.h>
-#include <stdlib.h>
+#include "hardware/pio.h"
+#include "pico/stdlib.h"
+#include "stdlib.h"
 
 #include "emulator.h"
-#include "graphics.h"
 #include "config_em.h"
 
 #pragma GCC optimize("Ofast")
+uint8_t* text_buffer = NULL;
+
+void graphics_set_palette(uint8_t i, uint32_t color888);
 
 typedef struct tv_out_mode_t {
     // double color_freq;
@@ -29,12 +34,13 @@ typedef struct tv_out_mode_t {
 } tv_out_mode_t;
 
 //параметры по умолчанию
-tv_out_mode_t tv_out_mode = {
+static tv_out_mode_t tv_out_mode = {
     .mode_bpp = GRAPHICSMODE_DEFAULT,
     .color_index = 1.0, //0-1
-    .cb_sync_PI_shift_lines = false,
+    .cb_sync_PI_shift_lines = true,
     .cb_sync_PI_shift_half_frame = true
 };
+
 
 //программы PIO
 //программа видеовывода
@@ -74,14 +80,14 @@ typedef struct G_BUFFER {
     uint height;
     int shift_x;
     int shift_y;
-    uint8_t* buffer;
+    uint8_t* data;
 } G_BUFFER;
 
 
 //режим видеовыхода
 static TV_MODE video_mode = {
     .H_len = 512,
-    .N_lines = 625,
+    .N_lines = 525,
     .SYNC_TMPL = 0,
     .NO_SYNC_TMPL = 0,
     .LVL_C_MAX = 0,
@@ -91,12 +97,21 @@ static TV_MODE video_mode = {
 
 
 static G_BUFFER graphics_buffer = {
+    .data = NULL,
     .shift_x = 0,
-    .shift_y = 0,
-    .height = 240,
-    .width = 320
+    .shift_y = 5,
+    .height = 256,
+    .width = 256
 };
 
+uint8_t* __not_in_flash() get_graphics_buffer(int y) {
+    int addr_in_buf = 64 * (y + g_conf.shift_y - 0330);
+    while (addr_in_buf < 0) addr_in_buf += 16 << 10;
+    while (addr_in_buf >= 16 << 10) addr_in_buf -= 16 << 10;
+    return graphics_buffer.data + addr_in_buf;
+}
+static inline uint8_t* bk_get_line(int y) { return get_graphics_buffer(y); }
+static inline void     bk_vsync(void)     { *vsync_ptr = 1; }
 
 //пины
 //пин синхросигнала(для совместимости с RGB по ч.б.) 0-7
@@ -146,81 +161,37 @@ static uint8_t __scratch_x("buff4") paletteRGB[3][256]; //768 байт
 
 static repeating_timer_t video_timer;
 
-/* forward declaration — defined later in this file */
-void graphics_set_palette(uint8_t i, uint32_t color888);
-
-static inline void __not_in_flash_func(nf_memcpy)(void* dst, const void* src, size_t len) {
-    uint8_t* dst8 = (uint8_t*)dst;
-    const uint8_t* src8 = (const uint8_t*)src;
-    while(len--) {
-        *dst8++ = *src8++;
-    }
-}
-
-static inline void* __not_in_flash_func(nf_memset)(void* ptr, int value, size_t len)
-{
-    uint8_t* p = (uint8_t*)ptr;
-    uint8_t v8 = (uint8_t)value;
-
-    // --- выравниваем до 4 байт ---
-    while (len && ((uintptr_t)p & 3)) {
-        *p++ = v8;
-        len--;
-    }
-
-    // --- основной 32-битный цикл ---
-    if (len >= 4) {
-        uint32_t v32 = v8;
-        v32 |= v32 << 8;
-        v32 |= v32 << 16;
-
-        uint32_t* p32 = (uint32_t*)p;
-        size_t n32 = len >> 2;
-
-        while (n32--) {
-            *p32++ = v32;
-        }
-
-        p = (uint8_t*)p32;
-        len &= 3;
-    }
-
-    // --- хвост ---
-    while (len--) {
-        *p++ = v8;
-    }
-
-    return ptr;
-}
 
 void graphics_set_modeTV(tv_out_mode_t mode) {
     if (SM_video == -1) return;
     //можно добавить проверку на валидность данных, но пока так
     tv_out_mode = mode;
+    for (int i = 0; i < 256; i++) {
+        graphics_set_palette(i, (paletteRGB[2][i] << 16) | (paletteRGB[1][i] << 8) | (paletteRGB[0][i] << 0));
+    };
 
-    /* PAL: 4.43361875 MHz subcarrier, 64 µs line */
-    double color_freq = 4.43361875e6;
-    video_mode.H_len  = (int)(color_freq * 4 * 64.0e-6); /* = 1135 samples at 4*fsc */
+    video_mode.N_lines = 625;
 
-    video_mode.sync_size      = 83; /* ~4.7 µs @ 17.734 MHz */
-    video_mode.begin_img_shx  = (int)(10.5 / 64.0 * video_mode.H_len); /* back porch start */
-    video_mode.img_W          = (video_mode.H_len - (12 * video_mode.H_len) / 64) & ~3;
+    double color_freq = 4.43361875 * 1e6;
+    video_mode.H_len = ((color_freq * 4) / 1e6) * 63.9;
+    video_mode.H_len &= 0xfffffff8;
 
-    video_mode.LVL_C_MAX       = 15;
-    video_mode.SYNC_TMPL       = 0;
-    video_mode.NO_SYNC_TMPL    = CONV_DAC(video_mode.LVL_C_MAX) | (1 << SYNC_PIN);
-    video_mode.LVL_BLACK       = video_mode.LVL_C_MAX; /* PAL: black = colour burst level */
-    video_mode.LVL_Y_MAX       = 40;
-    video_mode.LVL_BLACK_TMPL  = CONV_DAC(video_mode.LVL_BLACK) | (1 << SYNC_PIN);
+    video_mode.sync_size = 4.7 * video_mode.H_len / 64;
+    video_mode.sync_size &= 0xfffffff8;
+
+    video_mode.begin_img_shx = 10.5 * video_mode.H_len / 64 - 24; // 24 - TODO: ensure
+    video_mode.img_W = video_mode.H_len - ((12 * video_mode.H_len) / 64);
+    video_mode.img_W &= 0xfffffffc;
+
+    video_mode.LVL_C_MAX = 15;
+    video_mode.SYNC_TMPL = 0;
+    video_mode.NO_SYNC_TMPL = CONV_DAC(video_mode.LVL_C_MAX) | (1 << SYNC_PIN);
+    video_mode.LVL_BLACK = 0 + video_mode.LVL_C_MAX;
+    video_mode.LVL_Y_MAX = 40;
+    video_mode.LVL_BLACK_TMPL = CONV_DAC(video_mode.LVL_BLACK) | (1 << SYNC_PIN);
 
     sm_config_set_clkdiv((pio_sm_config*)PIO_VIDEO->sm, clock_get_hz(clk_sys) / (color_freq * 4));
 
-    for (int i = 0; i < 256; i++) {
-        graphics_set_palette(i,
-            (paletteRGB[2][i] << 16) |
-            (paletteRGB[1][i] << 8)  |
-            (paletteRGB[0][i] << 0));
-    }
 };
 
 
@@ -260,98 +231,100 @@ void graphics_set_palette(uint8_t i, uint32_t color888) {
     // float sin[]={-1,1,1,-1,-1};//test
 
     float cos[] = { 1, 0, -1, 0 };
-    float U = 0.493 * (B - Y);
-    float V = 0.877 * (R - Y);
+    {
+        float U = 0.493 * (B - Y);
+        float V = 0.877 * (R - Y);
 
-    int ph = 2;
-    int dph = 0;
-    if (tv_out_mode.cb_sync_PI_shift_lines) {
-        dph = -1;
-    }
-    for (int i = 0; i < cycle_size; i++) {
-        float k = 1.3 * tv_out_mode.color_index;
-        //подобрать , чтобы не было перегруза 1.25 или увеличить для более ярких цветов
-        int max_v = video_mode.LVL_C_MAX;
-        int P = k * max_v * (U * sin[(i + ph + 1 + dph) % 4] + V * cos[(i + ph + 1 + dph) % 4]) + 0.0; //+1
-        int M = k * max_v * (U * sin[(i + ph) % 4] - V * cos[(i + ph) % 4]) + 0.0;
-
-
-        P = P < -max_v ? -max_v : P;
-        P = P > max_v ? max_v : P;
+        int ph = 2;
+        int dph = 0;
+        if (tv_out_mode.cb_sync_PI_shift_lines) {
+            dph = -1;
+        }
+        for (int i = 0; i < cycle_size; i++) {
+            float k = 1.3 * tv_out_mode.color_index;
+            //подобрать , чтобы не было перегруза 1.25 или увеличить для более ярких цветов
+            int max_v = video_mode.LVL_C_MAX;
+            int P = k * max_v * (U * sin[(i + ph + 1 + dph) % 4] + V * cos[(i + ph + 1 + dph) % 4]) + 0.0; //+1
+            int M = k * max_v * (U * sin[(i + ph) % 4] - V * cos[(i + ph) % 4]) + 0.0;
 
 
-        M = M < -max_v ? -max_v : M;
-        M = M > max_v ? max_v : M;
+            P = P < -max_v ? -max_v : P;
+            P = P > max_v ? max_v : P;
 
 
-        cd0[i] = (M);
-        cd1[i] = (P);
-    }
-    // ph=0;
-
-    //заполнение цветовой вспышки
-    uint8_t* cb8_0 = (uint8_t *)cb[0];
-    uint8_t* cb8_1 = (uint8_t *)cb[1];
-    uint8_t* cb8_0_i = (uint8_t *)cbINV[0];
-    uint8_t* cb8_1_i = (uint8_t *)cbINV[1];
-
-    uint8_t ampl = 0;
-    uint8_t max_ampl = video_mode.LVL_C_MAX;
-
-    // изменение функций синуса и косинуса(доворот на пи/4)
-    float Q = 0.7;
-    float I = 0.7;
-    for (int i = 0; i < cycle_size; i++) {
-        cos[i] = cos[i] * Q - sin[i] * I;
-        sin[i] = cos[i] * I + sin[i] * Q;
-    }
-
-    ph = 3; //3
-    Q = 1;
-    I = 0;
-    //  Q=0.8;
-    //  I=-0.1;
-    if (tv_out_mode.cb_sync_PI_shift_lines) dph = 3;
-
-    for (int i = 0; i < 40; i++) {
-        ampl = max_ampl * 1;
-        if (i < cycle_size * 1) ampl = i * max_ampl / cycle_size;
-        if (i > (cycle_size * 9)) ampl = (cycle_size * 10 - i) * (max_ampl) / cycle_size;
-
-        if (tv_out_mode.color_index == 0) ampl = 0; //полное отклюение цвета
-
-        int bb = ampl * (Q * sin[(i + ph) % 4] + I * cos[(i + ph) % 4]) + 0.0;
-
-        bb = (bb > max_ampl) ? max_ampl : bb;
-        bb = (bb < -max_ampl) ? -max_ampl : bb;
-        cb8_0[i] = max_ampl + bb;
-
-        bb = ampl * (Q * sin[(i + ph + dph) % 4] + I * cos[(i + ph + dph) % 4]) + 0.0;
-
-        bb = (bb > max_ampl) ? max_ampl : bb;
-        bb = (bb < -max_ampl) ? -max_ampl : bb;
-        cb8_1[i] = max_ampl + bb;
+            M = M < -max_v ? -max_v : M;
+            M = M > max_v ? max_v : M;
 
 
-        cb8_0[i] = CONV_DAC(cb8_0[i]) | (1 << SYNC_PIN);
-        cb8_1[i] = CONV_DAC(cb8_1[i]) | (1 << SYNC_PIN);
+            cd0[i] = (M);
+            cd1[i] = (P);
+        }
+        // ph=0;
 
-        //инверсная вспышка
-        bb = -ampl * (Q * sin[(i + ph) % 4] + I * cos[(i + ph) % 4]) + 0.0;
+        //заполнение цветовой вспышки
+        uint8_t* cb8_0 = (uint8_t *)cb[0];
+        uint8_t* cb8_1 = (uint8_t *)cb[1];
+        uint8_t* cb8_0_i = (uint8_t *)cbINV[0];
+        uint8_t* cb8_1_i = (uint8_t *)cbINV[1];
 
-        bb = (bb > max_ampl) ? max_ampl : bb;
-        bb = (bb < -max_ampl) ? -max_ampl : bb;
-        cb8_0_i[i] = max_ampl + bb;
+        uint8_t ampl = 0;
+        uint8_t max_ampl = video_mode.LVL_C_MAX;
 
-        bb = -ampl * (Q * sin[(i + ph + dph) % 4] + I * cos[(i + ph + dph) % 4]) + 0.0;
+        // изменение функций синуса и косинуса(доворот на пи/4)
+        float Q = 0.7;
+        float I = 0.7;
+        for (int i = 0; i < cycle_size; i++) {
+            cos[i] = cos[i] * Q - sin[i] * I;
+            sin[i] = cos[i] * I + sin[i] * Q;
+        }
 
-        bb = (bb > max_ampl) ? max_ampl : bb;
-        bb = (bb < -max_ampl) ? -max_ampl : bb;
-        cb8_1_i[i] = max_ampl + bb;
+        ph = 3; //3
+        Q = 1;
+        I = 0;
+        //  Q=0.8;
+        //  I=-0.1;
+        if (tv_out_mode.cb_sync_PI_shift_lines) dph = 3;
+
+        for (int i = 0; i < 40; i++) {
+            ampl = max_ampl * 1;
+            if (i < cycle_size * 1) ampl = i * max_ampl / cycle_size;
+            if (i > (cycle_size * 9)) ampl = (cycle_size * 10 - i) * (max_ampl) / cycle_size;
+
+            if (tv_out_mode.color_index == 0) ampl = 0; //полное отклюение цвета
+
+            int bb = ampl * (Q * sin[(i + ph) % 4] + I * cos[(i + ph) % 4]) + 0.0;
+
+            bb = (bb > max_ampl) ? max_ampl : bb;
+            bb = (bb < -max_ampl) ? -max_ampl : bb;
+            cb8_0[i] = max_ampl + bb;
+
+            bb = ampl * (Q * sin[(i + ph + dph) % 4] + I * cos[(i + ph + dph) % 4]) + 0.0;
+
+            bb = (bb > max_ampl) ? max_ampl : bb;
+            bb = (bb < -max_ampl) ? -max_ampl : bb;
+            cb8_1[i] = max_ampl + bb;
 
 
-        cb8_0_i[i] = CONV_DAC(cb8_0_i[i]) | (1 << SYNC_PIN);
-        cb8_1_i[i] = CONV_DAC(cb8_1_i[i]) | (1 << SYNC_PIN);
+            cb8_0[i] = CONV_DAC(cb8_0[i]) | (1 << SYNC_PIN);
+            cb8_1[i] = CONV_DAC(cb8_1[i]) | (1 << SYNC_PIN);
+
+            //инверсная вспышка
+            bb = -ampl * (Q * sin[(i + ph) % 4] + I * cos[(i + ph) % 4]) + 0.0;
+
+            bb = (bb > max_ampl) ? max_ampl : bb;
+            bb = (bb < -max_ampl) ? -max_ampl : bb;
+            cb8_0_i[i] = max_ampl + bb;
+
+            bb = -ampl * (Q * sin[(i + ph + dph) % 4] + I * cos[(i + ph + dph) % 4]) + 0.0;
+
+            bb = (bb > max_ampl) ? max_ampl : bb;
+            bb = (bb < -max_ampl) ? -max_ampl : bb;
+            cb8_1_i[i] = max_ampl + bb;
+
+
+            cb8_0_i[i] = CONV_DAC(cb8_0_i[i]) | (1 << SYNC_PIN);
+            cb8_1_i[i] = CONV_DAC(cb8_1_i[i]) | (1 << SYNC_PIN);
+        }
     }
 
     uint32_t Y32 = (Y8 << 24) | (Y8 << 16) | (Y8 << 8) | (Y8 << 0);
@@ -373,22 +346,6 @@ void graphics_set_palette(uint8_t i, uint32_t color888) {
     conv_colorINV[1][i] = (c32 >> 16) | ((c32 & 0xffff) << 16);
 }
 
-/* ---------- PICO-BK framebuffer access ----------------------------------
- * get_graphics_buffer(y) is provided by vga.h / vga.c.
- * It returns a pointer to the raw BK video-RAM row (64 bytes) for line y,
- * honouring g_conf.shift_y and the 16-KB circular page layout.
- *
- * vsync_ptr is the flag polled by the emulator CPU; set it at end-of-frame.
- * Both are declared in vga.h, included via graphics.h above.
- * -----------------------------------------------------------------------*/
-uint8_t* __not_in_flash() get_graphics_buffer(int y) {
-    int addr_in_buf = 64 * (y + g_conf.shift_y - 0330);
-    while (addr_in_buf < 0) addr_in_buf += 16 << 10;
-    while (addr_in_buf >= 16 << 10) addr_in_buf -= 16 << 10;
-    return graphics_buffer.buffer + addr_in_buf;
-}
-static inline uint8_t* bk_get_line(int y) { return get_graphics_buffer(y); }
-static inline void     bk_vsync(void)     { *vsync_ptr = 1; }
 
 //основная функция заполнения буферов видеоданных
 static bool __time_critical_func(video_timer_callbackTV)(repeating_timer_t* rt) {
@@ -412,306 +369,293 @@ static bool __time_critical_func(video_timer_callbackTV)(repeating_timer_t* rt) 
         line_active++;
         g_str_index++;
 
-        if (line_active >= video_mode.N_lines) {
+        int dec_str = 0;
+
+        if (line_active == video_mode.N_lines) {
             line_active = 0;
             frame_i++;
+            bk_vsync();
         }
 
         lines_buf_inx = (lines_buf_inx + 1) % N_LINE_BUF;
         uint8_t* output_buffer8 = (uint8_t *)lines_buf[lines_buf_inx];
 
         bool is_line_visible = true;
-
-        /* ---------------------------------------------------------------
-         * PAL 576i (CCIR System B/G): 625 lines/frame, 50 fields/sec
-         * Two interlaced fields of 312.5 lines each.
-         *
-         * EQ line  = two narrow pulses (S/2 each half-line, ~2.35 µs)
-         * VS line  = two broad pulses  (H/2-S each half-line, ~27.3 µs)
-         * Line 312 = transition: first half EQ (end field 1),
-         *                        second half VS (start field 2)
-         *            This half-line shift is what creates true interlace.
-         *
-         * Field 1 (lines 0..311 + first half of 312):
-         *   0-1:     EQ  (pre-equalising)
-         *   2-4:     VS  (broad vsync)
-         *   5-6:     EQ  (post-equalising)
-         *   7-309:   active video
-         *   310-311: EQ  (pre-equalising for field 2)
-         *   312(1st half): EQ, 312(2nd half): VS
-         *
-         * Field 2 (second half of 312..624):
-         *   312(2nd half)+313-314: VS  (2.5 lines broad vsync)
-         *   315-316: EQ  (post-equalising)
-         *   317-619: active video
-         *   620-624: EQ  (pre-equalising for next field 1)
-         * --------------------------------------------------------------- */
-        int S   = video_mode.sync_size;
-        int H2  = video_mode.H_len / 2;
-        int H2b = video_mode.H_len - H2;
-
-        /* EQ: two narrow sync pulses (one per half-line) */
-        #define PAL_EQ(buf) do {             nf_memset((buf),              video_mode.SYNC_TMPL,    S/2);             nf_memset((buf) + S/2,        video_mode.NO_SYNC_TMPL, H2 - S/2);             nf_memset((buf) + H2,         video_mode.SYNC_TMPL,    S/2);             nf_memset((buf) + H2 + S/2,   video_mode.NO_SYNC_TMPL, H2b - S/2);         } while(0)
-
-        /* VS: two broad sync pulses with serration (one per half-line) */
-        #define PAL_VS(buf) do {             nf_memset((buf),              video_mode.SYNC_TMPL,    H2 - S);             nf_memset((buf) + H2 - S,     video_mode.NO_SYNC_TMPL, S);             nf_memset((buf) + H2,         video_mode.SYNC_TMPL,    H2b - S);             nf_memset((buf) + H2 + H2b-S, video_mode.NO_SYNC_TMPL, S);         } while(0)
-
         switch (line_active) {
-            /* Field 1: pre-equalising (2 lines) */
-            case 0: case 1:
-                PAL_EQ(output_buffer8);
+            case 0:
+            case 1:
+                //|___|--|___|--| type=1
+                memset(output_buffer8, video_mode.SYNC_TMPL, (video_mode.H_len / 2) - video_mode.sync_size);
+                output_buffer8 += (video_mode.H_len / 2) - video_mode.sync_size;
+                memset(output_buffer8, video_mode.NO_SYNC_TMPL, video_mode.sync_size);
+                output_buffer8 += video_mode.sync_size;
+                memset(output_buffer8, video_mode.SYNC_TMPL, (video_mode.H_len / 2) - video_mode.sync_size);
+                output_buffer8 += (video_mode.H_len / 2) - video_mode.sync_size;
+                memset(output_buffer8, video_mode.NO_SYNC_TMPL, video_mode.sync_size);
                 is_line_visible = false;
                 break;
-            /* Field 1: broad vsync (3 lines) */
-            case 2: case 3: case 4:
-                PAL_VS(output_buffer8);
+
+            case 2:
+                // ____|--|_|----type=2
+                memset(output_buffer8, video_mode.SYNC_TMPL, (video_mode.H_len / 2) - video_mode.sync_size);
+                output_buffer8 += (video_mode.H_len / 2) - video_mode.sync_size;
+                memset(output_buffer8, video_mode.NO_SYNC_TMPL, video_mode.sync_size);
+                output_buffer8 += video_mode.sync_size;
+                memset(output_buffer8, video_mode.SYNC_TMPL, video_mode.sync_size / 2);
+                output_buffer8 += video_mode.sync_size / 2;
+                memset(output_buffer8, video_mode.NO_SYNC_TMPL,
+                        (video_mode.H_len / 2) - (video_mode.sync_size / 2));
                 is_line_visible = false;
                 break;
-            /* Field 1: post-equalising (2 lines) */
-            case 5: case 6:
-                PAL_EQ(output_buffer8);
+            case 3:
+            case 4: //|_|----|_|---- type=0
+                memset(output_buffer8, video_mode.SYNC_TMPL, video_mode.sync_size / 2);
+                output_buffer8 += video_mode.sync_size / 2;
+                memset(output_buffer8, video_mode.NO_SYNC_TMPL,
+                        (video_mode.H_len / 2) - (video_mode.sync_size / 2));
+                output_buffer8 += (video_mode.H_len / 2) - (video_mode.sync_size / 2);
+                memset(output_buffer8, video_mode.SYNC_TMPL, video_mode.sync_size / 2);
+                output_buffer8 += video_mode.sync_size / 2;
+                memset(output_buffer8, video_mode.NO_SYNC_TMPL,
+                        (video_mode.H_len / 2) - (video_mode.sync_size / 2));
                 is_line_visible = false;
                 break;
-            /* Lines 7-309: active video field 1 (default case below) */
-            /* Field 1 end: pre-equalising for field 2 (2 lines) */
-            case 310: case 311:
-                PAL_EQ(output_buffer8);
+
+            case 5: break; //шаблон как у видимой строки, но без изображения
+
+
+            case 310:
+            case 311:
+                //|_|----|_|---- type=0
+                memset(output_buffer8, video_mode.SYNC_TMPL, video_mode.sync_size / 2);
+                output_buffer8 += video_mode.sync_size / 2;
+                memset(output_buffer8, video_mode.NO_SYNC_TMPL,
+                        (video_mode.H_len / 2) - (video_mode.sync_size / 2));
+                output_buffer8 += (video_mode.H_len / 2) - (video_mode.sync_size / 2);
+                memset(output_buffer8, video_mode.SYNC_TMPL, video_mode.sync_size / 2);
+                output_buffer8 += video_mode.sync_size / 2;
+                memset(output_buffer8, video_mode.NO_SYNC_TMPL,
+                        (video_mode.H_len / 2) - (video_mode.sync_size / 2));
                 is_line_visible = false;
                 break;
-            /* Line 312: INTERLACE TRANSITION
-             * First half  = EQ (last equalising pulse of field 1)
-             * Second half = VS (first broad pulse of field 2)
-             * This half-line shift offsets field 2 by exactly H/2 = 32 µs,
-             * producing true interlaced scanning. */
             case 312:
-                nf_memset(output_buffer8,            video_mode.SYNC_TMPL,    S/2);
-                nf_memset(output_buffer8 + S/2,      video_mode.NO_SYNC_TMPL, H2 - S/2);
-                nf_memset(output_buffer8 + H2,        video_mode.SYNC_TMPL,    H2b - S);
-                nf_memset(output_buffer8 + H2 + H2b-S, video_mode.NO_SYNC_TMPL, S);
+                //|_|---|____|--| type=3
+                memset(output_buffer8, video_mode.SYNC_TMPL, video_mode.sync_size / 2);
+                output_buffer8 += video_mode.sync_size / 2;
+                memset(output_buffer8, video_mode.NO_SYNC_TMPL,
+                        (video_mode.H_len / 2) - (video_mode.sync_size / 2));
+                output_buffer8 += (video_mode.H_len / 2) - (video_mode.sync_size / 2);
+                memset(output_buffer8, video_mode.SYNC_TMPL, (video_mode.H_len / 2) - video_mode.sync_size);
+                output_buffer8 += (video_mode.H_len / 2) - video_mode.sync_size;
+                memset(output_buffer8, video_mode.NO_SYNC_TMPL, video_mode.sync_size);
                 is_line_visible = false;
                 break;
-            /* Field 2: broad vsync continued (2 full lines, + half of 312 = 2.5 total) */
-            case 313: case 314:
-                PAL_VS(output_buffer8);
+            case 313:
+            case 314:
+                //|___|--|___|--| type=1
+                memset(output_buffer8, video_mode.SYNC_TMPL, (video_mode.H_len / 2) - video_mode.sync_size);
+                output_buffer8 += (video_mode.H_len / 2) - video_mode.sync_size;
+                memset(output_buffer8, video_mode.NO_SYNC_TMPL, video_mode.sync_size);
+                output_buffer8 += video_mode.sync_size;
+                memset(output_buffer8, video_mode.SYNC_TMPL, (video_mode.H_len / 2) - video_mode.sync_size);
+                output_buffer8 += (video_mode.H_len / 2) - video_mode.sync_size;
+                memset(output_buffer8, video_mode.NO_SYNC_TMPL, video_mode.sync_size);
                 is_line_visible = false;
                 break;
-            /* Field 2: post-equalising (2 lines) */
-            case 315: case 316:
-                PAL_EQ(output_buffer8);
+            case 315:
+            case 316:
+                //|_|----|_|---- type=0
+                memset(output_buffer8, video_mode.SYNC_TMPL, video_mode.sync_size / 2);
+                output_buffer8 += video_mode.sync_size / 2;
+                memset(output_buffer8, video_mode.NO_SYNC_TMPL,
+                        (video_mode.H_len / 2) - (video_mode.sync_size / 2));
+                output_buffer8 += (video_mode.H_len / 2) - (video_mode.sync_size / 2);
+                memset(output_buffer8, video_mode.SYNC_TMPL, video_mode.sync_size / 2);
+                output_buffer8 += video_mode.sync_size / 2;
+                memset(output_buffer8, video_mode.NO_SYNC_TMPL,
+                        (video_mode.H_len / 2) - (video_mode.sync_size / 2));
                 is_line_visible = false;
                 break;
-            /* Lines 317-619: active video field 2 (default case below) */
-            /* Frame end: pre-equalising (5 lines, wraps into next field 1) */
-            case 620: case 621: case 622: case 623: case 624:
-                PAL_EQ(output_buffer8);
+            case 317:
+                //|_|---------type=4
+                memset(output_buffer8, video_mode.SYNC_TMPL, video_mode.sync_size / 2);
+                output_buffer8 += video_mode.sync_size / 2;
+                memset(output_buffer8, video_mode.NO_SYNC_TMPL,
+                        (video_mode.H_len) - (video_mode.sync_size / 2));
                 is_line_visible = false;
                 break;
-            default:
-                break; /* active video */
-        }
-        #undef PAL_EQ
-        #undef PAL_VS
-
-        int li = g_str_index & 1;
-
-        //625 строк
-        if (tv_out_mode.cb_sync_PI_shift_lines) {
-            if (tv_out_mode.cb_sync_PI_shift_half_frame) {
-                if (line_active == 0 || line_active == video_mode.N_lines / 2) {
-                    static bool is_inv;
-                    if (is_inv) {
-                        cb[0] = cbINV[0];
-                        conv_color[0] = conv_colorINV[0];
-
-                        cb[1] = cbINV[1];
-                        conv_color[1] = conv_colorINV[1];
-                    }
-                    else {
-                        cb[0] = cbNORM[0];
-                        conv_color[0] = conv_colorNORM[0];
-                        cb[1] = cbNORM[1];
-                        conv_color[1] = conv_colorNORM[1];
-                    }
-                    is_inv = !is_inv;
-                } //нейтрализация сдвига фазы "лишней строки"(не кратной 4)
-            }
-        }
-        else {
-            if (tv_out_mode.cb_sync_PI_shift_half_frame) {
-                if ((line_active == 0)) {
-                    g_str_index += 2;
-                } //нейтрализация сдвига фазы "лишней строки"(не кратной 4)
-                if (line_active == video_mode.N_lines / 2) {
-                    g_str_index += 2;
-                }
-            }
-
-            switch (g_str_index & 3) {
-                case 0:
-                    cb[0] = cbNORM[0];
-                    conv_color[0] = conv_colorNORM[0];
-                    break;
-                case 3:
-                    cb[1] = cbNORM[1];
-                    conv_color[1] = conv_colorNORM[1];
-                    break;
-                case 2:
-                    cb[0] = cbINV[0];
-                    conv_color[0] = conv_colorINV[0];
-                    break;
-                case 1:
-                    cb[1] = cbINV[1];
-                    conv_color[1] = conv_colorINV[1];
-
-
-                default:
-                    break;
-            }
+            case 622:
+                //|__|---|_|----type=5
+                memset(output_buffer8, video_mode.SYNC_TMPL, video_mode.sync_size);
+                output_buffer8 += video_mode.sync_size;
+                memset(output_buffer8, video_mode.NO_SYNC_TMPL,
+                        (video_mode.H_len / 2) - (video_mode.sync_size));
+                output_buffer8 += (video_mode.H_len / 2) - (video_mode.sync_size);
+                memset(output_buffer8, video_mode.SYNC_TMPL, video_mode.sync_size / 2);
+                output_buffer8 += video_mode.sync_size / 2;
+                memset(output_buffer8, video_mode.NO_SYNC_TMPL,
+                        (video_mode.H_len / 2) - (video_mode.sync_size / 2));
+                is_line_visible = false;
+                break;
         }
 
-        //ТВ строка с изображением
-        if (is_line_visible) {
-            nf_memset(output_buffer8, video_mode.SYNC_TMPL, video_mode.sync_size);
-            nf_memset(output_buffer8 + video_mode.sync_size, video_mode.NO_SYNC_TMPL,
-                   video_mode.begin_img_shx - video_mode.sync_size);
+        int li = 0;
 
-            //цветовая вспышка
-            int mul_sh = 23; //сдвиг вспышки для более высокой частоты
-            if (li) nf_memcpy(output_buffer8 + 0 + mul_sh * 4, cb[1], 40);
-            else nf_memcpy(output_buffer8 + 0 + mul_sh * 4, cb[0], 40);
+        {
+            li = g_str_index & 1;
 
-            output_buffer8 += video_mode.begin_img_shx;
-            //di коэффициент сжатия с учётом количества строк и частоты поднесущей
-            uint16_t di = 0x100;
-            int d_end = 0;
-            int buffer_shift = 0;
-            int y = -1;
 
-            di = 0xD7 / 2; /* PAL 4.43 MHz subcarrier: di=107 → ~2 samples/pixel */
-            d_end = 152;
-            buffer_shift = 72;
-            /* Field 1: active lines 7..309 (303 lines).
-             * BK image (240 lines) starts at line 22 to give ~15 lines top blank.
-             * y = line_active - 22: y=0 at line 22, y=239 at line 261. */
-            if (line_active >= 22 && line_active <= 261) { y = (int)line_active - 22; }
-            /* Field 2: active lines 317..619 (303 lines).
-             * Field 2 is offset by 312.5 lines from field 1 (true 576i interlace).
-             * y = line_active - 334: y=0 at line 334, y=239 at line 573.
-             * The +12 offset (334 vs 322) accounts for the half-line shift of
-             * the transition line 312, aligning field 2 rows between field 1 rows. */
-            if (line_active >= 334 && line_active <= 573) { y = (int)line_active - 334; }
-            /* vsync sentinel at end of each field's image */
-            if (line_active == 262 || line_active == 574) { y = 240; }
+            // static bool is_even_frame;
 
-            uint8_t* input_buffer = NULL;
-            if (y < 240 && y >= 0) {
-                input_buffer = bk_get_line(y);
-            }
-            if (y == 240) { /* end-of-field sentinel */
-                /* Fire vsync once per frame (25 Hz × 2 fields = 50 Hz to emulator).
-                 * Field 1 end (line 262): skip — avoids double-rate vsync.
-                 * Field 2 end (line 574): fire — one vsync per full 625-line frame. */
-                if (line_active == 574) bk_vsync();
-            }
-            if ((y >= 240) || (y < 0) || (input_buffer == NULL)) {
-                // вне изображения: заливаем окно и дочищаем хвост строки
-                nf_memset(output_buffer8, video_mode.LVL_BLACK_TMPL, video_mode.img_W);
-                int clear_from = video_mode.begin_img_shx + video_mode.img_W;
-                if (clear_from < video_mode.H_len) {
-                    nf_memset((uint8_t*)lines_buf[lines_buf_inx] + clear_from,
-                              video_mode.NO_SYNC_TMPL,
-                              video_mode.H_len - clear_from);
+            //   dec_str+=2;
+            //625 строк
+            //  if (false)
+            if (tv_out_mode.cb_sync_PI_shift_lines) {
+                if (tv_out_mode.cb_sync_PI_shift_half_frame) {
+                    if (line_active == 0 || line_active == video_mode.N_lines / 2) {
+                        dec_str += 2;
+                        static bool is_inv;
+                        if (is_inv) {
+                            cb[0] = cbINV[0];
+                            conv_color[0] = conv_colorINV[0];
+
+                            cb[1] = cbINV[1];
+                            conv_color[1] = conv_colorINV[1];
+                        }
+                        else {
+                            cb[0] = cbNORM[0];
+                            conv_color[0] = conv_colorNORM[0];
+                            cb[1] = cbNORM[1];
+                            conv_color[1] = conv_colorNORM[1];
+                        }
+                        is_inv = !is_inv;
+                    } //нейтрализация сдвига фазы "лишней строки"(не кратной 4)
+                    // if ((tv_out_mode.N_lines==_625_lines)||(tv_out_mode.N_lines==_525_lines))
+                    // 	if (line_active==v_mode.N_lines/2)  {g_str_index+=1;dec_str+=2;}
                 }
             }
             else {
+                if (tv_out_mode.cb_sync_PI_shift_half_frame) {
+                    if ((line_active == 0)) {
+                        g_str_index += 2;
+                        dec_str += 2;
+                    } //нейтрализация сдвига фазы "лишней строки"(не кратной 4)
+                    if (line_active == video_mode.N_lines / 2) {
+                        g_str_index += 2;
+                        dec_str += 2;
+                    }
+                }
+
+                dec_str += 1;
+
+                switch (g_str_index & 3) {
+                    case 0:
+                        cb[0] = cbNORM[0];
+                        conv_color[0] = conv_colorNORM[0];
+                        break;
+                    case 3:
+                        cb[1] = cbNORM[1];
+                        conv_color[1] = conv_colorNORM[1];
+                        break;
+                    case 2:
+                        cb[0] = cbINV[0];
+                        conv_color[0] = conv_colorINV[0];
+                        break;
+                    case 1:
+                        cb[1] = cbINV[1];
+                        conv_color[1] = conv_colorINV[1];
+
+
+                    default:
+                        break;
+                }
+            }
+        }
+
+
+        //ТВ строка с изображением
+        if (is_line_visible) {
+            memset(output_buffer8, video_mode.SYNC_TMPL, video_mode.sync_size);
+            memset(output_buffer8 + video_mode.sync_size, video_mode.NO_SYNC_TMPL,
+                   video_mode.begin_img_shx - video_mode.sync_size);
+            int post_img_clear = 60;
+            memset(output_buffer8 + (video_mode.H_len - post_img_clear), video_mode.NO_SYNC_TMPL, post_img_clear);
+
+            // // //цветовая вспышка
+            int mul_sh = 23; //сдвиг вспышки для более высокой частоты
+            if (li) memcpy(output_buffer8 + 0 + mul_sh * 4, cb[1], 40);
+            else memcpy(output_buffer8 + 0 + mul_sh * 4, cb[0], 40);
+
+            output_buffer8 += video_mode.begin_img_shx;
+            //di коэффициент сжатия с учётом количества строк и частоты поднесущей
+         //   uint16_t di = 0x100;
+            int d_end = 4;
+            int y = -1;
+         //   di = (graphics_buffer.width << 8) / (video_mode.img_W - d_end); // 0xD7 / 2;
+            if ((line_active > 4) && (line_active < 310)) { y = line_active - 23; }; //-23
+            if ((line_active > 317) && (line_active < 622)) { y = line_active - 335; }; //-335
+            y -= graphics_buffer.shift_y;
+
+            if ((y >= graphics_buffer.height) || (y < 0) || (graphics_buffer.data == NULL)) {
+                //вне изображения
+                memset(output_buffer8, video_mode.LVL_BLACK_TMPL, video_mode.img_W);
+            }
+            else {
                 //зона изображения
+                uint ibuf = 0;
+                // int next_ibuf=0;
                 int next_ibuf = 0x100;
 
                 uint32_t* out_buf32 = (uint32_t *)lines_buf[lines_buf_inx];
                 out_buf32 += video_mode.begin_img_shx / 4;
 
-                if (input_buffer != NULL)
-                    switch (get_graphics_mode()) {
-
-                        case BK_512x256x1: {
-                            /*
-                             * 512x256, 1 bit/pixel, 64 bytes/row.
-                             * Y-only output: bit=0 -> black level, bit=1 -> white level.
-                             * ^2 byte-swap matches BK little-endian word layout.
-                             */
-                            output_buffer8 += buffer_shift;
-                            register size_t bx = 0;
-                            register uint8_t byte = input_buffer[bx ^ 2];
-                            register int bit = 0;
-                            register int ni = 0x100;
-                            uint8_t lev_w = CONV_DAC(
-                                (uint8_t)(video_mode.LVL_BLACK + video_mode.LVL_Y_MAX) > MAX_DAC
-                                    ? MAX_DAC
-                                    : (uint8_t)(video_mode.LVL_BLACK + video_mode.LVL_Y_MAX)
-                            ) | (1 << SYNC_PIN);
-                            uint8_t lev_b = CONV_DAC(video_mode.LVL_BLACK) | (1 << SYNC_PIN);
-                            int render_len = video_mode.img_W - d_end;
-                            for (int i = 0; i < render_len; i++) {
-                                *output_buffer8++ = ((byte >> bit) & 1) ? lev_w : lev_b;
-                                ni -= di;
-                                if (ni <= 0) {
-                                    bit++;
-                                    if (bit == 8) {
-                                        bit = 0;
-                                        bx++;
-                                        if (bx < 64)
-                                            byte = input_buffer[bx ^ 2];
-                                    }
-                                    ni += 0x100;
+                if (graphics_buffer.data != NULL || text_buffer != NULL )
+                    switch (tv_out_mode.mode_bpp) {
+                        case TEXTMODE_: {
+                            output_buffer8 += 8;
+                            for (int x = 0; x < TEXTMODE_COLS; x++) {
+                                const uint16_t offset = y / 8 * (TEXTMODE_COLS * 2) + x * 2;
+                                const uint8_t c = text_buffer[offset];
+                                const uint8_t colorIndex = text_buffer[offset + 1];
+                                uint8_t glyph_row = font_6x8[c * 8 + y % 8];
+                                for (int bit = 6; bit--;) {
+                                    uint32_t cout32 = conv_color[li][glyph_row & 1
+                                                                         ? textmode_palette[colorIndex & 0xf] //цвет шрифта
+                                                                         : textmode_palette[colorIndex >> 4] //цвет фона
+                                    ];
+                                    uint8_t* c_4 = (uint8_t*)&cout32;
+                                    uint8_t c = c_4[bit % 4];
+                                    *output_buffer8++ = c;
+                                    *output_buffer8++ = c;
+                                    *output_buffer8++ = c;
+                                    glyph_row >>= 1;
                                 }
-                            }
-                            /* очистка хвоста строки (устраняет "мусорные 49 байт") */
-                            int clear_from = video_mode.begin_img_shx + buffer_shift + render_len;
-                            if (clear_from < video_mode.H_len) {
-                                nf_memset((uint8_t*)lines_buf[lines_buf_inx] + clear_from,
-                                        video_mode.NO_SYNC_TMPL,
-                                        video_mode.H_len - clear_from);
                             }
                         }
                         break;
-
-                        case BK_256x256x2:
-                        default: {
-                            /*
-                             * 256x256, 2 bit/pixel, 64 bytes/row.
-                             * Bits [1:0]=pixel0, [3:2]=pixel1, [5:4]=pixel2, [7:6]=pixel3.
-                             * Colour indices 0-3 -> conv_color[li][index] (YUV palette).
-                             */
-                            register size_t bx = 0;
-                            register uint8_t raw = input_buffer[bx ^ 2];
-                            register int sub = 0;
-                            register uint8_t color = (raw >> (sub * 2)) & 3;
-                            uint32_t cout32 = conv_color[li][color];
-                            uint8_t* c_4 = (uint8_t*)&cout32;
-                            output_buffer8 += buffer_shift;
-                            int render_len = video_mode.img_W - d_end;
-                            for (int i = 0; i < render_len; i++) {
-                                *output_buffer8++ = c_4[i % 4];
-                                next_ibuf -= di;
-                                if (next_ibuf <= 0) {
-                                    sub++;
-                                    if (sub == 4) {
-                                        sub = 0;
-                                        bx++;
-                                    }
-                                    if (bx < 64)
-                                        raw = input_buffer[bx ^ 2];
-                                    color = (raw >> (sub * 2)) & 3;
-                                    cout32 = conv_color[li][color];
-                                    next_ibuf += 0x100;
+                        case GRAPHICSMODE_DEFAULT: {
+                            uint8_t* input_buffer8 = bk_get_line(y);
+                            uint8_t lut[4] = {
+                                    200, // black
+                                    201, // blue
+                                    202, // green
+                                    204, // red
+                                };
+                            uint8_t packed = *input_buffer8++;
+                            int subpixel = 0;
+                            for (int i = 0; i < video_mode.img_W - d_end;) {
+                                uint8_t color2bpp = (packed >> (subpixel++ * 2)) & 0x3;
+                                uint8_t color = lut[color2bpp];
+                                uint32_t cout32 = conv_color[li][color];
+                                uint8_t* c_4 = (uint8_t*)&cout32;
+                                *output_buffer8++ = c_4[i++ % 4];
+                                *output_buffer8++ = c_4[i++ % 4];
+                                *output_buffer8++ = c_4[i++ % 4];
+                                *output_buffer8++ = c_4[i++ % 4];
+                                if (subpixel == 4) {
+                                    subpixel = 0;
+                                    packed = *input_buffer8++;
                                 }
-                            }
-                            /* очистка хвоста строки (устраняет "мусорные 49 байт") */
-                            int clear_from = video_mode.begin_img_shx + buffer_shift + render_len;
-                            if (clear_from < video_mode.H_len) {
-                                nf_memset((uint8_t*)lines_buf[lines_buf_inx] + clear_from,
-                                        video_mode.NO_SYNC_TMPL,
-                                        video_mode.H_len - clear_from);
                             }
                         }
                         break;
@@ -719,10 +663,10 @@ static bool __time_critical_func(video_timer_callbackTV)(repeating_timer_t* rt) 
             }
         }
 
-        // управление длиной строки
-        transfer_count_DMA_CTRL[dma_inx_out] = video_mode.H_len;
+        //управление длиной строки
+        transfer_count_DMA_CTRL[dma_inx_out] = video_mode.H_len - dec_str;
         rd_addr_DMA_CTRL[dma_inx_out] = (uint32_t)&lines_buf[lines_buf_inx];
-        // включаем заполненный буфер в данные для вывода
+        //включаем заполненный буфер в данные для вывода
         dma_inx_out = (dma_inx_out + 1) % (N_LINE_BUF_DMA);
         dma_inx = (N_LINE_BUF_DMA - 2 + ((dma_channel_hw_addr(dma_chan_ctrl)->read_addr - (uint32_t)rd_addr_DMA_CTRL) /
                                          4)) % (N_LINE_BUF_DMA);
@@ -730,10 +674,10 @@ static bool __time_critical_func(video_timer_callbackTV)(repeating_timer_t* rt) 
     return true;
 }
 
-void graphics_set_buffer(uint8_t* buffer, uint16_t width, uint16_t height) {
-    graphics_buffer.width = width;
+void graphics_set_buffer(uint8_t* buffer, const uint16_t width, const uint16_t height) {
+    graphics_buffer.data = buffer;
+    graphics_buffer.width = 256; // TODO: width;
     graphics_buffer.height = height;
-    graphics_buffer.buffer = buffer;
 }
 
 //выделение и настройка общих ресурсов - 4 DMA канала, PIO программ и 2 SM
@@ -745,35 +689,17 @@ void graphics_init() {
     dma_chan_ctrl2 = dma_claim_unused_channel(true);
     dma_chan = dma_claim_unused_channel(true);
 
-
     //---------------
 
-    /* Palette initialisation for BK modes.
-     *
-     * BK_512x256x1 (monochrome): the renderer bypasses the palette entirely
-     * and writes pre-computed Y levels directly.  Fill entries 0..255 with a
-     * greyscale ramp anyway so any stray GRAPHICSMODE_DEFAULT code path still
-     * produces a sensible picture.
-     *
-     * BK_256x256x2 (4-colour): only indices 0-3 are used by the renderer.
-     * The vga-nextgen driver maps palette bank 0 as:
-     *   index 0 = black, 1 = blue, 2 = red, 3 = white  (BK default colours)
-     * We replicate that mapping here.  Additional palette banks can be loaded
-     * later via graphics_set_palette() exactly as the VGA driver does.
-     */
-    for (int ci = 0; ci < 256; ci++)
-        graphics_set_palette((uint8_t)ci, (ci << 16) | (ci << 8) | ci); /* greyscale */
-    /* Overwrite indices 0-3 with BK 4-colour defaults (black/blue/red/white) */
-    graphics_set_palette(0, 0x000000); /* black */
-    graphics_set_palette(1, 0x0000FF); /* blue  */
-    graphics_set_palette(2, 0xFF0000); /* red   */
-    graphics_set_palette(3, 0xFFFFFF); /* white */
+    //заполнение палитры по умолчанию(ч.б.)
+    for (int ci = 0; ci < 256; ci++) graphics_set_palette(ci, (ci << 16) | (ci << 8) | ci); //
 
 
     //настройка рабочей SM TV
 
     uint offs_prg0 = 0;
     offs_prg0 = pio_add_program(PIO_VIDEO, &program_pio_TV);
+    uint16_t* conv_color16 = (uint16_t *)conv_color;
 
     pio_sm_config c_c = pio_get_default_sm_config();
 
@@ -874,28 +800,44 @@ void graphics_init() {
     }
     // graphics_get_default_modeTV();
     graphics_set_modeTV(tv_out_mode);
-
-    // Palette is initialized centrally by Video.cpp Init()
+    // FIXME сделать конфигурацию пользователем
+    graphics_set_palette(200, RGB888(0x00, 0x00, 0x00)); //black
+    graphics_set_palette(201, RGB888(0x00, 0x00, 0xC4)); //blue
+    graphics_set_palette(202, RGB888(0x00, 0xC4, 0x00)); //green
+    graphics_set_palette(203, RGB888(0x00, 0xC4, 0xC4)); //cyan
+    graphics_set_palette(204, RGB888(0xC4, 0x00, 0x00)); //red
+    graphics_set_palette(205, RGB888(0xC4, 0x00, 0xC4)); //magenta
+    graphics_set_palette(206, RGB888(0xC4, 0x7E, 0x00)); //brown
+    graphics_set_palette(207, RGB888(0xC4, 0xC4, 0xC4)); //light gray
+    graphics_set_palette(208, RGB888(0x4E, 0x4E, 0x4E)); //dark gray
+    graphics_set_palette(209, RGB888(0x4E, 0x4E, 0xDC)); //light blue
+    graphics_set_palette(210, RGB888(0x4E, 0xDC, 0x4E)); //light green
+    graphics_set_palette(211, RGB888(0x4E, 0xF3, 0xF3)); //light cyan
+    graphics_set_palette(212, RGB888(0xDC, 0x4E, 0x4E)); //light red
+    graphics_set_palette(213, RGB888(0xF3, 0x4E, 0xF3)); //light magenta
+    graphics_set_palette(214, RGB888(0xF3, 0xF3, 0x4E)); //yellow
+    graphics_set_palette(215, RGB888(0xFF, 0xFF, 0xFF)); //white
 };
 
-void graphics_set_offset(int x, int y) {
+void graphics_set_textbuffer(uint8_t* buffer) {
+    text_buffer = buffer;
+};
+
+void graphics_set_offset(const int x, const int y) {
     graphics_buffer.shift_x = x;
     graphics_buffer.shift_y = y;
 };
 
-extern volatile enum graphics_mode_t graphics_mode;
-/* Match vga.h signature: returns the previous mode. */
-enum graphics_mode_t graphics_set_mode(enum graphics_mode_t mode) {
-    enum graphics_mode_t prev = get_graphics_mode();
-    graphics_mode = mode;
-    /* Re-apply TV timing and palette for the new mode (colour index stays). */
+void graphics_set_mode(const enum graphics_mode_t mode) {
+    tv_out_mode.mode_bpp = mode;
+    tv_out_mode.color_index = TEXTMODE_ == mode ? 0.0 : 1.0;
+    tv_out_mode.cb_sync_PI_shift_lines = TEXTMODE_ == mode ? true : false;
     graphics_set_modeTV(tv_out_mode);
-    return prev;
+    clrScr(0);
 }
-
 
 void graphics_set_page(uint8_t* buffer, uint8_t pallette_idx) {
     g_conf.v_buff_offset = buffer - RAM;
-    graphics_buffer.buffer = buffer;
+    graphics_buffer.data = buffer;
     g_conf.graphics_pallette_idx = pallette_idx;
 };

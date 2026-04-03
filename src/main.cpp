@@ -66,7 +66,7 @@ void __time_critical_func(render_core)() {
     /* Composite TV output — tv-software owns pio0 + its own DMA + alarm-pool timer.
      * Core 1 is not used for rendering; we just init and park on the semaphore. */
     graphics_init();
-    graphics_set_offset(0, 0);
+    graphics_set_offset(0, 12);
     graphics_set_flashmode(true, true);
     graphics_set_bgcolor(0x00000000);
     sem_acquire_blocking(&vga_start_semaphore);
