@@ -346,6 +346,41 @@ void graphics_set_palette(uint8_t i, uint32_t color888) {
     conv_colorINV[1][i] = (c32 >> 16) | ((c32 & 0xffff) << 16);
 }
 
+static inline void* __not_in_flash_func(nf_memset)(void* ptr, int value, size_t len)
+{
+    uint8_t* p = (uint8_t*)ptr;
+    uint8_t v8 = (uint8_t)value;
+
+    // --- выравниваем до 4 байт ---
+    while (len && ((uintptr_t)p & 3)) {
+        *p++ = v8;
+        len--;
+    }
+
+    // --- основной 32-битный цикл ---
+    if (len >= 4) {
+        uint32_t v32 = v8;
+        v32 |= v32 << 8;
+        v32 |= v32 << 16;
+
+        uint32_t* p32 = (uint32_t*)p;
+        size_t n32 = len >> 2;
+
+        while (n32--) {
+            *p32++ = v32;
+        }
+
+        p = (uint8_t*)p32;
+        len &= 3;
+    }
+
+    // --- хвост ---
+    while (len--) {
+        *p++ = v8;
+    }
+
+    return ptr;
+}
 
 //основная функция заполнения буферов видеоданных
 static bool __time_critical_func(video_timer_callbackTV)(repeating_timer_t* rt) {
@@ -385,38 +420,38 @@ static bool __time_critical_func(video_timer_callbackTV)(repeating_timer_t* rt) 
             case 0:
             case 1:
                 //|___|--|___|--| type=1
-                memset(output_buffer8, video_mode.SYNC_TMPL, (video_mode.H_len / 2) - video_mode.sync_size);
+                nf_memset(output_buffer8, video_mode.SYNC_TMPL, (video_mode.H_len / 2) - video_mode.sync_size);
                 output_buffer8 += (video_mode.H_len / 2) - video_mode.sync_size;
-                memset(output_buffer8, video_mode.NO_SYNC_TMPL, video_mode.sync_size);
+                nf_memset(output_buffer8, video_mode.NO_SYNC_TMPL, video_mode.sync_size);
                 output_buffer8 += video_mode.sync_size;
-                memset(output_buffer8, video_mode.SYNC_TMPL, (video_mode.H_len / 2) - video_mode.sync_size);
+                nf_memset(output_buffer8, video_mode.SYNC_TMPL, (video_mode.H_len / 2) - video_mode.sync_size);
                 output_buffer8 += (video_mode.H_len / 2) - video_mode.sync_size;
-                memset(output_buffer8, video_mode.NO_SYNC_TMPL, video_mode.sync_size);
+                nf_memset(output_buffer8, video_mode.NO_SYNC_TMPL, video_mode.sync_size);
                 is_line_visible = false;
                 break;
 
             case 2:
                 // ____|--|_|----type=2
-                memset(output_buffer8, video_mode.SYNC_TMPL, (video_mode.H_len / 2) - video_mode.sync_size);
+                nf_memset(output_buffer8, video_mode.SYNC_TMPL, (video_mode.H_len / 2) - video_mode.sync_size);
                 output_buffer8 += (video_mode.H_len / 2) - video_mode.sync_size;
-                memset(output_buffer8, video_mode.NO_SYNC_TMPL, video_mode.sync_size);
+                nf_memset(output_buffer8, video_mode.NO_SYNC_TMPL, video_mode.sync_size);
                 output_buffer8 += video_mode.sync_size;
-                memset(output_buffer8, video_mode.SYNC_TMPL, video_mode.sync_size / 2);
+                nf_memset(output_buffer8, video_mode.SYNC_TMPL, video_mode.sync_size / 2);
                 output_buffer8 += video_mode.sync_size / 2;
-                memset(output_buffer8, video_mode.NO_SYNC_TMPL,
+                nf_memset(output_buffer8, video_mode.NO_SYNC_TMPL,
                         (video_mode.H_len / 2) - (video_mode.sync_size / 2));
                 is_line_visible = false;
                 break;
             case 3:
             case 4: //|_|----|_|---- type=0
-                memset(output_buffer8, video_mode.SYNC_TMPL, video_mode.sync_size / 2);
+                nf_memset(output_buffer8, video_mode.SYNC_TMPL, video_mode.sync_size / 2);
                 output_buffer8 += video_mode.sync_size / 2;
-                memset(output_buffer8, video_mode.NO_SYNC_TMPL,
+                nf_memset(output_buffer8, video_mode.NO_SYNC_TMPL,
                         (video_mode.H_len / 2) - (video_mode.sync_size / 2));
                 output_buffer8 += (video_mode.H_len / 2) - (video_mode.sync_size / 2);
-                memset(output_buffer8, video_mode.SYNC_TMPL, video_mode.sync_size / 2);
+                nf_memset(output_buffer8, video_mode.SYNC_TMPL, video_mode.sync_size / 2);
                 output_buffer8 += video_mode.sync_size / 2;
-                memset(output_buffer8, video_mode.NO_SYNC_TMPL,
+                nf_memset(output_buffer8, video_mode.NO_SYNC_TMPL,
                         (video_mode.H_len / 2) - (video_mode.sync_size / 2));
                 is_line_visible = false;
                 break;
@@ -427,73 +462,73 @@ static bool __time_critical_func(video_timer_callbackTV)(repeating_timer_t* rt) 
             case 310:
             case 311:
                 //|_|----|_|---- type=0
-                memset(output_buffer8, video_mode.SYNC_TMPL, video_mode.sync_size / 2);
+                nf_memset(output_buffer8, video_mode.SYNC_TMPL, video_mode.sync_size / 2);
                 output_buffer8 += video_mode.sync_size / 2;
-                memset(output_buffer8, video_mode.NO_SYNC_TMPL,
+                nf_memset(output_buffer8, video_mode.NO_SYNC_TMPL,
                         (video_mode.H_len / 2) - (video_mode.sync_size / 2));
                 output_buffer8 += (video_mode.H_len / 2) - (video_mode.sync_size / 2);
-                memset(output_buffer8, video_mode.SYNC_TMPL, video_mode.sync_size / 2);
+                nf_memset(output_buffer8, video_mode.SYNC_TMPL, video_mode.sync_size / 2);
                 output_buffer8 += video_mode.sync_size / 2;
-                memset(output_buffer8, video_mode.NO_SYNC_TMPL,
+                nf_memset(output_buffer8, video_mode.NO_SYNC_TMPL,
                         (video_mode.H_len / 2) - (video_mode.sync_size / 2));
                 is_line_visible = false;
                 break;
             case 312:
                 //|_|---|____|--| type=3
-                memset(output_buffer8, video_mode.SYNC_TMPL, video_mode.sync_size / 2);
+                nf_memset(output_buffer8, video_mode.SYNC_TMPL, video_mode.sync_size / 2);
                 output_buffer8 += video_mode.sync_size / 2;
-                memset(output_buffer8, video_mode.NO_SYNC_TMPL,
+                nf_memset(output_buffer8, video_mode.NO_SYNC_TMPL,
                         (video_mode.H_len / 2) - (video_mode.sync_size / 2));
                 output_buffer8 += (video_mode.H_len / 2) - (video_mode.sync_size / 2);
-                memset(output_buffer8, video_mode.SYNC_TMPL, (video_mode.H_len / 2) - video_mode.sync_size);
+                nf_memset(output_buffer8, video_mode.SYNC_TMPL, (video_mode.H_len / 2) - video_mode.sync_size);
                 output_buffer8 += (video_mode.H_len / 2) - video_mode.sync_size;
-                memset(output_buffer8, video_mode.NO_SYNC_TMPL, video_mode.sync_size);
+                nf_memset(output_buffer8, video_mode.NO_SYNC_TMPL, video_mode.sync_size);
                 is_line_visible = false;
                 break;
             case 313:
             case 314:
                 //|___|--|___|--| type=1
-                memset(output_buffer8, video_mode.SYNC_TMPL, (video_mode.H_len / 2) - video_mode.sync_size);
+                nf_memset(output_buffer8, video_mode.SYNC_TMPL, (video_mode.H_len / 2) - video_mode.sync_size);
                 output_buffer8 += (video_mode.H_len / 2) - video_mode.sync_size;
-                memset(output_buffer8, video_mode.NO_SYNC_TMPL, video_mode.sync_size);
+                nf_memset(output_buffer8, video_mode.NO_SYNC_TMPL, video_mode.sync_size);
                 output_buffer8 += video_mode.sync_size;
-                memset(output_buffer8, video_mode.SYNC_TMPL, (video_mode.H_len / 2) - video_mode.sync_size);
+                nf_memset(output_buffer8, video_mode.SYNC_TMPL, (video_mode.H_len / 2) - video_mode.sync_size);
                 output_buffer8 += (video_mode.H_len / 2) - video_mode.sync_size;
-                memset(output_buffer8, video_mode.NO_SYNC_TMPL, video_mode.sync_size);
+                nf_memset(output_buffer8, video_mode.NO_SYNC_TMPL, video_mode.sync_size);
                 is_line_visible = false;
                 break;
             case 315:
             case 316:
                 //|_|----|_|---- type=0
-                memset(output_buffer8, video_mode.SYNC_TMPL, video_mode.sync_size / 2);
+                nf_memset(output_buffer8, video_mode.SYNC_TMPL, video_mode.sync_size / 2);
                 output_buffer8 += video_mode.sync_size / 2;
-                memset(output_buffer8, video_mode.NO_SYNC_TMPL,
+                nf_memset(output_buffer8, video_mode.NO_SYNC_TMPL,
                         (video_mode.H_len / 2) - (video_mode.sync_size / 2));
                 output_buffer8 += (video_mode.H_len / 2) - (video_mode.sync_size / 2);
-                memset(output_buffer8, video_mode.SYNC_TMPL, video_mode.sync_size / 2);
+                nf_memset(output_buffer8, video_mode.SYNC_TMPL, video_mode.sync_size / 2);
                 output_buffer8 += video_mode.sync_size / 2;
-                memset(output_buffer8, video_mode.NO_SYNC_TMPL,
+                nf_memset(output_buffer8, video_mode.NO_SYNC_TMPL,
                         (video_mode.H_len / 2) - (video_mode.sync_size / 2));
                 is_line_visible = false;
                 break;
             case 317:
                 //|_|---------type=4
-                memset(output_buffer8, video_mode.SYNC_TMPL, video_mode.sync_size / 2);
+                nf_memset(output_buffer8, video_mode.SYNC_TMPL, video_mode.sync_size / 2);
                 output_buffer8 += video_mode.sync_size / 2;
-                memset(output_buffer8, video_mode.NO_SYNC_TMPL,
+                nf_memset(output_buffer8, video_mode.NO_SYNC_TMPL,
                         (video_mode.H_len) - (video_mode.sync_size / 2));
                 is_line_visible = false;
                 break;
             case 622:
                 //|__|---|_|----type=5
-                memset(output_buffer8, video_mode.SYNC_TMPL, video_mode.sync_size);
+                nf_memset(output_buffer8, video_mode.SYNC_TMPL, video_mode.sync_size);
                 output_buffer8 += video_mode.sync_size;
-                memset(output_buffer8, video_mode.NO_SYNC_TMPL,
+                nf_memset(output_buffer8, video_mode.NO_SYNC_TMPL,
                         (video_mode.H_len / 2) - (video_mode.sync_size));
                 output_buffer8 += (video_mode.H_len / 2) - (video_mode.sync_size);
-                memset(output_buffer8, video_mode.SYNC_TMPL, video_mode.sync_size / 2);
+                nf_memset(output_buffer8, video_mode.SYNC_TMPL, video_mode.sync_size / 2);
                 output_buffer8 += video_mode.sync_size / 2;
-                memset(output_buffer8, video_mode.NO_SYNC_TMPL,
+                nf_memset(output_buffer8, video_mode.NO_SYNC_TMPL,
                         (video_mode.H_len / 2) - (video_mode.sync_size / 2));
                 is_line_visible = false;
                 break;
@@ -575,16 +610,20 @@ static bool __time_critical_func(video_timer_callbackTV)(repeating_timer_t* rt) 
 
         //ТВ строка с изображением
         if (is_line_visible) {
-            memset(output_buffer8, video_mode.SYNC_TMPL, video_mode.sync_size);
-            memset(output_buffer8 + video_mode.sync_size, video_mode.NO_SYNC_TMPL,
+            nf_memset(output_buffer8, video_mode.SYNC_TMPL, video_mode.sync_size);
+            nf_memset(output_buffer8 + video_mode.sync_size, video_mode.NO_SYNC_TMPL,
                    video_mode.begin_img_shx - video_mode.sync_size);
             int post_img_clear = 60;
-            memset(output_buffer8 + (video_mode.H_len - post_img_clear), video_mode.NO_SYNC_TMPL, post_img_clear);
+            nf_memset(output_buffer8 + (video_mode.H_len - post_img_clear), video_mode.NO_SYNC_TMPL, post_img_clear);
 
-            // // //цветовая вспышка
-            int mul_sh = 23; //сдвиг вспышки для более высокой частоты
-            if (li) memcpy(output_buffer8 + 0 + mul_sh * 4, cb[1], 40);
-            else memcpy(output_buffer8 + 0 + mul_sh * 4, cb[0], 40);
+            // цветовая вспышка
+            int mul_sh = 23; // сдвиг вспышки для более высокой частоты
+            if (tv_out_mode.mode_bpp == BK_256x256x2) { // только для цветного режима
+                if (li) memcpy(output_buffer8 + 0 + mul_sh * 4, cb[1], 40);
+                else memcpy(output_buffer8 + 0 + mul_sh * 4, cb[0], 40);
+            } else {
+                nf_memset(output_buffer8 + 0 + mul_sh * 4, video_mode.LVL_BLACK_TMPL, 40);
+            }
 
             output_buffer8 += video_mode.begin_img_shx;
             //di коэффициент сжатия с учётом количества строк и частоты поднесущей
@@ -598,7 +637,7 @@ static bool __time_critical_func(video_timer_callbackTV)(repeating_timer_t* rt) 
 
             if ((y >= graphics_buffer.height) || (y < 0) || (graphics_buffer.data == NULL)) {
                 //вне изображения
-                memset(output_buffer8, video_mode.LVL_BLACK_TMPL, video_mode.img_W);
+                nf_memset(output_buffer8, video_mode.LVL_BLACK_TMPL, video_mode.img_W);
             }
             else {
                 //зона изображения
@@ -635,31 +674,25 @@ static bool __time_critical_func(video_timer_callbackTV)(repeating_timer_t* rt) 
                         break;
                         case BK_512x256x1: {
                             uint8_t* input_buffer8 = bk_get_line(y);
-                            uint8_t lut[2] = {
-                                    200, // black
-                                    215, // white
-                                };
+                            uint8_t y_black = video_mode.LVL_BLACK_TMPL;
+                            uint8_t y_white = CONV_DAC(video_mode.LVL_BLACK + 40) | (1 << SYNC_PIN);
+                            int clk_pixel = 0;
+                            const int clk_total_pixels = video_mode.img_W - d_end;
                             uint8_t packed = *input_buffer8++;
                             int subpixel = 0;
-                            int clk_pixel = 0;
                             const int logical_total_pixels = 512;
-                            const int clk_total_pixels = video_mode.img_W - d_end;
-                            uint32_t cout32 = conv_color[li][200]; // initial black
-                            uint8_t* c_4 = (uint8_t*)&cout32; // bytes alias for cout32
                             for (int logical_pixel = 0; clk_pixel < clk_total_pixels && logical_pixel < logical_total_pixels; ++logical_pixel) {
-                                uint8_t color1bpp = (packed >> (subpixel++)) & 0x1;
-                                uint8_t color = lut[color1bpp];
-                                cout32 = conv_color[li][color];
-                                *output_buffer8++ = c_4[clk_pixel++ & 3];
-                                *output_buffer8++ = c_4[clk_pixel++ & 3];
+                                uint8_t c = (packed >> (subpixel++)) & 0x1 ? y_white : y_black;
+                                *output_buffer8++ = c; clk_pixel++;
+                                *output_buffer8++ = c; clk_pixel++;
+                            //    *output_buffer8++ = c; clk_pixel++;
                                 if (subpixel == 8) {
                                     subpixel = 0;
                                     packed = *input_buffer8++;
                                 }
                             }
-                            cout32 = conv_color[li][200];
                             while (clk_pixel < clk_total_pixels) {
-                                *output_buffer8++ = c_4[clk_pixel++ & 3];
+                                *output_buffer8++ = y_black; ++clk_pixel;
                             }
                         }
                         break;
