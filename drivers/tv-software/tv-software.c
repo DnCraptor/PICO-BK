@@ -179,7 +179,7 @@ void graphics_set_modeTV(tv_out_mode_t mode) {
     video_mode.sync_size = 4.7 * video_mode.H_len / 64;
     video_mode.sync_size &= 0xfffffff8;
 
-    video_mode.begin_img_shx = 10.5 * video_mode.H_len / 64; // TODO: ensure
+    video_mode.begin_img_shx = 10.5 * video_mode.H_len / 64 + 44; // TODO: ensure
     video_mode.img_W = video_mode.H_len - ((12 * video_mode.H_len) / 64);
     video_mode.img_W &= 0xfffffffc;
 
@@ -191,7 +191,6 @@ void graphics_set_modeTV(tv_out_mode_t mode) {
     video_mode.LVL_BLACK_TMPL = CONV_DAC(video_mode.LVL_BLACK) | (1 << SYNC_PIN);
 
     sm_config_set_clkdiv((pio_sm_config*)PIO_VIDEO->sm, clock_get_hz(clk_sys) / (color_freq * 4));
-
 };
 
 
@@ -675,24 +674,56 @@ static bool __time_critical_func(video_timer_callbackTV)(repeating_timer_t* rt) 
                         case BK_512x256x1: {
                             uint8_t* input_buffer8 = bk_get_line(y);
                             uint8_t y_black = video_mode.LVL_BLACK_TMPL;
+                            uint8_t y_gray  = CONV_DAC(video_mode.LVL_BLACK + 20) | (1 << SYNC_PIN);
                             uint8_t y_white = CONV_DAC(video_mode.LVL_BLACK + 40) | (1 << SYNC_PIN);
                             int clk_pixel = 0;
                             const int clk_total_pixels = video_mode.img_W - d_end;
                             uint8_t packed = *input_buffer8++;
                             int subpixel = 0;
                             const int logical_total_pixels = 512;
-                            for (int logical_pixel = 0; clk_pixel < clk_total_pixels && logical_pixel < logical_total_pixels; ++logical_pixel) {
-                                uint8_t c = (packed >> (subpixel++)) & 0x1 ? y_white : y_black;
-                                *output_buffer8++ = c; clk_pixel++;
-                                *output_buffer8++ = c; clk_pixel++;
-                            //    *output_buffer8++ = c; clk_pixel++;
+                            int logical_pixel = 0;
+                            while (clk_pixel < clk_total_pixels && logical_pixel < logical_total_pixels) {
+                                // --- первый пиксель ---
+                                uint8_t a_bit = (packed >> (subpixel++)) & 1;
+                                uint8_t a = a_bit ? y_white : y_black;
                                 if (subpixel == 8) {
                                     subpixel = 0;
                                     packed = *input_buffer8++;
                                 }
+                                logical_pixel++;
+                                // если это последний пиксель — просто вывести
+                                if (logical_pixel >= logical_total_pixels) {
+                                    *output_buffer8++ = a;
+                                    clk_pixel++;
+                                    break;
+                                }
+                                // --- второй пиксель ---
+                                uint8_t b_bit = (packed >> (subpixel++)) & 1;
+                                uint8_t b = b_bit ? y_white : y_black;
+                                if (subpixel == 8) {
+                                    subpixel = 0;
+                                    packed = *input_buffer8++;
+                                }
+                                logical_pixel++;
+                                // --- вывод (A, blend, B) ---
+                                if (clk_pixel < clk_total_pixels) {
+                                    *output_buffer8++ = a;
+                                    clk_pixel++;
+                                }
+                                if (clk_pixel < clk_total_pixels) {
+                                    uint8_t mid = (a == b) ? a : y_gray;
+                                    *output_buffer8++ = mid;
+                                    clk_pixel++;
+                                }
+                                if (clk_pixel < clk_total_pixels) {
+                                    *output_buffer8++ = b;
+                                    clk_pixel++;
+                                }
                             }
+                            // добивка
                             while (clk_pixel < clk_total_pixels) {
-                                *output_buffer8++ = y_black; ++clk_pixel;
+                                *output_buffer8++ = y_black;
+                                ++clk_pixel;
                             }
                         }
                         break;
@@ -707,18 +738,18 @@ static bool __time_critical_func(video_timer_callbackTV)(repeating_timer_t* rt) 
                             uint8_t packed = *input_buffer8++;
                             int subpixel = 0;
                             int clk_pixel = 0;
-                            const int logical_total_pixels = 220;//56;
+                            const int logical_total_pixels = 256;
                             const int clk_total_pixels = video_mode.img_W - d_end;
                             uint32_t cout32 = conv_color[li][200]; // initial black
                             uint8_t* c_4 = (uint8_t*)&cout32; // bytes alias for cout32
                             for (int logical_pixel = 0; clk_pixel < clk_total_pixels && logical_pixel < logical_total_pixels; ++logical_pixel) {
                                 uint8_t color2bpp = (packed >> (subpixel++ * 2)) & 0x3;
                                 uint8_t color = lut[color2bpp];
-                                cout32 = conv_color[li][color]; // палитру можно менять только на границе 4-ёх фаз
+                                cout32 = conv_color[li][color]; // палитру можно менять только на границе 4-ёх фаз ?
                                 *output_buffer8++ = c_4[clk_pixel++ & 3];
                                 *output_buffer8++ = c_4[clk_pixel++ & 3];
                                 *output_buffer8++ = c_4[clk_pixel++ & 3];
-                                *output_buffer8++ = c_4[clk_pixel++ % 4];
+//                                *output_buffer8++ = c_4[clk_pixel++ % 4];
                                 if (subpixel == 4) {
                                     subpixel = 0;
                                     packed = *input_buffer8++;

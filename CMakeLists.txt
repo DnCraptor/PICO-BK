@@ -409,7 +409,7 @@ pico_enable_stdio_uart(${PROJECT_NAME} 0)
 pico_enable_stdio_usb(${PROJECT_NAME} 0)
 
 if (TV_OUT)
-    SET(BUILD_NAME "${BUILD_NAME}-TV-270MHz-${AY_TYPE}-${BUILD_VERSION}")
+    SET(BUILD_NAME "${BUILD_NAME}-TV-319.2MHz-${AY_TYPE}-${BUILD_VERSION}")
 else ()
     SET(BUILD_NAME "${BUILD_NAME}-VGA-HDMI-270MHz-${AY_TYPE}-${BUILD_VERSION}")
 endif ()

@@ -432,7 +432,7 @@ extern "C" int testPins(uint32_t pin0, uint32_t pin1) {
 }
 
 static void __not_in_flash_func(flash_timings)() {
-    uint khz = 378000; // TODO:
+    uint khz = 319200; // TODO: ensure clkdiv = 319.2 / 17.734475 ≈ 18.0000
 #if !PICO_RP2040
     if (khz >= 400000) {
         if (khz >= 500000) {
