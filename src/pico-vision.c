@@ -16,6 +16,10 @@ const color_schema_t* get_color_schema() {
 }
 
 void draw_panel(int left, int top, int width, int height, char* title, char* footer) {
+    if (left < 0) left = 0;
+    if (top < 0) top = 0;
+    if (width + left > text_buffer_width) width = text_buffer_width - left;
+    if (width < 0) return;
     char line[text_buffer_width + 2];
     // top line
     for(int i = 1; i < width - 1; ++i) {
@@ -65,6 +69,10 @@ void draw_panel(int left, int top, int width, int height, char* title, char* foo
 }
 
 void draw_button(int left, int top, int width, const char* txt, bool selected) {
+    if (left < 0) left = 0;
+    if (top < 0) top = 0;
+    if (width + left > text_buffer_width) width = text_buffer_width - left;
+    if (width < 0) return;
     int len = strlen(txt);
     if (len > 39) return;
     char tmp[40];
@@ -94,6 +102,10 @@ void draw_box(int left, int top, int width, int height, const char* title, const
     draw_box_ex(left, top, width, height, title, 0, plines);
 }
 void draw_box_ex(int left, int top, int width, int height, const char* title, const char* bottom, const lines_t* plines) {
+    if (left < 0) left = 0;
+    if (top < 0) top = 0;
+    if (width + left > text_buffer_width) width = text_buffer_width - left;
+    if (width < 0) return;
     draw_panel(left, top, width, height, title, bottom);
     int y = top + 1;
     for (int i = y; y < top + height - 1; ++y) {
@@ -122,6 +134,10 @@ void scan_code_cleanup();
 #include "ps2.h"
 
 int draw_selector(int left, int top, int width, int height, const char* title, const lines_t* plines, int selected_line, const char* footer) {
+    if (left < 0) left = 0;
+    if (top < 0) top = 0;
+    if (width + left > text_buffer_width) width = text_buffer_width - left;
+    if (width < 0) width = 1;
     int s_line = selected_line;
     draw_panel(left, top, width, height, title, footer);
     int y = top + 1;
@@ -187,6 +203,8 @@ int draw_selector(int left, int top, int width, int height, const char* title, c
 }
 
 void draw_fn_btn(fn_1_12_tbl_rec_t* prec, int left, int top, bool reduced) {
+    if (left < 0) left = 0;
+    if (top < 0) top = 0;
     char line[10];
     if (reduced) {
         sprintf(line, "    ");
@@ -208,6 +226,8 @@ void draw_fn_btn(fn_1_12_tbl_rec_t* prec, int left, int top, bool reduced) {
 }
 
 void draw_cmd_line(int left, int top, char* cmd) {
+    if (left < 0) left = 0;
+    if (top < 0) top = 0;
     char line[MAX_WIDTH + 2];
     if (cmd) {
         int sl = strlen(cmd);
@@ -221,6 +241,10 @@ void draw_cmd_line(int left, int top, char* cmd) {
 }
 
 void draw_label(int left, int top, int width, char* txt, bool selected, bool highlighted) {
+    if (left < 0) left = 0;
+    if (top < 0) top = 0;
+    if (width + left > text_buffer_width) width = text_buffer_width - left;
+    if (width < 0) return;
     char line[MAX_WIDTH + 2];
     bool fin = false;
     for (int i = 0; i < width; ++i) {

@@ -450,7 +450,7 @@ static void in_conf(int x, int y) {
     );
     draw_label(x, y+16, 37, b, false, false);
 
-
+#ifndef SELECT_TV
     if (is_kbd_joystick) {
         draw_label(x+40, y+0, 15, "     kbdpad1_A:", false, z_idx == 13);
         draw_label(x+40, y+1, 15, "     kbdpad1_B:", false, z_idx == 14);
@@ -470,7 +470,7 @@ static void in_conf(int x, int y) {
         draw_label(x+40, y+15, 15, "  kbdpad2_LEFT:", false, z_idx == 27);
         draw_label(x+40, y+16, 15, " kbdpad2_RIGHT:", false, z_idx == 28);
     }
-
+#endif
     draw_label(x+18, y+1, 22, bk_mode_lns[g_conf.bk0010mode].txt, z_idx == 0, z_idx == 0);
     const static char b_on [2] = { 0xFB, 0 };
     const static char b_off[2] = { 0xB0, 0 };
@@ -490,6 +490,7 @@ static void in_conf(int x, int y) {
     draw_label(x+19, y+12, 1, dvi_mode_new == 0 ? "0" : (dvi_mode_new == 1 ? "1" : "2"), z_idx == 11, z_idx == 11);
     draw_label(x+19, y+13, 1, is_8x8_new ? b_on : b_off, z_idx == 12, z_idx == 12);
 
+#ifndef SELECT_TV
     if (is_kbd_joystick) {
         MAX_Z = 28;
         int xl = x+56;
@@ -511,11 +512,19 @@ static void in_conf(int x, int y) {
         kbd_j_label_val(kbdpad2_DOWN, 26);
         kbd_j_label_val(kbdpad2_LEFT, 27);
         kbd_j_label_val(kbdpad2_RIGHT, 28);
-    } else {
+    } else
+#endif
+    {
         MAX_Z = 12;
     }
-    snprintf(b, 64, "[%d MHz]", (clock_get_hz(clk_sys) / 1000000)); draw_label(x+2, y+17, 9, b, false, true);
-    snprintf(b, 64, "[%d MHz]", (g_conf.cpu_freq / 1000000)); draw_label(x+63-10, y+17, 7, b, false, true);
+    snprintf(b, 64, "[%d MHz]", (clock_get_hz(clk_sys) / 1000000));
+     draw_label(x+2, y+17, 9, b, false, true);
+    snprintf(b, 64, "[%d MHz]", (g_conf.cpu_freq / 1000000));
+#ifdef SELECT_TV
+     draw_label(x+46-10, y+17, 7, b, false, true);
+#else
+     draw_label(x+63-10, y+17, 7, b, false, true);
+#endif
 }
 
 static void saveConf() {
@@ -1235,10 +1244,11 @@ static bool m_prompt_ex(const char* txt, const char* bottom) {
     };
     const lines_t lines = { 1, 2, lns };
     int y = (text_buffer_height - 10) / 2;
-    draw_box_ex((text_buffer_width - 60) / 2, y, 60, 10, "Are you sure?", bottom, &lines);
+    int left = (text_buffer_width - 60) / 2; if (left < 0) left = 0;
+    draw_box_ex(left, y, 60, 10, "Are you sure?", bottom, &lines);
     bool yes = true;
-    draw_button((text_buffer_width - 60) / 2 + 16, 5 + y, 11, "Yes", yes);
-    draw_button((text_buffer_width - 60) / 2 + 35, 5 + y, 10, "No", !yes);
+    draw_button(left + 16, 5 + y, 11, "Yes", yes);
+    draw_button(left / 2 + 35, 5 + y, 10, "No", !yes);
     while(1) {
         keyboard_tick();
         if (is_dendy_joystick || is_kbd_joystick) {
@@ -1282,8 +1292,8 @@ static bool m_prompt_ex(const char* txt, const char* bottom) {
         }
         if (tabPressed || leftPressed || rightPressed) { // TODO: own msgs cycle
             yes = !yes;
-            draw_button((text_buffer_width - 60) / 2 + 16, 5 + y, 11, "Yes", yes);
-            draw_button((text_buffer_width - 60) / 2 + 35, 5 + y, 10, "No", !yes);
+            draw_button(left + 16, 5 + y, 11, "Yes", yes);
+            draw_button(left / 2 + 35, 5 + y, 10, "No", !yes);
             tabPressed = leftPressed = rightPressed = false;
             scan_code_cleanup();
         }
