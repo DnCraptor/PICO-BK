@@ -13,6 +13,10 @@ extern "C" {
 #include <pico/stdlib.h>
 #include <hardware/vreg.h>
 #include <pico/stdio.h>
+#if !PICO_RP2040
+    #include <hardware/structs/qmi.h>
+    #include <hardware/vreg.h>
+#endif
 
 #include "audio.h"
 
@@ -56,7 +60,6 @@ uint8_t __aligned(4) TEXT_VIDEO_RAM[128*96*2] = { 0 };
 
 extern "C" semaphore_t vga_start_semaphore;
 extern "C" void dvi_on_core1();
-extern "C" void flash_timings();
 extern "C" void push_audio_sample(int16_t l, int16_t r);
 
 /* Renderer loop on Pico's second core */
@@ -428,6 +431,34 @@ extern "C" int testPins(uint32_t pin0, uint32_t pin1) {
     return res;
 }
 
+static void __not_in_flash_func(flash_timings)() {
+    uint khz = 378000; // TODO:
+#if !PICO_RP2040
+    if (khz >= 400000) {
+        if (khz >= 500000) {
+            vreg_set_voltage(VREG_VOLTAGE_1_60);
+        } else {
+            vreg_set_voltage(VREG_VOLTAGE_1_50);
+        }
+    }
+	const uint max_flash_freq = 66 * 1000000;
+	const uint clock_hz = khz * 1000;
+	int divisor = (clock_hz + max_flash_freq - 1) / max_flash_freq;
+	if (divisor == 1 && clock_hz > 100000000) {
+		divisor = 2;
+	}
+	int rxdelay = divisor;
+	if (clock_hz / divisor > 100000000) {
+		rxdelay += 1;
+	}
+	qmi_hw->m[0].timing = 0x60007000 |
+						rxdelay << QMI_M0_TIMING_RXDELAY_LSB |
+						divisor << QMI_M0_TIMING_CLKDIV_LSB;
+#endif
+    sleep_ms(100);
+	set_sys_clock_khz(khz, true);
+}
+
 int main() {
 #if !PICO_RP2040
 	vreg_disable_voltage_limit();
@@ -472,6 +503,7 @@ int main() {
      * Force SELECT_VGA=true so the audio path knows there is no HDMI audio
      * ring, and skip the pin-probe that would otherwise misdetect the DAC. */
     SELECT_VGA = true;
+    flash_timings();
 #elif defined(ZERO2) || defined(ZERO)
     SELECT_VGA = 0;
 #else
