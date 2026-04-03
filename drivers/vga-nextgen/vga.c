@@ -84,8 +84,8 @@ static uint16_t palette16_mask = 0;
 
 static uint8_t* text_buf_color;
 
-uint text_buffer_width = 0;
-uint text_buffer_height = 0;
+uint text_buffer_width = 46;
+uint text_buffer_height = 30;
 void set_text_mode_size(uint w, uint h) {
     text_buffer_width = w;
     text_buffer_height = h;

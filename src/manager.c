@@ -809,10 +809,15 @@ static void conf_it(uint8_t cmd) {
     is_8x8_new = g_conf.is_8x8;
     uint32_t prevScanCode = lastScanCode;
 
-    int x = (text_buffer_width - 64) / 2;
-    int y = (text_buffer_height - 18) / 2;
+#if SELECT_TV
+    int w = 46;
+#else
+    int w = 64;
+#endif
+    int x = (text_buffer_width - w) / 2; if (x < 0) x = 0;
+    int y = (text_buffer_height - 18) / 2; if (y < 0) y = 0;
     int x0 = x; int y0 = y;
-    draw_panel(x0, y0, 64, 19, "Startup configuration", 0);
+    draw_panel(x0, y0, w, 19, "Startup configuration", 0);
     x += 1; y += 1;
     in_conf(x, y);
     uint16_t prev_nespad_state = 0;
@@ -889,7 +894,7 @@ static void conf_it(uint8_t cmd) {
         if (enterPressed) {
             enterPressed = false;
             if (!m_prompt_ex("Save and reboot?", "Hold ALT - noreboot")) {
-                draw_panel(x0, y0, 64, 19, "Startup configuration", 0);
+                draw_panel(x0, y0, w, 19, "Startup configuration", 0);
                 in_conf(x, y);
                 continue;
             }
@@ -972,12 +977,12 @@ static void conf_it(uint8_t cmd) {
               break;
             case 8:
               is_kbd_joystick = !is_kbd_joystick;
-              draw_panel(x0, y0, 64, 19, "Startup configuration", 0);
+              draw_panel(x0, y0, w, 19, "Startup configuration", 0);
               break;
             case 9:
               g_conf.manager_pallette_idx = !g_conf.manager_pallette_idx;
               set_color_schema(g_conf.manager_pallette_idx ? &color_schema0 : &color_schema1);
-              draw_panel(x0, y0, 64, 19, "Startup configuration", 0);
+              draw_panel(x0, y0, w, 19, "Startup configuration", 0);
               break;
             case 10:
               is_128_48_new = !is_128_48_new;

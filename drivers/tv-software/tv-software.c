@@ -649,7 +649,7 @@ static bool __time_critical_func(video_timer_callbackTV)(repeating_timer_t* rt) 
 
                 if (graphics_buffer.data != NULL || text_buffer != NULL )
                     switch (tv_out_mode.mode_bpp) {
-                        case TEXTMODE_: {
+                        default: {
                             output_buffer8 += 8;
                             for (int x = 0; x < TEXTMODE_COLS; x++) {
                                 const uint16_t offset = y / 8 * (TEXTMODE_COLS * 2) + x * 2;
