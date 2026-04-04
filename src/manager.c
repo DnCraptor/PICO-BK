@@ -279,13 +279,13 @@ inline static void swap_drive_message() {
             { -1, "To return images back, press Ctrl + Tab + Backspace"}
         };
         const lines_t lines = { 3, 2, lns };
-        draw_box(10, 7, 60, 10, "Info", &lines);
+        draw_box(10, 7, DIALOG_WIDTH, 10, "Info", &lines);
     } else {
         const line_t lns[1] = {
             { -1, "Swap FDD0 and FDD1 drive images back" }
         };
         const lines_t lines = { 1, 3, lns };
-        draw_box(10, 7, 60, 10, "Info", &lines);
+        draw_box(10, 7, DIALOG_WIDTH, 10, "Info", &lines);
     }
     sleep_ms(2500);
     graphics_set_mode(ret);
@@ -323,13 +323,13 @@ inline static void swap_sound_state_message(volatile bool* p_state, char* sys_na
             { -1, ln3}
         };
         const lines_t lines = { 3, 2, lns };
-        draw_box(10, 7, 60, 10, "Info", &lines);
+        draw_box(10, 7, DIALOG_WIDTH, 10, "Info", &lines);
     } else {
         const line_t lns[1] = {
             { -1, ln }
         };
         const lines_t lines = { 1, 3, lns };
-        draw_box(10, 7, 60, 10, "Info", &lines);
+        draw_box(10, 7, DIALOG_WIDTH, 10, "Info", &lines);
     }
     *p_state = !*p_state;
     sleep_ms(2500);
@@ -1251,7 +1251,7 @@ static bool m_prompt_ex(const char* txt, const char* bottom) {
     const lines_t lines = { 1, 2, lns };
     int y = (text_buffer_height - 10) / 2;
     int left = (text_buffer_width - DIALOG_WIDTH) / 2; if (left < 0) left = 0;
-    draw_box_ex(left, y, 60, 10, "Are you sure?", bottom, &lines);
+    draw_box_ex(left, y, DIALOG_WIDTH, 10, "Are you sure?", bottom, &lines);
     bool yes = true;
     draw_button(left + 16, 5 + y, 11, "Yes", yes);
     draw_button(left / 2 + 35, 5 + y, 10, "No", !yes);
