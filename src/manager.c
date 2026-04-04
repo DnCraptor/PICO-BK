@@ -23,6 +23,10 @@ __uninitialized_ram(ram_config_block_t) s_ram_cfg;
 #define DIALOG_WIDTH 60
 #endif
 
+// Centered dialog position helpers
+#define DIALOG_X ((text_buffer_width  - DIALOG_WIDTH) / 2 < 0 ? 0 : (text_buffer_width  - DIALOG_WIDTH) / 2)
+#define DIALOG_Y ((text_buffer_height - 10) / 2 < 0 ? 0 : (text_buffer_height - 10) / 2)
+
 void detect_os_type(const char* path, char* os_type, size_t sz);
 bool mount_img(const char* path, int curr_dir_num);
 
@@ -279,13 +283,13 @@ inline static void swap_drive_message() {
             { -1, "To return images back, press Ctrl + Tab + Backspace"}
         };
         const lines_t lines = { 3, 2, lns };
-        draw_box(10, 7, DIALOG_WIDTH, 10, "Info", &lines);
+        draw_box(DIALOG_X, DIALOG_Y, DIALOG_WIDTH, 10, "Info", &lines);
     } else {
         const line_t lns[1] = {
             { -1, "Swap FDD0 and FDD1 drive images back" }
         };
         const lines_t lines = { 1, 3, lns };
-        draw_box(10, 7, DIALOG_WIDTH, 10, "Info", &lines);
+        draw_box(DIALOG_X, DIALOG_Y, DIALOG_WIDTH, 10, "Info", &lines);
     }
     sleep_ms(2500);
     graphics_set_mode(ret);
@@ -302,7 +306,7 @@ inline static void level_state_message(uint8_t divider, char* sys_name) {
         { -1, ln }
     };
     const lines_t lines = { 1, 3, lns };
-    draw_box(5, 7, 70, 10, "Info", &lines);
+    draw_box(DIALOG_X, DIALOG_Y, DIALOG_WIDTH, 10, "Info", &lines);
     sleep_ms(2500);
     graphics_set_mode(ret);
     restore_video_ram();
@@ -323,13 +327,13 @@ inline static void swap_sound_state_message(volatile bool* p_state, char* sys_na
             { -1, ln3}
         };
         const lines_t lines = { 3, 2, lns };
-        draw_box(10, 7, DIALOG_WIDTH, 10, "Info", &lines);
+        draw_box(DIALOG_X, DIALOG_Y, DIALOG_WIDTH, 10, "Info", &lines);
     } else {
         const line_t lns[1] = {
             { -1, ln }
         };
         const lines_t lines = { 1, 3, lns };
-        draw_box(10, 7, DIALOG_WIDTH, 10, "Info", &lines);
+        draw_box(DIALOG_X, DIALOG_Y, DIALOG_WIDTH, 10, "Info", &lines);
     }
     *p_state = !*p_state;
     sleep_ms(2500);
@@ -344,7 +348,7 @@ static void do_nothing(uint8_t cmd) {
         { -1, line }
     };
     const lines_t lines = { 2, 3, lns };
-    draw_box((text_buffer_width - DIALOG_WIDTH) / 2, 7, DIALOG_WIDTH, 10, "Info", &lines);
+    draw_box(DIALOG_X, DIALOG_Y, DIALOG_WIDTH, 10, "Info", &lines);
     sleep_ms(1500);
     redraw_window();
 }
@@ -1235,7 +1239,7 @@ inline static void no_selected_file() {
         { -1, "Pls. select some file for this action" },
     };
     const lines_t lines = { 1, 3, lns };
-    draw_box((text_buffer_width - DIALOG_WIDTH) / 2, 7, DIALOG_WIDTH, 10, "Info", &lines);
+    draw_box(DIALOG_X, DIALOG_Y, DIALOG_WIDTH, 10, "Info", &lines);
     sleep_ms(1500);
     redraw_window();
 }
@@ -1253,8 +1257,12 @@ static bool m_prompt_ex(const char* txt, const char* bottom) {
     int left = (text_buffer_width - DIALOG_WIDTH) / 2; if (left < 0) left = 0;
     draw_box_ex(left, y, DIALOG_WIDTH, 10, "Are you sure?", bottom, &lines);
     bool yes = true;
-    draw_button(left + 16, 5 + y, 11, "Yes", yes);
-    draw_button(left / 2 + 35, 5 + y, 10, "No", !yes);
+    // Center buttons inside dialog: dialog spans [left .. left+DIALOG_WIDTH]
+    // "Yes"(11) and "No"(10) total width = 21, place them centered with a small gap
+    int btn_yes_x = left + (DIALOG_WIDTH / 2) - 13;
+    int btn_no_x  = left + (DIALOG_WIDTH / 2) + 2;
+    draw_button(btn_yes_x, 5 + y, 11, "Yes", yes);
+    draw_button(btn_no_x,  5 + y, 10, "No", !yes);
     while(1) {
         keyboard_tick();
         if (is_dendy_joystick || is_kbd_joystick) {
@@ -1298,8 +1306,8 @@ static bool m_prompt_ex(const char* txt, const char* bottom) {
         }
         if (tabPressed || leftPressed || rightPressed) { // TODO: own msgs cycle
             yes = !yes;
-            draw_button(left + 16, 5 + y, 11, "Yes", yes);
-            draw_button(left / 2 + 35, 5 + y, 10, "No", !yes);
+            draw_button(btn_yes_x, 5 + y, 11, "Yes", yes);
+            draw_button(btn_no_x,  5 + y, 10, "No", !yes);
             tabPressed = leftPressed = rightPressed = false;
             scan_code_cleanup();
         }
@@ -1362,7 +1370,7 @@ static void m_delete_file(uint8_t cmd) {
                 { -1, line }
             };
             const lines_t lines = { 3, 2, lns };
-            draw_box((text_buffer_width - DIALOG_WIDTH) / 2, 7, DIALOG_WIDTH, 10, "Error", &lines);
+            draw_box(DIALOG_X, DIALOG_Y, DIALOG_WIDTH, 10, "Error", &lines);
             sleep_ms(2500);
         } else {
             psp->indexes[psp->level].selected_file_idx--;
@@ -1455,7 +1463,7 @@ static void m_copy_file(uint8_t cmd) {
                 { -1, line }
             };
             const lines_t lines = { 3, 2, lns };
-            draw_box((text_buffer_width - DIALOG_WIDTH) / 2, 7, DIALOG_WIDTH, 10, "Error", &lines);
+            draw_box(DIALOG_X, DIALOG_Y, DIALOG_WIDTH, 10, "Error", &lines);
             sleep_ms(2500);
         }
     }
@@ -1474,8 +1482,14 @@ static void m_mk_dir(uint8_t cmd) {
     char dir[256];
     construct_full_name(dir, psp->path, "_");
     size_t len = strnlen(dir, 256) - 1;
-    draw_panel(20, text_buffer_height / 2 - 20, text_buffer_width - (DIALOG_WIDTH - 20), 5, "DIR NAME", 0);
-    draw_label(22, text_buffer_height / 2 - 18, text_buffer_width - (DIALOG_WIDTH - 24), dir, true, true);
+    // Position the input panel centered, using DIALOG_WIDTH for consistency
+    int mk_panel_x = DIALOG_X;
+    int mk_panel_y = (text_buffer_height / 2) - 2;
+    if (mk_panel_y < 1) mk_panel_y = 1;
+    int mk_input_w = DIALOG_WIDTH - 4;
+    if (mk_input_w < 8) mk_input_w = 8;
+    draw_panel(mk_panel_x, mk_panel_y, DIALOG_WIDTH, 5, "DIR NAME", 0);
+    draw_label(mk_panel_x + 2, mk_panel_y + 2, mk_input_w, dir, true, true);
     while(1) {
         keyboard_tick();
         if (escWasPressed) {
@@ -1490,7 +1504,7 @@ static void m_mk_dir(uint8_t cmd) {
             if (len == 0) continue;
             dir[len--] = 0;
             dir[len] = '_';
-            draw_label(22, text_buffer_height / 2 - 18, text_buffer_width - (DIALOG_WIDTH - 24), dir, true, true);
+            draw_label(mk_panel_x + 2, mk_panel_y + 2, mk_input_w, dir, true, true);
         }
         if (enterPressed) {
             enterPressed = false;
@@ -1501,11 +1515,11 @@ static void m_mk_dir(uint8_t cmd) {
         if (!sc || sc >= 0x80) continue;
         char c = scan_code_2_cp866[sc]; // TODO: shift, caps lock, alt, rus...
         if (!c) continue;
-        if (len + 2 == text_buffer_width - (DIALOG_WIDTH - 24)) continue;
+        if ((int)len + 2 >= mk_input_w) continue;
         dir[len++] = c;
         dir[len] = '_';
         dir[len + 1] = 0;
-        draw_label(22, text_buffer_height / 2 - 18, text_buffer_width - (DIALOG_WIDTH - 24), dir, true, true);
+        draw_label(mk_panel_x + 2, mk_panel_y + 2, mk_input_w, dir, true, true);
     }
     if (len) {
         dir[len] = 0;
@@ -1545,7 +1559,7 @@ static void m_move_file(uint8_t cmd) {
                 { -1, line }
             };
             const lines_t lines = { 3, 2, lns };
-            draw_box((text_buffer_width - DIALOG_WIDTH) / 2, 7, DIALOG_WIDTH, 10, "Error", &lines);
+            draw_box(DIALOG_X, DIALOG_Y, DIALOG_WIDTH, 10, "Error", &lines);
             sleep_ms(2500);
         }
     }
@@ -1554,7 +1568,7 @@ static void m_move_file(uint8_t cmd) {
 }
 
 static void m_info(uint8_t cmd) {
-    line_t plns[26] = {
+    const line_t plns[] = {
         { 1, "Key mapping in the emulation mode:" },
         { 1, " - Alt   + key  - AP2                       - F7             - BLOCK REDACT" },
         { 1, " - Shift + key  - register up/down          - F8             - STEP" },
@@ -1582,23 +1596,163 @@ static void m_info(uint8_t cmd) {
         { 1, " - F12           - Switch B/W 512x256 to Color 256x256 and back" },
         { 1, " - Ctrl + F10    - exit to Murmulator OS 2.0" },
     };
-    lines_t lines = { 26, 0, plns };
-    draw_box(1, 1, text_buffer_width - 2, text_buffer_height - 2, "Help", &lines);
-    enterPressed = escWasPressed = false;
+    const int total_lines = (int)(sizeof(plns) / sizeof(plns[0]));
+
+    // Find max content line length for horizontal scrolling
+    int max_line_len = 0;
+    for (int i = 0; i < total_lines; ++i) {
+        int l = (int)strlen(plns[i].txt);
+        if (l > max_line_len) max_line_len = l;
+    }
+
+    int box_x = 1;
+    int box_y = 1;
+    int box_w = text_buffer_width - 2;
+    int box_h = text_buffer_height - 2;
+
+    // Usable content rows inside box:
+    // top border(1) + title row(1) + bottom border(1) + scroll hint row(1) = 4 overhead
+    int visible = box_h - 4;
+    if (visible < 1) visible = 1;
+
+    // Usable content columns inside box:
+    // left border(1) + right border(1) = 2 overhead
+    int visible_w = box_w - 2;
+    if (visible_w < 1) visible_w = 1;
+
+    int scroll_top  = 0;
+    int scroll_left = 0;
+    int max_scroll_v = total_lines - visible;
+    if (max_scroll_v < 0) max_scroll_v = 0;
+    int max_scroll_h = max_line_len - visible_w;
+    if (max_scroll_h < 0) max_scroll_h = 0;
+
+    // Build horizontally-clipped lines for current horizontal scroll offset
+    // Buffer size 96 covers the longest help line (~85 chars) + null
+    static char _help_buf[26][96];
+    static line_t _help_lns[26];
+
+    #define REDRAW_HELP() do { \
+        /* Build horizontally-clipped line copies */ \
+        for (int _i = 0; _i < visible && (scroll_top + _i) < total_lines; ++_i) { \
+            const char* _src = plns[scroll_top + _i].txt; \
+            int _srclen = (int)strlen(_src); \
+            int _col = scroll_left; \
+            int _out = 0; \
+            while (_out < visible_w && _col < _srclen) { \
+                _help_buf[_i][_out++] = _src[_col++]; \
+            } \
+            while (_out < visible_w) _help_buf[_i][_out++] = ' '; \
+            _help_buf[_i][_out] = '\0'; \
+            _help_lns[_i] = plns[scroll_top + _i]; \
+            _help_lns[_i].txt = _help_buf[_i]; \
+        } \
+        /* Fill remaining visible rows with blanks if fewer lines than visible */ \
+        for (int _i = (total_lines - scroll_top < visible ? total_lines - scroll_top : visible); \
+             _i < visible; ++_i) { \
+            _help_buf[_i][0] = '\0'; \
+            _help_lns[_i] = plns[0]; \
+            _help_lns[_i].txt = _help_buf[_i]; \
+        } \
+        lines_t _vis = { visible, 0, _help_lns }; \
+        draw_box(box_x, box_y, box_w, box_h, "Help", &_vis); \
+        /* Scroll indicator: "row_first-row_last/total  col+offset" */ \
+        char _si[32]; \
+        int _last = scroll_top + visible; \
+        if (_last > total_lines) _last = total_lines; \
+        if (max_scroll_h > 0) { \
+            snprintf(_si, 32, "%d-%d/%d  >%d", scroll_top + 1, _last, total_lines, scroll_left); \
+        } else { \
+            snprintf(_si, 32, "%d-%d/%d", scroll_top + 1, _last, total_lines); \
+        } \
+        /* Draw hint line at bottom inside box, left side keys, right side position */ \
+        char _hint[64]; \
+        int _hint_content_w = box_w - 2; \
+        snprintf(_hint, _hint_content_w + 1, "UP/DN/PgUp/PgDn/L/R - ESC"); \
+        draw_label(box_x + 1, box_y + box_h - 1, _hint_content_w, _hint, false, false); \
+        int _si_len = (int)strlen(_si); \
+        draw_label(box_x + box_w - _si_len - 1, box_y + box_h - 1, _si_len, _si, false, true); \
+    } while(0)
+
+    REDRAW_HELP();
+
+    enterPressed = escWasPressed = upPressed = downPressed = leftPressed = rightPressed = false;
     nespad_state_delay = DPAD_STATE_DELAY;
     f1Pressed = true;
-    while(!escWasPressed) {
+    while(1) {
         keyboard_tick();
+        if (escWasPressed || enterPressed) break;
+
+        bool need_redraw = false;
+
+        if (upPressed) {
+            upPressed = false;
+            if (scroll_top > 0) { scroll_top--; need_redraw = true; }
+        }
+        if (downPressed) {
+            downPressed = false;
+            if (scroll_top < max_scroll_v) { scroll_top++; need_redraw = true; }
+        }
+        if (leftPressed) {
+            leftPressed = false;
+            if (scroll_left > 0) { scroll_left--; need_redraw = true; }
+        }
+        if (rightPressed) {
+            rightPressed = false;
+            if (scroll_left < max_scroll_h) { scroll_left++; need_redraw = true; }
+        }
+
+        // PageUp / PageDown via scan codes
+        if (lastCleanableScanCode == 0xC9 && lastSavedScanCode == 0x49) { // PgUp up
+            scroll_top -= visible;
+            if (scroll_top < 0) scroll_top = 0;
+            scan_code_processed();
+            need_redraw = true;
+        }
+        if (lastCleanableScanCode == 0xD1 && lastSavedScanCode == 0x51) { // PgDn up
+            scroll_top += visible;
+            if (scroll_top > max_scroll_v) scroll_top = max_scroll_v;
+            scan_code_processed();
+            need_redraw = true;
+        }
+
         if (is_dendy_joystick || is_kbd_joystick) {
             if (is_dendy_joystick) nespad_read();
-            if ((nespad_state && !(nespad_state & DPAD_START) && !(nespad_state & DPAD_SELECT)) || (nespad_state2 && !(nespad_state2 & DPAD_START) && !(nespad_state2 & DPAD_SELECT))) {
+            if (nespad_state_delay > 0) {
+                nespad_state_delay--;
+                sleep_ms(1);
+            } else {
                 nespad_state_delay = DPAD_STATE_DELAY;
-                break;
+                if ((nespad_state & DPAD_UP) || (nespad_state2 & DPAD_UP)) {
+                    if (scroll_top > 0) { scroll_top--; need_redraw = true; }
+                } else if ((nespad_state & DPAD_DOWN) || (nespad_state2 & DPAD_DOWN)) {
+                    if (scroll_top < max_scroll_v) { scroll_top++; need_redraw = true; }
+                } else if ((nespad_state & DPAD_LEFT) || (nespad_state2 & DPAD_LEFT)) {
+                    if (scroll_left > 0) { scroll_left--; need_redraw = true; }
+                } else if ((nespad_state & DPAD_RIGHT) || (nespad_state2 & DPAD_RIGHT)) {
+                    if (scroll_left < max_scroll_h) { scroll_left++; need_redraw = true; }
+                } else if (
+                    (nespad_state && !(nespad_state & DPAD_START) && !(nespad_state & DPAD_SELECT)) ||
+                    (nespad_state2 && !(nespad_state2 & DPAD_START) && !(nespad_state2 & DPAD_SELECT))
+                ) {
+                    break;
+                }
             }
         }
+
+        if (need_redraw) {
+            REDRAW_HELP();
+        }
     }
+    #undef REDRAW_HELP
+
     escWasPressed = false;
-    f1Pressed = false;
+    enterPressed  = false;
+    upPressed     = false;
+    downPressed   = false;
+    leftPressed   = false;
+    rightPressed  = false;
+    f1Pressed     = false;
     scan_code_cleanup();
     redraw_window();
 }
@@ -1813,7 +1967,7 @@ inline static bool m_opendir(
             { -1, "It is not a folder!" }
         };
         const lines_t lines = { 1, 4, lns };
-        draw_box((text_buffer_width - DIALOG_WIDTH) / 2, 7, DIALOG_WIDTH, 10, "Warning", &lines);
+        draw_box(DIALOG_X, DIALOG_Y, DIALOG_WIDTH, 10, "Warning", &lines);
         sleep_ms(1500);
         redraw_window();
         return false;
@@ -2033,7 +2187,7 @@ static inline bool run_bin(char* path) {
             { -1, path }
         };
         const lines_t lines = { 2, 3, lns };
-        draw_box((text_buffer_width - DIALOG_WIDTH) / 2, 7, DIALOG_WIDTH, 10, "Error", &lines);
+        draw_box(DIALOG_X, DIALOG_Y, DIALOG_WIDTH, 10, "Error", &lines);
         sleep_ms(1500);
         redraw_window();
         return false;
@@ -2051,7 +2205,7 @@ static inline bool run_bin(char* path) {
             { -1, line }
         };
         const lines_t lines = { 3, 2, lns };
-        draw_box((text_buffer_width - DIALOG_WIDTH) / 2, 7, DIALOG_WIDTH, 10, "Error", &lines);
+        draw_box(DIALOG_X, DIALOG_Y, DIALOG_WIDTH, 10, "Error", &lines);
         sleep_ms(1500);
         redraw_window();
         return false;
@@ -2067,7 +2221,7 @@ static inline bool run_bin(char* path) {
             { -1, line }
         };
         const lines_t lines = { 3, 2, lns };
-        draw_box((text_buffer_width - DIALOG_WIDTH) / 2, 7, DIALOG_WIDTH, 10, "Error", &lines);
+        draw_box(DIALOG_X, DIALOG_Y, DIALOG_WIDTH, 10, "Error", &lines);
         sleep_ms(1500);
         redraw_window();
         return false;
@@ -2741,7 +2895,7 @@ inline void if_overclock() {
                 { -1, line }
             };
             lines_t lines = { 1, 3, lns };
-            draw_box((text_buffer_width - DIALOG_WIDTH) / 2, 7, DIALOG_WIDTH, 10, "Info", &lines);
+            draw_box(DIALOG_X, DIALOG_Y, DIALOG_WIDTH, 10, "Info", &lines);
         }
         else {
             sprintf(line, "System clock of %u kHz cannot be achieved", overcloking_khz);
@@ -2749,7 +2903,7 @@ inline void if_overclock() {
                 { -1, line }
             };
             lines_t lines = { 1, 3, lns };
-            draw_box((text_buffer_width - DIALOG_WIDTH) / 2, 7, DIALOG_WIDTH, 10, "Warning", &lines);
+            draw_box(DIALOG_X, DIALOG_Y, DIALOG_WIDTH, 10, "Warning", &lines);
         }
         sleep_ms(2500);
         graphics_set_mode(ret);
