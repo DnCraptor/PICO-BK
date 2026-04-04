@@ -179,7 +179,11 @@ void graphics_set_modeTV(tv_out_mode_t mode) {
     video_mode.sync_size = 4.7 * video_mode.H_len / 64;
     video_mode.sync_size &= 0xfffffff8;
 
-    video_mode.begin_img_shx = 10.5 * video_mode.H_len / 64 + 44; // TODO: ensure
+    if (tv_out_mode.mode_bpp == TEXTMODE_) {
+        video_mode.begin_img_shx = 10.5 * video_mode.H_len / 64 + 24; // TODO: ensure
+    } else {
+        video_mode.begin_img_shx = 10.5 * video_mode.H_len / 64 + 44; // TODO: ensure
+    }
     video_mode.img_W = video_mode.H_len - ((12 * video_mode.H_len) / 64);
     video_mode.img_W &= 0xfffffffc;
 

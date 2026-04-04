@@ -17,6 +17,12 @@
 __uninitialized_ram(ram_config_block_t) s_ram_cfg;
 #include "main_i.h"
 
+#if SELECT_TV
+#define DIALOG_WIDTH 44
+#else
+#define DIALOG_WIDTH 60
+#endif
+
 void detect_os_type(const char* path, char* os_type, size_t sz);
 bool mount_img(const char* path, int curr_dir_num);
 
@@ -338,7 +344,7 @@ static void do_nothing(uint8_t cmd) {
         { -1, line }
     };
     const lines_t lines = { 2, 3, lns };
-    draw_box((text_buffer_width - 60) / 2, 7, 60, 10, "Info", &lines);
+    draw_box((text_buffer_width - DIALOG_WIDTH) / 2, 7, DIALOG_WIDTH, 10, "Info", &lines);
     sleep_ms(1500);
     redraw_window();
 }
@@ -1229,7 +1235,7 @@ inline static void no_selected_file() {
         { -1, "Pls. select some file for this action" },
     };
     const lines_t lines = { 1, 3, lns };
-    draw_box((text_buffer_width - 60) / 2, 7, 60, 10, "Info", &lines);
+    draw_box((text_buffer_width - DIALOG_WIDTH) / 2, 7, DIALOG_WIDTH, 10, "Info", &lines);
     sleep_ms(1500);
     redraw_window();
 }
@@ -1244,7 +1250,7 @@ static bool m_prompt_ex(const char* txt, const char* bottom) {
     };
     const lines_t lines = { 1, 2, lns };
     int y = (text_buffer_height - 10) / 2;
-    int left = (text_buffer_width - 60) / 2; if (left < 0) left = 0;
+    int left = (text_buffer_width - DIALOG_WIDTH) / 2; if (left < 0) left = 0;
     draw_box_ex(left, y, 60, 10, "Are you sure?", bottom, &lines);
     bool yes = true;
     draw_button(left + 16, 5 + y, 11, "Yes", yes);
@@ -1356,7 +1362,7 @@ static void m_delete_file(uint8_t cmd) {
                 { -1, line }
             };
             const lines_t lines = { 3, 2, lns };
-            draw_box((text_buffer_width - 60) / 2, 7, 60, 10, "Error", &lines);
+            draw_box((text_buffer_width - DIALOG_WIDTH) / 2, 7, DIALOG_WIDTH, 10, "Error", &lines);
             sleep_ms(2500);
         } else {
             psp->indexes[psp->level].selected_file_idx--;
@@ -1449,7 +1455,7 @@ static void m_copy_file(uint8_t cmd) {
                 { -1, line }
             };
             const lines_t lines = { 3, 2, lns };
-            draw_box((text_buffer_width - 60) / 2, 7, 60, 10, "Error", &lines);
+            draw_box((text_buffer_width - DIALOG_WIDTH) / 2, 7, DIALOG_WIDTH, 10, "Error", &lines);
             sleep_ms(2500);
         }
     }
@@ -1468,8 +1474,8 @@ static void m_mk_dir(uint8_t cmd) {
     char dir[256];
     construct_full_name(dir, psp->path, "_");
     size_t len = strnlen(dir, 256) - 1;
-    draw_panel(20, text_buffer_height / 2 - 20, text_buffer_width - 40, 5, "DIR NAME", 0);
-    draw_label(22, text_buffer_height / 2 - 18, text_buffer_width - 44, dir, true, true);
+    draw_panel(20, text_buffer_height / 2 - 20, text_buffer_width - (DIALOG_WIDTH - 20), 5, "DIR NAME", 0);
+    draw_label(22, text_buffer_height / 2 - 18, text_buffer_width - (DIALOG_WIDTH - 24), dir, true, true);
     while(1) {
         keyboard_tick();
         if (escWasPressed) {
@@ -1484,7 +1490,7 @@ static void m_mk_dir(uint8_t cmd) {
             if (len == 0) continue;
             dir[len--] = 0;
             dir[len] = '_';
-            draw_label(22, text_buffer_height / 2 - 18, text_buffer_width - 44, dir, true, true);
+            draw_label(22, text_buffer_height / 2 - 18, text_buffer_width - (DIALOG_WIDTH - 24), dir, true, true);
         }
         if (enterPressed) {
             enterPressed = false;
@@ -1495,11 +1501,11 @@ static void m_mk_dir(uint8_t cmd) {
         if (!sc || sc >= 0x80) continue;
         char c = scan_code_2_cp866[sc]; // TODO: shift, caps lock, alt, rus...
         if (!c) continue;
-        if (len + 2 == text_buffer_width - 44) continue;
+        if (len + 2 == text_buffer_width - (DIALOG_WIDTH - 24)) continue;
         dir[len++] = c;
         dir[len] = '_';
         dir[len + 1] = 0;
-        draw_label(22, text_buffer_height / 2 - 18, text_buffer_width - 44, dir, true, true);
+        draw_label(22, text_buffer_height / 2 - 18, text_buffer_width - (DIALOG_WIDTH - 24), dir, true, true);
     }
     if (len) {
         dir[len] = 0;
@@ -1539,7 +1545,7 @@ static void m_move_file(uint8_t cmd) {
                 { -1, line }
             };
             const lines_t lines = { 3, 2, lns };
-            draw_box((text_buffer_width - 60) / 2, 7, 60, 10, "Error", &lines);
+            draw_box((text_buffer_width - DIALOG_WIDTH) / 2, 7, DIALOG_WIDTH, 10, "Error", &lines);
             sleep_ms(2500);
         }
     }
@@ -1807,7 +1813,7 @@ inline static bool m_opendir(
             { -1, "It is not a folder!" }
         };
         const lines_t lines = { 1, 4, lns };
-        draw_box((text_buffer_width - 60) / 2, 7, 60, 10, "Warning", &lines);
+        draw_box((text_buffer_width - DIALOG_WIDTH) / 2, 7, DIALOG_WIDTH, 10, "Warning", &lines);
         sleep_ms(1500);
         redraw_window();
         return false;
@@ -2027,7 +2033,7 @@ static inline bool run_bin(char* path) {
             { -1, path }
         };
         const lines_t lines = { 2, 3, lns };
-        draw_box((text_buffer_width - 60) / 2, 7, 60, 10, "Error", &lines);
+        draw_box((text_buffer_width - DIALOG_WIDTH) / 2, 7, DIALOG_WIDTH, 10, "Error", &lines);
         sleep_ms(1500);
         redraw_window();
         return false;
@@ -2045,7 +2051,7 @@ static inline bool run_bin(char* path) {
             { -1, line }
         };
         const lines_t lines = { 3, 2, lns };
-        draw_box((text_buffer_width - 60) / 2, 7, 60, 10, "Error", &lines);
+        draw_box((text_buffer_width - DIALOG_WIDTH) / 2, 7, DIALOG_WIDTH, 10, "Error", &lines);
         sleep_ms(1500);
         redraw_window();
         return false;
@@ -2061,7 +2067,7 @@ static inline bool run_bin(char* path) {
             { -1, line }
         };
         const lines_t lines = { 3, 2, lns };
-        draw_box((text_buffer_width - 60) / 2, 7, 60, 10, "Error", &lines);
+        draw_box((text_buffer_width - DIALOG_WIDTH) / 2, 7, DIALOG_WIDTH, 10, "Error", &lines);
         sleep_ms(1500);
         redraw_window();
         return false;
@@ -2735,7 +2741,7 @@ inline void if_overclock() {
                 { -1, line }
             };
             lines_t lines = { 1, 3, lns };
-            draw_box((text_buffer_width - 60) / 2, 7, 60, 10, "Info", &lines);
+            draw_box((text_buffer_width - DIALOG_WIDTH) / 2, 7, DIALOG_WIDTH, 10, "Info", &lines);
         }
         else {
             sprintf(line, "System clock of %u kHz cannot be achieved", overcloking_khz);
@@ -2743,7 +2749,7 @@ inline void if_overclock() {
                 { -1, line }
             };
             lines_t lines = { 1, 3, lns };
-            draw_box((text_buffer_width - 60) / 2, 7, 60, 10, "Warning", &lines);
+            draw_box((text_buffer_width - DIALOG_WIDTH) / 2, 7, DIALOG_WIDTH, 10, "Warning", &lines);
         }
         sleep_ms(2500);
         graphics_set_mode(ret);
