@@ -730,12 +730,136 @@ static bool __time_critical_func(video_timer_callbackTV)(repeating_timer_t* rt) 
                         case BK_256x256x2: {
                             uint8_t* input_buffer8 = bk_get_line(y);
                             uint32_t lut32;
-                            if (pallete_mask == 3)
-                                 lut32 = ((221 << 24) | (220 << 16) | (219 << 8) | 200);
-                            else if(pallete_mask == 2)
-                                 lut32 = ((204 << 24) | (202 << 16) | (201 << 8) | 200);
-                            else 
-                                 lut32 = ((218 << 24) | (217 << 16) | (216 << 8) | 200);
+                            switch(g_conf.graphics_pallette_idx) {
+                                case 15: // WGC
+                                    if (pallete_mask == 3)
+                                        lut32 = ((215 << 24) | (220 << 16) | (224 << 8) | 200);
+                                    else if(pallete_mask == 2)
+                                        lut32 = ((207 << 24) | (202 << 16) | (203 << 8) | 200);
+                                    else 
+                                        lut32 = ((196 << 24) | (217 << 16) | (197 << 8) | 200);
+                                    break;
+                                case 14: // WGY
+                                    if (pallete_mask == 3)
+                                        lut32 = ((215 << 24) | (220 << 16) | (222 << 8) | 200);
+                                    else if(pallete_mask == 2)
+                                        lut32 = ((207 << 24) | (202 << 16) | (214 << 8) | 200);
+                                    else 
+                                        lut32 = ((196 << 24) | (217 << 16) | (199 << 8) | 200);
+                                    break;
+                                case 13: // WYC
+                                    if (pallete_mask == 3)
+                                        lut32 = ((215 << 24) | (222 << 16) | (224 << 8) | 200);
+                                    else if(pallete_mask == 2)
+                                        lut32 = ((207 << 24) | (214 << 16) | (203 << 8) | 200);
+                                    else 
+                                        lut32 = ((196 << 24) | (199 << 16) | (197 << 8) | 200);
+                                    break;
+                                case 12: // CGR
+                                    if (pallete_mask == 3)
+                                        lut32 = ((224 << 24) | (220 << 16) | (221 << 8) | 200);
+                                    else if(pallete_mask == 2)
+                                        lut32 = ((203 << 24) | (202 << 16) | (204 << 8) | 200);
+                                    else 
+                                        lut32 = ((197 << 24) | (217 << 16) | (218 << 8) | 200);
+                                    break;
+                                case 11: // RYC
+                                    if (pallete_mask == 3)
+                                        lut32 = ((221 << 24) | (222 << 16) | (224 << 8) | 200);
+                                    else if(pallete_mask == 2)
+                                        lut32 = ((204 << 24) | (214 << 16) | (203 << 8) | 200);
+                                    else 
+                                        lut32 = ((218 << 24) | (199 << 16) | (197 << 8) | 200);
+                                    break;
+                                case 10: // R-BrGr
+                                    if (pallete_mask == 3)
+                                        lut32 = ((204 << 24) | (186 << 16) | (192 << 8) | 200);
+                                    else if(pallete_mask == 2)
+                                        lut32 = ((218 << 24) | (184 << 16) | (190 << 8) | 200);
+                                    else 
+                                        lut32 = ((194 << 24) | (182 << 16) | (188 << 8) | 200);
+                                    break;
+                                case 9: // R-Br-Gr-
+                                    if (pallete_mask == 3)
+                                        lut32 = ((218 << 24) | (185 << 16) | (191 << 8) | 200);
+                                    else if(pallete_mask == 2)
+                                        lut32 = ((194 << 24) | (183 << 16) | (189 << 8) | 200);
+                                    else 
+                                        lut32 = ((193 << 24) | (181 << 16) | (187 << 8) | 200);
+                                    break;
+                                case 8: // MBr-Br
+                                    if (pallete_mask == 3)
+                                        lut32 = ((223 << 24) | (185 << 16) | (186 << 8) | 200);
+                                    else if(pallete_mask == 2)
+                                        lut32 = ((205 << 24) | (183 << 16) | (184 << 8) | 200);
+                                    else 
+                                        lut32 = ((198 << 24) | (181 << 16) | (182 << 8) | 200);
+                                    break;
+                                case 7: // YGr-Gr
+                                    if (pallete_mask == 3)
+                                        lut32 = ((222 << 24) | (191 << 16) | (192 << 8) | 200);
+                                    else if(pallete_mask == 2)
+                                        lut32 = ((214 << 24) | (189 << 16) | (190 << 8) | 200);
+                                    else 
+                                        lut32 = ((199 << 24) | (187 << 16) | (188 << 8) | 200);
+                                    break;
+                                case 6: // RR--R-
+                                    if (pallete_mask == 3)
+                                        lut32 = ((221 << 24) | (218 << 16) | (204 << 8) | 200);
+                                    else if(pallete_mask == 2)
+                                        lut32 = ((204 << 24) | (194 << 16) | (218 << 8) | 200);
+                                    else 
+                                        lut32 = ((218 << 24) | (193 << 16) | (194 << 8) | 200);
+                                    break;
+                                case 5: // WWW
+                                    if (pallete_mask == 3)
+                                        lut32 = ((215 << 24) | (215 << 16) | (215 << 8) | 200);
+                                    else if(pallete_mask == 2)
+                                        lut32 = ((207 << 24) | (207 << 16) | (207 << 8) | 200);
+                                    else 
+                                        lut32 = ((196 << 24) | (196 << 16) | (196 << 8) | 200);
+                                    break;
+                                case 4: // WCM
+                                    if (pallete_mask == 3)
+                                        lut32 = ((215 << 24) | (224 << 16) | (223 << 8) | 200);
+                                    else if(pallete_mask == 2)
+                                        lut32 = ((207 << 24) | (203 << 16) | (205 << 8) | 200);
+                                    else 
+                                        lut32 = ((196 << 24) | (197 << 16) | (198 << 8) | 200);
+                                    break;
+                                case 3: // YCG
+                                    if (pallete_mask == 3)
+                                        lut32 = ((222 << 24) | (224 << 16) | (220 << 8) | 200);
+                                    else if(pallete_mask == 2)
+                                        lut32 = ((214 << 24) | (203 << 16) | (202 << 8) | 200);
+                                    else 
+                                        lut32 = ((199 << 24) | (197 << 16) | (217 << 8) | 200);
+                                    break;
+                                case 2: // MBC
+                                    if (pallete_mask == 3)
+                                        lut32 = ((223 << 24) | (219 << 16) | (224 << 8) | 200);
+                                    else if(pallete_mask == 2)
+                                        lut32 = ((205 << 24) | (201 << 16) | (203 << 8) | 200);
+                                    else 
+                                        lut32 = ((198 << 24) | (216 << 16) | (197 << 8) | 200);
+                                    break;
+                                case 1: // RMY
+                                    if (pallete_mask == 3)
+                                        lut32 = ((221 << 24) | (223 << 16) | (222 << 8) | 200);
+                                    else if(pallete_mask == 2)
+                                        lut32 = ((204 << 24) | (205 << 16) | (214 << 8) | 200);
+                                    else 
+                                        lut32 = ((218 << 24) | (198 << 16) | (199 << 8) | 200);
+                                    break;
+                                case 0: // RGB
+                                default:
+                                    if (pallete_mask == 3)
+                                        lut32 = ((221 << 24) | (220 << 16) | (219 << 8) | 200);
+                                    else if(pallete_mask == 2)
+                                        lut32 = ((204 << 24) | (202 << 16) | (201 << 8) | 200);
+                                    else 
+                                        lut32 = ((218 << 24) | (217 << 16) | (216 << 8) | 200);
+                            }
                             uint8_t* lut = (uint8_t*)&lut32;
                             uint8_t packed = *input_buffer8++;
                             int subpixel = 0;
@@ -919,16 +1043,38 @@ void graphics_init() {
     graphics_set_palette(211, RGB888(0x4E, 0xF3, 0xF3)); //light cyan
     graphics_set_palette(212, RGB888(0xDC, 0x4E, 0x4E)); //light red
     graphics_set_palette(213, RGB888(0xF3, 0x4E, 0xF3)); //light magenta
-    graphics_set_palette(214, RGB888(0xF3, 0xF3, 0x4E)); //yellow
+    graphics_set_palette(214, RGB888(0xc4, 0xc4, 0x00)); //yellow
+
     graphics_set_palette(215, RGB888(0xFF, 0xFF, 0xFF)); //white
+    graphics_set_palette(192, RGB888(0xC0, 0xFF, 0x00)); //Gr-
+    graphics_set_palette(191, RGB888(0x90, 0xFF, 0x00)); //Gr--
+    graphics_set_palette(186, RGB888(0xC0, 0x00, 0xFF)); //Br
+    graphics_set_palette(185, RGB888(0x90, 0x00, 0xFF)); //Br-
 // тёмные
     graphics_set_palette(216, RGB888(0x00, 0x00, 0x74)); //blue
     graphics_set_palette(217, RGB888(0x00, 0x74, 0x00)); //green
     graphics_set_palette(218, RGB888(0x74, 0x00, 0x00)); //red
+    graphics_set_palette(199, RGB888(0x74, 0x74, 0x00)); //yellow
+    graphics_set_palette(198, RGB888(0x74, 0x00, 0x74)); //magenta
+    graphics_set_palette(197, RGB888(0x00, 0x74, 0x74)); //cyan
+    graphics_set_palette(196, RGB888(0x74, 0x74, 0x74)); //white
+    graphics_set_palette(194, RGB888(0x44, 0x00, 0x00)); //red---
+    graphics_set_palette(193, RGB888(0x24, 0x00, 0x00)); //red----
+    graphics_set_palette(190, RGB888(0x74, 0xC4, 0x00)); //Gr-
+    graphics_set_palette(189, RGB888(0x44, 0xC4, 0x00)); //Gr--
+    graphics_set_palette(188, RGB888(0x44, 0x74, 0x00)); //Gr-
+    graphics_set_palette(187, RGB888(0x24, 0x74, 0x00)); //Gr--
+    graphics_set_palette(184, RGB888(0x74, 0x00, 0xC4)); //Br-
+    graphics_set_palette(183, RGB888(0x44, 0x00, 0xC4)); //Br--
+    graphics_set_palette(182, RGB888(0x44, 0x00, 0x74)); //Br-
+    graphics_set_palette(181, RGB888(0x24, 0x00, 0x74)); //Br--
 // светлые
     graphics_set_palette(219, RGB888(0x00, 0x00, 0xFF)); //blue
     graphics_set_palette(220, RGB888(0x00, 0xFF, 0x00)); //green
     graphics_set_palette(221, RGB888(0xFF, 0x00, 0x00)); //red
+    graphics_set_palette(222, RGB888(0xFF, 0xFF, 0x00)); //yellow
+    graphics_set_palette(223, RGB888(0xFF, 0x00, 0xFF)); //magenta
+    graphics_set_palette(224, RGB888(0x00, 0xFF, 0xFF)); //cyan
 };
 
 void graphics_set_textbuffer(uint8_t* buffer) {
