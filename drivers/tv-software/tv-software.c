@@ -37,7 +37,7 @@ typedef struct tv_out_mode_t {
 static tv_out_mode_t tv_out_mode = {
     .mode_bpp = BK_256x256x2,
     .color_index = 1.0, //0-1
-    .cb_sync_PI_shift_lines = true,
+    .cb_sync_PI_shift_lines = false,
     .cb_sync_PI_shift_half_frame = true
 };
 
@@ -168,9 +168,9 @@ void graphics_set_modeTV(tv_out_mode_t mode) {
     tv_out_mode = mode;
     for (int i = 0; i < 256; i++) {
         graphics_set_palette(i, (paletteRGB[2][i] << 16) | (paletteRGB[1][i] << 8) | (paletteRGB[0][i] << 0));
-    };
+    }
 
-    video_mode.N_lines = 625;
+    video_mode.N_lines = 312;
 
     double color_freq = 4.43361875 * 1e6;
     video_mode.H_len = ((color_freq * 4) / 1e6) * 63.9;
@@ -409,7 +409,7 @@ static bool __time_critical_func(video_timer_callbackTV)(repeating_timer_t* rt) 
 
         int dec_str = 0;
 
-        if (line_active == video_mode.N_lines) {
+        if (line_active >= video_mode.N_lines) {
             line_active = 0;
             frame_i++;
             bk_vsync();
@@ -422,7 +422,7 @@ static bool __time_critical_func(video_timer_callbackTV)(repeating_timer_t* rt) 
         switch (line_active) {
             case 0:
             case 1:
-                //|___|--|___|--| type=1
+                //|___|--|___|--| уравнивающие
                 nf_memset(output_buffer8, video_mode.SYNC_TMPL, (video_mode.H_len / 2) - video_mode.sync_size);
                 output_buffer8 += (video_mode.H_len / 2) - video_mode.sync_size;
                 nf_memset(output_buffer8, video_mode.NO_SYNC_TMPL, video_mode.sync_size);
@@ -434,7 +434,7 @@ static bool __time_critical_func(video_timer_callbackTV)(repeating_timer_t* rt) 
                 break;
 
             case 2:
-                // ____|--|_|----type=2
+                // ____|--|_|---- переходная
                 nf_memset(output_buffer8, video_mode.SYNC_TMPL, (video_mode.H_len / 2) - video_mode.sync_size);
                 output_buffer8 += (video_mode.H_len / 2) - video_mode.sync_size;
                 nf_memset(output_buffer8, video_mode.NO_SYNC_TMPL, video_mode.sync_size);
@@ -445,8 +445,10 @@ static bool __time_critical_func(video_timer_callbackTV)(repeating_timer_t* rt) 
                         (video_mode.H_len / 2) - (video_mode.sync_size / 2));
                 is_line_visible = false;
                 break;
+
             case 3:
-            case 4: //|_|----|_|---- type=0
+            case 4:
+                //|_|----|_|---- уравнивающие
                 nf_memset(output_buffer8, video_mode.SYNC_TMPL, video_mode.sync_size / 2);
                 output_buffer8 += video_mode.sync_size / 2;
                 nf_memset(output_buffer8, video_mode.NO_SYNC_TMPL,
@@ -459,82 +461,9 @@ static bool __time_critical_func(video_timer_callbackTV)(repeating_timer_t* rt) 
                 is_line_visible = false;
                 break;
 
-            case 5: break; //шаблон как у видимой строки, но без изображения
+            case 5: break; // первая видимая строка: шаблон как у видимой, без картинки
 
-
-            case 310:
-            case 311:
-                //|_|----|_|---- type=0
-                nf_memset(output_buffer8, video_mode.SYNC_TMPL, video_mode.sync_size / 2);
-                output_buffer8 += video_mode.sync_size / 2;
-                nf_memset(output_buffer8, video_mode.NO_SYNC_TMPL,
-                        (video_mode.H_len / 2) - (video_mode.sync_size / 2));
-                output_buffer8 += (video_mode.H_len / 2) - (video_mode.sync_size / 2);
-                nf_memset(output_buffer8, video_mode.SYNC_TMPL, video_mode.sync_size / 2);
-                output_buffer8 += video_mode.sync_size / 2;
-                nf_memset(output_buffer8, video_mode.NO_SYNC_TMPL,
-                        (video_mode.H_len / 2) - (video_mode.sync_size / 2));
-                is_line_visible = false;
-                break;
-            case 312:
-                //|_|---|____|--| type=3
-                nf_memset(output_buffer8, video_mode.SYNC_TMPL, video_mode.sync_size / 2);
-                output_buffer8 += video_mode.sync_size / 2;
-                nf_memset(output_buffer8, video_mode.NO_SYNC_TMPL,
-                        (video_mode.H_len / 2) - (video_mode.sync_size / 2));
-                output_buffer8 += (video_mode.H_len / 2) - (video_mode.sync_size / 2);
-                nf_memset(output_buffer8, video_mode.SYNC_TMPL, (video_mode.H_len / 2) - video_mode.sync_size);
-                output_buffer8 += (video_mode.H_len / 2) - video_mode.sync_size;
-                nf_memset(output_buffer8, video_mode.NO_SYNC_TMPL, video_mode.sync_size);
-                is_line_visible = false;
-                break;
-            case 313:
-            case 314:
-                //|___|--|___|--| type=1
-                nf_memset(output_buffer8, video_mode.SYNC_TMPL, (video_mode.H_len / 2) - video_mode.sync_size);
-                output_buffer8 += (video_mode.H_len / 2) - video_mode.sync_size;
-                nf_memset(output_buffer8, video_mode.NO_SYNC_TMPL, video_mode.sync_size);
-                output_buffer8 += video_mode.sync_size;
-                nf_memset(output_buffer8, video_mode.SYNC_TMPL, (video_mode.H_len / 2) - video_mode.sync_size);
-                output_buffer8 += (video_mode.H_len / 2) - video_mode.sync_size;
-                nf_memset(output_buffer8, video_mode.NO_SYNC_TMPL, video_mode.sync_size);
-                is_line_visible = false;
-                break;
-            case 315:
-            case 316:
-                //|_|----|_|---- type=0
-                nf_memset(output_buffer8, video_mode.SYNC_TMPL, video_mode.sync_size / 2);
-                output_buffer8 += video_mode.sync_size / 2;
-                nf_memset(output_buffer8, video_mode.NO_SYNC_TMPL,
-                        (video_mode.H_len / 2) - (video_mode.sync_size / 2));
-                output_buffer8 += (video_mode.H_len / 2) - (video_mode.sync_size / 2);
-                nf_memset(output_buffer8, video_mode.SYNC_TMPL, video_mode.sync_size / 2);
-                output_buffer8 += video_mode.sync_size / 2;
-                nf_memset(output_buffer8, video_mode.NO_SYNC_TMPL,
-                        (video_mode.H_len / 2) - (video_mode.sync_size / 2));
-                is_line_visible = false;
-                break;
-            case 317:
-                //|_|---------type=4
-                nf_memset(output_buffer8, video_mode.SYNC_TMPL, video_mode.sync_size / 2);
-                output_buffer8 += video_mode.sync_size / 2;
-                nf_memset(output_buffer8, video_mode.NO_SYNC_TMPL,
-                        (video_mode.H_len) - (video_mode.sync_size / 2));
-                is_line_visible = false;
-                break;
-            case 622:
-                //|__|---|_|----type=5
-                nf_memset(output_buffer8, video_mode.SYNC_TMPL, video_mode.sync_size);
-                output_buffer8 += video_mode.sync_size;
-                nf_memset(output_buffer8, video_mode.NO_SYNC_TMPL,
-                        (video_mode.H_len / 2) - (video_mode.sync_size));
-                output_buffer8 += (video_mode.H_len / 2) - (video_mode.sync_size);
-                nf_memset(output_buffer8, video_mode.SYNC_TMPL, video_mode.sync_size / 2);
-                output_buffer8 += video_mode.sync_size / 2;
-                nf_memset(output_buffer8, video_mode.NO_SYNC_TMPL,
-                        (video_mode.H_len / 2) - (video_mode.sync_size / 2));
-                is_line_visible = false;
-                break;
+            // строки 6–311: видимые — обрабатываются ниже (is_line_visible = true)
         }
 
         int li = 0;
@@ -550,7 +479,7 @@ static bool __time_critical_func(video_timer_callbackTV)(repeating_timer_t* rt) 
             //  if (false)
             if (tv_out_mode.cb_sync_PI_shift_lines) {
                 if (tv_out_mode.cb_sync_PI_shift_half_frame) {
-                    if (line_active == 0 || line_active == video_mode.N_lines / 2) {
+                    if (line_active == 0) {
                         dec_str += 2;
                         static bool is_inv;
                         if (is_inv) {
@@ -575,10 +504,6 @@ static bool __time_critical_func(video_timer_callbackTV)(repeating_timer_t* rt) 
             else {
                 if (tv_out_mode.cb_sync_PI_shift_half_frame) {
                     if ((line_active == 0)) {
-                        g_str_index += 2;
-                        dec_str += 2;
-                    } //нейтрализация сдвига фазы "лишней строки"(не кратной 4)
-                    if (line_active == video_mode.N_lines / 2) {
                         g_str_index += 2;
                         dec_str += 2;
                     }
@@ -621,12 +546,8 @@ static bool __time_critical_func(video_timer_callbackTV)(repeating_timer_t* rt) 
 
             // цветовая вспышка
             int mul_sh = 23; // сдвиг вспышки для более высокой частоты
-            if (tv_out_mode.mode_bpp == BK_256x256x2) { // только для цветного режима
-                if (li) memcpy(output_buffer8 + 0 + mul_sh * 4, cb[1], 40);
-                else memcpy(output_buffer8 + 0 + mul_sh * 4, cb[0], 40);
-            } else {
-                nf_memset(output_buffer8 + 0 + mul_sh * 4, video_mode.LVL_BLACK_TMPL, 40);
-            }
+            if (li) memcpy(output_buffer8 + 0 + mul_sh * 4, cb[1], 40);
+            else memcpy(output_buffer8 + 0 + mul_sh * 4, cb[0], 40);
 
             output_buffer8 += video_mode.begin_img_shx;
             //di коэффициент сжатия с учётом количества строк и частоты поднесущей
@@ -635,7 +556,6 @@ static bool __time_critical_func(video_timer_callbackTV)(repeating_timer_t* rt) 
             int y = -1;
          //   di = (graphics_buffer.width << 8) / (video_mode.img_W - d_end); // 0xD7 / 2;
             if ((line_active > 4) && (line_active < 310)) { y = line_active - 23; }; //-23
-            if ((line_active > 317) && (line_active < 622)) { y = line_active - 335; }; //-335
             y -= graphics_buffer.shift_y;
 
             if ((y >= graphics_buffer.height) || (y < 0) || (graphics_buffer.data == NULL)) {
