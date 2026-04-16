@@ -74,7 +74,7 @@ void __time_critical_func(render_core)() {
     graphics_set_bgcolor(0x00000000);
     sem_acquire_blocking(&vga_start_semaphore);
     return;
-#endif
+#else
     if (SELECT_VGA) {
         graphics_init();
         graphics_set_bgcolor(0x80808080);
@@ -85,6 +85,7 @@ void __time_critical_func(render_core)() {
     }
     dvi_on_core1();
 	__builtin_unreachable();
+#endif
 }
 
 void inInit(uint gpio) {
@@ -432,7 +433,7 @@ extern "C" int testPins(uint32_t pin0, uint32_t pin1) {
 }
 
 static void __not_in_flash_func(flash_timings)() {
-    uint khz = 319200; // TODO: ensure clkdiv = 319.2 / 17.734475 ≈ 18.0000
+    uint khz = 315000; // TODO: ensure clkdiv = 319.2 / 17.734475 ≈ 18.0000
 #if !PICO_RP2040
     if (khz >= 400000) {
         if (khz >= 500000) {

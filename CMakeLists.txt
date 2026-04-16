@@ -409,7 +409,11 @@ pico_enable_stdio_uart(${PROJECT_NAME} 0)
 pico_enable_stdio_usb(${PROJECT_NAME} 0)
 
 if (TV_OUT)
-    SET(BUILD_NAME "${BUILD_NAME}-TV-319.2MHz-${AY_TYPE}-${BUILD_VERSION}")
+#    SET(BUILD_NAME "${BUILD_NAME}-TV-PALp-319.2MHz-${AY_TYPE}-${BUILD_VERSION}")
+    SET(BUILD_NAME "${BUILD_NAME}-TV-NTSC-315MHz-${AY_TYPE}-${BUILD_VERSION}")
+    target_compile_definitions(${PROJECT_NAME} PRIVATE
+        TV_OUT_MODE=tv_out_mode_NTSC
+    )
 else ()
     SET(BUILD_NAME "${BUILD_NAME}-VGA-HDMI-270MHz-${AY_TYPE}-${BUILD_VERSION}")
 endif ()

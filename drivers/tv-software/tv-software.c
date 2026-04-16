@@ -25,16 +25,48 @@ uint8_t* text_buffer = &TEXT_VIDEO_RAM[0];
 
 void graphics_set_palette(uint8_t i, uint32_t color888);
 
+typedef enum {
+    TV_SYS_PAL,
+    TV_SYS_NTSC
+} tv_system_t;
+
 typedef struct tv_out_mode_t {
-    // double color_freq;
+    tv_system_t tv_system;
+    float color_freq;
+    uint16_t N_lines;
     float color_index;
     enum graphics_mode_t mode_bpp;
     bool cb_sync_PI_shift_lines;
     bool cb_sync_PI_shift_half_frame;
 } tv_out_mode_t;
 
+
+static tv_out_mode_t tv_out_mode_NTSC = {
+    .tv_system = TV_SYS_NTSC,
+    .color_freq = 3579545.4545454545, // 315000000.0 / 88.0 ~ 3579545,
+    .N_lines = 262,   // half-frame NTSC
+    .mode_bpp = BK_256x256x2,
+    .color_index = 1.0,
+    .cb_sync_PI_shift_lines = false,
+    .cb_sync_PI_shift_half_frame = true
+};
+static tv_out_mode_t tv_out_mode_PAL = {
+    .tv_system = TV_SYS_PAL,
+    .color_freq = 4433618.75,
+    .N_lines = 312,
+    .mode_bpp = BK_256x256x2,
+    .color_index = 1.0, //0-1
+    .cb_sync_PI_shift_lines = false,
+    .cb_sync_PI_shift_half_frame = true
+};
+#ifndef TV_OUT_MODE
+#define TV_OUT_MODE tv_out_mode_PAL
+#endif
 //параметры по умолчанию
 static tv_out_mode_t tv_out_mode = {
+    .tv_system = TV_SYS_PAL,
+    .color_freq = 4433618.75,
+    .N_lines = 312,
     .mode_bpp = BK_256x256x2,
     .color_index = 1.0, //0-1
     .cb_sync_PI_shift_lines = false,
@@ -63,9 +95,7 @@ typedef struct TV_MODE {
     int H_len;
     int begin_img_shx;
     int img_W;
-
     int N_lines;
-
     int sync_size;
     uint8_t SYNC_TMPL;
     uint8_t NO_SYNC_TMPL;
@@ -161,28 +191,28 @@ static uint8_t __scratch_x("buff4") paletteRGB[3][256]; //768 байт
 
 static repeating_timer_t video_timer;
 
-
 void graphics_set_modeTV(tv_out_mode_t mode) {
     if (SM_video == -1) return;
     //можно добавить проверку на валидность данных, но пока так
     tv_out_mode = mode;
-    for (int i = 0; i < 256; i++) {
-        graphics_set_palette(i, (paletteRGB[2][i] << 16) | (paletteRGB[1][i] << 8) | (paletteRGB[0][i] << 0));
-    }
 
-    video_mode.N_lines = 312;
+    video_mode.N_lines = tv_out_mode.N_lines;
 
-    double color_freq = 4.43361875 * 1e6;
+    double color_freq = tv_out_mode.color_freq;
     video_mode.H_len = ((color_freq * 4) / 1e6) * 63.9;
     video_mode.H_len &= 0xfffffff8;
 
     video_mode.sync_size = 4.7 * video_mode.H_len / 64;
     video_mode.sync_size &= 0xfffffff8;
 
-    if (tv_out_mode.mode_bpp == TEXTMODE_) {
-        video_mode.begin_img_shx = 10.5 * video_mode.H_len / 64 + 24; // TODO: ensure
+    if (tv_out_mode.tv_system == TV_SYS_PAL) {
+        if (tv_out_mode.mode_bpp == TEXTMODE_) {
+            video_mode.begin_img_shx = 10.5 * video_mode.H_len / 64 + 24;
+        } else {
+            video_mode.begin_img_shx = 10.5 * video_mode.H_len / 64 + 44;
+        }
     } else {
-        video_mode.begin_img_shx = 10.5 * video_mode.H_len / 64 + 44; // TODO: ensure
+        video_mode.begin_img_shx = 10.5 * video_mode.H_len / 64; // no offset in shorter line
     }
     video_mode.img_W = video_mode.H_len - ((12 * video_mode.H_len) / 64);
     video_mode.img_W &= 0xfffffffc;
@@ -192,8 +222,14 @@ void graphics_set_modeTV(tv_out_mode_t mode) {
     video_mode.NO_SYNC_TMPL = CONV_DAC(video_mode.LVL_C_MAX) | (1 << SYNC_PIN);
     video_mode.LVL_BLACK = 0 + video_mode.LVL_C_MAX;
     video_mode.LVL_Y_MAX = 40;
+    if (tv_out_mode.tv_system == TV_SYS_NTSC) {
+        video_mode.LVL_BLACK += 2;
+        video_mode.LVL_Y_MAX += 3;
+    }
     video_mode.LVL_BLACK_TMPL = CONV_DAC(video_mode.LVL_BLACK) | (1 << SYNC_PIN);
-
+    for (int i = 0; i < 256; i++) {
+        graphics_set_palette(i, (paletteRGB[2][i] << 16) | (paletteRGB[1][i] << 8) | (paletteRGB[0][i] << 0));
+    }    
     sm_config_set_clkdiv((pio_sm_config*)PIO_VIDEO->sm, clock_get_hz(clk_sys) / (color_freq * 4));
 };
 
@@ -274,59 +310,98 @@ void graphics_set_palette(uint8_t i, uint32_t color888) {
         uint8_t max_ampl = video_mode.LVL_C_MAX;
 
         // изменение функций синуса и косинуса(доворот на пи/4)
-        float Q = 0.7;
-        float I = 0.7;
-        for (int i = 0; i < cycle_size; i++) {
-            cos[i] = cos[i] * Q - sin[i] * I;
-            sin[i] = cos[i] * I + sin[i] * Q;
-        }
+        if (tv_out_mode.tv_system == TV_SYS_PAL) {
+            float Q = 0.7;
+            float I = 0.7;
+            for (int i = 0; i < cycle_size; i++) {
+                cos[i] = cos[i] * Q - sin[i] * I;
+                sin[i] = cos[i] * I + sin[i] * Q;
+            }
 
-        ph = 3; //3
-        Q = 1;
-        I = 0;
-        //  Q=0.8;
-        //  I=-0.1;
-        if (tv_out_mode.cb_sync_PI_shift_lines) dph = 3;
+            ph = 3; //3
+            Q = 1;
+            I = 0;
+            //  Q=0.8;
+            //  I=-0.1;
+            if (tv_out_mode.cb_sync_PI_shift_lines) dph = 3;
 
-        for (int i = 0; i < 40; i++) {
-            ampl = max_ampl * 1;
-            if (i < cycle_size * 1) ampl = i * max_ampl / cycle_size;
-            if (i > (cycle_size * 9)) ampl = (cycle_size * 10 - i) * (max_ampl) / cycle_size;
+            for (int i = 0; i < 40; i++) {
+                ampl = max_ampl * 1;
+                if (i < cycle_size * 1) ampl = i * max_ampl / cycle_size;
+                if (i > (cycle_size * 9)) ampl = (cycle_size * 10 - i) * (max_ampl) / cycle_size;
 
-            if (tv_out_mode.color_index == 0) ampl = 0; //полное отклюение цвета
+                if (tv_out_mode.color_index == 0) ampl = 0; //полное отклюение цвета
 
-            int bb = ampl * (Q * sin[(i + ph) % 4] + I * cos[(i + ph) % 4]) + 0.0;
+                int bb = ampl * (Q * sin[(i + ph) % 4] + I * cos[(i + ph) % 4]) + 0.0;
 
-            bb = (bb > max_ampl) ? max_ampl : bb;
-            bb = (bb < -max_ampl) ? -max_ampl : bb;
-            cb8_0[i] = max_ampl + bb;
+                bb = (bb > max_ampl) ? max_ampl : bb;
+                bb = (bb < -max_ampl) ? -max_ampl : bb;
+                cb8_0[i] = max_ampl + bb;
 
-            bb = ampl * (Q * sin[(i + ph + dph) % 4] + I * cos[(i + ph + dph) % 4]) + 0.0;
+                bb = ampl * (Q * sin[(i + ph + dph) % 4] + I * cos[(i + ph + dph) % 4]) + 0.0;
 
-            bb = (bb > max_ampl) ? max_ampl : bb;
-            bb = (bb < -max_ampl) ? -max_ampl : bb;
-            cb8_1[i] = max_ampl + bb;
-
-
-            cb8_0[i] = CONV_DAC(cb8_0[i]) | (1 << SYNC_PIN);
-            cb8_1[i] = CONV_DAC(cb8_1[i]) | (1 << SYNC_PIN);
-
-            //инверсная вспышка
-            bb = -ampl * (Q * sin[(i + ph) % 4] + I * cos[(i + ph) % 4]) + 0.0;
-
-            bb = (bb > max_ampl) ? max_ampl : bb;
-            bb = (bb < -max_ampl) ? -max_ampl : bb;
-            cb8_0_i[i] = max_ampl + bb;
-
-            bb = -ampl * (Q * sin[(i + ph + dph) % 4] + I * cos[(i + ph + dph) % 4]) + 0.0;
-
-            bb = (bb > max_ampl) ? max_ampl : bb;
-            bb = (bb < -max_ampl) ? -max_ampl : bb;
-            cb8_1_i[i] = max_ampl + bb;
+                bb = (bb > max_ampl) ? max_ampl : bb;
+                bb = (bb < -max_ampl) ? -max_ampl : bb;
+                cb8_1[i] = max_ampl + bb;
 
 
-            cb8_0_i[i] = CONV_DAC(cb8_0_i[i]) | (1 << SYNC_PIN);
-            cb8_1_i[i] = CONV_DAC(cb8_1_i[i]) | (1 << SYNC_PIN);
+                cb8_0[i] = CONV_DAC(cb8_0[i]) | (1 << SYNC_PIN);
+                cb8_1[i] = CONV_DAC(cb8_1[i]) | (1 << SYNC_PIN);
+
+                //инверсная вспышка
+                bb = -ampl * (Q * sin[(i + ph) % 4] + I * cos[(i + ph) % 4]) + 0.0;
+
+                bb = (bb > max_ampl) ? max_ampl : bb;
+                bb = (bb < -max_ampl) ? -max_ampl : bb;
+                cb8_0_i[i] = max_ampl + bb;
+
+                bb = -ampl * (Q * sin[(i + ph + dph) % 4] + I * cos[(i + ph + dph) % 4]) + 0.0;
+
+                bb = (bb > max_ampl) ? max_ampl : bb;
+                bb = (bb < -max_ampl) ? -max_ampl : bb;
+                cb8_1_i[i] = max_ampl + bb;
+
+
+                cb8_0_i[i] = CONV_DAC(cb8_0_i[i]) | (1 << SYNC_PIN);
+                cb8_1_i[i] = CONV_DAC(cb8_1_i[i]) | (1 << SYNC_PIN);
+            }
+        } else { // NTSC
+            float Q = 0.4127 * (B - Y) + 0.4778 * (R - Y);
+            float I = -0.268 * (B - Y) + 0.7358 * (R - Y);
+            int ph = 3;
+            for (int i = 0; i < 4; i++) {
+                float k = 1.5 * tv_out_mode.color_index;
+                int max_v = video_mode.LVL_C_MAX;
+                int C = k * max_v * (Q * sin[(i + ph) % 4] + I * cos[(i + ph) % 4]);
+                C = C < -max_v ? -max_v : C;
+                C = C >  max_v ?  max_v : C;
+                cd0[i] = C;
+                cd1[i] = -C;
+            }            
+            // NTSC burst
+            uint8_t* cb8_0 = (uint8_t *)cb[0];
+            uint8_t* cb8_1 = (uint8_t *)cb[1];
+            uint8_t* cb8_0_i = (uint8_t *)cbINV[0];
+            uint8_t* cb8_1_i = (uint8_t *)cbINV[1];
+            int max_ampl = video_mode.LVL_C_MAX;
+            Q = 1;
+            I = -1;
+            for (int i = 0; i < 40; i++) {
+                int ampl = max_ampl / 2;
+                if (i < cycle_size * 1) ampl = i * max_ampl / cycle_size;
+                if (i > (cycle_size * 9)) ampl = (cycle_size * 10 - i) * max_ampl / cycle_size;
+                if (tv_out_mode.color_index == 0) ampl = 0;
+                int dd = ampl * (Q * sin[i % 4] + I * cos[i % 4]);
+                dd = dd >  max_ampl ?  max_ampl : dd;
+                dd = dd < -max_ampl ? -max_ampl : dd;
+                cb8_0[i] = max_ampl + dd;
+                cb8_1[i] = max_ampl - dd;
+                cb8_0[i] = CONV_DAC(cb8_0[i]) | (1 << SYNC_PIN);
+                cb8_1[i] = CONV_DAC(cb8_1[i]) | (1 << SYNC_PIN);
+                // для NTSC отдельная INV-логика не нужна, но таблицы должны быть валидны
+                cb8_0_i[i] = cb8_0[i];
+                cb8_1_i[i] = cb8_1[i];
+            }
         }
     }
 
@@ -467,16 +542,9 @@ static bool __time_critical_func(video_timer_callbackTV)(repeating_timer_t* rt) 
         }
 
         int li = 0;
-
-        {
+        if (tv_out_mode.tv_system == TV_SYS_PAL) {
             li = g_str_index & 1;
 
-
-            // static bool is_even_frame;
-
-            //   dec_str+=2;
-            //625 строк
-            //  if (false)
             if (tv_out_mode.cb_sync_PI_shift_lines) {
                 if (tv_out_mode.cb_sync_PI_shift_half_frame) {
                     if (line_active == 0) {
@@ -497,8 +565,6 @@ static bool __time_critical_func(video_timer_callbackTV)(repeating_timer_t* rt) 
                         }
                         is_inv = !is_inv;
                     } //нейтрализация сдвига фазы "лишней строки"(не кратной 4)
-                    // if ((tv_out_mode.N_lines==_625_lines)||(tv_out_mode.N_lines==_525_lines))
-                    // 	if (line_active==v_mode.N_lines/2)  {g_str_index+=1;dec_str+=2;}
                 }
             }
             else {
@@ -508,9 +574,7 @@ static bool __time_critical_func(video_timer_callbackTV)(repeating_timer_t* rt) 
                         dec_str += 2;
                     }
                 }
-
                 dec_str += 1;
-
                 switch (g_str_index & 3) {
                     case 0:
                         cb[0] = cbNORM[0];
@@ -527,12 +591,21 @@ static bool __time_critical_func(video_timer_callbackTV)(repeating_timer_t* rt) 
                     case 1:
                         cb[1] = cbINV[1];
                         conv_color[1] = conv_colorINV[1];
-
-
                     default:
                         break;
                 }
             }
+        } else { // NTSC
+            if (tv_out_mode.cb_sync_PI_shift_lines) {
+                dec_str = 2;
+            } else {
+                g_str_index++;
+            }
+            if (tv_out_mode.cb_sync_PI_shift_half_frame && line_active == 0) {
+                dec_str ^= 2;
+                g_str_index--;
+            }
+            li = g_str_index & 1;            
         }
 
 
@@ -545,7 +618,7 @@ static bool __time_critical_func(video_timer_callbackTV)(repeating_timer_t* rt) 
             nf_memset(output_buffer8 + (video_mode.H_len - post_img_clear), video_mode.NO_SYNC_TMPL, post_img_clear);
 
             // цветовая вспышка
-            int mul_sh = 23; // сдвиг вспышки для более высокой частоты
+            int mul_sh = (tv_out_mode.tv_system == TV_SYS_NTSC) ? 19 : 23;; // сдвиг вспышки для более высокой частоты
             if (li) memcpy(output_buffer8 + 0 + mul_sh * 4, cb[1], 40);
             else memcpy(output_buffer8 + 0 + mul_sh * 4, cb[0], 40);
 
@@ -555,9 +628,17 @@ static bool __time_critical_func(video_timer_callbackTV)(repeating_timer_t* rt) 
             int d_end = 4;
             int y = -1;
          //   di = (graphics_buffer.width << 8) / (video_mode.img_W - d_end); // 0xD7 / 2;
-            if ((line_active > 4) && (line_active < 310)) { y = line_active - 23; }; //-23
-            y -= graphics_buffer.shift_y;
-
+            if (tv_out_mode.tv_system == TV_SYS_PAL) {
+                if ((line_active > 4) && (line_active < 310)) {
+                    y = line_active - 23;
+                }
+                y -= graphics_buffer.shift_y;
+            } else { // NTSC
+                if ((line_active > 5) && (line_active < 250)) {
+                    y = line_active - 10; // 18;
+                }
+                 // W/A: ignore shift_y for NTSC
+            }
             if ((y >= graphics_buffer.height) || (y < 0) || (graphics_buffer.data == NULL)) {
                 //вне изображения
                 nf_memset(output_buffer8, video_mode.LVL_BLACK_TMPL, video_mode.img_W);
@@ -872,7 +953,7 @@ void graphics_init() {
     pio_sm_set_enabled(PIO_VIDEO, SM_video, true);
 
     //установка параметров по умолчанию
-    graphics_set_modeTV(tv_out_mode);
+    graphics_set_modeTV(TV_OUT_MODE);
 
     //настройки DMA
 
@@ -950,8 +1031,8 @@ void graphics_init() {
                                            &video_timer)) {
         return;
     }
-    // graphics_get_default_modeTV();
-    graphics_set_modeTV(tv_out_mode);
+
+    graphics_set_modeTV(TV_OUT_MODE);
     // FIXME сделать конфигурацию пользователем
     graphics_set_palette(200, RGB888(0x00, 0x00, 0x00)); //black
     graphics_set_palette(201, RGB888(0x00, 0x00, 0xC4)); //blue
@@ -1011,10 +1092,10 @@ void graphics_set_offset(const int x, const int y) {
 };
 
 void graphics_set_mode(const enum graphics_mode_t mode) {
-    tv_out_mode.mode_bpp = mode;
-    tv_out_mode.color_index = BK_256x256x2 != mode ? 0.0 : 1.0;
-    tv_out_mode.cb_sync_PI_shift_lines = BK_256x256x2 != mode ? true : false;
-    graphics_set_modeTV(tv_out_mode);
+    TV_OUT_MODE.mode_bpp = mode;
+    TV_OUT_MODE.color_index = BK_256x256x2 != mode ? 0.0 : 1.0;
+    TV_OUT_MODE.cb_sync_PI_shift_lines = BK_256x256x2 != mode ? true : false;
+    graphics_set_modeTV(TV_OUT_MODE);
     clrScr(0);
 }
 
