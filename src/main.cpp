@@ -436,7 +436,11 @@ static void __not_in_flash_func(flash_timings)() {
     uint khz = 319200; // TODO: ensure clkdiv = 319.2 / 17.734475 ≈ 18.0000
 #else
     #if !PICO_RP2040
-        uint khz = 400000;
+        #if defined(VGA_ONLY)
+            uint khz = 390000;
+        #else
+            uint khz = 400000;
+        #endif
     #else
         uint khz = 390000;//270000;
     #endif
@@ -448,6 +452,8 @@ static void __not_in_flash_func(flash_timings)() {
         } else {
             vreg_set_voltage(VREG_VOLTAGE_1_50);
         }
+    } else if (khz >= 378000) {
+        vreg_set_voltage(VREG_VOLTAGE_1_30);
     }
 	const uint max_flash_freq = 66 * 1000000;
 	const uint clock_hz = khz * 1000;
