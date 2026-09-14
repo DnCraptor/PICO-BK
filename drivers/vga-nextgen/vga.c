@@ -491,14 +491,14 @@ enum graphics_mode_t graphics_set_mode(enum graphics_mode_t mode) {
             TMPL_LINE8 = 0b11000000;
             // XGA Signal 1024 x 768 @ 60 Hz timing
             HS_SHIFT = 1024 + 24; // Front porch + Visible area
-            HS_SIZE = 160; // Back porch
+            HS_SIZE = 136; // HSync pulse
             line_size = 1344;
             shift_picture = line_size - HS_SHIFT;
             palette16_mask = 0xc0c0;
             visible_line_size = 1024 / 2;
             N_lines_visible = 768;
             line_VS_begin = 768 + 3; // + Front porch
-            line_VS_end = 768 + 3 + 6; // ++ Sync pulse 2?
+            line_VS_end = 768 + 3 + 6 - 1; // inclusive end: 6-line VSync pulse
             N_lines_total = 806; // Whole frame
             fdiv = clock_get_hz(clk_sys) / (65000000.0); // 65.0 MHz
             break;
