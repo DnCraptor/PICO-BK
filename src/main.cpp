@@ -432,7 +432,15 @@ extern "C" int testPins(uint32_t pin0, uint32_t pin1) {
 }
 
 static void __not_in_flash_func(flash_timings)() {
+#if defined(SELECT_TV)
     uint khz = 319200; // TODO: ensure clkdiv = 319.2 / 17.734475 ≈ 18.0000
+#else
+    #if !PICO_RP2040
+        uint khz = 400000;
+    #else
+        uint khz = 390000;//270000;
+    #endif
+#endif
 #if !PICO_RP2040
     if (khz >= 400000) {
         if (khz >= 500000) {
@@ -454,6 +462,8 @@ static void __not_in_flash_func(flash_timings)() {
 	qmi_hw->m[0].timing = 0x60007000 |
 						rxdelay << QMI_M0_TIMING_RXDELAY_LSB |
 						divisor << QMI_M0_TIMING_CLKDIV_LSB;
+#else
+    hw_set_bits(&vreg_and_chip_reset_hw->vreg, VREG_AND_CHIP_RESET_VREG_VSEL_BITS);
 #endif
     sleep_ms(100);
 	set_sys_clock_khz(khz, true);
@@ -506,9 +516,15 @@ int main() {
     flash_timings();
 #elif defined(ZERO2) || defined(ZERO)
     SELECT_VGA = 0;
+#elif defined(VGA_ONLY)
+    SELECT_VGA = true;
+    flash_timings();
 #else
     uint8_t link = testPins(beginVGA_PIN, beginVGA_PIN + 1);
     SELECT_VGA = (link == 0) || (link == 0x1F);
+    if (SELECT_VGA) {
+        flash_timings();
+    }
 #endif
     sem_init(&vga_start_semaphore, 0, 1);
     multicore_launch_core1(render_core);

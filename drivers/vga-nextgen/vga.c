@@ -56,6 +56,7 @@ static int shift_picture = 0;
 
 static int begin_line_index = 0;
 static int visible_line_size = 320;
+static int line_size = 0;
 
 static int dma_chan_ctrl;
 static int dma_chan;
@@ -116,6 +117,10 @@ inline static void dma_handler_VGA_impl() {
     static uint32_t* * prev_output_buffer = 0;
     static uint32_t screen_lines = 0;
     static const uint32_t d_lines = 806 * 60 / 50; // 967
+
+    static bool blinker = true;
+    gpio_put(PICO_DEFAULT_LED_PIN, blinker);
+    blinker = !blinker;
 
     if (screen_lines == d_lines) {
         screen_lines = 0;
@@ -459,7 +464,6 @@ enum graphics_mode_t graphics_set_mode(enum graphics_mode_t mode) {
     uint8_t TMPL_HS8 = 0;
     uint8_t TMPL_LINE8 = 0;
 
-    int line_size;
     double fdiv = 100;
     int HS_SIZE = 4;
     int HS_SHIFT = 100;
@@ -872,6 +876,10 @@ void graphics_init() {
 
     graphics_set_mode(BK_256x256x2);
 
+    dma_channel_set_read_addr(dma_chan, lines_pattern[0], false);
+    dma_channel_set_trans_count(dma_chan, line_size / 4, false);
+    dma_channel_set_read_addr(dma_chan_ctrl, &lines_pattern[0], false);
+    
     irq_set_exclusive_handler(VGA_DMA_IRQ, dma_handler_VGA);
 
     dma_channel_set_irq0_enabled(dma_chan_ctrl, true);
