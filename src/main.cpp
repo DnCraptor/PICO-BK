@@ -453,6 +453,8 @@ static void __not_in_flash_func(flash_timings)() {
             vreg_set_voltage(VREG_VOLTAGE_1_50);
         }
     } else if (khz >= 378000) {
+        vreg_set_voltage(VREG_VOLTAGE_1_40);
+    } else {
         vreg_set_voltage(VREG_VOLTAGE_1_30);
     }
 	const uint max_flash_freq = 66 * 1000000;
