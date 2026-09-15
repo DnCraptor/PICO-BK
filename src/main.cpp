@@ -81,6 +81,10 @@ void __time_critical_func(render_core)() {
         graphics_set_offset(0, 0);
         graphics_set_flashmode(true, true);
         sem_acquire_blocking(&vga_start_semaphore);
+        while (true) {
+            sleep_ms(1);
+            tight_loop_contents();
+        }
         return;
     }
     dvi_on_core1();
@@ -453,9 +457,9 @@ static void __not_in_flash_func(flash_timings)() {
             vreg_set_voltage(VREG_VOLTAGE_1_50);
         }
     } else if (khz >= 378000) {
-        vreg_set_voltage(VREG_VOLTAGE_1_40);
+        vreg_set_voltage(VREG_VOLTAGE_1_50);
     } else {
-        vreg_set_voltage(VREG_VOLTAGE_1_30);
+        vreg_set_voltage(VREG_VOLTAGE_1_40);
     }
 	const uint max_flash_freq = 66 * 1000000;
 	const uint clock_hz = khz * 1000;
