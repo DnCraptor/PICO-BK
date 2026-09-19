@@ -324,13 +324,13 @@ elseif (ZERO)
         beginVGA_PIN=22
         DVI_DEFAULT_SERIAL_CONFIG=waveshare_rp2040_pizero_hdmi_cfg
 
-        WII_SDA_PIN=6
-        WII_SCL_PIN=7
+        WII_SDA_PIN=7
+        WII_SCL_PIN=8
 
         NES_GPIO_CLK=4
         NES_GPIO_LAT=5
-        NES_GPIO_DATA=6
-        NES_GPIO_DATA2=7
+        NES_GPIO_DATA=7
+        NES_GPIO_DATA2=8
 
         PICO_DEFAULT_LED_PIN=2
     )
@@ -362,13 +362,13 @@ elseif (ZERO2)
         beginVGA_PIN=32
         DVI_DEFAULT_SERIAL_CONFIG=waveshare_rp2350_pizero_hdmi_cfg
 
-        WII_SDA_PIN=6
-        WII_SCL_PIN=7
+        WII_SDA_PIN=7
+        WII_SCL_PIN=8
 
         NES_GPIO_CLK=4
         NES_GPIO_LAT=5
-        NES_GPIO_DATA=6
-        NES_GPIO_DATA2=7
+        NES_GPIO_DATA=7
+        NES_GPIO_DATA2=8
 
         PICO_DEFAULT_LED_PIN=25
     )
