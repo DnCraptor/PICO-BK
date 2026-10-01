@@ -21,7 +21,7 @@ set(PICO_CXX_ENABLE_EXCEPTIONS 1)
 option(TV_OUT "Composite TV output (tv-software driver)" OFF)
 option(AY_TYPE "AY-3-8910 Type: PWM / I2S / HWAY" PWM)
 option(MURM2 "Murmulator 2.0" OFF)
-option(PICO_PC "RP2040-PICO-PC" OFF)
+option(PICO_PC "RP2040-PICO-PC" ON)
 option(ZERO2 "RP2350-PiZero" OFF)
 option(ZERO "RP2040-PiZero" OFF)
 
@@ -34,11 +34,11 @@ set(USE_NESPAD ON)
 #set (m1p2launcher ON)
 
 # Platform (m1p2 by default)
-set (MURM2 ON)
+#set (MURM2 ON)
 #set (PICO_PC ON)
 #set (ZERO ON)
 #set (ZERO2 ON)
-set (VGA_ONLY ON)
+#set (VGA_ONLY ON)
 
 IF(ZERO2)
     # For Board RP2350-PiZero — must be set before pico_sdk_import
