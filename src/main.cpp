@@ -146,8 +146,19 @@ static bool __not_in_flash_func(AY_timer_callback)(repeating_timer_t *rt) {
 #elif defined(I2S)
     /* I2S output — sent further below after mixing, see audio_i2s_submit() call */
 #else
+#ifdef PICO_PC
+    // Olimex has no separate beeper output: mix it into both PWM channels.
+    int beep_shift = (int)g_conf.snd_volume + 7;
+    if (beep_shift > 12) beep_shift = 12;
+    uint32_t beep_pwm = (beeper_on && beep_shift >= 0) ? (1u << beep_shift) : 0u;
+    uint32_t pwmR = (uint32_t)outR + beep_pwm;
+    uint32_t pwmL = (uint32_t)outL + beep_pwm;
+    pwm_set_gpio_level(PWM_PIN0, pwmR > 4095u ? 4095u : pwmR);
+    pwm_set_gpio_level(PWM_PIN1, pwmL > 4095u ? 4095u : pwmL);
+#else
     pwm_set_gpio_level(PWM_PIN0, outR); // Право
     pwm_set_gpio_level(PWM_PIN1, outL); // Лево
+#endif
 #endif
     outL = outR = 0;
     if (manager_started) {

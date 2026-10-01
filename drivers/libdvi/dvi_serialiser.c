@@ -10,7 +10,13 @@
 #include "dvi_serialiser.pio.h"
 #include "dvi_clock.pio.h"
 
-#if defined(USE_PIO_TMDS_ENCODE) || !defined(DVI_USE_PIO_CLOCK)
+// Olimex HDMI clock (GP12/13) shares PWM slice 6 with audio GP28.
+// Keep that slice exclusively for audio; use the fourth TMDS PIO SM for clock.
+#if defined(PICO_PC)
+#if defined(USE_PIO_TMDS_ENCODE)
+#error "PICO_PC requires a free PIO state machine for the HDMI clock"
+#endif
+#elif defined(USE_PIO_TMDS_ENCODE) || !defined(DVI_USE_PIO_CLOCK)
 #define USE_PWM_CLOCK
 #endif
 
