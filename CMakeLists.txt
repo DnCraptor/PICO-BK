@@ -19,17 +19,17 @@ cmake_minimum_required(VERSION 3.22)
 set(PICO_CXX_ENABLE_EXCEPTIONS 1)
 
 option(TV_OUT "Composite TV output (tv-software driver)" OFF)
-option(AY_TYPE "AY-3-8910 Type: PWM / I2S / HWAY" PWM)
+option(AY_TYPE "AY-3-8910 Type: PWM / I2S / HWAY" I2S)
 option(MURM2 "Murmulator 2.0" OFF)
-option(PICO_PC "RP2040-PICO-PC" ON)
-option(ZERO2 "RP2350-PiZero" OFF)
+option(PICO_PC "RP2040-PICO-PC" OFF)
+option(ZERO2 "RP2350-PiZero" ON)
 option(ZERO "RP2040-PiZero" OFF)
 
 set(BUILD_VERSION "1.4.9")
 set(USE_NESPAD ON)
 
 #set(TV_OUT ON)
-#set(AY_TYPE I2S)
+set(AY_TYPE I2S)
 #set(AY_TYPE HWAY)
 #set (m1p2launcher ON)
 
