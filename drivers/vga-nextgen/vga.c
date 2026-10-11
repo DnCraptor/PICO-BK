@@ -79,6 +79,7 @@ static bool is_flash_frame = false;
 
 //буфер 1к графической палитры
 static uint16_t __scratch_y("vga_driver") palette[16*4];
+static uint16_t __scratch_y("vga_driver") gray_palette[16*4];
 
 static uint32_t bg_color[2];
 static uint16_t palette16_mask = 0;
@@ -361,18 +362,22 @@ inline static void dma_handler_VGA_impl() {
             break;
         }
         case BK_256x256x2: {
+            current_palette = (g_conf.color_mode == BK_COLOR_GRAY) ? gray_palette : palette;
             current_palette += g_conf.graphics_pallette_idx * 4;
             register uint16_t m = (3 << 6) | (pallete_mask << 4) | (pallete_mask << 2) | pallete_mask; // TODO: outside
             m |= m << 8;
+            const unsigned row_shift = ((unsigned)y & 1u) << 3;
             //2bit buf
             for (int x = 256 / 4; x--;) {
                 register uint8_t i = *input_buffer_8bit++;
                 for (register uint8_t shift = 0; shift < 8; shift += 2) {
-                    register uint8_t t = current_palette[(i >> shift) & 3] & m;
-                    *output_buffer_8bit++ = t;
-                    *output_buffer_8bit++ = t;
-                    *output_buffer_8bit++ = t;
-                    *output_buffer_8bit++ = t;
+                    // Each 16-bit palette entry encodes two adjacent VGA samples.
+                    // Two writes expand one 2-bit BK pixel to four VGA samples.
+                    register uint16_t t = current_palette[(i >> shift) & 3] & m;
+                    // Rotate the two VGA samples every other BK line.
+                    t = (uint16_t)(((uint32_t)t >> row_shift) | ((uint32_t)t << (16u - row_shift)));
+                    *output_buffer_16bit++ = t;
+                    *output_buffer_16bit++ = t;
                 }
             }
             break;
@@ -796,6 +801,20 @@ void graphics_init() {
         uint8_t c_hi = 0xc0 | r | b;
         palette[8*4+2] = (c_hi << 8) | c_hi;
         palette[9*4+2] = (c_hi << 8) | c_hi;
+    }
+    // VGA RGB222 -> four grayscale levels using Rec. 709 luma weights.
+    // Precompute all 16 BK palettes: no conversion in the scanline pixel loop.
+    for (int i = 0; i < 16*4; ++i) {
+        uint8_t rgb = palette[i] & 0x3f;
+        uint8_t r = (rgb >> 4) & 3;
+        uint8_t g = (rgb >> 2) & 3;
+        uint8_t b = rgb & 3;
+        uint8_t y = (21*r + 72*g + 7*b + 50) / 100;
+        if (rgb && y == 0) y = 1; // Keep non-black blue and dark colors visible.
+        uint8_t c = 0xc0 | (y << 4) | (y << 2) | y;
+        // For pure blue, alternate black and gray-1 in adjacent VGA samples.
+        // All other colors retain the same value in both bytes.
+        gray_palette[i] = (rgb == 0x03) ? ((uint16_t)c << 8) | 0xc0 : (c << 8) | c;
     }
     //текстовая палитра
     for (int i = 0; i < 16; i++) {

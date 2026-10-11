@@ -10,10 +10,16 @@ typedef enum BK_MODE {
     BK_0011M
 } bk_mode_t;
 
+typedef enum bk_color_mode {
+    BK_COLOR_BW = 0,
+    BK_COLOR_RGB = 1,
+    BK_COLOR_GRAY = 2
+} bk_color_mode_t;
+
 typedef struct config_em {
     bool is_covox_on;
     bool is_AY_on;
-    bool color_mode;
+    uint8_t color_mode; // BK_COLOR_*; keep 1-byte snapshot layout
     bk_mode_t bk0010mode;
     int8_t snd_volume;
     uint8_t graphics_pallette_idx;

@@ -37,7 +37,7 @@ extern "C" {
 volatile config_em_t g_conf {
    false, // is_covox_on
    true, // is_AY_on
-   true, // color_mode
+   BK_COLOR_RGB, // color_mode
    BK_FDD, // bk0010mode
    0, // snd_volume
    0, // graphics_pallette_idx
@@ -561,7 +561,7 @@ int main() {
     }
 
     reset(255);
-    graphics_set_mode(g_conf.color_mode ? BK_256x256x2 : BK_512x256x1);
+    graphics_set_mode(g_conf.color_mode != BK_COLOR_BW ? BK_256x256x2 : BK_512x256x1);
 
 #ifdef SOUND_SYSTEM
 #if defined(I2S)

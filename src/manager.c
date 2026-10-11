@@ -390,6 +390,11 @@ static int MAX_Z = 28;
 static int z_idx = 0;
 static bool is_128_48_new, is_8x8_new, blink = false;
 static uint8_t dvi_mode_new = 0; // 0 - 640x480, 1 - 800*600, 2 - 1024*786
+
+static inline void cycle_color_mode(void) {
+    g_conf.color_mode = (g_conf.color_mode >= BK_COLOR_GRAY) ? BK_COLOR_BW : g_conf.color_mode + 1;
+}
+
 static void in_conf(int x, int y) {
     draw_label(x+1, y, 36, "Use SPACE to edit, ESC to exit", false, true);
 
@@ -486,7 +491,10 @@ static void in_conf(int x, int y) {
     const static char b_off[2] = { 0xB0, 0 };
     draw_label(x+19, y+2, 1, g_conf.is_covox_on ? b_on : b_off, z_idx == 1, z_idx == 1);
     draw_label(x+19, y+3, 1, g_conf.is_AY_on ? b_on : b_off, z_idx == 2, z_idx == 2);
-    draw_label(x+19, y+4, 1, g_conf.color_mode ? b_on : b_off, z_idx == 3, z_idx == 3);
+    draw_label(x+19, y+4, 3,
+        g_conf.color_mode == BK_COLOR_BW ? "B&W" :
+        g_conf.color_mode == BK_COLOR_RGB ? "RGB" : "GrS",
+        z_idx == 3, z_idx == 3);
     snprintf(b, 8, "%d", g_conf.snd_volume);
     draw_label(x+19, y+5, 3, b, z_idx == 4, z_idx == 4);
     snprintf(b, 4, "%d", g_conf.graphics_pallette_idx);
@@ -718,8 +726,8 @@ void read_config(const char* path) {
     }
     const char p3[] = "color_mode:";
     mode = parse_conf_word(buf, p3, sizeof(p3), MAX_CONF);
-    if (mode >= 0 && mode <= 1) {
-        g_conf.color_mode = (bool)mode;
+    if (mode >= BK_COLOR_BW && mode <= BK_COLOR_GRAY) {
+        g_conf.color_mode = (uint8_t)mode;
     }
     const char p4[] = "snd_volume:";
     mode = parse_conf_word(buf, p4, sizeof(p4), MAX_CONF);
@@ -978,7 +986,7 @@ static void conf_it(uint8_t cmd) {
               g_conf.is_AY_on = !g_conf.is_AY_on;
               break;
             case 3:
-              g_conf.color_mode = !g_conf.color_mode;
+              cycle_color_mode();
               break;
             case 4:
               g_conf.snd_volume++;
@@ -1139,8 +1147,8 @@ inline static void if_video_mode() {
   if (!ctrlPressed && !altPressed) {
     if (f12Pressed) {
       f12Pressed = false;
-      g_conf.color_mode = !g_conf.color_mode;
-      graphics_set_mode(g_conf.color_mode ? BK_256x256x2 : BK_512x256x1);
+      cycle_color_mode();
+      graphics_set_mode(g_conf.color_mode != BK_COLOR_BW ? BK_256x256x2 : BK_512x256x1);
     }
     if (f11Pressed) {
       f11Pressed = false;
@@ -1579,7 +1587,7 @@ static void m_info(uint8_t cmd) {
         { 1, " - Pause          - STOP                    - F10              - cyclic change pallete" },
         { 1, " - F1             - POVTOR                  - Alt  + F10       - default BK-0010 pallete" },
         { 1, " - F2             - KT                      - Ctrl + F10       - default BK-0011 pallete" },
-        { 1, " - F3             - =|=>|                   - F12              - Switch B/W 512x256 & Color 256x256 and back" },
+        { 1, " - F3             - =|=>|                   - F12              - Cycle B/W, Color, Grayscale (256x256, VGA)" },
         { 1, " - F4             - |<==                    - Ctrl + F1..F8    - fast save a snapshot (BK\\SNAP[1..8].BKE)" },
         { 1, " - F5             - |==>                    - Alt  + F1..F8    - fast restore from related snapshot" },
         { 1, " - F6             - IND SU                  - Ctrl + F12       - faster emulation" },
@@ -1593,7 +1601,8 @@ static void m_info(uint8_t cmd) {
         { 1, "File Manager hot keys:" },
         { 1, " - F10           - exit from the File Manager" },
         { 1, " - F11           - change emulation mode BK-0010-01, BK-0011M..." },
-        { 1, " - F12           - Switch B/W 512x256 to Color 256x256 and back" },
+        { 1, " - F12           - Cycle B/W 512x256, Color 256x256, Grayscale 256x256 (VGA only)" },
+        { 1, " - Home + F2     - color mode: 0=B/W, 1=Color, 2=Grayscale (HDMI displays Color)" },
         { 1, " - Ctrl + F10    - exit to Murmulator OS 2.0" },
     };
     const int total_lines = (int)(sizeof(plns) / sizeof(plns[0]));
@@ -1893,7 +1902,8 @@ static void switch_mode(uint8_t cmd) {
 }
 
 inline static void update_menu_color() {
-    const char * m = g_conf.color_mode ? " B/W  " : " Color";
+    const char * m = g_conf.color_mode == BK_COLOR_BW ? " Color" :
+                     g_conf.color_mode == BK_COLOR_RGB ? " Gray " : " B/W  ";
     snprintf(fn_1_12_tbl[11].name, BTN_WIDTH, m);
     snprintf(fn_1_12_tbl_alt[11].name, BTN_WIDTH, m);
     snprintf(fn_1_12_tbl_ctrl[11].name, BTN_WIDTH, m);
@@ -1901,7 +1911,7 @@ inline static void update_menu_color() {
 }
 
 static void switch_color(uint8_t cmd) {
-    g_conf.color_mode = !g_conf.color_mode;
+    cycle_color_mode();
     update_menu_color();
 }
 
@@ -2612,7 +2622,7 @@ inline static void start_manager() {
         conf_it(0);
     }
     set_start_debug_line(25); // ?? to be removed
-    graphics_set_mode(g_conf.color_mode ? BK_256x256x2 : BK_512x256x1);
+    graphics_set_mode(g_conf.color_mode != BK_COLOR_BW ? BK_256x256x2 : BK_512x256x1);
     restore_video_ram();
 }
 
