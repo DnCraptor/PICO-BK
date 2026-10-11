@@ -1012,7 +1012,8 @@ void graphics_set_offset(const int x, const int y) {
 
 void graphics_set_mode(const enum graphics_mode_t mode) {
     tv_out_mode.mode_bpp = mode;
-    tv_out_mode.color_index = BK_256x256x2 != mode ? 0.0 : 1.0;
+    // Keep composite luma (Y) in GrS, but suppress chroma and color burst.
+    tv_out_mode.color_index = (mode == BK_256x256x2 && g_conf.color_mode == BK_COLOR_RGB) ? 1.0 : 0.0;
     tv_out_mode.cb_sync_PI_shift_lines = BK_256x256x2 != mode ? true : false;
     graphics_set_modeTV(tv_out_mode);
     clrScr(0);

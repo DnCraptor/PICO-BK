@@ -28,9 +28,10 @@ option(ZERO "RP2040-PiZero" OFF)
 set(BUILD_VERSION "1.5.0")
 set(USE_NESPAD ON)
 
-#set(TV_OUT ON)
-#set(AY_TYPE I2S)
-set(AY_TYPE HWAY)
+set(TV_OUT ON)
+#set(AY_TYPE PWM)
+set(AY_TYPE I2S)
+#set(AY_TYPE HWAY)
 #set (m1p2launcher ON)
 
 # Platform (m1p2 by default)
