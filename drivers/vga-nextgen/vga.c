@@ -374,7 +374,6 @@ inline static void dma_handler_VGA_impl() {
             current_palette += g_conf.graphics_pallette_idx * 4;
             register uint16_t m = (3 << 6) | (pallete_mask << 4) | (pallete_mask << 2) | pallete_mask; // TODO: outside
             m |= m << 8;
-            const unsigned row_shift = ((unsigned)y & 1u) << 3;
             //2bit buf
             for (int x = 256 / 4; x--;) {
                 register uint8_t i = *input_buffer_8bit++;
@@ -382,8 +381,6 @@ inline static void dma_handler_VGA_impl() {
                     // Each 16-bit palette entry encodes two adjacent VGA samples.
                     // Two writes expand one 2-bit BK pixel to four VGA samples.
                     register uint16_t t = current_palette[(i >> shift) & 3] & m;
-                    // Rotate the two VGA samples every other BK line.
-                    t = (uint16_t)(((uint32_t)t >> row_shift) | ((uint32_t)t << (16u - row_shift)));
                     *output_buffer_16bit++ = t;
                     *output_buffer_16bit++ = t;
                 }
@@ -816,16 +813,13 @@ void graphics_init() {
     // VGA GrS: BK brightness order is red > green > blue (not Rec. 709).
     // Precompute all 16 BK palettes: no conversion in the scanline pixel loop.
     for (int i = 0; i < 16*4; ++i) {
+        uint8_t y = 0;
         uint8_t rgb = palette[i] & 0x3f;
-        uint8_t r = (rgb >> 4) & 3;
-        uint8_t g = (rgb >> 2) & 3;
-        uint8_t b = rgb & 3;
-        uint8_t y = (72*r + 21*g + 7*b + 50) / 100;
-        if (rgb && y == 0) y = 1; // Keep non-black blue and dark colors visible.
+        if ((rgb >> 4) & 3) y = 0b11;
+        else if ((rgb >> 2) & 3) y = 0b10;
+        else if (rgb & 3) y = 0b01;
         uint8_t c = 0xc0 | (y << 4) | (y << 2) | y;
-        // For pure blue, alternate black and gray-1 in adjacent VGA samples.
-        // All other colors retain the same value in both bytes.
-        gray_palette[i] = (rgb == 0x03) ? ((uint16_t)c << 8) | 0xc0 : (c << 8) | c;
+        gray_palette[i] = (c << 8) | c;
     }
     //текстовая палитра
     for (int i = 0; i < 16; i++) {
