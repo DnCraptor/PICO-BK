@@ -25,12 +25,12 @@ option(PICO_PC "RP2040-PICO-PC" OFF)
 option(ZERO2 "RP2350-PiZero" OFF)
 option(ZERO "RP2040-PiZero" OFF)
 
-set(BUILD_VERSION "1.5.0")
+set(BUILD_VERSION "1.5.1")
 set(USE_NESPAD ON)
 
 #set(TV_OUT ON)
-#set(AY_TYPE PWM)
-set(AY_TYPE I2S)
+set(AY_TYPE PWM)
+#set(AY_TYPE I2S)
 #set(AY_TYPE HWAY)
 #set (m1p2launcher ON)
 
@@ -206,6 +206,9 @@ if(VGA_ONLY)
 endif()
 
 target_compile_definitions(${PROJECT_NAME} PRIVATE
+        # Use the same PIO HDMI clock generator as the working PCp2 build.
+        # Board-specific TMDS pin layouts remain unchanged.
+        DVI_USE_PIO_CLOCK=1
         PICO_HEAP_SIZE=0
         USE_ZONE_FOR_MALLOC=1
 
