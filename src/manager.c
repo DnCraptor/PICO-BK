@@ -391,8 +391,15 @@ static int z_idx = 0;
 static bool is_128_48_new, is_8x8_new, blink = false;
 static uint8_t dvi_mode_new = 0; // 0 - 640x480, 1 - 800*600, 2 - 1024*786
 
+extern void dvi_1024_select_renderer(enum graphics_mode_t mode);
+static inline void refresh_dvi_1024_renderer(void) {
+    if (!SELECT_VGA && g_conf.dvi_mode == 2)
+        dvi_1024_select_renderer(get_graphics_mode());
+}
+
 static inline void cycle_color_mode(void) {
     g_conf.color_mode = (g_conf.color_mode >= BK_COLOR_GRAY) ? BK_COLOR_BW : g_conf.color_mode + 1;
+    refresh_dvi_1024_renderer();
 }
 
 static void in_conf(int x, int y) {
@@ -993,8 +1000,7 @@ static void conf_it(uint8_t cmd) {
               if (g_conf.snd_volume == 6) g_conf.snd_volume = -16;
               break;
             case 5:
-              g_conf.graphics_pallette_idx++;
-              if (g_conf.graphics_pallette_idx == 16) g_conf.graphics_pallette_idx = 0;
+              graphics_set_pallette_idx((g_conf.graphics_pallette_idx + 1u) & 15u);
               break;
             case 6:
               is_swap_wins_enabled = !is_swap_wins_enabled;
@@ -1199,8 +1205,7 @@ inline static void if_video_mode() {
         f8Pressed = false;
     } else if (f10Pressed) {
         f10Pressed = false;
-        if (altPressed) g_conf.graphics_pallette_idx = 0;
-        else g_conf.graphics_pallette_idx = 15;
+        graphics_set_pallette_idx(altPressed ? 0 : 15);
     }
 }
 

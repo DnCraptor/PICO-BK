@@ -17,6 +17,13 @@
 #include "config_em.h"
 #include "ram_page.h"
 
+// HDMI 1024x768: atomically select the prebuilt frame-renderer profile.
+extern void dvi_1024_select_renderer(enum graphics_mode_t mode);
+static inline void dvi_1024_refresh_renderer(void) {
+    if (!SELECT_VGA && g_conf.dvi_mode == 2)
+        dvi_1024_select_renderer(get_graphics_mode());
+}
+
 int pallete_mask = 3; // 11 - 2 bits
 extern uint8_t volatile vsync;
 uint8_t* vsync_ptr = &vsync;
@@ -107,6 +114,7 @@ volatile uint16_t covox_mix = 0x0F;
 void graphics_inc_palleter_offset() {
     g_conf.graphics_pallette_idx++;
     if (g_conf.graphics_pallette_idx > 0b1111) g_conf.graphics_pallette_idx = 0;
+    dvi_1024_refresh_renderer();
 }
 
 #ifndef SELECT_TV
@@ -456,6 +464,7 @@ enum graphics_mode_t graphics_set_mode(enum graphics_mode_t mode) {
 
     enum graphics_mode_t res = graphics_mode;
     graphics_mode = mode;
+    dvi_1024_refresh_renderer();
 
     // Если мы уже проиницилизированы - выходим
     if ((txt_palette_fast) && (lines_pattern_data)) {
@@ -562,11 +571,13 @@ void graphics_set_page(uint8_t* buffer, uint8_t pallette_idx) {
     g_conf.v_buff_offset = buffer - RAM;
     graphics_buffer = buffer;
     g_conf.graphics_pallette_idx = pallette_idx;
+    dvi_1024_refresh_renderer();
 };
 #endif
 
 void graphics_set_pallette_idx(uint8_t pallette_idx) {
     g_conf.graphics_pallette_idx = pallette_idx;
+    dvi_1024_refresh_renderer();
 };
 
 void graphics_shift_screen(uint16_t Word) {

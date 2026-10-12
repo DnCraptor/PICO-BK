@@ -60,6 +60,8 @@ uint8_t __aligned(4) TEXT_VIDEO_RAM[128*96*2] = { 0 };
 
 extern "C" semaphore_t vga_start_semaphore;
 extern "C" void dvi_on_core1();
+extern "C" void bk_init_gray_palettes();
+extern "C" void dvi_1024_init_profiles();
 extern "C" void push_audio_sample(int16_t l, int16_t r);
 
 /* Renderer loop on Pico's second core */
@@ -549,6 +551,11 @@ int main() {
         flash_timings();
     }
 #endif
+    // Build TMDS grayscale tables on core 0 before the HDMI renderer starts.
+    if (!SELECT_VGA) {
+        bk_init_gray_palettes();
+        if (g_conf.dvi_mode == 2) dvi_1024_init_profiles();
+    }
     sem_init(&vga_start_semaphore, 0, 1);
     multicore_launch_core1(render_core);
     sem_release(&vga_start_semaphore);

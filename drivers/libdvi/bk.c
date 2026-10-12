@@ -50,7 +50,8 @@ typedef struct tmds_2bpp_tables_bk_s {
     uint64_t* r;
 } tmds_2bpp_tables_bk_t;
 
-const static tmds_2bpp_tables_bk_t tmds_2bpp_tables_bk[16] = {
+// Palette selectors stay in SRAM as in the last better-performing layout.
+static tmds_2bpp_tables_bk_t tmds_2bpp_tables_bk[16] = {
     { tmds_2bpp_table_bk_b  , tmds_2bpp_table_bk_g  , tmds_2bpp_table_bk_r   }, //  0 чёрный-синий-зелёный-красный
     { tmds_2bpp_table_bk_g  , tmds_2bpp_table_bk_b  , tmds_2bpp_table_bk_any }, //  1 чёрный-жёлтый-пурпур-красный
     { tmds_2bpp_table_bk_b  , tmds_2bpp_table_bk_n11, tmds_2bpp_table_bk_r   }, //  2 чёрный-циан-синий-пурпур
@@ -86,7 +87,7 @@ typedef struct tmds_2bpp_tables_bk_1024_s {
     uint32_t* r;
 } tmds_2bpp_tables_bk_1024_t;
 
-const static tmds_2bpp_tables_bk_1024_t tmds_2bpp_tables_1024_bk[16] = {
+static tmds_2bpp_tables_bk_1024_t tmds_2bpp_tables_1024_bk[16] = {
     { tmds_2bpp_table_bk_1024_b  , tmds_2bpp_table_bk_1024_g  , tmds_2bpp_table_bk_1024_r   }, //  0 чёрный-синий-зелёный-красный
     { tmds_2bpp_table_bk_1024_g  , tmds_2bpp_table_bk_1024_b  , tmds_2bpp_table_bk_1024_any }, //  1 чёрный-жёлтый-пурпур-красный
     { tmds_2bpp_table_bk_1024_b  , tmds_2bpp_table_bk_1024_n11, tmds_2bpp_table_bk_1024_r   }, //  2 чёрный-циан-синий-пурпур
@@ -104,6 +105,9 @@ const static tmds_2bpp_tables_bk_1024_t tmds_2bpp_tables_1024_bk[16] = {
     { tmds_2bpp_table_bk_1024_b  , tmds_2bpp_table_bk_1024_any, tmds_2bpp_table_bk_1024_n10 }, // 14 чёрный-yellow-green-white
     { tmds_2bpp_table_bk_1024_n10, tmds_2bpp_table_bk_1024_any, tmds_2bpp_table_bk_1024_r   }, // 15 чёрный-cyan-green-white
 };
+
+// Precomputed TMDS tables: no per-frame preparation on the rendering core.
+#include "bk_gray_palette.h"
 
 #define tmds_encode_2bpp_bk_800_b(t) tmds_encode_2bpp_bk_800(bk_page, tmdsbuf, t)
 #define tmds_encode_2bpp_bk_800_g(t) tmds_encode_2bpp_bk_800(bk_page, tmdsbuf + DWORDS_PER_PLANE, t)
@@ -194,6 +198,19 @@ static inline void memcpy32(uint32_t* target, const uint32_t* src, const size_t 
     }
 }
 
+// GrS scanline encoder: independent hot path, no per-line mode test.
+static uint32_t* __not_in_flash_func(dvi_on_core1_720x576_gray)(uint32_t *tmdsbuf, const uint64_t *b, uint height) {
+    for (uint y = 0; y < height; ++y) {
+        register uint32_t* bk_page = (uint32_t*)get_graphics_buffer(y);
+        queue_remove_blocking_u32(&dvi0.q_tmds_free, &tmdsbuf);
+        tmds_encode_2bpp_bk_720_b(b);
+        memcpy32(tmdsbuf + DWORDS_PER_PLANE, tmdsbuf, DWORDS_PER_PLANE);
+        memcpy32(tmdsbuf + 2 * DWORDS_PER_PLANE, tmdsbuf, DWORDS_PER_PLANE);
+        queue_add_blocking_u32(&dvi0.q_tmds_valid, &tmdsbuf);
+    }
+    return tmdsbuf;
+}
+
 static void __not_in_flash_func(dvi_on_core1_720x576)() {
     uint32_t *tmdsbuf = 0;
     sem_acquire_blocking(&vga_start_semaphore);
@@ -231,18 +248,25 @@ static void __not_in_flash_func(dvi_on_core1_720x576)() {
                     memcpy32(tmdsbuf, blank, sizeof(blank) >> 2);
                     queue_add_blocking_u32(&dvi0.q_tmds_valid, &tmdsbuf);
                 }
-                const tmds_2bpp_tables_bk_t* t = &tmds_2bpp_tables_bk[g_conf.graphics_pallette_idx & 15];
-                register uint64_t* b = t->b;
-                register uint64_t* g = t->g;
-                register uint64_t* r = t->r;
-                for (uint y = 0; y < g_conf.graphics_buffer_height; ++y, ++total_y) {
-                    register uint32_t* bk_page = (uint32_t*)get_graphics_buffer(y);
-                    queue_remove_blocking_u32(&dvi0.q_tmds_free, &tmdsbuf);
-                    tmds_encode_2bpp_bk_720_b(b);
-                    tmds_encode_2bpp_bk_720_g(g);
-                    tmds_encode_2bpp_bk_720_r(r);
-                    queue_add_blocking_u32(&dvi0.q_tmds_valid, &tmdsbuf);
+                const uint height = g_conf.graphics_buffer_height;
+                if (g_conf.color_mode == BK_COLOR_GRAY) {
+                    tmdsbuf = dvi_on_core1_720x576_gray(tmdsbuf,
+                        bk_gray_pairs[g_conf.graphics_pallette_idx & 15], height);
+                } else {
+                    const tmds_2bpp_tables_bk_t* t = &tmds_2bpp_tables_bk[g_conf.graphics_pallette_idx & 15];
+                    register const uint64_t* b = t->b;
+                    register const uint64_t* g = t->g;
+                    register const uint64_t* r = t->r;
+                    for (uint y = 0; y < height; ++y) {
+                        register uint32_t* bk_page = (uint32_t*)get_graphics_buffer(y);
+                        queue_remove_blocking_u32(&dvi0.q_tmds_free, &tmdsbuf);
+                        tmds_encode_2bpp_bk_720_b(b);
+                        tmds_encode_2bpp_bk_720_g(g);
+                        tmds_encode_2bpp_bk_720_r(r);
+                        queue_add_blocking_u32(&dvi0.q_tmds_valid, &tmdsbuf);
+                    }
                 }
+                total_y += height;
                 for (; total_y < FRAME_HEIGHT; ++total_y) {
                     queue_remove_blocking_u32(&dvi0.q_tmds_free, &tmdsbuf);
                     memcpy32(tmdsbuf, blank, sizeof(blank) >> 2);
@@ -276,6 +300,19 @@ static void __not_in_flash_func(dvi_on_core1_720x576)() {
             }
         }
     }
+}
+
+// GrS scanline encoder: independent hot path, no per-line mode test.
+static uint32_t* __not_in_flash_func(dvi_on_core1_800x600_gray)(uint32_t *tmdsbuf, const uint64_t *b, uint height) {
+    for (uint y = 0; y < height; ++y) {
+        register uint32_t* bk_page = (uint32_t*)get_graphics_buffer(y);
+        queue_remove_blocking_u32(&dvi0.q_tmds_free, &tmdsbuf);
+        tmds_encode_2bpp_bk_800_b(b);
+        memcpy32(tmdsbuf + DWORDS_PER_PLANE, tmdsbuf, DWORDS_PER_PLANE);
+        memcpy32(tmdsbuf + 2 * DWORDS_PER_PLANE, tmdsbuf, DWORDS_PER_PLANE);
+        queue_add_blocking_u32(&dvi0.q_tmds_valid, &tmdsbuf);
+    }
+    return tmdsbuf;
 }
 
 static void __not_in_flash_func(dvi_on_core1_800x600)() {
@@ -315,18 +352,25 @@ static void __not_in_flash_func(dvi_on_core1_800x600)() {
                     memcpy32(tmdsbuf, blank, sizeof(blank) >> 2);
                     queue_add_blocking_u32(&dvi0.q_tmds_valid, &tmdsbuf);
                 }
-                const tmds_2bpp_tables_bk_t* t = &tmds_2bpp_tables_bk[g_conf.graphics_pallette_idx & 15];
-                register uint64_t* b = t->b;
-                register uint64_t* g = t->g;
-                register uint64_t* r = t->r;
-                for (uint y = 0; y < g_conf.graphics_buffer_height; ++y, ++total_y) {
-                    register uint32_t* bk_page = (uint32_t*)get_graphics_buffer(y);
-                    queue_remove_blocking_u32(&dvi0.q_tmds_free, &tmdsbuf);
-                    tmds_encode_2bpp_bk_800_b(b);
-                    tmds_encode_2bpp_bk_800_g(g);
-                    tmds_encode_2bpp_bk_800_r(r);
-                    queue_add_blocking_u32(&dvi0.q_tmds_valid, &tmdsbuf);
+                const uint height = g_conf.graphics_buffer_height;
+                if (g_conf.color_mode == BK_COLOR_GRAY) {
+                    tmdsbuf = dvi_on_core1_800x600_gray(tmdsbuf,
+                        bk_gray_pairs[g_conf.graphics_pallette_idx & 15], height);
+                } else {
+                    const tmds_2bpp_tables_bk_t* t = &tmds_2bpp_tables_bk[g_conf.graphics_pallette_idx & 15];
+                    register const uint64_t* b = t->b;
+                    register const uint64_t* g = t->g;
+                    register const uint64_t* r = t->r;
+                    for (uint y = 0; y < height; ++y) {
+                        register uint32_t* bk_page = (uint32_t*)get_graphics_buffer(y);
+                        queue_remove_blocking_u32(&dvi0.q_tmds_free, &tmdsbuf);
+                        tmds_encode_2bpp_bk_800_b(b);
+                        tmds_encode_2bpp_bk_800_g(g);
+                        tmds_encode_2bpp_bk_800_r(r);
+                        queue_add_blocking_u32(&dvi0.q_tmds_valid, &tmdsbuf);
+                    }
                 }
+                total_y += height;
                 for (; total_y < FRAME_HEIGHT; ++total_y) {
                     queue_remove_blocking_u32(&dvi0.q_tmds_free, &tmdsbuf);
                     memcpy32(tmdsbuf, blank, sizeof(blank) >> 2);
@@ -362,59 +406,156 @@ static void __not_in_flash_func(dvi_on_core1_800x600)() {
     }
 }
 
+// Fixed-width 1024x768 TMDS plane: no FRAME_WIDTH load/divide per scanline.
+// The DVI IRQ repeats each prepared line three times (256 * 3 = 768).
+#define BK_1024_PLANE_WORDS (1024u / DVI_SYMBOLS_PER_WORD)
+
+// For this mode the BK screen is exactly 16 KiB, 256 lines of 64 bytes.
+// Resolve the scrolling origin once per frame instead of calling the
+// modulo/while-based get_graphics_buffer() for each encoded scanline.
+typedef struct {
+    uint8_t *base;
+    uint32_t row;
+} bk_1024_cursor_t;
+
+static inline __attribute__((always_inline)) bk_1024_cursor_t bk_1024_cursor_init(void) {
+    const uint32_t row = ((uint32_t)g_conf.shift_y - 0330u) & 255u;
+    bk_1024_cursor_t c = { get_graphics_buffer(0) - (row << 6), row };
+    return c;
+}
+
+static inline __attribute__((always_inline)) uint32_t *bk_1024_cursor_next(bk_1024_cursor_t *c) {
+    uint32_t *p = (uint32_t *)(c->base + (c->row << 6));
+    c->row = (c->row + 1u) & 255u;
+    return p;
+}
+
+// Immutable after core-0 startup. A single aligned pointer publication
+// changes both the frame encoder and all three TMDS palette pointers.
+typedef struct dvi_1024_profile_s dvi_1024_profile_t;
+typedef void (*dvi_1024_encoder_t)(const dvi_1024_profile_t *);
+struct dvi_1024_profile_s {
+    dvi_1024_encoder_t encode;
+    uint32_t *b;
+    uint32_t *g;
+    uint32_t *r;
+};
+
+static dvi_1024_profile_t dvi_1024_rgb_profiles[16];
+static dvi_1024_profile_t dvi_1024_gray_profiles[16];
+static dvi_1024_profile_t dvi_1024_text_profile;
+static dvi_1024_profile_t dvi_1024_bw_profile;
+static const dvi_1024_profile_t *volatile dvi_1024_active_profile;
+
+// Publish only on changes to video mode, palette or RGB/GrS setting.
+// This runs on core 0, never from a DMA interrupt or the render loop.
+void dvi_1024_select_renderer(enum graphics_mode_t mode) {
+    const dvi_1024_profile_t *profile;
+    if (mode == TEXTMODE_ || mode == TEXTMODE_80x30) {
+        profile = &dvi_1024_text_profile;
+    } else if (mode == BK_256x256x2) {
+        const uint palette = g_conf.graphics_pallette_idx & 15u;
+        profile = (g_conf.color_mode == BK_COLOR_GRAY)
+            ? &dvi_1024_gray_profiles[palette]
+            : &dvi_1024_rgb_profiles[palette];
+    } else {
+        profile = &dvi_1024_bw_profile;
+    }
+    __atomic_store_n(&dvi_1024_active_profile, profile, __ATOMIC_RELEASE);
+}
+
+static __attribute__((noinline)) void __not_in_flash_func(dvi_on_core1_1024x768_text)(const dvi_1024_profile_t *profile) {
+    (void)profile;
+    uint32_t *tmdsbuf;
+    register const uint8_t *bk_text = TEXT_VIDEO_RAM; // Static array: never NULL.
+    register const uint32_t bytes_per_string = text_buffer_width << 1;
+    register const uint32_t glyph_mask = font_mask;
+    register const uint32_t glyph_shift = font_shift;
+    for (uint y = 0; y < 256u; ++y) {
+        register const uint32_t glyph_line = y & glyph_mask;
+        register const uint8_t *bk_line = bk_text + (y >> glyph_shift) * bytes_per_string;
+        queue_remove_blocking_u32(&dvi0.q_tmds_free, &tmdsbuf);
+        tmds_encode_64c_b_128(bk_line, tmdsbuf, glyph_line);
+        tmds_encode_64c_g_128(bk_line, tmdsbuf + BK_1024_PLANE_WORDS, glyph_line);
+        tmds_encode_64c_r_128(bk_line, tmdsbuf + 2 * BK_1024_PLANE_WORDS, glyph_line);
+        queue_add_blocking_u32(&dvi0.q_tmds_valid, &tmdsbuf);
+    }
+}
+
+static __attribute__((noinline)) void __not_in_flash_func(dvi_on_core1_1024x768_bw)(const dvi_1024_profile_t *profile) {
+    (void)profile;
+    uint32_t *tmdsbuf;
+    bk_1024_cursor_t cursor = bk_1024_cursor_init();
+    // The old 768-iteration loop was feeding three complete frames to a
+    // DMA consumer which already performs DVI_VERTICAL_REPEAT == 3.
+    for (uint y = 0; y < 256u; ++y) {
+        register uint32_t *bk_page = bk_1024_cursor_next(&cursor);
+        queue_remove_blocking_u32(&dvi0.q_tmds_free, &tmdsbuf);
+        tmds_encode_1bpp_bk_1024(bk_page, tmdsbuf, 1024u);
+        memcpy32(tmdsbuf + BK_1024_PLANE_WORDS, tmdsbuf, BK_1024_PLANE_WORDS);
+        memcpy32(tmdsbuf + 2 * BK_1024_PLANE_WORDS, tmdsbuf, BK_1024_PLANE_WORDS);
+        queue_add_blocking_u32(&dvi0.q_tmds_valid, &tmdsbuf);
+    }
+    *vsync_ptr = 1;
+}
+
+// In short-screen modes the DVI consumer still needs all 256 lines.
+static __attribute__((noinline)) void __not_in_flash_func(dvi_on_core1_1024x768_blank_tail)(uint height) {
+    uint32_t *tmdsbuf;
+    for (uint y = height; y < 256u; ++y) {
+        queue_remove_blocking_u32(&dvi0.q_tmds_free, &tmdsbuf);
+        memcpy32(tmdsbuf, blank, 3u * BK_1024_PLANE_WORDS);
+        queue_add_blocking_u32(&dvi0.q_tmds_valid, &tmdsbuf);
+    }
+}
+
+// RGB and GrS use the identical 2-bpp encoder. Its three tables were
+// selected on core 0, so the scanline loop has no mode or palette tests.
+static __attribute__((noinline)) void __scratch_x("dvi_on_core1_1024x768_2bpp")
+ dvi_on_core1_1024x768_2bpp(const dvi_1024_profile_t *profile) {
+    register uint32_t *b = profile->b;
+    register uint32_t *g = profile->g;
+    register uint32_t *r = profile->r;
+    uint32_t *tmdsbuf;
+    register const uint height = g_conf.graphics_buffer_height;
+    bk_1024_cursor_t cursor = bk_1024_cursor_init();
+    for (register uint y = 0; y < height; ++y) {
+        register uint32_t *bk_page = bk_1024_cursor_next(&cursor);
+        queue_remove_blocking_u32(&dvi0.q_tmds_free, &tmdsbuf);
+        tmds_encode_2bpp_bk_1024(bk_page, tmdsbuf, b);
+        tmds_encode_2bpp_bk_1024(bk_page, tmdsbuf + BK_1024_PLANE_WORDS, g);
+        tmds_encode_2bpp_bk_1024(bk_page, tmdsbuf + 2 * BK_1024_PLANE_WORDS, r);
+        queue_add_blocking_u32(&dvi0.q_tmds_valid, &tmdsbuf);
+    }
+    dvi_on_core1_1024x768_blank_tail(height);
+    *vsync_ptr = 1;
+}
+
+// Runs once on core 0, after bk_init_gray_palettes(), before core 1 starts.
+void dvi_1024_init_profiles(void) {
+    dvi_1024_text_profile.encode = dvi_on_core1_1024x768_text;
+    dvi_1024_bw_profile.encode = dvi_on_core1_1024x768_bw;
+    for (unsigned i = 0; i < 16; ++i) {
+        dvi_1024_profile_t *rgb = &dvi_1024_rgb_profiles[i];
+        const tmds_2bpp_tables_bk_1024_t *t = &tmds_2bpp_tables_1024_bk[i];
+        rgb->encode = dvi_on_core1_1024x768_2bpp;
+        rgb->b = t->b;
+        rgb->g = t->g;
+        rgb->r = t->r;
+
+        dvi_1024_profile_t *gray = &dvi_1024_gray_profiles[i];
+        gray->encode = dvi_on_core1_1024x768_2bpp;
+        gray->b = gray->g = gray->r = bk_gray_pixels[i];
+    }
+    dvi_1024_select_renderer(get_graphics_mode());
+}
+
 static void __not_in_flash_func(dvi_on_core1_1024x768)() {
-    uint32_t *tmdsbuf = 0;
     sem_acquire_blocking(&vga_start_semaphore);
     while (true) {
-        register enum graphics_mode_t gmode = get_graphics_mode();
-        switch(gmode) {
-            case TEXTMODE_: {
-                register uint8_t* bk_text = (uint8_t*)TEXT_VIDEO_RAM;
-                register uint32_t bytes_per_string = text_buffer_width << 1;
-                for (uint y = 0; y < FRAME_HEIGHT; ++y) {
-                    register uint32_t glyph_line = y & font_mask;
-                    register uint8_t* bk_line = bk_text + (y >> font_shift) * bytes_per_string;
-                    queue_remove_blocking_u32(&dvi0.q_tmds_free, &tmdsbuf);
-                    if(!bk_text) {
-                        memcpy32(tmdsbuf, blank, sizeof(blank) >> 2);
-                    } else {
-                        tmds_encode_64c_b_128(bk_line, tmdsbuf, glyph_line);
-                        tmds_encode_64c_g_128(bk_line, tmdsbuf + DWORDS_PER_PLANE, glyph_line);
-                        tmds_encode_64c_r_128(bk_line, tmdsbuf + DWORDS_PER_PLANE * 2, glyph_line);
-                    }
-                    queue_add_blocking_u32(&dvi0.q_tmds_valid, &tmdsbuf);
-                }
-                break;
-            }
-            case BK_256x256x2: {
-                const tmds_2bpp_tables_bk_1024_t* t = &tmds_2bpp_tables_1024_bk[g_conf.graphics_pallette_idx & 15];
-                register uint32_t* b = t->b;
-                register uint32_t* g = t->g;
-                register uint32_t* r = t->r;
-                for (uint y = 0; y < g_conf.graphics_buffer_height; ++y) {
-                    register uint32_t* bk_page = (uint32_t*)get_graphics_buffer(y);
-                    queue_remove_blocking_u32(&dvi0.q_tmds_free, &tmdsbuf);
-                    tmds_encode_2bpp_bk_1024_b(b);
-                    tmds_encode_2bpp_bk_1024_g(g);
-                    tmds_encode_2bpp_bk_1024_r(r);
-                    queue_add_blocking_u32(&dvi0.q_tmds_valid, &tmdsbuf);
-                }
-                *vsync_ptr = 1;
-                break;
-            }
-            default: { // 512*256
-                for (uint y = 0; y < 768; ++y) { // TODO:
-                    register uint32_t* bk_page = (uint32_t*)get_graphics_buffer(y / 3);
-                    queue_remove_blocking_u32(&dvi0.q_tmds_free, &tmdsbuf);
-                    tmds_encode_1bpp_bk_1024(bk_page, tmdsbuf, FRAME_WIDTH);
-                    memcpy32(tmdsbuf + DWORDS_PER_PLANE, tmdsbuf, BYTES_PER_PLANE >> 2);
-                    memcpy32(tmdsbuf + 2 * DWORDS_PER_PLANE, tmdsbuf, BYTES_PER_PLANE >> 2);
-                    queue_add_blocking_u32(&dvi0.q_tmds_valid, &tmdsbuf);
-                }
-                *vsync_ptr = 1;
-                break;
-            }
-        }
+        const dvi_1024_profile_t *profile =
+            __atomic_load_n(&dvi_1024_active_profile, __ATOMIC_ACQUIRE);
+        profile->encode(profile);
     }
 }
 
