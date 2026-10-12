@@ -559,9 +559,9 @@ tmds_2bpp_table_bk_n11: // пиксель только 01 и 10, 00 и 11 - не
 .align 2
 .global tmds_2bpp_table_bk_1024_2br
 tmds_2bpp_table_bk_1024_2br:  // вариант с "честной" двухбиткой
-	.word 0x7fd00, // 00
-	.word 0x73d30, // 01
-	.word 0xb3e30, // 10
+	.word 0x7fd00  // 00
+	.word 0x73d30  // 01
+	.word 0xb3e30  // 10
 	.word 0xbf203  // 11
 
 .align 2
