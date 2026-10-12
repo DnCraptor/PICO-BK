@@ -219,7 +219,10 @@ void graphics_set_palette(uint8_t i, uint32_t color888) {
     float G = G8 / 255.0;
     float B = B8 / 255.0;
 
-    float Y = 0.299 * R + 0.587 * G + 0.114 * B;
+    // Preserve BT.601 chroma/luma in RGB, use BK intensity order only in GrS.
+    float Y = (tv_out_mode.mode_bpp == BK_256x256x2 && g_conf.color_mode == BK_COLOR_GRAY)
+        ? (0.587 * R + 0.299 * G + 0.114 * B)
+        : (0.299 * R + 0.587 * G + 0.114 * B);
     // if (active_out==g_TV_OUT_NTSC) Y=0.299*R+0.587*G+0.114*B;
     uint8_t base8 = video_mode.LVL_BLACK;
 

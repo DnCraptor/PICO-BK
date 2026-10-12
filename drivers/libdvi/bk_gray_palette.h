@@ -1,27 +1,27 @@
-// Rec.709 luma levels for each source 2bpp BK palette. Read only on core 0
+// BK GrS levels (red > green > blue) for each source 2bpp palette. Read only on core 0
 // before the HDMI core is launched; never used in the scanline hot path.
 static const uint8_t bk_gray_levels[16][4] = {
-    {  0,  5, 45, 13 },
-    {  0, 58, 18, 13 },
-    {  0, 50, 45, 13 },
-    {  0, 50, 45, 58 },
-    {  0, 18, 50, 63 },
-    {  0, 63, 63, 63 },
-    {  0, 13,  4, 13 },
-    {  0, 57, 18, 57 },
-    {  0, 18,  6, 18 },
-    {  0, 45, 18, 13 },
-    {  0, 14, 49, 58 },
-    {  0,  5, 58, 13 },
-    {  0, 13, 45, 50 },
-    {  0, 50, 58, 63 },
-    {  0, 63, 45, 58 },
-    {  0, 50, 45, 63 }
+    {  0,  5, 13, 45 }, //  0
+    {  0, 58, 50, 45 }, //  1
+    {  0, 18, 13, 45 }, //  2
+    {  0, 18, 13, 58 }, //  3
+    {  0, 50, 18, 63 }, //  4
+    {  0, 63, 63, 63 }, //  5
+    {  0, 35, 14, 44 }, //  6
+    {  0, 57, 18, 57 }, //  7
+    {  0, 40, 16, 49 }, //  8
+    {  0, 13, 50, 45 }, //  9
+    {  0,  4, 59, 58 }, // 10
+    {  0,  5, 58, 45 }, // 11
+    {  0, 45, 13, 18 }, // 12
+    {  0, 18, 58, 63 }, // 13
+    {  0, 63, 13, 58 }, // 14
+    {  0, 18, 13, 63 } // 15
 };
 
-// Map linear-light Rec.709 luma to display signal levels (gamma ~2.2).
+// Map BK grayscale intensity to HDMI signal levels (gamma ~2.2).
 // Prepared once on core 0; the hot TMDS scanline encoder sees only SRAM LUTs.
-// 0 and 63 are invariant, and saturated blue/red/green map to 20/31/54.
+// 0 and 63 are invariant; saturated blue/green/red map to 20/31/54.
 static const uint8_t bk_gray_display_levels[64] = {
      0, 10, 13, 16, 18, 20, 22, 23,
     25, 26, 27, 28, 30, 31, 32, 33,

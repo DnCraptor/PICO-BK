@@ -813,14 +813,14 @@ void graphics_init() {
         palette[8*4+2] = (c_hi << 8) | c_hi;
         palette[9*4+2] = (c_hi << 8) | c_hi;
     }
-    // VGA RGB222 -> four grayscale levels using Rec. 709 luma weights.
+    // VGA GrS: BK brightness order is red > green > blue (not Rec. 709).
     // Precompute all 16 BK palettes: no conversion in the scanline pixel loop.
     for (int i = 0; i < 16*4; ++i) {
         uint8_t rgb = palette[i] & 0x3f;
         uint8_t r = (rgb >> 4) & 3;
         uint8_t g = (rgb >> 2) & 3;
         uint8_t b = rgb & 3;
-        uint8_t y = (21*r + 72*g + 7*b + 50) / 100;
+        uint8_t y = (72*r + 21*g + 7*b + 50) / 100;
         if (rgb && y == 0) y = 1; // Keep non-black blue and dark colors visible.
         uint8_t c = 0xc0 | (y << 4) | (y << 2) | y;
         // For pure blue, alternate black and gray-1 in adjacent VGA samples.

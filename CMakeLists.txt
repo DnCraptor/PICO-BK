@@ -25,7 +25,7 @@ option(PICO_PC "RP2040-PICO-PC" OFF)
 option(ZERO2 "RP2350-PiZero" OFF)
 option(ZERO "RP2040-PiZero" OFF)
 
-set(BUILD_VERSION "1.5.2")
+set(BUILD_VERSION "1.5.3")
 set(USE_NESPAD ON)
 
 #set(TV_OUT ON)
@@ -35,7 +35,7 @@ set(AY_TYPE PWM)
 #set (m1p2launcher ON)
 
 # Platform (m1p2 by default)
-#set (MURM2 ON)
+set (MURM2 ON)
 #set (PICO_PC ON)
 #set (ZERO ON)
 #set (ZERO2 ON)
