@@ -6,6 +6,7 @@
 #include "pico-vision.h"
 #include "CPU.h"
 #include "CPU_i.h"
+#include "CPU_ef.h"
 #include "stdlib.h"
 #include "debug.h"
 #include "aySoundSoft.h"
@@ -24,8 +25,8 @@ __uninitialized_ram(ram_config_block_t) s_ram_cfg;
 #endif
 
 // Centered dialog position helpers
-#define DIALOG_X ((text_buffer_width  - DIALOG_WIDTH) / 2 < 0 ? 0 : (text_buffer_width  - DIALOG_WIDTH) / 2)
-#define DIALOG_Y ((text_buffer_height - 10) / 2 < 0 ? 0 : (text_buffer_height - 10) / 2)
+#define DIALOG_X (((int)text_buffer_width  - DIALOG_WIDTH) / 2 < 0 ? 0 : ((int)text_buffer_width  - DIALOG_WIDTH) / 2)
+#define DIALOG_Y (((int)text_buffer_height - 10) / 2 < 0 ? 0 : ((int)text_buffer_height - 10) / 2)
 
 void detect_os_type(const char* path, char* os_type, size_t sz);
 bool mount_img(const char* path, int curr_dir_num);
@@ -120,13 +121,21 @@ void scan_code_cleanup() {
 static bool m_prompt(const char* txt);
 static bool m_prompt_ex(const char* txt, const char* bottom);
 
-const static const uint8_t PANEL_TOP_Y = 0;
-#define TOTAL_SCREEN_LINES text_buffer_height
+/* Copy src into dst[size], cut to fit, always NUL-terminated. */
+static void copy_str(char* dst, size_t size, const char* src) {
+    size_t len = strlen(src);
+    if (len >= size) len = size - 1;
+    memcpy(dst, src, len);
+    dst[len] = '\0';
+}
+
+static const uint8_t PANEL_TOP_Y = 0;
+#define TOTAL_SCREEN_LINES ((int)text_buffer_height)
 #define F_BTN_Y_POS (TOTAL_SCREEN_LINES - 1)
 #define CMD_Y_POS (F_BTN_Y_POS - 1)
 #define PANEL_LAST_Y (CMD_Y_POS - 1)
 
-const static uint8_t FIRST_FILE_LINE_ON_PANEL_Y = PANEL_TOP_Y + 1;
+static const uint8_t FIRST_FILE_LINE_ON_PANEL_Y = PANEL_TOP_Y + 1;
 #define LAST_FILE_LINE_ON_PANEL_Y (PANEL_LAST_Y - 1)
 
 typedef struct {
@@ -170,7 +179,7 @@ static file_panel_desc_t left_panel = {
     0, MAX_WIDTH / 2,
     0,
     { "\\" },
-    { FIRST_FILE_LINE_ON_PANEL_Y, 0 },
+    { { FIRST_FILE_LINE_ON_PANEL_Y, 0, 0 } },
     0,
     false
 };
@@ -179,7 +188,7 @@ static file_panel_desc_t right_panel = {
     MAX_WIDTH / 2, MAX_WIDTH / 2,
      0,
     { "\\BK" },
-    { FIRST_FILE_LINE_ON_PANEL_Y, 0 },
+    { { FIRST_FILE_LINE_ON_PANEL_Y, 0, 0 } },
     0,
     false
 };
@@ -189,11 +198,13 @@ static file_panel_desc_t* psp = &left_panel;
 
 static bool mark_to_exit_flag = false;
 static void mark_to_exit(uint8_t cmd) {
+    (void)cmd;
     f10Pressed = false;
     escWasPressed = false;
     mark_to_exit_flag = true;
 }
 static void return_to_mos(uint8_t cmd) {
+    (void)cmd;
     f_unlink(MOS_FILE);
     reboot();
     while (true);
@@ -222,8 +233,9 @@ static uint16_t kbd_script[] = { // S160000 Enter
 static volatile int kbd_script_idx = 0;
 static repeating_timer_t timer;
 static bool __not_in_flash_func(timer_callback)(repeating_timer_t *rt) {
+    (void)rt;
     push_script_scan_code(kbd_script[kbd_script_idx++]);
-    bool res = kbd_script_idx < sizeof(kbd_script) / sizeof(uint16_t);
+    bool res = (size_t)kbd_script_idx < sizeof(kbd_script) / sizeof(uint16_t);
     if (!res) {
         kbd_script_idx = 0;
         cancel_repeating_timer(&timer);
@@ -235,7 +247,7 @@ static void InitMemoryValues(uint16_t* pPtr, size_t nMemSize)
 {
 	uint16_t val = 0;
 	uint8_t flag = 0;
-	for (int i = 0; i < (nMemSize >> 1); i++, flag--) {
+	for (size_t i = 0; i < (nMemSize >> 1); i++, flag--) {
 		pPtr[i] = val;
 		val = ~val;
 		if (flag == 192) {
@@ -447,7 +459,7 @@ static void in_conf(int x, int y) {
 
     char b[64] = { 0 };
 
-    snprintf(b, 64, "    Last scancode: %d [%ph]  ", lastScanCode, lastScanCode);
+    snprintf(b, 64, "    Last scancode: %d [%Xh]  ", (int)lastScanCode, (unsigned)lastScanCode);
     draw_label(x, y+15, 37, b, false, false);
 
     uint8_t nk = nespad_state | nespad_state2 | kbdpad_state;
@@ -494,8 +506,8 @@ static void in_conf(int x, int y) {
     }
 #endif
     draw_label(x+18, y+1, 22, bk_mode_lns[g_conf.bk0010mode].txt, z_idx == 0, z_idx == 0);
-    const static char b_on [2] = { 0xFB, 0 };
-    const static char b_off[2] = { 0xB0, 0 };
+    static const char b_on [2] = { (char)0xFB, 0 };
+    static const char b_off[2] = { (char)0xB0, 0 };
     draw_label(x+19, y+2, 1, g_conf.is_covox_on ? b_on : b_off, z_idx == 1, z_idx == 1);
     draw_label(x+19, y+3, 1, g_conf.is_AY_on ? b_on : b_off, z_idx == 2, z_idx == 2);
     draw_label(x+19, y+4, 3,
@@ -544,7 +556,7 @@ static void in_conf(int x, int y) {
     }
     snprintf(b, 64, "[%d MHz]", (clock_get_hz(clk_sys) / 1000000));
      draw_label(x+2, y+17, 9, b, false, true);
-    snprintf(b, 64, "[%d MHz]", (g_conf.cpu_freq / 1000000));
+    snprintf(b, 64, "[%d MHz]", (int)(g_conf.cpu_freq / 1000000));
 #ifdef SELECT_TV
      draw_label(x+46-10, y+17, 7, b, false, true);
 #else
@@ -835,9 +847,10 @@ void read_config(const char* path) {
     f_close(&fil);
 }
 
-color_schema_t* pcs = &color_schema1;
+const color_schema_t* pcs = &color_schema1;
 
 static void conf_it(uint8_t cmd) {
+    (void)cmd;
     is_128_48_new = g_conf.is_128_48;
     dvi_mode_new = g_conf.dvi_mode;
     is_8x8_new = g_conf.is_8x8;
@@ -932,18 +945,14 @@ static void conf_it(uint8_t cmd) {
                 in_conf(x, y);
                 continue;
             }
-            bool hard_reset = false;
             if (is_128_48_new != g_conf.is_128_48) {
                 g_conf.is_128_48 = is_128_48_new;
-                hard_reset = true;
             }
             if (is_8x8_new != g_conf.is_8x8) {
                 g_conf.is_8x8 = is_8x8_new;
-                hard_reset = true;
             }
             if (dvi_mode_new != g_conf.dvi_mode) {
                 g_conf.dvi_mode = dvi_mode_new;
-                hard_reset = true;
             }
             saveConf();
             if (!altPressed) {
@@ -1097,7 +1106,7 @@ static void save_snap(uint8_t cmd) {
     }
     UINT bw;
     result = f_write(&file, &Device_Data, sizeof(Device_Data), &bw); // TODO: error handling
-    result = f_write(&file, &g_conf, sizeof(g_conf), &bw);
+    result = f_write(&file, (const config_em_t*)&g_conf, sizeof(g_conf), &bw);
     result = f_write(&file, RAM, sizeof(RAM), &bw);
     for (int i = 0; i < 4; ++i) {
         result = f_write(&file, drives_states[i].path, sizeof(drives_states[i].path), &bw);
@@ -1113,18 +1122,18 @@ static void save_snap(uint8_t cmd) {
     }
 }
 
-inline static void restore_snap_by_filename(const char* path) {
+inline static void restore_snap_by_filename(char* path) {
     FIL file;
     FRESULT result = f_open(&file, path, FA_READ);
     UINT bw;
     if (result == FR_OK) {
       result = f_read(&file, &Device_Data, sizeof(Device_Data), &bw);  // TODO: error handling
-      result = f_read(&file, &g_conf, sizeof(g_conf), &bw);
+      result = f_read(&file, (config_em_t*)&g_conf, sizeof(g_conf), &bw);
       result = f_read(&file, RAM, sizeof(RAM), &bw);
       for (int i = 0; i < 4; ++i) {
           result = f_read(&file, drives_states[i].path, sizeof(drives_states[i].path), &bw);
           if (drives_states[i].path[0]) {
-              stpncpy(path, drives_states[i].path, 256);
+              copy_str(path, 256, drives_states[i].path);
               insertdisk(i, 819200, 0, path); // TODO: size? removed?
           }
       }
@@ -1134,7 +1143,7 @@ inline static void restore_snap_by_filename(const char* path) {
     }
     f_close(&file);
     set_bk0010mode(g_conf.bk0010mode);
-    init_rom();
+    CPU_RestoreMemPages(); // init_rom() + the saved BK-0011M page selection
     graphics_set_page(CPU_PAGE51_MEM_ADR, g_conf.graphics_pallette_idx);
     gpio_put(PICO_DEFAULT_LED_PIN, false);
     mark_to_exit(0);
@@ -1170,7 +1179,7 @@ inline static void if_video_mode() {
       reset(255);
       ctrlPressed = altPressed = delPressed = false;
   }
-  if (ctrlPressed || altPressed)
+  if (ctrlPressed || altPressed) {
     if(f1Pressed) {
         if (ctrlPressed) save_snap(0);
         else restore_snap(0);
@@ -1207,6 +1216,7 @@ inline static void if_video_mode() {
         f10Pressed = false;
         graphics_set_pallette_idx(altPressed ? 0 : 15);
     }
+  }
 }
 
 static void draw_window() {
@@ -1214,9 +1224,11 @@ static void draw_window() {
     left_panel.width = pw;
     right_panel.left = pw;
     right_panel.width = pw;
-    sprintf(line, "SD:%s", left_panel.path);
+    memcpy(line, "SD:", 3);
+    copy_str(line + 3, sizeof(line) - 3, left_panel.path);
     draw_panel( 0, PANEL_TOP_Y, pw, PANEL_LAST_Y + 1, line, 0);
-    sprintf(line, "SD:%s", right_panel.path);
+    memcpy(line, "SD:", 3);
+    copy_str(line + 3, sizeof(line) - 3, right_panel.path);
     draw_panel(pw, PANEL_TOP_Y, pw, PANEL_LAST_Y + 1, line, 0);
 }
 
@@ -1239,12 +1251,20 @@ static void switch_color(uint8_t cmd);
 
 static file_info_t* selected_file();
 
-inline static void construct_full_name(char* dst, const char* folder, const char* file) {
-    if (strlen(folder) > 1) {
-        snprintf(dst, 256, "%s\\%s", folder, file);
-    } else {
-        snprintf(dst, 256, "\\%s", file);
+/* folder\\file into dst[256], cut to fit (as snprintf did); false when cut. */
+inline static bool construct_full_name(char* dst, const char* folder, const char* file) {
+    const size_t size = 256;
+    const size_t folder_len = strlen(folder) > 1 ? strlen(folder) : 0;
+    size_t len = 0;
+    if (folder_len) {
+        copy_str(dst, size, folder);
+        len = strlen(dst);
     }
+    if (len + 1 < size) {
+        dst[len++] = '\\';
+        copy_str(dst + len, size - len, file);
+    }
+    return folder_len + 1 + strlen(file) < size;
 }
 
 inline static void no_selected_file() {
@@ -1462,8 +1482,9 @@ static void m_copy_file(uint8_t cmd) {
     }
     char path[256];
     file_panel_desc_t* dsp = psp == &left_panel ? &right_panel : &left_panel;
-    snprintf(path, 256, "Copy %s %s to %s?", fp->name, fp->fattrib & AM_DIR ? "folder" : "file", dsp->path);
-    if (m_prompt(path)) { // TODO: ask name
+    char prompt[sizeof(fp->name) + sizeof(dsp->path) + 20];
+    snprintf(prompt, sizeof(prompt), "Copy %s %s to %s?", fp->name, fp->fattrib & AM_DIR ? "folder" : "file", dsp->path);
+    if (m_prompt(prompt)) { // TODO: ask name
         construct_full_name(path, psp->path, fp->name);
         char dest[256];
         construct_full_name(dest, dsp->path, fp->name);
@@ -1558,8 +1579,9 @@ static void m_move_file(uint8_t cmd) {
     }
     char path[256];
     file_panel_desc_t* dsp = psp == &left_panel ? &right_panel : &left_panel;
-    snprintf(path, 256, "Move %s %s to %s?", fp->name, fp->fattrib & AM_DIR ? "folder" : "file", dsp->path);
-    if (m_prompt(path)) { // TODO: ask name
+    char prompt[sizeof(fp->name) + sizeof(dsp->path) + 20];
+    snprintf(prompt, sizeof(prompt), "Move %s %s to %s?", fp->name, fp->fattrib & AM_DIR ? "folder" : "file", dsp->path);
+    if (m_prompt(prompt)) { // TODO: ask name
         construct_full_name(path, psp->path, fp->name);
         char dest[256];
         construct_full_name(dest, dsp->path, fp->name);
@@ -1581,6 +1603,7 @@ static void m_move_file(uint8_t cmd) {
 }
 
 static void m_info(uint8_t cmd) {
+    (void)cmd;
     const line_t plns[] = {
         { 1, "Key mapping in the emulation mode:" },
         { 1, " - Alt   + key  - AP2                       - F7             - BLOCK REDACT" },
@@ -1772,6 +1795,7 @@ static void m_info(uint8_t cmd) {
 }
 
 static void fast_0010(uint8_t cmd) {
+    (void)cmd;
     g_conf.bk0010mode = BK_FDD;
     set_bk0010mode(g_conf.bk0010mode);
     saveConf();
@@ -1779,6 +1803,7 @@ static void fast_0010(uint8_t cmd) {
 }
 
 static void fast_0011M(uint8_t cmd) {
+    (void)cmd;
     g_conf.bk0010mode = BK_0011M_FDD;
     set_bk0010mode(g_conf.bk0010mode);
     saveConf();
@@ -1786,51 +1811,51 @@ static void fast_0011M(uint8_t cmd) {
 }
 
 static fn_1_12_tbl_t fn_1_12_tbl = {
-    ' ', '1', " Help ", m_info,
-    ' ', '2', " Conf ", conf_it,
-    ' ', '3', " 0010 ", fast_0010,
-    ' ', '4', " 0011M", fast_0011M,
-    ' ', '5', " Copy ", m_copy_file,
-    ' ', '6', " Move ", m_move_file,
-    ' ', '7', "MkDir ", m_mk_dir,
-    ' ', '8', " Del  ", m_delete_file,
-    ' ', '9', " Swap ", swap_drives,
-    '1', '0', " Exit ", mark_to_exit,
-    '1', '1', "EmMODE", switch_mode,
-    '1', '2', " B/W  ", switch_color
+    { ' ', '1', " Help ", m_info },
+    { ' ', '2', " Conf ", conf_it },
+    { ' ', '3', " 0010 ", fast_0010 },
+    { ' ', '4', " 0011M", fast_0011M },
+    { ' ', '5', " Copy ", m_copy_file },
+    { ' ', '6', " Move ", m_move_file },
+    { ' ', '7', "MkDir ", m_mk_dir },
+    { ' ', '8', " Del  ", m_delete_file },
+    { ' ', '9', " Swap ", swap_drives },
+    { '1', '0', " Exit ", mark_to_exit },
+    { '1', '1', "EmMODE", switch_mode },
+    { '1', '2', " B/W  ", switch_color }
 };
 
 static fn_1_12_tbl_t fn_1_12_tbl_alt = {
-    ' ', '1', "Right ", do_nothing,
-    ' ', '2', "ReSnap", restore_snap,
-    ' ', '3', " 0010 ", fast_0010,
-    ' ', '4', " 0011M", fast_0011M,
-    ' ', '5', " Copy ", m_copy_file,
-    ' ', '6', " Move ", m_move_file,
-    ' ', '7', " Find ", do_nothing,
-    ' ', '8', " Del  ", m_delete_file,
-    ' ', '9', " UpMn ", do_nothing,
-    '1', '0', " Exit ", mark_to_exit,
-    '1', '1', "EmMODE", switch_mode,
-    '1', '2', " B/W  ", switch_color
+    { ' ', '1', "Right ", do_nothing },
+    { ' ', '2', "ReSnap", restore_snap },
+    { ' ', '3', " 0010 ", fast_0010 },
+    { ' ', '4', " 0011M", fast_0011M },
+    { ' ', '5', " Copy ", m_copy_file },
+    { ' ', '6', " Move ", m_move_file },
+    { ' ', '7', " Find ", do_nothing },
+    { ' ', '8', " Del  ", m_delete_file },
+    { ' ', '9', " UpMn ", do_nothing },
+    { '1', '0', " Exit ", mark_to_exit },
+    { '1', '1', "EmMODE", switch_mode },
+    { '1', '2', " B/W  ", switch_color }
 };
 
 static fn_1_12_tbl_t fn_1_12_tbl_ctrl = {
-    ' ', '1', "Eject ", do_nothing,
-    ' ', '2', " Snap ", save_snap,
-    ' ', '3', " 0010 ", fast_0010,
-    ' ', '4', " 0011M", fast_0011M,
-    ' ', '5', " Copy ", m_copy_file,
-    ' ', '6', " Move ", m_move_file,
-    ' ', '7', " Find ", do_nothing,
-    ' ', '8', " Del  ", m_delete_file,
-    ' ', '9', " Swap ", swap_drives,
-    '1', '0', " M-OS ", return_to_mos,
-    '1', '1', "EmMODE", switch_mode,
-    '1', '2', " B/W  ", switch_color
+    { ' ', '1', "Eject ", do_nothing },
+    { ' ', '2', " Snap ", save_snap },
+    { ' ', '3', " 0010 ", fast_0010 },
+    { ' ', '4', " 0011M", fast_0011M },
+    { ' ', '5', " Copy ", m_copy_file },
+    { ' ', '6', " Move ", m_move_file },
+    { ' ', '7', " Find ", do_nothing },
+    { ' ', '8', " Del  ", m_delete_file },
+    { ' ', '9', " Swap ", swap_drives },
+    { '1', '0', " M-OS ", return_to_mos },
+    { '1', '1', "EmMODE", switch_mode },
+    { '1', '2', " B/W  ", switch_color }
 };
 
-static inline fn_1_12_tbl_t* actual_fn_1_12_tbl() {
+static inline const fn_1_12_tbl_t* actual_fn_1_12_tbl() {
     const fn_1_12_tbl_t * ptbl = &fn_1_12_tbl;
     if (altPressed) {
         ptbl = &fn_1_12_tbl_alt;
@@ -1875,7 +1900,7 @@ static void bottom_line() {
     draw_cmd_line(0, CMD_Y_POS, os_type);
 }
 
-inline static bool switch_mode_dialog(bk_mode_t* pbk0010mode) {
+inline static bool switch_mode_dialog(volatile bk_mode_t* pbk0010mode) {
     bk_mode_t bk0010mode = *pbk0010mode;
     const lines_t lines = { 5, 1, bk_mode_lns };
     bk0010mode = draw_selector(
@@ -1898,6 +1923,7 @@ inline static bool switch_mode_dialog(bk_mode_t* pbk0010mode) {
 }
 
 static void switch_mode(uint8_t cmd) {
+    (void)cmd;
     if (switch_mode_dialog(&g_conf.bk0010mode)) {
         set_bk0010mode(g_conf.bk0010mode);
         saveConf();
@@ -1909,13 +1935,14 @@ static void switch_mode(uint8_t cmd) {
 inline static void update_menu_color() {
     const char * m = g_conf.color_mode == BK_COLOR_BW ? " Color" :
                      g_conf.color_mode == BK_COLOR_RGB ? " Gray " : " B/W  ";
-    snprintf(fn_1_12_tbl[11].name, BTN_WIDTH, m);
-    snprintf(fn_1_12_tbl_alt[11].name, BTN_WIDTH, m);
-    snprintf(fn_1_12_tbl_ctrl[11].name, BTN_WIDTH, m);
+    snprintf(fn_1_12_tbl[11].name, BTN_WIDTH, "%s", m);
+    snprintf(fn_1_12_tbl_alt[11].name, BTN_WIDTH, "%s", m);
+    snprintf(fn_1_12_tbl_ctrl[11].name, BTN_WIDTH, "%s", m);
     bottom_line();
 }
 
 static void switch_color(uint8_t cmd) {
+    (void)cmd;
     cycle_color_mode();
     update_menu_color();
 }
@@ -1941,8 +1968,9 @@ static const char koi8_2_cp866_arr[] = {
 };
 
 inline static char koi8_2_cp866(char c) {
-   if (c < 0x80) return c;
-   return koi8_2_cp866_arr[c - 0x80];
+   const unsigned char u = (unsigned char)c; // char is signed on some hosts
+   if (u < 0x80) return c;
+   return koi8_2_cp866_arr[u - 0x80];
 }
 
 int m_add_file_ext(const char* fname, bool dir, int dir_num) {
@@ -1951,7 +1979,7 @@ int m_add_file_ext(const char* fname, bool dir, int dir_num) {
     fp->fsize = 0;
     fp->dir_num = dir_num;
     int i = 0;
-    for (; i < (text_buffer_width >> 1) && fname[i] != 0; ++i) {
+    for (; i < (int)(text_buffer_width >> 1) && fname[i] != 0; ++i) {
         fp->name[i] = koi8_2_cp866(fname[i]);
     }
     do { // trim trailing spaces
@@ -2037,16 +2065,17 @@ static inline void fill_panel(file_panel_desc_t* p) {
         y++;
         p->files_number++;
     }
-    for(int fn = 0; fn < files_count; ++ fn) {
+    for(size_t fn = 0; fn < files_count; ++ fn) {
         file_info_t* fp = &files_info[fn];
         if (start_file_offset <= p->files_number && y <= LAST_FILE_LINE_ON_PANEL_Y) {
             char* filename = fp->name;
-            snprintf(line, text_buffer_width, "%s\\%s", p->path, fp->name);
+            char full_name[sizeof(p->path) + sizeof(fp->name) + 1];
+            snprintf(full_name, sizeof(full_name), "%s\\%s", p->path, fp->name);
 #if EXT_DRIVES_MOUNT
             if (!p->in_dos)
 #endif
             for (int i = 0; i < 4; ++i) { // mark mounted drived by labels FDD0,FDD1,FDD2,FDD3...
-                if (drives_states[i].path && strncmp(drives_states[i].path, line, text_buffer_width) == 0) {
+                if (strcmp(drives_states[i].path, full_name) == 0) {
                     snprintf(line, p->width, "%s", fp->name);
                     for (int j = strlen(fp->name); j < p->width - 6; ++j) {
                         line[j] = ' ';
@@ -2108,7 +2137,7 @@ inline static void fn_1_12_btn_pressed(uint8_t fn_idx) {
 
 inline static void handle_pagedown_pressed() {
     indexes_t* p = &psp->indexes[psp->level];
-    for (int i = 0; i < text_buffer_height / 2; ++i) {
+    for (int i = 0; i < (int)text_buffer_height / 2; ++i) {
         if (p->selected_file_idx < LAST_FILE_LINE_ON_PANEL_Y &&
             p->start_file_offset + p->selected_file_idx < psp->files_number
         ) {
@@ -2145,7 +2174,7 @@ inline static void handle_down_pressed() {
 
 inline static void handle_pageup_pressed() {
     indexes_t* p = &psp->indexes[psp->level];
-    for (int i = 0; i < text_buffer_height / 2; ++i) {
+    for (int i = 0; i < (int)text_buffer_height / 2; ++i) {
         if (p->selected_file_idx > FIRST_FILE_LINE_ON_PANEL_Y) {
             p->selected_file_idx--;
         } else if (p->selected_file_idx == FIRST_FILE_LINE_ON_PANEL_Y && p->start_file_offset > 0) {
@@ -2171,7 +2200,8 @@ inline static void handle_up_pressed() {
 }
 
 static inline void redraw_current_panel() {
-    sprintf(line, "SD:%s", psp->path);
+    memcpy(line, "SD:", 3);
+    copy_str(line + 3, sizeof(line) - 3, psp->path);
     draw_panel(psp->left, PANEL_TOP_Y, psp->width, PANEL_LAST_Y + 1, line, 0);
     fill_panel(psp);
     draw_cmd_line(0, CMD_Y_POS, os_type);
@@ -2274,7 +2304,7 @@ static inline bool run_img(char* path) {
             do_nothing(0);
             return false;
         }
-        strncpy(psp->path, path, 256);
+        copy_str(psp->path, sizeof(psp->path), path);
         psp->in_dos = true;
         psp->level++;
         if (psp->level >= 16) {
@@ -2327,7 +2357,7 @@ static file_info_t* selected_file() {
         y++;
         files_number++;
     }
-    for(int fn = 0; fn < files_count; ++ fn) {
+    for(size_t fn = 0; fn < files_count; ++ fn) {
         file_info_t* fp = &files_info[fn];
         if (start_file_offset <= files_number && y <= LAST_FILE_LINE_ON_PANEL_Y) {
             if (selected_file_idx == y) {
@@ -2364,7 +2394,7 @@ static inline void enter_pressed() {
     if (fp->fattrib & AM_DIR) {
         char path[256];
         construct_full_name(path, psp->path, fp->name);
-        strncpy(psp->path, path, 256);
+        copy_str(psp->path, sizeof(psp->path), path);
         psp->level++;
         if (psp->level >= 16) {
             psp->level = 15;
@@ -2376,7 +2406,7 @@ static inline void enter_pressed() {
         return;
     } else {
         size_t slen = strlen(fp->name);
-        if (slen > 4 && fp->name[slen - 4] == '.')
+        if (slen > 4 && fp->name[slen - 4] == '.') {
         if(
             (fp->name[slen - 1] == 'N' || fp->name[slen - 1] == 'n') &&
             (fp->name[slen - 2] == 'I' || fp->name[slen - 2] == 'i') &&
@@ -2413,6 +2443,7 @@ static inline void enter_pressed() {
             construct_full_name(path, psp->path, fp->name);
             restore_snap_by_filename(path);
             return;
+        }
         }
     }
 }

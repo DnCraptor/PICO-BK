@@ -1,464 +1,107 @@
-# == DO NOT EDIT THE FOLLOWING LINES for the Raspberry Pi Pico VS Code Extension to work ==
-if(WIN32)
-    set(USERHOME $ENV{USERPROFILE})
-else()
-    set(USERHOME $ENV{HOME})
-endif()
-set(sdkVersion 2.3.1)
-set(toolchainVersion 14_2_Rel1)
-set(picotoolVersion 2.3.1)
-set(picoVscode ${USERHOME}/.pico-sdk/cmake/pico-vscode.cmake)
-if (EXISTS ${picoVscode})
-    include(${picoVscode})
-endif()
-# ====================================================================================
-#set(PICO_BOARD pico CACHE STRING "Board type")
-set(PICO_BOARD pico2 CACHE STRING "Board type")
-
-cmake_minimum_required(VERSION 3.22)
-set(PICO_CXX_ENABLE_EXCEPTIONS 1)
-
-option(TV_OUT "Composite TV output (tv-software driver)" OFF)
-option(AY_TYPE "AY-3-8910 Type: PWM / I2S / HWAY" I2S)
-option(MURM2 "Murmulator 2.0" OFF)
-option(PICO_PC "RP2040-PICO-PC" OFF)
-option(ZERO2 "RP2350-PiZero" OFF)
-option(ZERO "RP2040-PiZero" OFF)
+cmake_minimum_required(VERSION 3.16)
+# orange branch: Linux ARM64 port (Orange Pi Zero 2W) - DRM/KMS video,
+# ALSA sound, evdev keyboards and game controllers.  The RP2350 firmware
+# is built from the master branch.
+project(bk VERSION 1.5.3 LANGUAGES C CXX)
 
 set(BUILD_VERSION "1.5.3")
-set(USE_NESPAD ON)
-
-#set(TV_OUT ON)
-set(AY_TYPE PWM)
-#set(AY_TYPE I2S)
-#set(AY_TYPE HWAY)
-#set (m1p2launcher ON)
-
-# Platform (m1p2 by default)
-set (MURM2 ON)
-#set (PICO_PC ON)
-#set (ZERO ON)
-#set (ZERO2 ON)
-#set (VGA_ONLY ON)
-
-IF(ZERO2)
-    # For Board RP2350-PiZero — must be set before pico_sdk_import
-    set(PICO_BOARD_HEADER_DIRS ${CMAKE_SOURCE_DIR}/src CACHE STRING "" FORCE)
-    set(PICO_BOARD waveshare_rp2350_pizero CACHE STRING "Board type" FORCE)
-    set(PICO_PLATFORM rp2350-arm-s CACHE STRING "Platform" FORCE)
-ENDIF()
-
-include(pico_sdk_import.cmake)
-
-if (PICO_PLATFORM STREQUAL "rp2040")
-    project(p1-bk C CXX ASM)
-else ()
-    project(p2-bk C CXX ASM)
-endif()
 
 set(CMAKE_C_STANDARD 11)
+set(CMAKE_C_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_STANDARD 17)
-set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
-
-pico_sdk_init()
-
-IF(MURM2)
-    SET(BUILD_NAME "m2${PROJECT_NAME}")
-ELSEIF(PICO_PC)
-    SET(BUILD_NAME "PC${PROJECT_NAME}")
-ELSEIF(ZERO)
-    SET(BUILD_NAME "z0${PROJECT_NAME}")
-ELSEIF(ZERO2)
-    SET(BUILD_NAME "z0${PROJECT_NAME}")
-ELSE()
-    SET(BUILD_NAME "m1${PROJECT_NAME}")
-ENDIF()
-
-if(NOT AY_TYPE)
-    SET(AY_TYPE PWM)
-endif ()
-
-set(OUTPUT_DIR "${CMAKE_SOURCE_DIR}/bin/${CMAKE_BUILD_TYPE}")
-set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY "${OUTPUT_DIR}")
-set(CMAKE_RUNTIME_OUTPUT_DIRECTORY "${OUTPUT_DIR}")
-set(CMAKE_LIBRARY_OUTPUT_DIRECTORY "${OUTPUT_DIR}")
-
-set(CMAKE_C_FLAGS   "${CMAKE_C_FLAGS}   -ffunction-sections -fdata-sections -O2")
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -ffunction-sections -fdata-sections -O2")
-
-add_subdirectory(drivers/libdvi)
-add_subdirectory(drivers/vga-nextgen)
-if (TV_OUT)
-    add_subdirectory(drivers/tv-software)
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
+if(NOT CMAKE_BUILD_TYPE)
+    set(CMAKE_BUILD_TYPE Release)
 endif()
-#add_subdirectory(drivers/ps2)
-add_subdirectory(drivers/ps2kbd)
-add_subdirectory(drivers/fatfs)
-add_subdirectory(drivers/sdcard)
-add_subdirectory(drivers/psram)
-add_subdirectory(drivers/nespad)
-add_subdirectory(drivers/usb)
-add_subdirectory(drivers/audio)
+set(CMAKE_C_FLAGS_RELEASE "-O2 -g")
+set(CMAKE_CXX_FLAGS_RELEASE "-O2 -g")
 
-# INCLUDE FILES THAT SHOULD BE COMPILED:
+find_package(PkgConfig REQUIRED)
+pkg_check_modules(LIBDRM REQUIRED IMPORTED_TARGET libdrm)
+pkg_check_modules(ALSA REQUIRED IMPORTED_TARGET alsa)
+find_package(Threads REQUIRED)
 
-file(GLOB_RECURSE SRC "src/*.cpp" "src/*.c" "soft/EmuAPP/src/*.c" "soft/EmuAPP/src/Overlays/Init/*.c")
+add_executable(bk
+    # Emulator (BK-0010/11M core, disks, sound, manager)
+    src/main.cpp
+    src/manager.c
+    src/pico-vision.c
+    src/aySoundSoft.c
+    src/disk.c
+    src/fdd.c
+    src/disk_img.cpp
+    src/mkdos.cpp
+    soft/EmuAPP/src/AnyMem.c
+    soft/EmuAPP/src/CPU.c
+    soft/EmuAPP/src/Key.c
+    soft/EmuAPP/src/reboot.c
+    soft/EmuAPP/src/Overlays/Emu/CPU_e.c
+    soft/EmuAPP/src/Overlays/Emu/emu_e.c
+    soft/EmuAPP/src/Overlays/EmuFfs/CPU_ef.c
+    soft/EmuAPP/src/Overlays/EmuUi/Key_eu.c
+    soft/EmuAPP/src/Overlays/Init/CPU_i.c
+    soft/EmuAPP/src/Overlays/Init/crc8_i.c
+    soft/EmuAPP/src/Overlays/Init/main_i.c
 
-message(STATUS "Add source files:")
-foreach (SRC_FILE IN LISTS SRC)
-    message(STATUS "${SRC_FILE}")
-endforeach ()
-message(STATUS "")
-
-add_executable(${PROJECT_NAME} ${SRC})
-
-pico_set_program_name(${PROJECT_NAME} "PICO BK-0010/11 Emulator for Murmulator devboard by DnCraptor")
-pico_set_program_version(${PROJECT_NAME} "${BUILD_VERSION}")
-
-if (PICO_PLATFORM STREQUAL "rp2040")
-    pico_define_boot_stage2(slower_boot2 ${PICO_DEFAULT_BOOT_STAGE2_FILE})
-    target_compile_definitions(slower_boot2 PRIVATE PICO_FLASH_SPI_CLKDIV=4)
-    pico_set_boot_stage2(${PROJECT_NAME} slower_boot2)
-endif()
-
-# Enable compiler and linker garbage collect unused code/data sections
-add_link_options(-Wl,--gc-sections)
-target_link_libraries(${PROJECT_NAME} PRIVATE
-        libdvi
-        vga-nextgen
-        $<$<BOOL:${TV_OUT}>:tv-software>
-#        ps2
-        ps2kbd
-        psram
-        sdcard
-        fatfs
-        nespad
-        usb
-        audio
-
-        pico_runtime
-        pico_stdlib
-        pico_rand
-        pico_multicore
-        hardware_dma
-        hardware_pio
-        hardware_i2c
-        hardware_interp
-        hardware_timer
-        hardware_clocks
-        hardware_pwm
-        hardware_flash
-
-        tinyusb_host tinyusb_board
+    # Linux host (counterparts of the RP2350 drivers)
+    src/linux/vga_linux.c       # VGA scanline renderer (drivers/vga-nextgen)
+    src/linux/video_drm.c       # DRM/KMS output
+    src/linux/audio_linux.c     # ALSA output (audio timer, PWM/I2S)
+    src/linux/input_linux.c     # evdev keyboards and gamepads
+    src/linux/kbd_linux.cpp     # keys -> scancodes (drivers/ps2kbd)
+    src/linux/nespad_linux.c    # NES (Dendy) pads (drivers/nespad)
+    src/linux/ff_posix.c        # FatFs API over the data directory (SD card)
+    src/linux/platform_linux.c  # timers, reboot / quit
 )
 
-target_link_options(${PROJECT_NAME} PRIVATE -Xlinker --print-memory-usage)
-
-target_sources(${PROJECT_NAME} PUBLIC
-        ${CMAKE_CURRENT_SOURCE_DIR}/soft/EmuAPP/src/Overlays/Init/CPU_i.c
-)
-target_include_directories(${PROJECT_NAME} PRIVATE
-        ${CMAKE_CURRENT_SOURCE_DIR}/src
-        ${CMAKE_CURRENT_SOURCE_DIR}/disks
-        ${CMAKE_CURRENT_SOURCE_DIR}/soft/EmuAPP/src
-        ${CMAKE_CURRENT_SOURCE_DIR}/soft/EmuAPP/src/Overlays/Emu
-        ${CMAKE_CURRENT_SOURCE_DIR}/soft/EmuAPP/src/Overlays/Init
-        ${CMAKE_CURRENT_SOURCE_DIR}/soft/EmuAPP/src/Overlays/EmuFfs
-        ${CMAKE_CURRENT_SOURCE_DIR}/soft/EmuAPP/ROM
-)
-if (CMAKE_C_COMPILER_ID STREQUAL "GNU")
-    target_compile_options(${PROJECT_NAME} PUBLIC
-            -Wno-error=suggest-attribute=format
-            -Wno-error=cast-qual
-            -Wno-error=unused-parameter
-            -Wno-error=conversion
-            -Wno-error=format=
-            -Wno-error=sign-compare
-            -Wno-error=missing-field-initializers
-            -Wno-error=switch
-            -Wno-error=implicit-fallthrough=
-            -Wno-error=stringop-truncation
-            -Wno-error=restrict
-            -w
-    )
-endif ()
-
-if( AY_TYPE MATCHES "HWAY" )
-    target_compile_definitions(${PROJECT_NAME} PRIVATE HWAY)
-endif()
-if( AY_TYPE MATCHES "I2S" )
-    target_compile_definitions(${PROJECT_NAME} PRIVATE I2S=1)
-endif()
-
-if (TV_OUT)
-    target_compile_definitions(${PROJECT_NAME} PRIVATE SELECT_TV=1)
-endif()
-
-if (USE_WII)
-    target_compile_definitions(${PROJECT_NAME} PRIVATE USE_WII)
-endif()
-if (USE_NESPAD)
-    target_compile_definitions(${PROJECT_NAME} PRIVATE USE_NESPAD)
-endif()
-
-if(VGA_ONLY)
-    target_compile_definitions(${PROJECT_NAME} PRIVATE VGA_ONLY)
-endif()
-
-target_compile_definitions(${PROJECT_NAME} PRIVATE
-        # Use the same PIO HDMI clock generator as the working PCp2 build.
-        # Board-specific TMDS pin layouts remain unchanged.
-        DVI_USE_PIO_CLOCK=1
-        PICO_HEAP_SIZE=0
-        USE_ZONE_FOR_MALLOC=1
-
-        PICO_DEFAULT_UART_RX_PIN=-1
-        PICO_DEFAULT_UART_TX_PIN=0
-
-        LOAD_WAV_2_COVOX=1
-
-        BK_FDD_16K=1
-        BUILD_IN_FDD_MKDOS
-        BUILD_IN_FDD_GAMES
-
-        EXT_DRIVES_MOUNT=1
-
-        SOUND_SYSTEM=1
-        COVOX=1
-        AYSOUND=1
-
-        # select one of the folowing:
-        #SWAP_BLOCK_1k
-        SWAP_BLOCK_2k
-        #SWAP_BLOCK_4k
+# src/linux first: its pico.h, pico/*.h, hardware/*.h, ff.h and f_util.h
+# replace the Pico SDK and SD card driver headers.
+target_include_directories(bk PRIVATE
+    src/linux
+    src
+    disks
+    drivers/vga-nextgen
+    drivers/ps2kbd
+    drivers/nespad
+    soft/EmuAPP/src
+    soft/EmuAPP/src/Overlays/Emu
+    soft/EmuAPP/src/Overlays/Init
+    soft/EmuAPP/src/Overlays/EmuFfs
+    soft/EmuAPP/ROM
 )
 
-if (MURM2)
-    target_compile_definitions(${PROJECT_NAME} PRIVATE
-        KBD_CLOCK_PIN=2
-        KBD_DATA_PIN=3
-        
-        # SDCARD
-        SDCARD_PIN_SPI0_MISO=4
-        SDCARD_PIN_SPI0_CS=5
-        SDCARD_PIN_SPI0_SCK=6
-        SDCARD_PIN_SPI0_MOSI=7
-        
-        BEEPER_PIN=9
-        PWM_PIN0=10
-        PWM_PIN1=11
+target_compile_definitions(bk PRIVATE
+    _POSIX_C_SOURCE=200809L
+    _DEFAULT_SOURCE=1
+    ORANGE_BK=1
+    PICO_ON_DEVICE=1
+    PICO_RP2350=1
 
-        I2S_DATA_PIO=9 #
-        I2S_BCK_PIO=10 #
-        I2S_LCK_PIO=11
+    LOAD_WAV_2_COVOX=1
 
-        beginVGA_PIN=12
-        DVI_DEFAULT_SERIAL_CONFIG=murmulator2_cfg
+    BK_FDD_16K=1
+    BUILD_IN_FDD_MKDOS
+    BUILD_IN_FDD_GAMES
 
-        WII_SDA_PIN=20
-        WII_SCL_PIN=21
+    EXT_DRIVES_MOUNT=1
 
-        NES_GPIO_CLK=20
-        NES_GPIO_LAT=21
-        NES_GPIO_DATA=26
+    SOUND_SYSTEM=1
+    COVOX=1
+    AYSOUND=1
 
-        LOAD_WAV_PIO=22
-        PICO_DEFAULT_LED_PIN=25
-    )
-elseif (PICO_PC)
-    target_compile_definitions(${PROJECT_NAME} PRIVATE
-        PICO_PC=1
+    SWAP_BLOCK_2k
 
-        # DBG1 1/2
-        KBD_CLOCK_PIN=0
-        KBD_DATA_PIN=1
-
-        LOAD_WAV_PIO=5 # UXT1-10
-
-        # SDCARD
-        SDCARD_PIN_SPI0_MISO=4
-        SDCARD_PIN_SPI0_SCK=6
-        SDCARD_PIN_SPI0_MOSI=7
-        SDCARD_PIN_SPI0_CS=22
-        
-        BEEPER_PIN=26
-        PWM_PIN0=27
-        PWM_PIN1=28
-
-        I2S_DATA_PIO=26 # not implemented
-        I2S_BCK_PIO=26  # I2S_BCK_PIO == I2S_LCK_PIO == I2S_DATA_PIO - unsupported mark
-        I2S_LCK_PIO=26
-
-        beginVGA_PIN=12
-        DVI_DEFAULT_SERIAL_CONFIG=Olimex_RP2040_PICO_PC_cfg
-
-        WII_SDA_PIN=20
-        WII_SCL_PIN=21
-
-        NES_GPIO_CLK=8    # UXT1-6
-        NES_GPIO_LAT=9    # UXT1-5
-        NES_GPIO_DATA=20  # UXT1-3
-        NES_GPIO_DATA2=21 # UXT1-4
-        PICO_DEFAULT_LED_PIN=25
-    )
-elseif (ZERO)
-    target_compile_definitions(${PROJECT_NAME} PRIVATE
-        ZERO=1
-
-        # PS2 keyboard
-        KBD_CLOCK_PIN=0
-        KBD_DATA_PIN=1
-
-        LOAD_WAV_PIO=17
-
-        # SDCARD
-        SDCARD_PIN_SPI0_SCK=18
-        SDCARD_PIN_SPI0_MOSI=19
-        SDCARD_PIN_SPI0_MISO=20
-        SDCARD_PIN_SPI0_CS=21
-        
-        PWM_PIN0=10
-        PWM_PIN1=11
-        BEEPER_PIN=3
-
-        I2S_DATA_PIO=10 #
-        I2S_BCK_PIO=11 #
-        I2S_LCK_PIO=12
-
-        beginVGA_PIN=22
-        DVI_DEFAULT_SERIAL_CONFIG=waveshare_rp2040_pizero_hdmi_cfg
-
-        WII_SDA_PIN=6
-        WII_SCL_PIN=7
-
-        NES_GPIO_CLK=4
-        NES_GPIO_LAT=5
-        NES_GPIO_DATA=6
-        NES_GPIO_DATA2=7
-
-        PICO_DEFAULT_LED_PIN=2
-    )
-elseif (ZERO2)
-    target_compile_definitions(${PROJECT_NAME} PRIVATE
-        ZERO2=1
-
-        # PS2 keyboard
-        KBD_CLOCK_PIN=2
-        KBD_DATA_PIN=3
-
-        LOAD_WAV_PIO=17
-
-        # SDCARD
-        SDCARD_SPI_BUS=spi1
-        SDCARD_PIN_SPI0_SCK=30
-        SDCARD_PIN_SPI0_MOSI=31
-        SDCARD_PIN_SPI0_MISO=40
-        SDCARD_PIN_SPI0_CS=43
-        
-        PWM_PIN0=10
-        PWM_PIN1=11
-        BEEPER_PIN=12
-
-        I2S_DATA_PIO=10 #
-        I2S_BCK_PIO=11 #
-        I2S_LCK_PIO=12
-
-        beginVGA_PIN=32
-        DVI_DEFAULT_SERIAL_CONFIG=waveshare_rp2350_pizero_hdmi_cfg
-
-        WII_SDA_PIN=6
-        WII_SCL_PIN=7
-
-        NES_GPIO_CLK=4
-        NES_GPIO_LAT=5
-        NES_GPIO_DATA=6
-        NES_GPIO_DATA2=7
-
-        PICO_DEFAULT_LED_PIN=25
-    )
-else() # m1
-    target_compile_definitions(${PROJECT_NAME} PRIVATE
-        KBD_CLOCK_PIN=0
-        KBD_DATA_PIN=1
-        
-        # SDCARD
-        SDCARD_PIN_SPI0_CS=5
-        SDCARD_PIN_SPI0_SCK=2
-        SDCARD_PIN_SPI0_MOSI=3
-        SDCARD_PIN_SPI0_MISO=4
-        
-        beginVGA_PIN=6
-        DVI_DEFAULT_SERIAL_CONFIG=murmulator_cfg
-
-        WII_SDA_PIN=14
-        WII_SCL_PIN=15
-
-        NES_GPIO_CLK=14
-        NES_GPIO_LAT=15
-        NES_GPIO_DATA=16
-
-        LOAD_WAV_PIO=22
-
-        PWM_PIN0=26
-        PWM_PIN1=27
-        BEEPER_PIN=28
-
-        I2S_DATA_PIO=26 #
-        I2S_BCK_PIO=27 #
-        I2S_LCK_PIO=28
-
-        PICO_DEFAULT_LED_PIN=25
-    )
-endif()
-
-target_compile_definitions(${PROJECT_NAME} PRIVATE
-    PICO_CORE1_STACK_SIZE=0x200
+    USE_NESPAD
+    BEEPER_PIN=9
+    PICO_DEFAULT_LED_PIN=25
 )
 
-pico_enable_stdio_uart(${PROJECT_NAME} 0)
-pico_enable_stdio_usb(${PROJECT_NAME} 0)
+target_compile_options(bk PRIVATE
+    -Wall
+    -Wextra
+    $<$<COMPILE_LANGUAGE:CXX>:-fno-exceptions>
+    $<$<COMPILE_LANGUAGE:CXX>:-fno-rtti>
+)
 
-if (TV_OUT)
-    SET(BUILD_NAME "${BUILD_NAME}-TV-319.2MHz-${AY_TYPE}-${BUILD_VERSION}")
-elseif (VGA_ONLY)
-    if (PICO_PLATFORM STREQUAL "rp2040")
-        SET(BUILD_NAME "${BUILD_NAME}-VGA-390MHz-${AY_TYPE}-${BUILD_VERSION}")
-    else ()
-        SET(BUILD_NAME "${BUILD_NAME}-VGA-390MHz-${AY_TYPE}-${BUILD_VERSION}")
-    endif ()
-else ()
-    if (PICO_PLATFORM STREQUAL "rp2040")
-        SET(BUILD_NAME "${BUILD_NAME}-VGA-HDMI-390MHz-${AY_TYPE}-${BUILD_VERSION}")
-    else ()
-        SET(BUILD_NAME "${BUILD_NAME}-VGA-HDMI-400MHz-${AY_TYPE}-${BUILD_VERSION}")
-    endif ()
-endif ()
-
-IF(m1p2launcher)
-    IF(MURM2)
-        SET(BUILD_NAME "${BUILD_NAME}.m2p2")
-    ELSEIF(PICO_PC)
-        SET(BUILD_NAME "${BUILD_NAME}.PCp2")
-    ELSEIF(PICO_DV)
-        SET(BUILD_NAME "${BUILD_NAME}.DVp2")
-    ELSEIF(ZERO)
-        SET(BUILD_NAME "${BUILD_NAME}.z0p1")
-    ELSEIF(ZERO2)
-        SET(BUILD_NAME "${BUILD_NAME}.z0p2")
-    ELSE()
-        SET(BUILD_NAME "${BUILD_NAME}.m1p2")
-    ENDIF()
-    pico_set_linker_script(${PROJECT_NAME} "${CMAKE_SOURCE_DIR}/memmap.ld")
-ENDIF()
-
-set_target_properties(${PROJECT_NAME} PROPERTIES OUTPUT_NAME "${BUILD_NAME}")
-
-pico_add_extra_outputs(${PROJECT_NAME})
-
-if (m1p2launcher)
-    add_custom_command(TARGET ${PROJECT_NAME} POST_BUILD
-        COMMAND ${CMAKE_COMMAND} -E rename
-        "${OUTPUT_DIR}/${BUILD_NAME}.uf2"
-        "${OUTPUT_DIR}/${BUILD_NAME}"
-    )
-endif ()
+target_link_libraries(bk PRIVATE PkgConfig::LIBDRM PkgConfig::ALSA Threads::Threads)
+install(TARGETS bk RUNTIME DESTINATION bin)

@@ -64,7 +64,7 @@ inline static int AnalyseMicrodos(FIL* f, uint8_t* pSector)
 	int nAODirFlag = 0;
 	f_lseek(f, dp);
 	// сканируем каталог и ищем там директории
-	for (size_t i = 0; i < nRecNum; ++i) {
+	for (int i = 0; i < nRecNum; ++i) {
 		if (pDiskCat->name[0] == 0177) {
 			nMKDirFlag++;
 		} else if (pDiskCat->name[0] != 0 && pDiskCat->len_blk == 0) {
@@ -338,7 +338,6 @@ inline static uint16_t CalcCRC(uint8_t *buffer, size_t len) {
 }
 
 inline static int IsHolography(FIL *f, uint8_t *buf) {
-	auto pwBuf = reinterpret_cast<uint16_t *>(buf);
     UINT br;
 	// читаем бут сектор
 	if (f_lseek(f, 0) != FR_OK || f_read(f, buf, BLOCK_SIZE, &br) != FR_OK) {
@@ -387,7 +386,7 @@ static void ParseImage(const char* fname, PARSE_RESULT_C& ret) {
 		uint16_t wSector[BLOCK_SIZE / 2];
 	};
 	ret.bImageBootable = false;
-	strncpy(ret.strName, fname, 256);
+	snprintf(ret.strName, sizeof(ret.strName), "%.*s", (int)sizeof(ret.strName) - 1, fname);
 	ret.nBaseOffset = 0;
 	ret.imageOSType = IMAGE_TYPE::ERROR_NOIMAGE; // предполагаем изначально такое
     FIL* fil = new FIL();
@@ -475,7 +474,7 @@ static void ParseImage(const char* fname, PARSE_RESULT_C& ret) {
 			uint8_t nMediaDescriptor = pSector[025];
 			int nBootSize = *(reinterpret_cast<uint16_t *>(pSector + 016)) * (*(reinterpret_cast<uint16_t *>(pSector + 013)));
 			uint8_t* b = new uint8_t[BLOCK_SIZE];
-			if (f_lseek(fil, nBootSize) == FR_OK && f_read(fil, b, BLOCK_SIZE, &br) == FR_OK)
+			if (f_lseek(fil, nBootSize) == FR_OK && f_read(fil, b, BLOCK_SIZE, &br) == FR_OK) {
 			if (b[1] == 0xff && b[0] == nMediaDescriptor) // если медиадескриптор в BPB и фат совпадают, то это точно FAT12
 			{
 				if (bAC1 || bAC2) // если одно из этих условий - то это скорее всего ANDOS
@@ -494,6 +493,7 @@ static void ParseImage(const char* fname, PARSE_RESULT_C& ret) {
 			} else {
 				ret.imageOSType = IMAGE_TYPE::UNKNOWN;
 				DBGM_PRINT(("UNKNOWN"));
+			}
 			}
             delete[] b;
 		}
@@ -635,7 +635,7 @@ extern "C" void detect_os_type(const char* path, char* os_type, size_t sz) {
 	//	snprintf(os_type, sz, "");
 			///    try {
         ParseImage(path, parse_result);
-		snprintf(os_type, sz, "%d KB %s%s",
+		snprintf(os_type, sz, "%lu KB %s%s",
 		         parse_result.nImageSize >> 10,
 				 GetOSName(parse_result.imageOSType),
 				 parse_result.bImageBootable ? " [bootable]" : "");
@@ -648,6 +648,7 @@ extern "C" void detect_os_type(const char* path, char* os_type, size_t sz) {
 
 #if EXT_DRIVES_MOUNT
 extern "C" bool mount_img(const char* path, int curr_dir_num) {
+    (void)path; // debug output only
     DBGM_PRINT(("mount_img: %s dir_num: %d", path, curr_dir_num));
     if ( !is_browse_os_supported() ) {
         DBGM_PRINT(("mount_img: %s unsupported file type (resources)", path));

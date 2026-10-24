@@ -277,6 +277,28 @@ static inline void select_11_page(uint16_t Word) {
     }
 }
 
+/*
+ * Rebuild the page table from the machine state after a snapshot was read
+ * back: the saved MemPages are host addresses of the process that wrote the
+ * snapshot (and of its firmware build), not of this one.  The mapping is a
+ * function of the model (init_rom) and, on the BK-0011M, of the last page
+ * selection written to 177716.
+ */
+void CPU_RestoreMemPages (void) {
+    Device_Data.MemPages [0] = (uintptr_t)CPU_PAGE01_MEM_ADR; /* RAM Page 0.1 */
+    Device_Data.MemPages [1] = (uintptr_t)CPU_PAGE02_MEM_ADR; /* RAM Page 0.2 */
+    Device_Data.MemPages [2] = (uintptr_t)CPU_PAGE03_MEM_ADR; /* RAM Page 0.3 */
+    Device_Data.MemPages [3] = (uintptr_t)CPU_PAGE04_MEM_ADR; /* RAM Page 0.4 */
+    Device_Data.MemPages [4] = (uintptr_t)CPU_PAGE51_MEM_ADR; /* RAM Page 4.1 video 0 */
+    Device_Data.MemPages [5] = (uintptr_t)CPU_PAGE52_MEM_ADR; /* RAM Page 4.2 video 0 */
+    Device_Data.MemPages [6] = (uintptr_t)CPU_PAGE53_MEM_ADR; /* RAM Page 4.3 video 0 */
+    Device_Data.MemPages [7] = (uintptr_t)CPU_PAGE54_MEM_ADR; /* RAM Page 4.4 video 0 */
+    init_rom();
+    if (is_bk0011mode()) {
+        select_11_page(Device_Data.SysRegs.Wr1Reg177716);
+    }
+}
+
 TCPU_Arg AT_OVL CPU_WriteW (TCPU_Arg Adr, uint_fast16_t Word) {
     uint_fast16_t PrevWord;
     ///DEBUG_PRINT(("CPU_WriteW(%oo, %oo) Page: #%d", Adr, Word, Adr >> 12));
@@ -291,8 +313,8 @@ TCPU_Arg AT_OVL CPU_WriteW (TCPU_Arg Adr, uint_fast16_t Word) {
             uintptr_t Page = Device_Data.MemPages[Adr >> 12];
             uintptr_t addr = Page + (Adr & 0x0FFE);
             ///DEBUG_PRINT(("CPU_WriteW(%oo, %oo) Page: %08X (#%d)", Adr, Word, Page, Adr >> 12));
-            if (Page && addr < CPU_PAGE01_MEM_ADR + RAM_PAGES_SIZE) {
-                AnyMem_w_u16 ((uint16_t *)addr, Word);
+            if (Page) {
+                if (CPU_IS_RAM_ADR (addr)) AnyMem_w_u16 ((uint16_t *)addr, Word);
                 return CPU_ARG_WRITE_OK;
             }
             return CPU_ARG_WRITE_ERR;
@@ -304,8 +326,8 @@ TCPU_Arg AT_OVL CPU_WriteW (TCPU_Arg Adr, uint_fast16_t Word) {
         uintptr_t Page = Device_Data.MemPages [Adr >> 12];
         uintptr_t addr = Page + (Adr & 0x0FFE);
         ///DEBUG_PRINT(("CPU_WriteW(%oo, %oo) Page: %08X (#%d)", Adr, Word, Page, Adr >> 12));
-        if (Page && addr < CPU_PAGE01_MEM_ADR + RAM_PAGES_SIZE) {
-            AnyMem_w_u16 ((uint16_t *)addr, Word);
+        if (Page) {
+            if (CPU_IS_RAM_ADR (addr)) AnyMem_w_u16 ((uint16_t *)addr, Word);
             return CPU_ARG_WRITE_OK;
         }
         return CPU_ARG_WRITE_ERR;
@@ -459,8 +481,8 @@ TCPU_Arg AT_OVL CPU_WriteB (TCPU_Arg Adr, uint_fast8_t Byte) {
         if (Adr < 0160000) {
             uintptr_t Page = Device_Data.MemPages[Adr >> 12];
             uintptr_t addr = Page + ((Adr) & 0x0FFF);
-            if (Page && addr < CPU_PAGE01_MEM_ADR + RAM_PAGES_SIZE) {
-                AnyMem_w_u8 ((uint8_t *)addr, Byte);
+            if (Page) {
+                if (CPU_IS_RAM_ADR (addr)) AnyMem_w_u8 ((uint8_t *)addr, Byte);
                 return CPU_ARG_WRITE_OK;
             }
             return CPU_ARG_WRITE_ERR;
@@ -470,8 +492,8 @@ TCPU_Arg AT_OVL CPU_WriteB (TCPU_Arg Adr, uint_fast8_t Byte) {
     if (Adr < 0140000) {
         uintptr_t Page = Device_Data.MemPages [Adr >> 12];
         uintptr_t addr = Page + ((Adr) & 0x0FFF);
-        if (Page && addr < CPU_PAGE01_MEM_ADR + RAM_PAGES_SIZE) {
-            AnyMem_w_u8 ((uint8_t *)addr, Byte);
+        if (Page) {
+            if (CPU_IS_RAM_ADR (addr)) AnyMem_w_u8 ((uint8_t *)addr, Byte);
             return CPU_ARG_WRITE_OK;
         }
         return CPU_ARG_WRITE_ERR;
@@ -568,14 +590,10 @@ TCPU_Arg AT_OVL CPU_WriteB (TCPU_Arg Adr, uint_fast8_t Byte) {
             }
             else {
                 Device_Data.SysRegs.WrReg177716 = (uint16_t) Word; // ?? LO byte missed
-                // пищалка
+                // пищалка: beep() also keeps beeper_on, which the mixed
+                // (HDMI/I2S, Linux ALSA) sound outputs read
                 if (!(Adr & 1)) { // LO byte only
-                    int vol = g_conf.snd_volume + 9;
-                    if (vol > 1) {
-                        pwm_set_gpio_level(BEEPER_PIN, Byte & 0100 ? (1 << vol) - 1 : 0);
-                    } else {
-                        pwm_set_gpio_level(BEEPER_PIN, 0);
-                    }
+                    beep(Byte & 0100);
                 }
             }
             break;

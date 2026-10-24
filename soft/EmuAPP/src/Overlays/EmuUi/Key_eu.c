@@ -189,7 +189,7 @@ static const uint8_t Key_RusLatTab [0x84] [2] = {
     {           0xA0 +  4,            0xA0 +  4},       // PS2_F7          0x83    БЛОК РЕД (4)
 };
 
-static uint_fast16_t AT_OVL ReturnKeyCode (uint_fast8_t Key, uint_fast32_t KeyFlags)
+static uint_fast16_t AT_OVL ReturnKeyCode (uint_fast16_t Key, uint_fast32_t KeyFlags)
 {
     if (Key >= 0100 && Key <= 0137 && (KeyFlags & (KEY_FLAGS_LCTRL | KEY_FLAGS_RCTRL))) Key &= ~0140;
     if (KeyFlags & (KEY_FLAGS_LALT | KEY_FLAGS_RALT)) Key |= KEY_AR2_PRESSED;
@@ -197,7 +197,7 @@ static uint_fast16_t AT_OVL ReturnKeyCode (uint_fast8_t Key, uint_fast32_t KeyFl
     return Key;
 }
 
-static uint_fast16_t AT_OVL ReturnShiftedKeyCode (uint_fast8_t Key, uint_fast32_t KeyFlags)
+static uint_fast16_t AT_OVL ReturnShiftedKeyCode (uint_fast16_t Key, uint_fast32_t KeyFlags)
 {
     if ((((KeyFlags >> KEY_FLAGS_LSHIFT_POS) | (KeyFlags >> KEY_FLAGS_RSHIFT_POS)) ^ (KeyFlags >> KEY_FLAGS_CAPSLOCK_POS) ^ (KeyFlags >> KEY_FLAGS_RUSLAT_POS)) & 1) Key += 32;
 
@@ -207,7 +207,7 @@ static uint_fast16_t AT_OVL ReturnShiftedKeyCode (uint_fast8_t Key, uint_fast32_
 uint_fast16_t AT_OVL Key_Translate (uint_fast16_t CodeAndFlags)
 {
     uint_fast16_t Key;
-    uint_fast8_t  Code;
+    uint_fast16_t Code;   // 10 bits (0x3FF); uint_fast8_t is 32-bit on ARM newlib, 8-bit on glibc
     uint_fast32_t KeyFlags = Key_Flags;
 
     Code = CodeAndFlags & 0x3FF;
@@ -216,8 +216,8 @@ uint_fast16_t AT_OVL Key_Translate (uint_fast16_t CodeAndFlags)
     {
         Key = Key_RusLatTab [Code] [(KeyFlags >> KEY_FLAGS_RUSLAT_POS) & 1];
 
-        if (Key <=   32) return ReturnKeyCode        ((uint_fast8_t) Key, KeyFlags);
-        if (Key <  0x80) return ReturnShiftedKeyCode ((uint_fast8_t) Key, KeyFlags);
+        if (Key <=   32) return ReturnKeyCode        (Key, KeyFlags);
+        if (Key <  0x80) return ReturnShiftedKeyCode (Key, KeyFlags);
         if (Key <= 0x9F) return ReturnKeyCode        (Key_ShiftTab [Key - 0x80] [((KeyFlags >> KEY_FLAGS_LSHIFT_POS) | (KeyFlags >> KEY_FLAGS_RSHIFT_POS)) & 1], KeyFlags);
         if (Key <  0xC0) return ((Key - 0xA0) | KEY_AR2_PRESSED);
 

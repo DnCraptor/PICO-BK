@@ -7,8 +7,8 @@ uint8_t bootdrive, hdcount, fdcount;
 
 size_t fdd0_sz();
 size_t fdd1_sz();
-char* fdd0_rom();
-char* fdd1_rom();
+const char* fdd0_rom();
+const char* fdd1_rom();
 
 #define _FILE FIL
 _FILE fileA;
@@ -60,9 +60,9 @@ inline static _FILE* actualDrive(uint8_t drivenum) {
 uint16_t word_of_drive(uint8_t drive, size_t pos) {
     gpio_put(PICO_DEFAULT_LED_PIN, true);
     if (!SD_CARD_AVAILABLE) {
-        uint8_t * p = (drive > 0 ? fdd1_rom() : fdd0_rom()) + pos;
+        const uint8_t * p = (const uint8_t *)(drive > 0 ? fdd1_rom() : fdd0_rom()) + pos;
         gpio_put(PICO_DEFAULT_LED_PIN, false);
-        return *(uint16_t*)p;
+        return *(const uint16_t*)p;
     }
     _FILE * f = actualDrive(drive);
     if (!f) return 0;
@@ -97,12 +97,10 @@ struct struct_drive {
     uint16_t heads;
     uint8_t inserted;
     uint8_t readonly;
-    char *data;
+    const char *data;
 };
 
 struct struct_drive disk[4];
-
-static uint8_t sectorbuffer[512];
 
 void ejectdisk(uint8_t drivenum) {
     if (disk[drivenum].inserted) {
@@ -114,7 +112,7 @@ void ejectdisk(uint8_t drivenum) {
     }
 }
 
-static _FILE* tryFlushROM(uint8_t drivenum, size_t size, char *ROM, char *path) {
+static _FILE* tryFlushROM(uint8_t drivenum, size_t size, const char *ROM, char *path) {
     _FILE *pFile = actualDrive(drivenum);
     gpio_put(PICO_DEFAULT_LED_PIN, true);
     FRESULT result = f_open(pFile, path, FA_WRITE | FA_CREATE_ALWAYS);
@@ -161,7 +159,7 @@ static _FILE* tryDefaultDrive(uint8_t drivenum, size_t size, char *path) {
 // manager.h
 void notify_image_insert_action(uint8_t drivenum, char *pathname);
 
-uint8_t insertdisk(uint8_t drivenum, size_t size, char *ROM, char *pathname) {
+uint8_t insertdisk(uint8_t drivenum, size_t size, const char *ROM, char *pathname) {
     gpio_put(PICO_DEFAULT_LED_PIN, true);
     _FILE *pFile = NULL;
     if (pathname != NULL) {
@@ -258,13 +256,6 @@ uint8_t insertdisk(uint8_t drivenum, size_t size, char *ROM, char *pathname) {
 error:
     fprintf(stderr, "DISK: ERROR: cannot insert disk 0%02Xh as %s because: %s\r\n", drivenum, "ROM", err);
     return 1;
-}
-
-// Call this ONLY if all parameters are valid! There is no check here!
-static size_t chs2ofs(int drivenum, int cyl, int head, int sect) {
-    return (
-        ((size_t)cyl * (size_t)disk[drivenum].heads + (size_t)head) * (size_t)disk[drivenum].sects + (size_t) sect - 1
-    ) * 512UL;
 }
 
 bool img_disk_read_sec(int drv, BYTE * buffer, LBA_t lba) {

@@ -329,7 +329,7 @@ R7
         {
           
             noise_ay_count+=delta;
-            if (noise_ay_count>=(ay_R6<<1)) {noise_bit=get_random();noise_ay_count=0;}//отдельный счётчик для шумового
+            if (noise_ay_count>=((uint32_t)ay_R6<<1)) {noise_bit=get_random();noise_ay_count=0;}//отдельный счётчик для шумового
                                 // R6 - частота шума
             
             if(!noise_bit)//если бит шума ==1, то он не меняет состояние каналов
@@ -368,7 +368,7 @@ R7
 
     //if (!(main_ay_count&1)&&(ay_R12_R11==0||((main_ay_count>>1)%ay_R12_R11==0)))
     //if ((env_main_count++>>1)>=ay_R12_R11)
-    if (((main_ay_count_env)>=(ay_R12_R11<<1)))//без операции деления
+    if (((main_ay_count_env)>=((uint32_t)ay_R12_R11<<1)))//без операции деления
             {
                  
                  envelope_ay_count++;
@@ -476,6 +476,7 @@ void beep(bool v) {
     #ifdef HWAY
         AY_to595Beep(v);
     #elif !defined(I2S)
-        pwm_set_gpio_level(BEEPER_PIN, v ? (1 << (g_conf.snd_volume + 9)) - 1 : 0);
+        const int vol = g_conf.snd_volume + 9;
+        pwm_set_gpio_level(BEEPER_PIN, (v && vol > 1) ? (1 << vol) - 1 : 0);
     #endif
 }

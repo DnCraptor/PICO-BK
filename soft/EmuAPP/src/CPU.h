@@ -56,6 +56,15 @@ static inline bool is_bk0011mode() {
 }
 
 #define RAM_PAGES_SIZE (sizeof RAM)
+/*
+ * Stores through a memory page land only in the BK RAM.  The RP2350 build
+ * tested just "below the end of RAM": its ROM images are in flash, mapped
+ * below SRAM, so a ROM page passed and the store went to the XIP window.
+ * On the host the ROM arrays are read-only process data that may sit
+ * anywhere, so a store into a ROM page is dropped here; the bus result stays
+ * "OK", as before.
+ */
+#define CPU_IS_RAM_ADR(addr) ((addr) >= (uintptr_t) &RAM[0] && (addr) < (uintptr_t) &RAM[0] + RAM_PAGES_SIZE)
 #define CPU_PAGE01_MEM_ADR  &RAM[0x00000] /* RAM Page 0.1 0..40000 */
 #define CPU_PAGE02_MEM_ADR  &RAM[0x01000] /* RAM Page 0.2 0..40000 */
 #define CPU_PAGE03_MEM_ADR  &RAM[0x02000] /* RAM Page 0.3 0..40000 */

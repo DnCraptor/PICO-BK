@@ -5,6 +5,7 @@
 #include "CPU.h"
 
 void CPU_TimerRun (void);
+void CPU_RestoreMemPages (void);
 
 TCPU_Arg CPU_ReadMemW (TCPU_Arg Adr);
 TCPU_Arg CPU_ReadMemB (TCPU_Arg Adr);

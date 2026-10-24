@@ -1,6 +1,4 @@
 #include <pico/stdlib.h>
-#include <hardware/clocks.h>
-#include <hardware/structs/systick.h>
 
 #include "reboot.h"
 #include "ps2_bk.h"
@@ -41,6 +39,62 @@ static bool covox_plus = 0;
 
 volatile bool is_kbd_joystick = false;
 
+/*
+ * Real-time pacing on the Linux host.
+ *
+ * The RP2350 build busy-waits after every instruction on the SysTick counter
+ * until the ARM time matches the emulated BK time; the VGA interrupt raises
+ * the 50 Hz frame interrupt and an alarm timer samples the sound state at
+ * 44.1 kHz.  Here the host clock paces the emulation in steps of about a
+ * millisecond (the thread sleeps when it is ahead), the 50 Hz interrupt
+ * follows the host clock as before, and the sound state is sampled every
+ * 1/44100 s of emulated time, so beeper edges keep their exact position
+ * whatever the host scheduling.
+ */
+#define EMU_SOUND_RATE 44100u
+#define EMU_AHEAD_US   1000u      /* sleep when this far ahead of real time */
+#define EMU_LATE_US    100000u    /* restart pacing when this far behind */
+
+extern void bk_audio_sample(void);   // main.cpp: one stereo sample to ALSA
+extern volatile bool vsync;          // CPU_e.c: 50 Hz frame interrupt request
+
+static uint64_t pace_anchor_us;
+static uint64_t pace_ticks;
+static uint32_t pace_freq;
+static uint64_t sound_acc;
+static uint64_t vsync_next_us;
+
+static void pace_restart(uint64_t now) {
+    pace_anchor_us = now;
+    pace_ticks = 0;
+    pace_freq = g_conf.cpu_freq;
+}
+
+static void pace(uint32_t dT, bool throttle) {
+    // sound: one sample per 1/44100 s of emulated time
+    sound_acc += (uint64_t)dT * EMU_SOUND_RATE;
+    while (sound_acc >= g_conf.cpu_freq) {
+        sound_acc -= g_conf.cpu_freq;
+        bk_audio_sample();
+    }
+    uint64_t now = time_us_64();
+    // 50 Hz frame interrupt, real time
+    if (now >= vsync_next_us) {
+        vsync = 1;
+        vsync_next_us += 20000;
+        if (vsync_next_us <= now) vsync_next_us = now + 20000;
+    }
+    if (!throttle) return;
+    if (pace_freq != g_conf.cpu_freq) pace_restart(now);
+    pace_ticks += dT;
+    const uint64_t target = pace_anchor_us + pace_ticks * 1000000u / pace_freq;
+    if (target > now + EMU_AHEAD_US) {
+        sleep_us(target - now);
+    } else if (now > target + EMU_LATE_US) {
+        pace_restart(now);   // manager dialog, host overload: no catch-up burst
+    }
+}
+
 inline static void cleanup_emu_state() {
     g_conf.cpu_freq     = g_conf.bk0010mode >= BK_0011M_FDD ? 4000000 : 3000000;
     g_conf.T            = 0;
@@ -55,23 +109,14 @@ void AT_OVL emu_start () {
     KBD_PRINT(("Initial state: CodeAndFlags: %Xh Key: %Xh LastKey: %Xh CPU_State.Flags: %Xh",
                                g_conf.CodeAndFlags, g_conf.Key, g_conf.LastKey, Device_Data.CPU_State.Flags));
     // Запускаем эмуляцию
-    // Настраиваем SysTick: тактирование от системной частоты
-    // и максимальное значение 24-битного счётчика
-    systick_hw->rvr = 0xFFFFFF;  // reload value (24 бита макс)
-    systick_hw->cvr = 0;         // current value
-    systick_hw->csr = (1 << 0) | (1 << 2);  // ENABLE = бит 0, CLKSOURCE = бит 2
+    pace_restart(time_us_64());
+    vsync_next_us = pace_anchor_us + 20000;
     uint32_t kbd_divider = 0;
     while (1) {
-        // SysTick запущен до manager(), чтобы время USB/клавиатуры учитывалось
-        // в бюджете реального времени итерации. Иначе при частом нажатии клавиш
-        // tuh_task() добавляет неучтённую задержку и эмуляция замедляется.
-        uint32_t startTicks = systick_hw->cvr;
         // Вызываем manager (с keyboard_tick внутри) не каждую инструкцию,
-        // а ~раз в 1 мс (каждые ~256 итераций). Это уменьшает влияние
-        // tuh_task() на тайминг бипера при нажатии клавиш.
+        // а ~раз в 1 мс (каждые ~256 итераций).
         if (!(kbd_divider++ & 0xFF))
             manager(false);
-        uint32_t armFreqDivEmu = clock_get_hz(clk_sys) / g_conf.cpu_freq;
 #if LOAD_WAV_PIO
         bool bit_wav = hw_get_bit_LOAD();
         if (bit_wav) Device_Data.SysRegs.RdReg177716 |= 0b100000;
@@ -89,20 +134,16 @@ void AT_OVL emu_start () {
                 DEBUG_PRINT(("Count: %d", Count));
                 CPU_RunInstruction ();
             }
+            uint32_t dT = Device_Data.CPU_State.Time - g_conf.T; // BM1 emulated ticks passed
+            if (dT < 0x7FFFFFFF) pace(dT, false);
             g_conf.T    = Device_Data.CPU_State.Time;
         }
         else {
             CPU_RunInstruction ();
             uint32_t dT = Device_Data.CPU_State.Time - g_conf.T; // BM1 emulated ticks passed
-            // Считаем прошедшие такты ARM (включая время manager/keyboard)
-            uint32_t cvr_now = systick_hw->cvr;
-            uint32_t dTicks = startTicks >= cvr_now ? startTicks - cvr_now : startTicks + (0xFFFFFF - cvr_now) + 1; // ARM Cortex ticks passed
-            if (dT < 0x7FFFFFFF && dT > 0 && dTicks > 0) { // W/A for overload
+            if (dT < 0x7FFFFFFF) { // W/A for overload
                 // wait for the same time as for emulated CPU
-                while(dT * armFreqDivEmu > dTicks) {
-                    cvr_now = systick_hw->cvr;
-                    dTicks = startTicks >= cvr_now ? startTicks - cvr_now : startTicks + (0xFFFFFF - cvr_now) + 1; // ARM Cortex ticks passed
-                }
+                pace(dT, true);
             }
             g_conf.T    = Device_Data.CPU_State.Time;
         }
@@ -191,6 +232,7 @@ void AT_OVL emu_start () {
             case 6:
                 Device_Data.SysRegs.RdReg177716 &= ~0100;
                 KBD_PRINT(("6. RdReg177716: %oo", Device_Data.SysRegs.RdReg177716));
+                // fall through
             case 5:
 /*   Регистр состояния клавиатуры имеет адрес 177660.
    В нем используются только два бита.

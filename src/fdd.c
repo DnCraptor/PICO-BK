@@ -9,22 +9,22 @@
 #include "MKDOS318B.h"
 #endif
 
-char* fdd0_rom() {
+const char* fdd0_rom() {
   #ifdef BUILD_IN_FDD_GAMES
-    return BUILD_IN_GAMES;
+    return (const char*)BUILD_IN_GAMES;
   #else
     #ifdef BUILD_IN_FDD_MKDOS
-      return MKDOS318B;
+      return (const char*)MKDOS318B;
     #endif
     return 0;
   #endif
 }
 
-char* fdd1_rom() {
+const char* fdd1_rom() {
 #ifdef BUILD_IN_FDD_MKDOS
-  return MKDOS318B;
+  return (const char*)MKDOS318B;
 #else
-  return 819200;
+  return 0;
 #endif
 }
 
@@ -49,7 +49,9 @@ size_t fdd1_sz() {
 
 void EmulateFDD() {
     DSK_PRINT(("EmulateFDD enter"));
-    uint16_t table_addr, t = Device_Data.CPU_State.r[3];
+    // R3 - адрес блока параметров драйвера (таблицы), первое слово - копия
+    // регистра состояния КНГМД по записи
+    uint16_t table_addr = Device_Data.CPU_State.r[3], t = table_addr;
     // заполняем блок параметров драйвера дисковода
     TABLE_EMFDD dt = { 0 };
 	register uint16_t v = 0;
@@ -222,8 +224,7 @@ static int m_side = 0;   // Сторона диска: 0 или 1
 static int m_track = 0;
 static int m_datareg, m_writereg, m_shiftreg = 0;
 static bool m_bSearchSyncTrigger = false;
-static bool m_bWriteMode, m_writemarker, m_shiftmarker, m_bCRCCalc = false;
-static uint16_t m_nCRCAcc = 0xffff;
+static bool m_bWriteMode, m_writemarker, m_bCRCCalc = false;
 static bool m_bSearchSync = true;
 static bool m_writeflag, m_shiftflag = false;
 static int m_status = 0;

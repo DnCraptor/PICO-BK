@@ -618,7 +618,7 @@ void clrScr(uint8_t color) {
     current_line = start_debug_line;
 };
 
-void draw_text(char* string, int x, int y, uint8_t color, uint8_t bgcolor) {
+void draw_text(const char* string, int x, int y, uint8_t color, uint8_t bgcolor) {
     uint8_t* t_buf = TEXT_VIDEO_RAM + text_buffer_width * 2 * y + 2 * x;
     const uint8_t c = (bgcolor << 4) | (color & 0xF);
     for (int xi = x; xi < text_buffer_width; ++xi) {

@@ -41,7 +41,6 @@ constexpr auto MKDOS_CAT_RECORD_SIZE = 173;
 // хотя размер каталога в мкдосе почти 9 секторов, чуть-чуть до конца сектора не добивает.
 static uint8_t m_pCatBuffer[20 * BLOCK_SIZE] = { 0 };
 static MKDosFileRecord *m_pDiskCat = 0;
-static unsigned int    m_nCatSize;         // размер буфера каталога, выровнено по секторам, включая служебную область
 static unsigned int    m_nMKCatSize;       // размер каталога в записях
 static unsigned int    m_nMKLastCatRecord; // индекс последней записи в каталоге, чтобы определять конец каталога
 static bool            m_bMakeAdd;         // флаг, реализованы ли функции добавления

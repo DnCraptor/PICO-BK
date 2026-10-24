@@ -5,7 +5,7 @@
 #include "pico/time.h"
 #include "vga.h"
 
-extern color_schema_t* pcs;
+extern const color_schema_t* pcs;
 
 void set_color_schema(const color_schema_t* pschema) {
     pcs = pschema;
@@ -15,10 +15,10 @@ const color_schema_t* get_color_schema() {
     return pcs;
 }
 
-void draw_panel(int left, int top, int width, int height, char* title, char* footer) {
+void draw_panel(int left, int top, int width, int height, const char* title, const char* footer) {
     if (left < 0) left = 0;
     if (top < 0) top = 0;
-    if (width + left > text_buffer_width) width = text_buffer_width - left;
+    if (width + left > (int)text_buffer_width) width = (int)text_buffer_width - left;
     if (width < 0) return;
     char line[text_buffer_width + 2];
     // top line
@@ -71,7 +71,7 @@ void draw_panel(int left, int top, int width, int height, char* title, char* foo
 void draw_button(int left, int top, int width, const char* txt, bool selected) {
     if (left < 0) left = 0;
     if (top < 0) top = 0;
-    if (width + left > text_buffer_width) width = text_buffer_width - left;
+    if (width + left > (int)text_buffer_width) width = (int)text_buffer_width - left;
     if (width < 0) return;
     int len = strlen(txt);
     if (len > 39) return;
@@ -104,11 +104,10 @@ void draw_box(int left, int top, int width, int height, const char* title, const
 void draw_box_ex(int left, int top, int width, int height, const char* title, const char* bottom, const lines_t* plines) {
     if (left < 0) left = 0;
     if (top < 0) top = 0;
-    if (width + left > text_buffer_width) width = text_buffer_width - left;
+    if (width + left > (int)text_buffer_width) width = (int)text_buffer_width - left;
     if (width < 0) return;
     draw_panel(left, top, width, height, title, bottom);
-    int y = top + 1;
-    for (int i = y; y < top + height - 1; ++y) {
+    for (int y = top + 1; y < top + height - 1; ++y) {
         draw_label(left + 1, y, width - 2, "", false, false);
     }
     for (int i = 0, y = top + 1 + plines->toff; i < plines->sz; ++i, ++y) {
@@ -116,7 +115,7 @@ void draw_box_ex(int left, int top, int width, int height, const char* title, co
         uint8_t off;
         if (pl->off < 0) {
             size_t len = strnlen(pl->txt, text_buffer_width);
-            off = width - 2 > len ? (width - len) >> 1 : 0;
+            off = (size_t)(width - 2) > len ? (width - len) >> 1 : 0;
         } else {
             off = pl->off;
         }
@@ -136,12 +135,11 @@ void scan_code_cleanup();
 int draw_selector(int left, int top, int width, int height, const char* title, const lines_t* plines, int selected_line, const char* footer) {
     if (left < 0) left = 0;
     if (top < 0) top = 0;
-    if (width + left > text_buffer_width) width = text_buffer_width - left;
+    if (width + left > (int)text_buffer_width) width = (int)text_buffer_width - left;
     if (width < 0) width = 1;
     int s_line = selected_line;
     draw_panel(left, top, width, height, title, footer);
-    int y = top + 1;
-    for (int i = y; y < top + height - 1; ++y) {
+    for (int y = top + 1; y < top + height - 1; ++y) {
         draw_label(left + 1, y, width - 2, "", false, false);
     }
     nespad_state_delay = DPAD_STATE_DELAY;
@@ -152,7 +150,7 @@ int draw_selector(int left, int top, int width, int height, const char* title, c
             uint8_t off;
             if (pl->off < 0) {
                 size_t len = strnlen(pl->txt, text_buffer_width);
-                off = width - 2 > len ? (width - len) >> 1 : 0;
+                off = (size_t)(width - 2) > len ? (width - len) >> 1 : 0;
             } else {
                 off = pl->off;
             }
@@ -202,7 +200,7 @@ int draw_selector(int left, int top, int width, int height, const char* title, c
     return selected_line;
 }
 
-void draw_fn_btn(fn_1_12_tbl_rec_t* prec, int left, int top, bool reduced) {
+void draw_fn_btn(const fn_1_12_tbl_rec_t* prec, int left, int top, bool reduced) {
     if (left < 0) left = 0;
     if (top < 0) top = 0;
     char line[10];
@@ -211,7 +209,7 @@ void draw_fn_btn(fn_1_12_tbl_rec_t* prec, int left, int top, bool reduced) {
         line[0] = prec->mark;
         draw_text(line, left, top, pcs->FOREGROUND_F1_12_COLOR, pcs->BACKGROUND_F1_12_COLOR);
         // button
-        sprintf(line, prec->name);
+        snprintf(line, sizeof(line), "%.*s", BTN_WIDTH, prec->name);
         draw_text(line, left + 1, top, pcs->FOREGROUND_F_BTN_COLOR, pcs->BACKGROUND_F_BTN_COLOR);
         return;
     }
@@ -221,11 +219,11 @@ void draw_fn_btn(fn_1_12_tbl_rec_t* prec, int left, int top, bool reduced) {
     line[1] = prec->mark;
     draw_text(line, left, top, pcs->FOREGROUND_F1_12_COLOR, pcs->BACKGROUND_F1_12_COLOR);
     // button
-    sprintf(line, prec->name);
+    snprintf(line, sizeof(line), "%.*s", BTN_WIDTH, prec->name);
     draw_text(line, left + 2, top, pcs->FOREGROUND_F_BTN_COLOR, pcs->BACKGROUND_F_BTN_COLOR);
 }
 
-void draw_cmd_line(int left, int top, char* cmd) {
+void draw_cmd_line(int left, int top, const char* cmd) {
     if (left < 0) left = 0;
     if (top < 0) top = 0;
     char line[MAX_WIDTH + 2];
@@ -240,10 +238,10 @@ void draw_cmd_line(int left, int top, char* cmd) {
     draw_text(line, left, top, pcs->FOREGROUND_CMD_COLOR, pcs->BACKGROUND_CMD_COLOR);
 }
 
-void draw_label(int left, int top, int width, char* txt, bool selected, bool highlighted) {
+void draw_label(int left, int top, int width, const char* txt, bool selected, bool highlighted) {
     if (left < 0) left = 0;
     if (top < 0) top = 0;
-    if (width + left > text_buffer_width) width = text_buffer_width - left;
+    if (width + left > (int)text_buffer_width) width = (int)text_buffer_width - left;
     if (width < 0) return;
     char line[MAX_WIDTH + 2];
     bool fin = false;

@@ -6,23 +6,21 @@ extern "C" {
 }
 
 #include "disk_img.h"
-#include <pico/time.h>
-#include <pico/sem.h>
-#include <pico/multicore.h>
 #include <pico.h>
 #include <pico/stdlib.h>
-#include <hardware/vreg.h>
-#include <pico/stdio.h>
-#if !PICO_RP2040
-    #include <hardware/structs/qmi.h>
-    #include <hardware/vreg.h>
-#endif
 
-#include "audio.h"
+#include <pthread.h>
+#include <signal.h>
+#include <stdio.h>
+#include <string.h>
 
 extern "C" {
+#include "audio_linux.h"
+#include "input_linux.h"
+#include "platform_linux.h"
+#include "video_drm.h"
+#include "vga_linux.h"
 #include "nespad.h"
-#include "util_Wii_Joy.h"
 #include "vga.h"
 #include "ps2.h"
 #include "CPU.h"
@@ -44,129 +42,37 @@ volatile config_em_t g_conf {
    0330, // shift_y
    256, // graphics_buffer_height
    0, // v_buff_offset
+   0, // cpu_freq
+   0, // T
+   0, // CodeAndFlags
+   0, // Key
+   0, // LastKey
+   0, // RunState
+   0, // PrevCAF
+   0, // manager_pallette_idx
+   false, // is_128_48
+   0, // dvi_mode
+   false, // is_8x8
 };
 
-extern "C" bool SELECT_VGA = true;
-bool PSRAM_AVAILABLE = false;
+/* The Linux host shows the VGA picture (1024x768) and keeps the whole BK
+ * RAM in process memory, as the RP2350 does with PSRAM. */
+bool SELECT_VGA = true; // C linkage: declared in vga.h
+bool PSRAM_AVAILABLE = true;
 bool SD_CARD_AVAILABLE = false;
 uint32_t DIRECT_RAM_BORDER = PSRAM_AVAILABLE ? RAM_SIZE : (SD_CARD_AVAILABLE ? RAM_PAGE_SIZE : RAM_SIZE);
 
 uint8_t __aligned(4096) RAM[RAM_SIZE] = { 0 };
-#if PICO_RP2040
-uint8_t __aligned(4) TEXT_VIDEO_RAM[128*48*2] = { 0 };
-#else
 uint8_t __aligned(4) TEXT_VIDEO_RAM[128*96*2] = { 0 };
-#endif
 
-extern "C" semaphore_t vga_start_semaphore;
-extern "C" void dvi_on_core1();
-extern "C" void bk_init_gray_palettes();
-extern "C" void dvi_1024_init_profiles();
-extern "C" void push_audio_sample(int16_t l, int16_t r);
-
-/* Renderer loop on Pico's second core */
-void __time_critical_func(render_core)() {
-    graphics_set_buffer(CPU_PAGE51_MEM_ADR, 512, 256);
-#if defined(SELECT_TV)
-    /* Composite TV output — tv-software owns pio0 + its own DMA + alarm-pool timer.
-     * Core 1 is not used for rendering; we just init and park on the semaphore. */
-    graphics_init();
-    graphics_set_offset(0, 12);
-    graphics_set_flashmode(true, true);
-    graphics_set_bgcolor(0x00000000);
-    sem_acquire_blocking(&vga_start_semaphore);
-    return;
-#endif
-    if (SELECT_VGA) {
-        graphics_init();
-        graphics_set_bgcolor(0x80808080);
-        graphics_set_offset(0, 0);
-        graphics_set_flashmode(true, true);
-        sem_acquire_blocking(&vga_start_semaphore);
-        while (true) {
-            sleep_ms(1);
-            tight_loop_contents();
-        }
-        return;
-    }
-    dvi_on_core1();
-	__builtin_unreachable();
-}
-
-void inInit(uint gpio) {
-    gpio_init(gpio);
-    gpio_set_dir(gpio, GPIO_IN);
-    gpio_pull_up(gpio);
-}
-
-#ifdef USE_WII
-static repeating_timer_t Wii_timer;
-static bool __not_in_flash_func(Wii_Joystick_Timer_CB)(repeating_timer_t *rt) {
-    if (is_WII_Init()) {
-        Wii_decode_joy();
-    }
-    return true;
-}
-#endif
-
-#ifdef HWAY
-extern "C" {
-    #include "PinSerialData_595.h"
-}
-#endif
-
-#ifdef SOUND_SYSTEM
-static repeating_timer_t timer;
-static bool __not_in_flash_func(AY_timer_callback)(repeating_timer_t *rt) {
-    static uint16_t outL = 0;  
-    static uint16_t outR = 0;
-#ifdef HWAY
-#ifdef COVOX
-    static uint8_t latch_val = 0;
-    uint8_t val = (outL + outR) >> 6;
-    if (g_conf.is_covox_on && latch_val != val) {
-        latch_val = val;
-        // выбор второго чипа
-		HIGH(CS_AY1);
-        LOW(CS_AY0);
-		// выбор регистра разрешений
-    	send_to_595(HIGH (BDIR | BC1) | 7); 
-		send_to_595( LOW (BDIR | BC1) | 7);
-		// разрешение записи в регистр portB
-		send_to_595(LOW (BDIR) | 0x80);
-		send_to_595(HIGH(BDIR) | 0x80);
-		send_to_595(LOW (BDIR) | 0x80);
-        // выбор IO регистра port B 
-    	send_to_595(HIGH (BDIR | BC1) | 0x0F); 
-		send_to_595( LOW (BDIR | BC1) | 0x0F);
-        // запись значения в регистр port B второго чипа
-		send_to_595(LOW (BDIR) | val);
-		send_to_595(HIGH(BDIR) | val);
-		send_to_595(LOW (BDIR) | val);
-    }
-#endif
-#elif defined(I2S)
-    /* I2S output — sent further below after mixing, see audio_i2s_submit() call */
-#else
-#ifdef PICO_PC
-    // Olimex has no separate beeper output: mix it into both PWM channels.
-    int beep_shift = (int)g_conf.snd_volume + 7;
-    if (beep_shift > 12) beep_shift = 12;
-    uint32_t beep_pwm = (beeper_on && beep_shift >= 0) ? (1u << beep_shift) : 0u;
-    uint32_t pwmR = (uint32_t)outR + beep_pwm;
-    uint32_t pwmL = (uint32_t)outL + beep_pwm;
-    pwm_set_gpio_level(PWM_PIN0, pwmR > 4095u ? 4095u : pwmR);
-    pwm_set_gpio_level(PWM_PIN1, pwmL > 4095u ? 4095u : pwmL);
-#else
-    pwm_set_gpio_level(PWM_PIN0, outR); // Право
-    pwm_set_gpio_level(PWM_PIN1, outL); // Лево
-#endif
-#endif
-    outL = outR = 0;
-    if (manager_started) {
-        return true;
-    }
-#ifndef HWAY
+/*
+ * Sound: one stereo sample per 1/44100 s of emulated time (emu_e.c), mixed
+ * as the RP2350 audio timer does for its HDMI/I2S outputs: AY-3-8910, Covox
+ * and the beeper, scaled by the volume setting.
+ */
+extern "C" void bk_audio_sample(void) {
+    uint16_t outL = 0;
+    uint16_t outR = 0;
     #ifdef AYSOUND
     if (g_conf.is_AY_on) {
         uint8_t* AY_data = get_AY_Out(5);
@@ -174,69 +80,31 @@ static bool __not_in_flash_func(AY_timer_callback)(repeating_timer_t *rt) {
         outR = ((uint16_t)AY_data[2] + AY_data[1]) << 1;
     }
     #endif
-#endif
 #ifdef COVOX
     if (!outL && !outR && g_conf.is_covox_on && (true_covox || az_covox_L || az_covox_R)) {
         outL = (az_covox_L + (uint16_t)true_covox);
         outR = (az_covox_R + (uint16_t)true_covox);
     }
 #endif
+    const int8_t volume = g_conf.snd_volume;
     if (outR || outL) {
-        register uint8_t mult = g_conf.snd_volume;
-        if (mult >= 0) {
-            if (mult > 5) mult = 5;
+        if (volume >= 0) {
+            const uint8_t mult = volume > 5 ? 5 : (uint8_t)volume;
             outL <<= mult;
             outR <<= mult;
         } else {
-            register int8_t div = -mult;
-            if (div > 16) div = 16;
+            const uint8_t div = -volume > 16 ? 16 : (uint8_t)-volume;
             outL >>= div;
             outR >>= div;
         }
-      //  #ifndef HWAY
-      //  beep(0);
-      //  #endif
     }
-    if (!SELECT_VGA) {
-#if PICO_RP2350
-        if (g_conf.dvi_mode == 2) {
-#if defined(I2S)
-            uint16_t beep_add = beeper_on ? (uint16_t)(1u << (g_conf.snd_volume + 7)) : 0u;
-            int16_t sampleL = (int16_t)((int32_t)(outL + beep_add) * 6);
-            int16_t sampleR = (int16_t)((int32_t)(outR + beep_add) * 6);
-            audio_i2s_submit(sampleL, sampleR);
-#endif
-        }
-        else
-#endif
-        {
-        // Beeper/AY ratio on PWM is always 3.2x (511/160 at any volume).
-        // Replicate: beep contributes 3.2 * AY_max_per_channel = 3.2 * 80 = 256,
-        // then the same volume shift applies via outL/outR already being scaled.
-        // Use (1 << (snd_volume + 7)) as beep_add — tracks volume identically to PWM.
-        uint16_t beep_add = beeper_on ? (uint16_t)(1u << (g_conf.snd_volume + 7)) : 0u;
-        int16_t sampleL = (int16_t)((int32_t)(outL + beep_add) * 6);
-        int16_t sampleR = (int16_t)((int32_t)(outR + beep_add) * 6);
-        // HDMI/DVI carries audio regardless of the physical output backend
-        push_audio_sample(sampleL, sampleR);
-#if defined(I2S)
-        // I2S DAC output — parallel to HDMI, same mixed samples
-        audio_i2s_submit(sampleL, sampleR);
-#endif
-        }
-    }
-#if defined(I2S)
-    else {
-        // VGA mode: no HDMI audio ring, but I2S DAC still needs samples
-        uint16_t beep_add = beeper_on ? (uint16_t)(1u << (g_conf.snd_volume + 7)) : 0u;
-        int16_t sampleL = (int16_t)((int32_t)(outL + beep_add) * 6);
-        int16_t sampleR = (int16_t)((int32_t)(outR + beep_add) * 6);
-        audio_i2s_submit(sampleL, sampleR);
-    }
-#endif
-    return true;
+    // Beeper/AY ratio as on PWM: beep contributes 1 << (volume + 7).
+    const int beep_shift = volume + 7;
+    const uint16_t beep_add = (beeper_on && beep_shift >= 0) ? (uint16_t)(1u << beep_shift) : 0u;
+    const int16_t sampleL = (int16_t)((int32_t)(outL + beep_add) * 6);
+    const int16_t sampleR = (int16_t)((int32_t)(outR + beep_add) * 6);
+    audio_push(sampleL, sampleR);
 }
-#endif
 
 extern "C" FATFS fatfs;
 
@@ -244,13 +112,10 @@ static void init_fs() {
     FRESULT result = f_mount(&fatfs, "", 1);
     if (FR_OK != result) {
         char tmp[80];
-        sprintf(tmp, "Unable to mount SD-card: %s (%d)", FRESULT_str(result), result);
+        snprintf(tmp, sizeof(tmp), "Unable to mount SD-card: %s (%d)", FRESULT_str(result), result);
         logMsg(tmp);
     } else {
         SD_CARD_AVAILABLE = true;
-        #if BOOT_DEBUG || KBD_DEBUG || MNGR_DEBUG || DSK_DEBUG || INVALID_DEBUG
-        f_unlink("\\bk.log");
-        #endif
     }
 
     DIRECT_RAM_BORDER = PSRAM_AVAILABLE ? RAM_SIZE : (SD_CARD_AVAILABLE ? RAM_PAGE_SIZE : RAM_SIZE);
@@ -262,10 +127,10 @@ static void init_fs() {
         } else {
             f_closedir(&dir);
         }
-        insertdisk(0, fdd0_sz(), fdd0_rom(), "\\BK\\fdd0.img");
-        insertdisk(1, fdd1_sz(), fdd1_rom(), "\\BK\\fdd1.img");
-        insertdisk(2, 819200, 0, "\\BK\\fdd2.img");
-        insertdisk(3, 819200, 0, "\\BK\\fdd3.img");
+        insertdisk(0, fdd0_sz(), fdd0_rom(), (char*)"\\BK\\fdd0.img");
+        insertdisk(1, fdd1_sz(), fdd1_rom(), (char*)"\\BK\\fdd1.img");
+        insertdisk(2, 819200, 0, (char*)"\\BK\\fdd2.img");
+        insertdisk(3, 819200, 0, (char*)"\\BK\\fdd3.img");
         if (!spacePressed)
             read_config("\\BK\\bk.conf");
         ram_config_save();
@@ -275,256 +140,63 @@ static void init_fs() {
     }
 }
 
-// connection is possible 00->00 (external pull down)
-static int test_0000_case(uint32_t pin0, uint32_t pin1, int res) {
-    gpio_init(pin0);
-    gpio_set_dir(pin0, GPIO_OUT);
-    sleep_ms(33);
-    gpio_put(pin0, 1);
-
-    gpio_init(pin1);
-    gpio_set_dir(pin1, GPIO_IN);
-    gpio_pull_down(pin1); /// external pulled down (so, just to ensure)
-    sleep_ms(33);
-    if ( gpio_get(pin1) ) { // 1 -> 1, looks really connected
-        res |= (1 << 5) | 1;
+/* Renderer loop, the role of the RP2350 VGA scanline interrupt: the picture
+ * at 60 Hz. */
+static void* render_core(void*) {
+    static uint32_t frame[VGA_LINUX_WIDTH * VGA_LINUX_HEIGHT];
+    const uint64_t frame_us = 16667;
+    uint64_t next_frame = time_us_64();
+    while (true) {
+        platform_service();
+        vga_linux_compose(frame);
+        video_drm_present(frame, VGA_LINUX_WIDTH, VGA_LINUX_HEIGHT);
+        next_frame += frame_us;
+        const uint64_t now = time_us_64();
+        if (next_frame + frame_us < now)
+            next_frame = now;   // fell behind by more than a frame: resync
+        sleep_until_us(next_frame);
     }
-    gpio_deinit(pin0);
-    gpio_deinit(pin1);
-    return res;
+    return nullptr;
 }
 
-// connection is possible 01->01 (no external pull up/down)
-static int test_0101_case(uint32_t pin0, uint32_t pin1, int res) {
-    gpio_init(pin0);
-    gpio_set_dir(pin0, GPIO_OUT);
-    sleep_ms(33);
-    gpio_put(pin0, 1);
-
-    gpio_init(pin1);
-    gpio_set_dir(pin1, GPIO_IN);
-    gpio_pull_down(pin1);
-    sleep_ms(33);
-    if ( gpio_get(pin1) ) { // 1 -> 1, looks really connected
-        res |= (1 << 5) | 1;
-    }
-    gpio_deinit(pin0);
-    gpio_deinit(pin1);
-    return res;
+static void on_signal(int) {
+    platform_request(PLATFORM_QUIT);
 }
 
-// connection is possible 11->11 (externally pulled up)
-static int test_1111_case(uint32_t pin0, uint32_t pin1, int res) {
-    gpio_init(pin0);
-    gpio_set_dir(pin0, GPIO_OUT);
-    sleep_ms(33);
-    gpio_put(pin0, 0);
+int main(int argc, char** argv) {
+    /* bk [data directory [DRM device]]: the data directory plays the role
+     * of the SD card (BK\ disk images, bk.conf, snapshots). */
+    const char* root = argc > 1 ? argv[1] : ".";
+    const char* drm_device = argc > 2 ? argv[2] : "/dev/dri/card0";
+    platform_set_argv(argv);
+    ff_set_root(root);
 
-    gpio_init(pin1);
-    gpio_set_dir(pin1, GPIO_IN);
-    gpio_pull_up(pin1); /// external pulled up (so, just to ensure)
-    sleep_ms(33);
-    if ( !gpio_get(pin1) ) { // 0 -> 0, looks really connected
-        res |= 1;
-    }
-    gpio_deinit(pin0);
-    gpio_deinit(pin1);
-    return res;
-}
-
-extern "C" int testPins(uint32_t pin0, uint32_t pin1) {
-    int res = 0b000000;
-    /// do not try to test butter psram this way
-#ifdef BUTTER_PSRAM_GPIO
-    if (pin0 == BUTTER_PSRAM_GPIO || pin1 == BUTTER_PSRAM_GPIO) return res;
-#endif
-    if (pin0 == PICO_DEFAULT_LED_PIN || pin1 == PICO_DEFAULT_LED_PIN) return res; // LED
-    if (pin0 == 23 || pin1 == 23) return res; // SMPS Power
-    if (pin0 == 24 || pin1 == 24) return res; // VBus sense
-    // try pull down case (passive)
-    gpio_init(pin0);
-    gpio_set_dir(pin0, GPIO_IN);
-    gpio_pull_down(pin0);
-    gpio_init(pin1);
-    gpio_set_dir(pin1, GPIO_IN);
-    gpio_pull_down(pin1);
-    sleep_ms(33);
-    int pin0vPD = gpio_get(pin0);
-    int pin1vPD = gpio_get(pin1);
-    gpio_deinit(pin0);
-    gpio_deinit(pin1);
-    /// try pull up case (passive)
-    gpio_init(pin0);
-    gpio_set_dir(pin0, GPIO_IN);
-    gpio_pull_up(pin0);
-    gpio_init(pin1);
-    gpio_set_dir(pin1, GPIO_IN);
-    gpio_pull_up(pin1);
-    sleep_ms(33);
-    int pin0vPU = gpio_get(pin0);
-    int pin1vPU = gpio_get(pin1);
-    gpio_deinit(pin0);
-    gpio_deinit(pin1);
-
-    res = (pin0vPD << 4) | (pin0vPU << 3) | (pin1vPD << 2) | (pin1vPU << 1);
-
-    if (pin0vPD == 1) {
-        if (pin0vPU == 1) { // pin0vPD == 1 && pin0vPU == 1
-            if (pin1vPD == 1) { // pin0vPD == 1 && pin0vPU == 1 && pin1vPD == 1
-                if (pin1vPU == 1) { // pin0vPD == 1 && pin0vPU == 1 && pin1vPD == 1 && pin1vPU == 1
-                    // connection is possible 11->11 (externally pulled up)
-                    return test_1111_case(pin0, pin1, res);
-                } else { // pin0vPD == 1 && pin0vPU == 1 && pin1vPD == 1 && pin1vPU == 0
-                    // connection is impossible
-                    return res;
-                }
-            } else { // pin0vPD == 1 && pin0vPU == 1 && pin1vPD == 0
-                if (pin1vPU == 1) { // pin0vPD == 1 && pin0vPU == 1 && pin1vPD == 0 && pin1vPU == 1
-                    // connection is impossible
-                    return res;
-                } else { // pin0vPD == 1 && pin0vPU == 1 && pin1vPD == 0 && pin1vPU == 0
-                    // connection is impossible
-                    return res;
-                }
-            }
-        } else {  // pin0vPD == 1 && pin0vPU == 0
-            if (pin1vPD == 1) { // pin0vPD == 1 && pin0vPU == 0 && pin1vPD == 1
-                if (pin1vPU == 1) { // pin0vPD == 1 && pin0vPU == 0 && pin1vPD == 1 && pin1vPU == 1
-                    // connection is impossible
-                    return res;
-                } else { // pin0vPD == 1 && pin0vPU == 0 && pin1vPD == 1 && pin1vPU == 0
-                    // connection is possible 10->10 (pulled up on down, and pulled down on up?)
-                    return res |= (1 << 5) | 1; /// NOT SURE IT IS POSSIBLE TO TEST SUCH CASE (TODO: think about real cases)
-                }
-            } else { // pin0vPD == 1 && pin0vPU == 0 && pin1vPD == 0
-                if (pin1vPU == 1) { // pin0vPD == 1 && pin0vPU == 0 && pin1vPD == 0 && pin1vPU == 1
-                    // connection is impossible
-                    return res;
-                } else { // pin0vPD == 1 && pin0vPU == 0 && pin1vPD == 0 && pin1vPU == 0
-                    // connection is impossible
-                    return res;
-                }
-            }
-        }
-    } else { // pin0vPD == 0
-        if (pin0vPU == 1) { // pin0vPD == 0 && pin0vPU == 1
-            if (pin1vPD == 1) { // pin0vPD == 0 && pin0vPU == 1 && pin1vPD == 1
-                if (pin1vPU == 1) { // pin0vPD == 0 && pin0vPU == 1 && pin1vPD == 1 && pin1vPU == 1
-                    // connection is impossible
-                    return res;
-                } else { // pin0vPD == 0 && pin0vPU == 1 && pin1vPD == 1 && pin1vPU == 0
-                    // connection is impossible
-                    return res;
-                }
-            } else { // pin0vPD == 0 && pin0vPU == 1 && pin1vPD == 0
-                if (pin1vPU == 1) { // pin0vPD == 0 && pin0vPU == 1 && pin1vPD == 0 && pin1vPU == 1
-                    // connection is possible 01->01 (no external pull up/down)
-                    return test_0101_case(pin0, pin1, res);
-                } else { // pin0vPD == 0 && pin0vPU == 1 && pin1vPD == 0 && pin1vPU == 0
-                    // connection is impossible
-                    return res;
-                }
-            }
-        } else {  // pin0vPD == 0 && pin0vPU == 0
-            if (pin1vPD == 1) { // pin0vPD == 0 && pin0vPU == 0 && pin1vPD == 1
-                if (pin1vPU == 1) { // pin0vPD == 0 && pin0vPU == 0 && pin1vPD == 1 && pin1vPU == 1
-                    // connection is impossible
-                    return res;
-                } else { // pin0vPD == 0 && pin0vPU == 0 && pin1vPD == 1 && pin1vPU == 0
-                    // connection is impossible
-                    return res;
-                }
-            } else { // pin0vPD == 0 && pin0vPU == 0 && pin1vPD == 0
-                if (pin1vPU == 1) { // pin0vPD == 0 && pin0vPU == 0 && pin1vPD == 0 && pin1vPU == 1
-                    // connection is impossible
-                    return res;
-                } else { // pin0vPD == 0 && pin0vPU == 0 && pin1vPD == 0 && pin1vPU == 0
-                    // connection is possible 00->00 (externally pulled down)
-                    return test_0000_case(pin0, pin1, res);
-                }
-            }
-        }
-    }
-    return res;
-}
-
-static void __not_in_flash_func(flash_timings)() {
-#if defined(SELECT_TV)
-    uint khz = 319200; // TODO: ensure clkdiv = 319.2 / 17.734475 ≈ 18.0000
-#else
-    #if !PICO_RP2040
-        #if defined(VGA_ONLY)
-            uint khz = 390000;
-        #else
-            uint khz = 400000;
-        #endif
-    #else
-        uint khz = 390000;//270000;
-    #endif
-#endif
-#if !PICO_RP2040
-    if (khz >= 400000) {
-        if (khz >= 500000) {
-            vreg_set_voltage(VREG_VOLTAGE_1_60);
-        } else {
-            vreg_set_voltage(VREG_VOLTAGE_1_50);
-        }
-    } else if (khz >= 378000) {
-        vreg_set_voltage(VREG_VOLTAGE_1_50);
-    } else {
-        vreg_set_voltage(VREG_VOLTAGE_1_40);
-    }
-	const uint max_flash_freq = 66 * 1000000;
-	const uint clock_hz = khz * 1000;
-	int divisor = (clock_hz + max_flash_freq - 1) / max_flash_freq;
-	if (divisor == 1 && clock_hz > 100000000) {
-		divisor = 2;
-	}
-	int rxdelay = divisor;
-	if (clock_hz / divisor > 100000000) {
-		rxdelay += 1;
-	}
-	qmi_hw->m[0].timing = 0x60007000 |
-						rxdelay << QMI_M0_TIMING_RXDELAY_LSB |
-						divisor << QMI_M0_TIMING_CLKDIV_LSB;
-#else
-    hw_set_bits(&vreg_and_chip_reset_hw->vreg, VREG_AND_CHIP_RESET_VREG_VSEL_BITS);
-#endif
-    sleep_ms(100);
-	set_sys_clock_khz(khz, true);
-}
-
-int main() {
-#if !PICO_RP2040
-	vreg_disable_voltage_limit();
-#endif
-    vreg_set_voltage(VREG_VOLTAGE_1_30);
-
-    DBGM_PRINT(("Before keyboard_init"));
     keyboard_init();
 
-#if LOAD_WAV_PIO
-    //пин ввода звука
-    inInit(LOAD_WAV_PIO);
-#endif
+    graphics_init();
+    graphics_set_buffer(CPU_PAGE51_MEM_ADR, 512, 256);
+    graphics_set_bgcolor(0x80808080);
+    graphics_set_offset(0, 0);
+    graphics_set_flashmode(true, true);
 
-    DBGM_PRINT(("gpio_init(PICO_DEFAULT_LED_PIN)"));
-    gpio_init(PICO_DEFAULT_LED_PIN);
-    gpio_set_dir(PICO_DEFAULT_LED_PIN, GPIO_OUT);
-
-    DBGM_PRINT(("Before Init_Wii_Joystick"));
-    #ifdef USE_WII
-    if (!Init_Wii_Joystick()) {
-    #endif
-        #ifdef USE_NESPAD
-        DBGM_PRINT(("Before nespad_begin"));
-        nespad_begin(clock_get_hz(clk_sys) / 1000, NES_GPIO_CLK, NES_GPIO_DATA, NES_GPIO_LAT);
-        #endif
-    #ifdef USE_WII
-    } else {
-        add_repeating_timer_ms(60, Wii_Joystick_Timer_CB, NULL, &Wii_timer);
+    if (!video_drm_open(drm_device, VGA_LINUX_WIDTH, VGA_LINUX_HEIGHT)) {
+        input_shutdown();
+        return EXIT_FAILURE;
     }
-    #endif
+
+    struct sigaction sa = {};
+    sa.sa_handler = on_signal;
+    sigaction(SIGINT, &sa, nullptr);
+    sigaction(SIGTERM, &sa, nullptr);
+    sigaction(SIGHUP, &sa, nullptr);
+
+    pthread_t render_thread;
+    if (pthread_create(&render_thread, nullptr, render_core, nullptr) != 0) {
+        perror("render thread");
+        input_shutdown();
+        video_drm_close();
+        return EXIT_FAILURE;
+    }
 
     for (int i = 0; i < 50; ++i) {
         keyboard_tick();
@@ -532,59 +204,11 @@ int main() {
     }
 
     init_fs();
-    audio_init();
-#if defined(SELECT_TV)
-    /* TV composite: VGA pins are wired to the DAC, not to a VGA monitor.
-     * Force SELECT_VGA=true so the audio path knows there is no HDMI audio
-     * ring, and skip the pin-probe that would otherwise misdetect the DAC. */
-    SELECT_VGA = true;
-    flash_timings();
-#elif defined(ZERO2) || defined(ZERO)
-    SELECT_VGA = 0;
-#elif defined(VGA_ONLY)
-    SELECT_VGA = true;
-    flash_timings();
-#else
-    uint8_t link = testPins(beginVGA_PIN, beginVGA_PIN + 1);
-    SELECT_VGA = (link == 0) || (link == 0x1F);
-    if (SELECT_VGA) {
-        flash_timings();
-    }
-#endif
-    // Build TMDS grayscale tables on core 0 before the HDMI renderer starts.
-    if (!SELECT_VGA) {
-        bk_init_gray_palettes();
-        if (g_conf.dvi_mode == 2) dvi_1024_init_profiles();
-    }
-    sem_init(&vga_start_semaphore, 0, 1);
-    multicore_launch_core1(render_core);
-    sem_release(&vga_start_semaphore);
-    for (int i = 0; i < 6; i++) {
-        keyboard_tick();
-        sleep_ms(23);
-        gpio_put(PICO_DEFAULT_LED_PIN, true);
-        sleep_ms(23);
-        gpio_put(PICO_DEFAULT_LED_PIN, false);
-    }
+    audio_init(44100);
 
     reset(255);
     graphics_set_mode(g_conf.color_mode != BK_COLOR_BW ? BK_256x256x2 : BK_512x256x1);
 
-#ifdef SOUND_SYSTEM
-#if defined(I2S)
-    /* Core 1 may have changed sys_clock (e.g. 270 MHz for DVI);
-       recalculate the PIO clock divider at the actual frequency. */
-    i2s_recalc_clkdiv();
-#endif
-	int hz = 44100;	//44000 //44100 //96000 //22050
-	// negative timeout means exact delay (rather than delay between callbacks)
-	if (!add_repeating_timer_us(-1000000 / hz, AY_timer_callback, NULL, &timer)) {
-		logMsg("Failed to add timer");
-		return 1;
-	}
-#endif
-
     emu_start();
-    while(1);
     __unreachable();
 }
