@@ -105,3 +105,20 @@ target_compile_options(bk PRIVATE
 
 target_link_libraries(bk PRIVATE PkgConfig::LIBDRM PkgConfig::ALSA Threads::Threads)
 install(TARGETS bk RUNTIME DESTINATION bin)
+
+# Debian binary package. Dependencies are derived from the actual linked ELF
+# on the build machine (e.g. libdrm2 and the distribution's ALSA library).
+install(FILES README.md LICENSE DESTINATION share/doc/pico-bk)
+
+set(CPACK_GENERATOR "DEB")
+set(CPACK_PACKAGE_NAME "pico-bk")
+set(CPACK_PACKAGE_VENDOR "DnCraptor")
+set(CPACK_PACKAGE_CONTACT "DnCraptor")
+set(CPACK_PACKAGE_DESCRIPTION_SUMMARY "BK-0010/11M emulator using Linux DRM/KMS and ALSA")
+set(CPACK_PACKAGE_HOMEPAGE_URL "https://github.com/DnCraptor/PICO-BK")
+set(CPACK_PACKAGING_INSTALL_PREFIX "/usr")
+set(CPACK_DEBIAN_PACKAGE_SECTION "games")
+set(CPACK_DEBIAN_PACKAGE_SHLIBDEPS ON)
+set(CPACK_DEBIAN_FILE_NAME "DEB-DEFAULT")
+set(CPACK_STRIP_FILES ON)
+include(CPack)
