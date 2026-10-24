@@ -15,6 +15,7 @@
 #include "nespad.h"
 #include "reboot.h"
 #include "ram_config.h"
+#include "platform_linux.h"
 __uninitialized_ram(ram_config_block_t) s_ram_cfg;
 #include "main_i.h"
 
@@ -203,11 +204,12 @@ static void mark_to_exit(uint8_t cmd) {
     escWasPressed = false;
     mark_to_exit_flag = true;
 }
-static void return_to_mos(uint8_t cmd) {
+/* Ctrl+F10 / pad A+START: leave the emulator (the RP2350 build returns to
+ * Murmulator OS here). */
+static void quit_emulator(uint8_t cmd) {
     (void)cmd;
-    f_unlink(MOS_FILE);
-    reboot();
-    while (true);
+    platform_request(PLATFORM_QUIT);
+    while (true) sleep_ms(100);   // the render thread exits within a frame
 }
 
 static inline void fill_panel(file_panel_desc_t* p);
@@ -428,33 +430,19 @@ static void in_conf(int x, int y) {
     draw_label(x, y+9, 18, "keyboard joystick:", false, z_idx == 8);
     draw_label(x, y+10,18, " manager pallette:", false, z_idx == 9);
     if (is_8x8_new) {
-        draw_label(x, y+11,31, "   manager 128x96:   (VGA only)", false, z_idx == 10);
+        draw_label(x, y+11,31, "   manager 128x96:", false, z_idx == 10);
     } else {
-        draw_label(x, y+11,31, "   manager 128x48:   (VGA only)", false, z_idx == 10);
+        draw_label(x, y+11,31, "   manager 128x48:", false, z_idx == 10);
     }
-    if (dvi_mode_new == 0) {
-#if PICO_RP2350
-        draw_label(x, y+12,36, "     HDMI 720x576:   (270 MHz 1.3V)", false, z_idx == 11);
-#else
-        draw_label(x, y+12,30, "     HDMI 720x576:   (270 MHz)", false, z_idx == 11);
-#endif
-#if PICO_RP2350
-    } else if(dvi_mode_new == 2) {
-        draw_label(x, y+12,36, "    HDMI 1024x768:   (512 MHz 1.6V)", false, z_idx == 11);
-#endif
-    } else {
-#if PICO_RP2350
-        draw_label(x, y+12,36, "     HDMI 800x600:   (400 MHz 1.5V)", false, z_idx == 11);
-#else
-        draw_label(x, y+12,30, "     HDMI 800x600:   (400 MHz)", false, z_idx == 11);
-#endif
-    }
-    draw_label(x, y+13,18, "     use 8x8 font:", false, z_idx == 12);
+    // Row 11 of the RP2350 build (HDMI mode and its system clock) has no
+    // meaning here: the picture is always the 1024x768 VGA frame.
+    draw_label(x, y+12,18, "     use 8x8 font:", false, z_idx == 12);
     if(already_swapped_fdds) { // TODO: save it?
-        draw_label(x, y+14, 24, "  swap FDD drives: true ", false, false);
+        draw_label(x, y+13, 24, "  swap FDD drives: true ", false, false);
     } else {
-        draw_label(x, y+14, 24, "  swap FDD drives: false", false, false);
+        draw_label(x, y+13, 24, "  swap FDD drives: false", false, false);
     }
+    draw_label(x, y+14, 36, "", false, false);
     // TODO: swap fdd
 
     char b[64] = { 0 };
@@ -524,8 +512,7 @@ static void in_conf(int x, int y) {
     snprintf(b, 4, "%d", g_conf.manager_pallette_idx);
     draw_label(x+19, y+10, 3, b, z_idx == 9, z_idx == 9);
     draw_label(x+19, y+11, 1, is_128_48_new ? b_on : b_off, z_idx == 10, z_idx == 10);
-    draw_label(x+19, y+12, 1, dvi_mode_new == 0 ? "0" : (dvi_mode_new == 1 ? "1" : "2"), z_idx == 11, z_idx == 11);
-    draw_label(x+19, y+13, 1, is_8x8_new ? b_on : b_off, z_idx == 12, z_idx == 12);
+    draw_label(x+19, y+12, 1, is_8x8_new ? b_on : b_off, z_idx == 12, z_idx == 12);
 
 #ifndef SELECT_TV
     if (is_kbd_joystick) {
@@ -554,8 +541,11 @@ static void in_conf(int x, int y) {
     {
         MAX_Z = 12;
     }
-    snprintf(b, 64, "[%d MHz]", (clock_get_hz(clk_sys) / 1000000));
-     draw_label(x+2, y+17, 9, b, false, true);
+    const uint32_t host_hz = clock_get_hz(clk_sys); // 0: no cpufreq on this host
+    if (host_hz) {
+        snprintf(b, 64, "[host CPU %d MHz]", (int)(host_hz / 1000000));
+        draw_label(x+2, y+17, 18, b, false, true);
+    }
     snprintf(b, 64, "[%d MHz]", (int)(g_conf.cpu_freq / 1000000));
 #ifdef SELECT_TV
      draw_label(x+46-10, y+17, 7, b, false, true);
@@ -970,6 +960,7 @@ static void conf_it(uint8_t cmd) {
         }
         if (upPressed) {
             if (--z_idx < 0) z_idx = MAX_Z;
+            if (z_idx == 11) z_idx = 10; // no HDMI mode row on this host
             upPressed = false;
             in_conf(x, y);
             continue;
@@ -977,6 +968,7 @@ static void conf_it(uint8_t cmd) {
         if (downPressed) {
             downPressed = false;
             if (++z_idx > MAX_Z) z_idx = 0;
+            if (z_idx == 11) z_idx = 12; // no HDMI mode row on this host
             in_conf(x, y);
             continue;
         }
@@ -1611,11 +1603,11 @@ static void m_info(uint8_t cmd) {
         { 1, " - Ctrl  + key  - CU                        - F9             - SBROS" },  // TODO: rus
         { 1, " - Caps Lock      - lock up/down register   - PgUp | PgDown  - BC" },
         { 1, " - left  Win      - RUS                    Emulation time hot keys:" },
-        { 1, " - right Win      - LAT                     - Print Screen     - Reset RP2040/RP2350 CPU" },
+        { 1, " - right Win      - LAT                     - Print Screen     - Restart the emulator" },
         { 1, " - Pause          - STOP                    - F10              - cyclic change pallete" },
         { 1, " - F1             - POVTOR                  - Alt  + F10       - default BK-0010 pallete" },
         { 1, " - F2             - KT                      - Ctrl + F10       - default BK-0011 pallete" },
-        { 1, " - F3             - =|=>|                   - F12              - Cycle B/W, Color, Grayscale (256x256, VGA)" },
+        { 1, " - F3             - =|=>|                   - F12              - Cycle B/W, Color, Grayscale" },
         { 1, " - F4             - |<==                    - Ctrl + F1..F8    - fast save a snapshot (BK\\SNAP[1..8].BKE)" },
         { 1, " - F5             - |==>                    - Alt  + F1..F8    - fast restore from related snapshot" },
         { 1, " - F6             - IND SU                  - Ctrl + F12       - faster emulation" },
@@ -1629,9 +1621,9 @@ static void m_info(uint8_t cmd) {
         { 1, "File Manager hot keys:" },
         { 1, " - F10           - exit from the File Manager" },
         { 1, " - F11           - change emulation mode BK-0010-01, BK-0011M..." },
-        { 1, " - F12           - Cycle B/W 512x256, Color 256x256, Grayscale 256x256 (VGA only)" },
-        { 1, " - Home + F2     - color mode: 0=B/W, 1=Color, 2=Grayscale (HDMI displays Color)" },
-        { 1, " - Ctrl + F10    - exit to Murmulator OS 2.0" },
+        { 1, " - F12           - Cycle B/W 512x256, Color 256x256, Grayscale 256x256" },
+        { 1, " - Home + F2     - color mode: 0=B/W, 1=Color, 2=Grayscale" },
+        { 1, " - Ctrl + F10    - quit the emulator" },
     };
     const int total_lines = (int)(sizeof(plns) / sizeof(plns[0]));
 
@@ -1850,7 +1842,7 @@ static fn_1_12_tbl_t fn_1_12_tbl_ctrl = {
     { ' ', '7', " Find ", do_nothing },
     { ' ', '8', " Del  ", m_delete_file },
     { ' ', '9', " Swap ", swap_drives },
-    { '1', '0', " M-OS ", return_to_mos },
+    { '1', '0', " Quit ", quit_emulator },
     { '1', '1', "EmMODE", switch_mode },
     { '1', '2', " B/W  ", switch_color }
 };
@@ -2497,7 +2489,7 @@ static inline void work_cycle() {
                 } else if ((nespad_state & DPAD_START) || (nespad_state & DPAD_START)) {
                     enter_pressed();
                 } else if (((nespad_state & DPAD_A) && (nespad_state & DPAD_START)) || ((nespad_state2 & DPAD_A) && (nespad_state2 & DPAD_START))) {
-                    return_to_mos(0);
+                    quit_emulator(0);
                 } else if (((nespad_state & DPAD_B) && (nespad_state & DPAD_SELECT)) || ((nespad_state2 & DPAD_B) && (nespad_state2 & DPAD_SELECT))) {
                     mark_to_exit(0);
                 } else if (((nespad_state & DPAD_LEFT) || (nespad_state & DPAD_RIGHT)) || ((nespad_state2 & DPAD_LEFT) || (nespad_state2 & DPAD_RIGHT))) {
