@@ -10,6 +10,21 @@
 
 #include "host/usbh_pvt.h"
 
+// TinyUSB 0.21 changed usbh_class_driver_t::open to return the number of
+// descriptor bytes the driver consumed (uint16_t, 0 = not our interface) instead
+// of bool. Adapt at compile time so this driver builds against both the
+// SDK-bundled TinyUSB (0.17/0.18) and an external 0.21+ checkout
+// (-DPICO_TINYUSB_PATH).
+#if defined(TUSB_VERSION_NUMBER) && (TUSB_VERSION_NUMBER >= 2100)
+typedef uint16_t xinputh_open_ret_t;
+#define XINPUTH_OPEN_OK(consumed_len) (consumed_len)
+#define XINPUTH_OPEN_FAIL             0
+#else
+typedef bool xinputh_open_ret_t;
+#define XINPUTH_OPEN_OK(consumed_len) true
+#define XINPUTH_OPEN_FAIL             false
+#endif
+
 //--------------------------------------------------------------------+
 // Class Driver Configuration
 //--------------------------------------------------------------------+
@@ -186,7 +201,7 @@ bool tuh_xinput_set_rumble(uint8_t dev_addr, uint8_t instance, uint8_t lValue, u
   // Internal Class Driver API
   //--------------------------------------------------------------------+
   bool xinputh_init       (void);
-  bool xinputh_open       (uint8_t rhport, uint8_t dev_addr, tusb_desc_interface_t const *desc_itf, uint16_t max_len);
+  xinputh_open_ret_t xinputh_open(uint8_t rhport, uint8_t dev_addr, tusb_desc_interface_t const *desc_itf, uint16_t max_len);
   bool xinputh_set_config (uint8_t dev_addr, uint8_t itf_num);
   bool xinputh_xfer_cb    (uint8_t dev_addr, uint8_t ep_addr, xfer_result_t result, uint32_t xferred_bytes);
   void xinputh_close      (uint8_t dev_addr);

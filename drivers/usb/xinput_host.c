@@ -51,7 +51,7 @@ static const uint8_t xboxone_rumble[] = {GIP_CMD_RUMBLE, 0x00, 0x00, GIP_PL_LEN(
 static const uint8_t xbox360w_led[] = {0x00, 0x00, 0x08, 0x40};
 //Sending 0x00, 0x00, 0x08, 0x00 will permanently disable rumble until you do this:
 static const uint8_t xbox360w_rumble_enable[] = {0x00, 0x00, 0x08, 0x01};
-static const uint8_t xbox360w_rumble[] = {0x00, 0x01, 0x0F, 0xC0, 0x00, 0x00};
+static const uint8_t xbox360w_rumble[] = {0x00, 0x01, 0x0F, 0xC0, 0x00, 0x00, 0x00};
 static const uint8_t xbox360w_inquire_present[] = {0x08, 0x00, 0x0F, 0xC0};
 static const uint8_t xbox360w_controller_info[] = {0x00, 0x00, 0x00, 0x40};
 static const uint8_t xbox360w_unknown[] = {0x00, 0x00, 0x02, 0x80};
@@ -251,9 +251,9 @@ bool xinputh_init(void)
     return true;
 }
 
-bool xinputh_open(uint8_t rhport, uint8_t dev_addr, tusb_desc_interface_t const *desc_itf, uint16_t max_len)
+xinputh_open_ret_t xinputh_open(uint8_t rhport, uint8_t dev_addr, tusb_desc_interface_t const *desc_itf, uint16_t max_len)
 {
-    TU_VERIFY(dev_addr <= CFG_TUH_DEVICE_MAX);
+    TU_VERIFY(dev_addr <= CFG_TUH_DEVICE_MAX, XINPUTH_OPEN_FAIL);
 
     xinput_type_t type = XINPUT_UNKNOWN;
     if (desc_itf->bNumEndpoints < 2)
@@ -274,7 +274,7 @@ bool xinputh_open(uint8_t rhport, uint8_t dev_addr, tusb_desc_interface_t const 
     if (type == XINPUT_UNKNOWN)
     {
         TU_LOG2("XINPUT: Not a valid interface\n");
-        return false;
+        return XINPUTH_OPEN_FAIL;
     }
 
     TU_LOG2("XINPUT opening Interface %u (addr = %u)\r\n", desc_itf->bInterfaceNumber, dev_addr);
@@ -317,7 +317,9 @@ bool xinputh_open(uint8_t rhport, uint8_t dev_addr, tusb_desc_interface_t const 
     }
 
     xinput_dev->inst_count++;
-    return true;
+    // pos = interface descriptor + class descriptors + endpoints walked above —
+    // exactly the consumed length TinyUSB 0.21+ expects back (bool true pre-0.21).
+    return XINPUTH_OPEN_OK((uint16_t)pos);
 }
 
 void xbox360_init(uint8_t dev_addr) {
@@ -472,6 +474,7 @@ bool xinputh_xfer_cb(uint8_t dev_addr, uint8_t ep_addr, xfer_result_t result, ui
                 if (wButtons & (1 << 7)) pad->wButtons |= XINPUT_GAMEPAD_RIGHT_THUMB;
                 if (wButtons & (1 << 8)) pad->wButtons |= XINPUT_GAMEPAD_LEFT_SHOULDER;
                 if (wButtons & (1 << 9)) pad->wButtons |= XINPUT_GAMEPAD_RIGHT_SHOULDER;
+                if (wButtons & (1 << 10)) pad->wButtons |= XINPUT_GAMEPAD_GUIDE;
                 if (wButtons & (1 << 12)) pad->wButtons |= XINPUT_GAMEPAD_A;
                 if (wButtons & (1 << 13)) pad->wButtons |= XINPUT_GAMEPAD_B;
                 if (wButtons & (1 << 14)) pad->wButtons |= XINPUT_GAMEPAD_X;
@@ -512,7 +515,7 @@ bool xinputh_xfer_cb(uint8_t dev_addr, uint8_t ep_addr, xfer_result_t result, ui
                 if (wButtons & (1 << 5)) pad->wButtons |= XINPUT_GAMEPAD_B;
                 if (wButtons & (1 << 6)) pad->wButtons |= XINPUT_GAMEPAD_X;
                 if (wButtons & (1 << 7)) pad->wButtons |= XINPUT_GAMEPAD_Y;
-                if (rdata[22] && 0x01) pad->wButtons   |= XINPUT_GAMEPAD_SHARE;
+                if (rdata[22] & 0x01) pad->wButtons   |= XINPUT_GAMEPAD_SHARE;
 
                 //Map the left and right triggers
                 pad->bLeftTrigger = (rdata[7] << 8 | rdata[6]) >> 2;

@@ -737,9 +737,12 @@ extern "C" void keyboard_init(void) {
 
 #include <host/usbh.h>
 
+extern "C" void hid_app_rearm_tick(void); // drivers/usb/hid_app.cpp
+
 extern "C" void keyboard_tick(void) {
     ps2kbd.tick();
     tuh_task();
+    hid_app_rearm_tick(); // re-arms HID interfaces that lost their IN transfer
 }
 
 extern "C" void ps2cleanup() {

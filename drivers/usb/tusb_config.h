@@ -67,6 +67,12 @@
 #define CFG_TUSB_DEBUG        0
 #endif
 
+// A failed TU_ASSERT executes a bkpt instruction whenever a debug probe is
+// attached, freezing the session on every RECOVERABLE assert. Route it to a
+// counting no-op instead (g_tusb_assert_count in hid_app.cpp, which the HID
+// re-arm watchdog uses as the evidence of a dropped event).
+#define CFG_TUSB_DEBUG_BREAKPOINT bk_tusb_assert_hook
+
 // Enable Host stack
 #define CFG_TUH_ENABLED       1
 
@@ -98,12 +104,19 @@
 #define CFG_TUH_XINPUT                 1 //
 #define CFG_TUH_HUB                 1 // number of supported hubs
 #define CFG_TUH_CDC                 0
-#define CFG_TUH_HID                 4 // typical keyboard + mouse device can have 3-4 HID interfaces
+#define CFG_TUH_HID                 8 // composite devices (kbd + pad + extra ifs) can need many slots
 #define CFG_TUH_MSC                 0
 #define CFG_TUH_VENDOR              0
 
 // max device support (excluding hub device)
-#define CFG_TUH_DEVICE_MAX          (CFG_TUH_HUB ? 4 : 1) // hub typically has 4 ports
+#define CFG_TUH_DEVICE_MAX          (CFG_TUH_HUB ? 6 : 1) // hub + keyboard + mouse + gamepads
+
+// Host event queue. The default 16 is not enough: hcd_event_* is called from
+// IRQ context while tuh_task() only runs from the main loop (keyboard_tick,
+// ~1 kHz, longer gaps in the manager and on SD access). On overflow
+// queue_event() only does TU_ASSERT, so the event is DROPPED, and a lost
+// xfer-complete event wedges that endpoint for ever (pico-speccy).
+#define CFG_TUH_TASK_QUEUE_SZ 64
 
 //------------- HID -------------//
 #define CFG_TUH_HID_EPIN_BUFSIZE    64

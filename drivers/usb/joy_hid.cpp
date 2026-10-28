@@ -8,7 +8,13 @@ usbh_class_driver_t const* usbh_app_driver_get_cb(uint8_t* driver_count) {
     return &usbh_xinput_driver;
 }
 
+// XInput pads; the HID ones are in hid_app.cpp, which ORs both into usbpad_state
+extern "C" uint8_t xinput_pad_state;
+uint8_t xinput_pad_state = 0;
+extern "C" void usbpad_xinput_changed(void);
+
 void tuh_xinput_report_received_cb(uint8_t dev_addr, uint8_t instance, uint8_t const* report, uint16_t len) {
+    (void)len;
     auto xid_itf = (xinputh_interface_t *)report;
     const xinput_gamepad_t* p = &xid_itf->pad;
     uint8_t state = 0;
@@ -22,11 +28,14 @@ void tuh_xinput_report_received_cb(uint8_t dev_addr, uint8_t instance, uint8_t c
     if (dpad & XINPUT_GAMEPAD_DPAD_UP) state |= DPAD_UP;
     if (dpad & XINPUT_GAMEPAD_DPAD_LEFT) state |= DPAD_LEFT;
     if (dpad & XINPUT_GAMEPAD_DPAD_RIGHT) state |= DPAD_RIGHT;
-    /*char tmp[128];
-    sprintf(tmp, "[%02x, %02x], Type: %s, Buttons %04x, LT: %02x RT: %02x, LX: %d, LY: %d, RX: %d, RY: %d\n",
-                 dev_addr, instance, type_str, p->wButtons, p->bLeftTrigger, p->bRightTrigger, p->sThumbLX, p->sThumbLY, p->sThumbRX, p->sThumbRY);
-    draw_text(tmp, 0,0, 15,0);*/
-    usbpad_state = state;
+    // Left stick as the D-pad (~25% deflection, sThumb is +-32767), so games
+    // can be played without the hat (pico-speccy).
+    if (p->sThumbLY >  8000) state |= DPAD_UP;
+    if (p->sThumbLY < -8000) state |= DPAD_DOWN;
+    if (p->sThumbLX < -8000) state |= DPAD_LEFT;
+    if (p->sThumbLX >  8000) state |= DPAD_RIGHT;
+    xinput_pad_state = state;
+    usbpad_xinput_changed();
     tuh_xinput_receive_report(dev_addr, instance);
 }
 
@@ -47,4 +56,6 @@ void tuh_xinput_mount_cb(uint8_t dev_addr, uint8_t instance, const xinputh_inter
 
 void tuh_xinput_umount_cb(uint8_t dev_addr, uint8_t instance) {
     TU_LOG1("XINPUT UNMOUNTED %02x %d\n", dev_addr, instance);
+    xinput_pad_state = 0; // no direction or button stays held
+    usbpad_xinput_changed();
 }

@@ -4,6 +4,8 @@ target_sources(usb INTERFACE
 	${CMAKE_CURRENT_LIST_DIR}/xinput_host.c
 	${CMAKE_CURRENT_LIST_DIR}/hid_app.cpp
 	${CMAKE_CURRENT_LIST_DIR}/joy_hid.cpp
+	${CMAKE_CURRENT_LIST_DIR}/hid_ri.c
+	${CMAKE_CURRENT_LIST_DIR}/hid_rip.c
 )
 
 target_link_libraries(usb INTERFACE)
