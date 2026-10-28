@@ -38,7 +38,7 @@ if((MURM2 AND (PICO_PC OR ZERO OR ZERO2)) OR
     message(FATAL_ERROR "Select at most one board wiring: MURM2, PICO_PC, ZERO, ZERO2")
 endif()
 
-set(BUILD_VERSION "1.5.5")
+set(BUILD_VERSION "1.5.6")
 set(USE_NESPAD ON)
 
 # Target, sound and display are selected through CMake cache (-D options).

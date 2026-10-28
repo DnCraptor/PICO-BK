@@ -8,6 +8,7 @@
 #include "CPU.h"
 #include "CPU_i.h"
 #include "stdlib.h"
+#include <strings.h>
 #include "debug.h"
 #include "aySoundSoft.h"
 #include "ps2.h"
@@ -2193,6 +2194,46 @@ static inline void redraw_current_panel() {
     draw_cmd_line(0, CMD_Y_POS, os_type);
 }
 
+/* What the monitor's M command (EMT 36, parameter block at 0320) leaves in
+ * the system area after loading a file from tape: the block with the found
+ * file's address (0346), length (0350) and name (0352), and the last loaded
+ * range 0264/0266.  Programs rely on it: the Lode Runner 2 loader copies
+ * itself by the length in 0350.  The cells a loaded file covers keep its
+ * data (an autostart file loaded from below 01000). */
+static void put_sys_byte(uint16_t addr, uint8_t value, uint16_t offset, uint16_t len) {
+    if (addr >= offset && (uint32_t)addr < (uint32_t)offset + len) return;
+    RAM[addr] = value;
+}
+
+static void put_sys_word(uint16_t addr, uint16_t value, uint16_t offset, uint16_t len) {
+    put_sys_byte(addr, (uint8_t)value, offset, len);
+    put_sys_byte(addr + 1, (uint8_t)(value >> 8), offset, len);
+}
+
+static void set_tape_load_info(const char* path, uint16_t offset, uint16_t len) {
+    // tape name: the file name without the .bin extension, space padded
+    const char* name = strrchr(path, '\\');
+    const char* alt = strrchr(path, '/');
+    if (!name || (alt && alt > name)) name = alt;
+    name = name ? name + 1 : path;
+    size_t n = strlen(name);
+    if (n > 4 && !strcasecmp(name + n - 4, ".bin")) n -= 4;
+    if (n > 16) n = 16;
+    put_sys_byte(0320, 3, offset, len);    // command: read
+    put_sys_byte(0321, 0, offset, len);    // answer: OK
+    put_sys_word(0322, 0, offset, len);    // address: from the file
+    put_sys_word(0324, 0, offset, len);
+    put_sys_word(0346, offset, offset, len);
+    put_sys_word(0350, len, offset, len);
+    for (size_t i = 0; i < 16; ++i) {
+        const uint8_t c = i < n ? (uint8_t)name[i] : ' ';
+        put_sys_byte(0326 + i, c, offset, len);
+        put_sys_byte(0352 + i, c, offset, len);
+    }
+    put_sys_word(0264, offset, offset, len);
+    put_sys_word(0266, len, offset, len);
+}
+
 static inline bool run_bin(char* path) {
     enterPressed = false;
     emt36_bin_disarm();
@@ -2226,8 +2267,9 @@ static inline bool run_bin(char* path) {
     }
     UINT bw;
     result = f_read(&file, line, 4, &bw);
-    uint16_t offset = ((uint16_t)line[1] << 8) | line[0];
-    uint16_t len = ((uint16_t)line[3] << 8) | line[2];
+    // line[] is char: signed on some hosts, the header bytes are unsigned
+    uint16_t offset = (uint16_t)((uint8_t)line[1] << 8 | (uint8_t)line[0]);
+    uint16_t len = (uint16_t)((uint8_t)line[3] << 8 | (uint8_t)line[2]);
     if (result != FR_OK) {
         f_close(&file);
         snprintf(line, text_buffer_width, "FRESULT: %d (bw: %d)", result, bw);
@@ -2263,6 +2305,7 @@ static inline bool run_bin(char* path) {
         // TODO: more than 1 page, error handling
     }
     f_close(&file);
+    set_tape_load_info(path, offset, len);
     if (offset < 01000) { // assimed autostat
         PC = ((uint16_t)RAM[offset + 1] << 8) | RAM[offset];
     } else {
