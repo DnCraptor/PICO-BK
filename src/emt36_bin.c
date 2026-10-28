@@ -96,8 +96,13 @@ bool emt36_bin_handle(uint16_t param_addr) {
         param_addr > CPU_START_IO_ADR - 42) return false;
 
     uint8_t command;
-    if (!guest_read_byte(param_addr, &command) || command != 3)
-        return false; // stop/start/write/dummy-read: always the original ROM
+    if (!guest_read_byte(param_addr, &command)) return false;
+    if (command == 0 || command == 1) {
+        // Virtual tape: motor STOP/START is immediate and needs no ROM I/O.
+        return guest_write_byte((uint16_t)(param_addr + 1), 0);
+    }
+    if (command != 3 && command != 4)
+        return false; // Tape WRITE and OS-specific extensions stay in ROM.
 
     char name[17] = { 0 };
     if (!cassette_name((uint16_t)(param_addr + 6), name)) return false;
@@ -114,43 +119,54 @@ bool emt36_bin_handle(uint16_t param_addr) {
     }
     uint16_t file_addr = (uint16_t)(header[0] | ((uint16_t)header[1] << 8));
     uint16_t length = (uint16_t)(header[2] | ((uint16_t)header[3] << 8));
-    uint8_t lo, hi;
-    if (!guest_read_byte((uint16_t)(param_addr + 2), &lo) ||
-        !guest_read_byte((uint16_t)(param_addr + 3), &hi)) {
-        f_close(&file);
-        return false;
-    }
-    uint32_t destination = ((uint16_t)(lo | ((uint16_t)hi << 8)));
-    if (!destination) destination = file_addr;
-    if (f_size(&file) < (FSIZE_t)length + 4 ||
-        !guest_ram_range(destination, length)) {
+    if (f_size(&file) < (FSIZE_t)length + 4) {
         f_close(&file);
         return false;
     }
 
-    // No temporary BIN-sized allocation; guest pages can be banked.
-    uint8_t buffer[256];
-    uint32_t written = 0;
-    while (written < length) {
-        UINT amount = (UINT)(length - written);
-        if (amount > sizeof(buffer)) amount = sizeof(buffer);
-        res = f_read(&file, buffer, amount, &got);
-        if (res != FR_OK || got != amount) break;
-        for (UINT i = 0; i < amount; ++i) {
-            if (!guest_write_byte((uint16_t)(destination + written + i), buffer[i])) {
-                res = FR_DISK_ERR;
-                break;
-            }
+    if (command == 3) {
+        uint8_t lo, hi;
+        if (!guest_read_byte((uint16_t)(param_addr + 2), &lo) ||
+            !guest_read_byte((uint16_t)(param_addr + 3), &hi)) {
+            f_close(&file);
+            return false;
         }
-        if (res != FR_OK) break;
-        written += amount;
+        uint32_t destination = (uint16_t)(lo | ((uint16_t)hi << 8));
+        if (!destination) destination = file_addr;
+        if (!guest_ram_range(destination, length)) {
+            f_close(&file);
+            return false;
+        }
+
+        // No temporary BIN-sized allocation; guest pages can be banked.
+        uint8_t buffer[256];
+        uint32_t written = 0;
+        while (written < length) {
+            UINT amount = (UINT)(length - written);
+            if (amount > sizeof(buffer)) amount = sizeof(buffer);
+            res = f_read(&file, buffer, amount, &got);
+            if (res != FR_OK || got != amount) break;
+            for (UINT i = 0; i < amount; ++i) {
+                if (!guest_write_byte((uint16_t)(destination + written + i), buffer[i])) {
+                    res = FR_DISK_ERR;
+                    break;
+                }
+            }
+            if (res != FR_OK) break;
+            written += amount;
+        }
+        if (written != length) {
+            f_close(&file);
+            // As on STOP/aborted cassette read: report failure, do not jump to ROM.
+            guest_write_byte((uint16_t)(param_addr + 1), 4);
+            return true;
+        }
+        guest_write_word(0264, (uint16_t)destination);
+        guest_write_word(0266, length);
     }
+    // Command 4 (dummy read): locate the tape header, but never copy payload
+    // into guest RAM and never update the last-loaded range (0264/0266).
     f_close(&file);
-    if (written != length) {
-        // As on STOP/aborted cassette read: report failure, do not jump to ROM.
-        guest_write_byte((uint16_t)(param_addr + 1), 4);
-        return true;
-    }
 
     // ROM cassette driver output: current tape block and last loaded range.
     guest_write_word((uint16_t)(param_addr + 22), file_addr);
@@ -164,8 +180,6 @@ bool emt36_bin_handle(uint16_t param_addr) {
             break;
         }
     }
-    guest_write_word(0264, (uint16_t)destination);
-    guest_write_word(0266, length);
     guest_write_byte((uint16_t)(param_addr + 1), 0);
     return true;
 }
