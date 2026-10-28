@@ -19,27 +19,32 @@ cmake_minimum_required(VERSION 3.22)
 set(PICO_CXX_ENABLE_EXCEPTIONS 1)
 
 option(TV_OUT "Composite TV output (tv-software driver)" OFF)
-option(AY_TYPE "AY-3-8910 Type: PWM / I2S / HWAY" I2S)
-option(MURM2 "Murmulator 2.0" OFF)
-option(PICO_PC "RP2040-PICO-PC" OFF)
+option(VGA_ONLY "VGA output without HDMI" OFF)
+set(AY_TYPE "I2S" CACHE STRING "AY-3-8910 output: PWM, I2S or HWAY")
+set_property(CACHE AY_TYPE PROPERTY STRINGS PWM I2S HWAY)
+option(MURM2 "Murmulator 2.0" ON)
+option(PICO_PC "Olimex RP2040-PICO-PC (RP2040/RP2350)" OFF)
 option(ZERO2 "RP2350-PiZero" OFF)
 option(ZERO "RP2040-PiZero" OFF)
+
+if(NOT AY_TYPE MATCHES "^(PWM|I2S|HWAY)$")
+    message(FATAL_ERROR "AY_TYPE must be PWM, I2S or HWAY (got: ${AY_TYPE})")
+endif()
+if(TV_OUT AND VGA_ONLY)
+    message(FATAL_ERROR "TV_OUT and VGA_ONLY cannot be enabled together")
+endif()
+if((MURM2 AND (PICO_PC OR ZERO OR ZERO2)) OR
+   (PICO_PC AND (ZERO OR ZERO2)) OR (ZERO AND ZERO2))
+    message(FATAL_ERROR "Select at most one board wiring: MURM2, PICO_PC, ZERO, ZERO2")
+endif()
 
 set(BUILD_VERSION "1.5.5")
 set(USE_NESPAD ON)
 
-#set(TV_OUT ON)
-#set(AY_TYPE PWM)
-set(AY_TYPE I2S)
-#set(AY_TYPE HWAY)
+# Target, sound and display are selected through CMake cache (-D options).
+# Without overrides, the legacy default remains MURM2 + I2S + VGA/HDMI.
+# Use build_all.bat or tools/build_all.py for a release matrix.
 #set (m1p2launcher ON)
-
-# Platform (m1p2 by default)
-set (MURM2 ON)
-#set (PICO_PC ON)
-#set (ZERO ON)
-#set (ZERO2 ON)
-#set (VGA_ONLY ON)
 
 IF(ZERO2)
     # For Board RP2350-PiZero — must be set before pico_sdk_import
