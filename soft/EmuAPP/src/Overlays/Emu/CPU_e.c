@@ -8,6 +8,7 @@
 #include "../EmuFfs/CPU_ef.h"
 
 #include "Debug.h"
+#include "emt36_bin.h"
 
 volatile bool vsync = 0;
 
@@ -1269,6 +1270,12 @@ void AT_OVL CPU_RunInstruction (void) {
           case 042:
           case 043:
                     DEBUG_PRINT (("EMT   "));
+                    // EMT 36 (octal): cassette read redirected to BIN's SD directory.
+                    // Other EMTs and unhandled requests run through the guest ROM.
+                    if (OpCode == 0104036 && emt36_bin_handle(R[1])) {
+                        CPU_CALC_TIMING(CPU_TIMING_EMT);
+                        break;
+                    }
                     CPU_INST_INTERRUPT (030);
                     CPU_CALC_TIMING (CPU_TIMING_EMT);
                     break;

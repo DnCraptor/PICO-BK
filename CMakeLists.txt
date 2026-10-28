@@ -25,12 +25,12 @@ option(PICO_PC "RP2040-PICO-PC" OFF)
 option(ZERO2 "RP2350-PiZero" OFF)
 option(ZERO "RP2040-PiZero" OFF)
 
-set(BUILD_VERSION "1.5.3")
+set(BUILD_VERSION "1.5.4")
 set(USE_NESPAD ON)
 
 #set(TV_OUT ON)
-set(AY_TYPE PWM)
-#set(AY_TYPE I2S)
+#set(AY_TYPE PWM)
+set(AY_TYPE I2S)
 #set(AY_TYPE HWAY)
 #set (m1p2launcher ON)
 

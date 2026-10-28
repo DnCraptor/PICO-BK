@@ -1,6 +1,7 @@
 #if PICO_ON_DEVICE
 #include <hardware/clocks.h>
 #include "manager.h"
+#include "emt36_bin.h"
 #include "emulator.h"
 #include "vga.h"
 #include "pico-vision.h"
@@ -386,7 +387,7 @@ static const line_t bk_mode_lns[] = {
             draw_label(xl+3, yl, 1, b, false, false); \
         } ++yl \
 
-static int MAX_Z = 28;
+static int MAX_Z = 29;
 static int z_idx = 0;
 static bool is_128_48_new, is_8x8_new, blink = false;
 static uint8_t dvi_mode_new = 0; // 0 - 640x480, 1 - 800*600, 2 - 1024*786
@@ -437,14 +438,16 @@ static void in_conf(int x, int y) {
         draw_label(x, y+12,30, "     HDMI 800x600:   (400 MHz)", false, z_idx == 11);
 #endif
     }
-    draw_label(x, y+13,18, "     use 8x8 font:", false, z_idx == 12);
+    draw_label(x, y+13, 18, "     use 8x8 font:", false, z_idx == 12);
+    draw_label(x, y+14, 18, "Dont catch EMT 36:", false, z_idx == 13);
+    /*
     if(already_swapped_fdds) { // TODO: save it?
-        draw_label(x, y+14, 24, "  swap FDD drives: true ", false, false);
+        draw_label(x, y+15, 24, "  swap FDD drives: true ", false, false);
     } else {
-        draw_label(x, y+14, 24, "  swap FDD drives: false", false, false);
+        draw_label(x, y+15, 24, "  swap FDD drives: false", false, false);
     }
     // TODO: swap fdd
-
+    */
     char b[64] = { 0 };
 
     snprintf(b, 64, "    Last scancode: %d [%ph]  ", lastScanCode, lastScanCode);
@@ -474,23 +477,23 @@ static void in_conf(int x, int y) {
 
 #ifndef SELECT_TV
     if (is_kbd_joystick) {
-        draw_label(x+40, y+0, 15, "     kbdpad1_A:", false, z_idx == 13);
-        draw_label(x+40, y+1, 15, "     kbdpad1_B:", false, z_idx == 14);
-        draw_label(x+40, y+2, 15, " kbdpad1_START:", false, z_idx == 15);
-        draw_label(x+40, y+3, 15, "kbdpad1_SELECT:", false, z_idx == 16);
-        draw_label(x+40, y+4, 15, "    kbdpad1_UP:", false, z_idx == 17);
-        draw_label(x+40, y+5, 15, "  kbdpad1_DOWN:", false, z_idx == 18);
-        draw_label(x+40, y+6, 15, "  kbdpad1_LEFT:", false, z_idx == 19);
-        draw_label(x+40, y+7, 15, " kbdpad1_RIGHT:", false, z_idx == 20);
+        draw_label(x+40, y+0, 15, "     kbdpad1_A:", false, z_idx == 14);
+        draw_label(x+40, y+1, 15, "     kbdpad1_B:", false, z_idx == 15);
+        draw_label(x+40, y+2, 15, " kbdpad1_START:", false, z_idx == 16);
+        draw_label(x+40, y+3, 15, "kbdpad1_SELECT:", false, z_idx == 17);
+        draw_label(x+40, y+4, 15, "    kbdpad1_UP:", false, z_idx == 18);
+        draw_label(x+40, y+5, 15, "  kbdpad1_DOWN:", false, z_idx == 19);
+        draw_label(x+40, y+6, 15, "  kbdpad1_LEFT:", false, z_idx == 20);
+        draw_label(x+40, y+7, 15, " kbdpad1_RIGHT:", false, z_idx == 21);
 
-        draw_label(x+40, y+9 , 15, "     kbdpad2_A:", false, z_idx == 21);
-        draw_label(x+40, y+10, 15, "     kbdpad2_B:", false, z_idx == 22);
-        draw_label(x+40, y+11, 15, " kbdpad2_START:", false, z_idx == 23);
-        draw_label(x+40, y+12, 15, "kbdpad2_SELECT:", false, z_idx == 24);
-        draw_label(x+40, y+13, 15, "    kbdpad2_UP:", false, z_idx == 25);
-        draw_label(x+40, y+14, 15, "  kbdpad2_DOWN:", false, z_idx == 26);
-        draw_label(x+40, y+15, 15, "  kbdpad2_LEFT:", false, z_idx == 27);
-        draw_label(x+40, y+16, 15, " kbdpad2_RIGHT:", false, z_idx == 28);
+        draw_label(x+40, y+9 , 15, "     kbdpad2_A:", false, z_idx == 22);
+        draw_label(x+40, y+10, 15, "     kbdpad2_B:", false, z_idx == 23);
+        draw_label(x+40, y+11, 15, " kbdpad2_START:", false, z_idx == 24);
+        draw_label(x+40, y+12, 15, "kbdpad2_SELECT:", false, z_idx == 25);
+        draw_label(x+40, y+13, 15, "    kbdpad2_UP:", false, z_idx == 26);
+        draw_label(x+40, y+14, 15, "  kbdpad2_DOWN:", false, z_idx == 27);
+        draw_label(x+40, y+15, 15, "  kbdpad2_LEFT:", false, z_idx == 28);
+        draw_label(x+40, y+16, 15, " kbdpad2_RIGHT:", false, z_idx == 29);
     }
 #endif
     draw_label(x+18, y+1, 22, bk_mode_lns[g_conf.bk0010mode].txt, z_idx == 0, z_idx == 0);
@@ -514,33 +517,34 @@ static void in_conf(int x, int y) {
     draw_label(x+19, y+11, 1, is_128_48_new ? b_on : b_off, z_idx == 10, z_idx == 10);
     draw_label(x+19, y+12, 1, dvi_mode_new == 0 ? "0" : (dvi_mode_new == 1 ? "1" : "2"), z_idx == 11, z_idx == 11);
     draw_label(x+19, y+13, 1, is_8x8_new ? b_on : b_off, z_idx == 12, z_idx == 12);
+    draw_label(x+19, y+14, 1, no_catch_emt36_on_bin ? b_on : b_off, z_idx == 13, z_idx == 13);
 
 #ifndef SELECT_TV
     if (is_kbd_joystick) {
-        MAX_Z = 28;
+        MAX_Z = 29;
         int xl = x+56;
         int yl = y;
-        kbd_j_label_val(kbdpad1_A, 13);
-        kbd_j_label_val(kbdpad1_B, 14);
-        kbd_j_label_val(kbdpad1_START, 15);
-        kbd_j_label_val(kbdpad1_SELECT, 16);
-        kbd_j_label_val(kbdpad1_UP, 17);
-        kbd_j_label_val(kbdpad1_DOWN, 18);
-        kbd_j_label_val(kbdpad1_LEFT, 19);
-        kbd_j_label_val(kbdpad1_RIGHT, 20);
+        kbd_j_label_val(kbdpad1_A, 14);
+        kbd_j_label_val(kbdpad1_B, 15);
+        kbd_j_label_val(kbdpad1_START, 16);
+        kbd_j_label_val(kbdpad1_SELECT, 17);
+        kbd_j_label_val(kbdpad1_UP, 18);
+        kbd_j_label_val(kbdpad1_DOWN, 19);
+        kbd_j_label_val(kbdpad1_LEFT, 20);
+        kbd_j_label_val(kbdpad1_RIGHT, 21);
         ++yl;
-        kbd_j_label_val(kbdpad2_A, 21);
-        kbd_j_label_val(kbdpad2_B, 22);
-        kbd_j_label_val(kbdpad2_START, 23);
-        kbd_j_label_val(kbdpad2_SELECT, 24);
-        kbd_j_label_val(kbdpad2_UP, 25);
-        kbd_j_label_val(kbdpad2_DOWN, 26);
-        kbd_j_label_val(kbdpad2_LEFT, 27);
-        kbd_j_label_val(kbdpad2_RIGHT, 28);
+        kbd_j_label_val(kbdpad2_A, 22);
+        kbd_j_label_val(kbdpad2_B, 23);
+        kbd_j_label_val(kbdpad2_START, 24);
+        kbd_j_label_val(kbdpad2_SELECT, 25);
+        kbd_j_label_val(kbdpad2_UP, 26);
+        kbd_j_label_val(kbdpad2_DOWN, 27);
+        kbd_j_label_val(kbdpad2_LEFT, 28);
+        kbd_j_label_val(kbdpad2_RIGHT, 29);
     } else
 #endif
     {
-        MAX_Z = 12;
+        MAX_Z = 13;
     }
     snprintf(b, 64, "[%d MHz]", (clock_get_hz(clk_sys) / 1000000));
      draw_label(x+2, y+17, 9, b, false, true);
@@ -611,11 +615,13 @@ static void saveConf() {
         kbdpad2_RIGHT
     );
     f_write(&fil, buf, strlen(buf), &bw);
-    snprintf(buf, 256, "manager_pallette_idx:%d\r\nis_128_48:%d\r\ndvi_mode:%d\r\nis_8x8:%d\r\n",
+    snprintf(buf, 256, "manager_pallette_idx:%d\r\nis_128_48:%d\r\ndvi_mode:%d\r\nis_8x8:%d\r\n"
+        "no_catch_emt36_on_bin:%d\r\n",
         g_conf.manager_pallette_idx,
         g_conf.is_128_48,
         g_conf.dvi_mode,
-        g_conf.is_8x8
+        g_conf.is_8x8,
+        no_catch_emt36_on_bin
     );
     f_write(&fil, buf, strlen(buf), &bw);
     f_close(&fil);
@@ -832,6 +838,12 @@ void read_config(const char* path) {
     if (mode >= 0 && mode <= 1) {
         g_conf.is_8x8 = (bool)mode;
     }
+    const char p29[] = "no_catch_emt36_on_bin:";
+    mode = parse_conf_word(buf, p29, sizeof(p29), MAX_CONF);
+    if (mode >= 0 && mode <= 1) {
+        no_catch_emt36_on_bin = (bool)mode;
+        if (no_catch_emt36_on_bin) emt36_bin_disarm();
+    }
     f_close(&fil);
 }
 
@@ -861,22 +873,22 @@ static void conf_it(uint8_t cmd) {
             uint8_t kk = lastCleanableScanCode & 0x7F;
             switch (z_idx)
             {
-                case 13: kbdpad1_A = kk; break;
-                case 14: kbdpad1_B = kk; break;
-                case 15: kbdpad1_START = kk; break;
-                case 16: kbdpad1_SELECT = kk; break;
-                case 17: kbdpad1_UP = kk; break;
-                case 18: kbdpad1_DOWN = kk; break;
-                case 19: kbdpad1_LEFT = kk; break;
-                case 20: kbdpad1_RIGHT = kk; break;
-                case 21: kbdpad2_A = kk; break;
-                case 22: kbdpad2_B = kk; break;
-                case 23: kbdpad2_START = kk; break;
-                case 24: kbdpad2_SELECT = kk; break;
-                case 25: kbdpad2_UP = kk; break;
-                case 26: kbdpad2_DOWN = kk; break;
-                case 27: kbdpad2_LEFT = kk; break;
-                case 28: kbdpad2_RIGHT = kk; break;
+                case 14: kbdpad1_A = kk; break;
+                case 15: kbdpad1_B = kk; break;
+                case 16: kbdpad1_START = kk; break;
+                case 17: kbdpad1_SELECT = kk; break;
+                case 18: kbdpad1_UP = kk; break;
+                case 19: kbdpad1_DOWN = kk; break;
+                case 20: kbdpad1_LEFT = kk; break;
+                case 21: kbdpad1_RIGHT = kk; break;
+                case 22: kbdpad2_A = kk; break;
+                case 23: kbdpad2_B = kk; break;
+                case 24: kbdpad2_START = kk; break;
+                case 25: kbdpad2_SELECT = kk; break;
+                case 26: kbdpad2_UP = kk; break;
+                case 27: kbdpad2_DOWN = kk; break;
+                case 28: kbdpad2_LEFT = kk; break;
+                case 29: kbdpad2_RIGHT = kk; break;
             }
             confEditMode = false;
             lastCleanableScanCode = false;
@@ -952,9 +964,9 @@ static void conf_it(uint8_t cmd) {
             }
             break;
         }
-        if (MAX_Z > 12 && (tabPressed || rightPressed || leftPressed)) {
+        if (MAX_Z > 13 && (tabPressed || rightPressed || leftPressed)) {
             tabPressed = rightPressed = leftPressed = false;
-            if (z_idx <= 12) z_idx = 13;
+            if (z_idx <= 13) z_idx = 14;
             else z_idx = 0;
             in_conf(x, y);
             continue;
@@ -980,7 +992,7 @@ static void conf_it(uint8_t cmd) {
                     g_conf.bk0010mode = 0;
                 }
                 g_conf.cpu_freq = g_conf.bk0010mode >= BK_0011M_FDD ? 4000000 : 3000000;
-            } else if (z_idx > 12) {
+            } else if (z_idx > 13) {
                 confEditMode = true;
                 lastCleanableScanCode = 0;
             }
@@ -1030,6 +1042,10 @@ static void conf_it(uint8_t cmd) {
               break;
             case 12:
               is_8x8_new = !is_8x8_new;
+              break;
+            case 13:
+              no_catch_emt36_on_bin = !no_catch_emt36_on_bin;
+              if (no_catch_emt36_on_bin) emt36_bin_disarm();
               break;
             }
             in_conf(x, y);
@@ -2179,6 +2195,7 @@ static inline void redraw_current_panel() {
 
 static inline bool run_bin(char* path) {
     enterPressed = false;
+    emt36_bin_disarm();
 #if EXT_DRIVES_MOUNT
     if (psp->in_dos) {
         // TODO:
@@ -2252,6 +2269,7 @@ static inline bool run_bin(char* path) {
         PC = offset;
     }
     SP = 01000;
+    if (!no_catch_emt36_on_bin) emt36_bin_arm(path);
     mark_to_exit_flag = true;
     gpio_put(PICO_DEFAULT_LED_PIN, false);
     return true;
@@ -2301,7 +2319,11 @@ static inline bool run_img(char* path) {
         redraw_window();
         return false;
     }
-    insertdisk(mount_as, 819200, 0, path);
+    if (insertdisk(mount_as, 819200, 0, path) != 0) {
+        redraw_window();
+        return false;
+    }
+    emt36_bin_disarm();
     if ( !is_fdd_suppored() ) {
         set_bk0010mode(BK_0011M_FDD);
     }
