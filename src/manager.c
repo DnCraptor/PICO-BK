@@ -706,7 +706,7 @@ const color_schema_t color_schema1 = {
    /*BACKGROUND_SELECTED_COLOR =*/0b0111, // White
 };
 
-#define MAX_CONF 512
+#define MAX_CONF 640
 void read_config(const char* path) {
     FIL fil;
     if (f_open(&fil, path, FA_READ) != FR_OK) {
@@ -715,7 +715,7 @@ void read_config(const char* path) {
     }
     char buf[MAX_CONF] = { 0 };
     UINT br;
-    if (f_read(&fil, buf, MAX_CONF, &br) != FR_OK) {
+    if (f_read(&fil, buf, MAX_CONF - 1, &br) != FR_OK) {
         DBGM_PRINT(("f_read %s failed. br: %d", br));
         f_close(&fil);
         return;
